@@ -1,0 +1,22 @@
+2011-01-22  GoldenKevin  (revision 1)
+
+	* Initial import. Things currently working:
+		* Inter server communications between a central server and remote
+		servers.
+		* Loading of Item.wz, Map.wz, Mob.wz, Reactor.wz, Skill.wz, and
+		String.wz data files in KVJ format. MCDB support soon to come with XML
+		and WZ support planned in the long run.
+		* Game, login, and shop servers can listen and decode packets received
+		from MapleStory clients, but do not process anything yet. There has been
+		a little headway in login server packet handling.
+		* A code stub for a telnet acceptor on the center server. It accepts
+		connections but there are many things that need to be done before I can
+		even think about implementing commands on it.
+	Some more work has to be done on the actual client and server communications
+	frameworks, but once that is done, I will start working on implementing
+	packet handlers in the login server first. A lot of low level code was taken
+	from OdinMS-derived sources in order to speed up development. Thanks guys!
+
+Copyright 2011 GoldenKevin
+Copying and distribution of this file, with or without modification, are
+permitted provided the copyright notice and this notice are preserved.

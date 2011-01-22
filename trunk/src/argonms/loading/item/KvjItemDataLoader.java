@@ -1,0 +1,308 @@
+package argonms.loading.item;
+
+import argonms.loading.KvjEffects;
+import argonms.tools.input.LittleEndianByteArrayReader;
+import argonms.tools.input.LittleEndianReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author GoldenKevin
+ */
+public class KvjItemDataLoader extends ItemDataLoader {
+	private static final Logger LOG = Logger.getLogger(KvjItemDataLoader.class.getName());
+
+	private static final byte
+		WHOLE_PRICE = 1,
+		SLOT_MAX = 2,
+		IS_TRADE_BLOCKED = 3,
+		IS_ONE_ONLY = 4,
+		IS_QUEST_ITEM = 5,
+		BONUS_STAT = 6,
+		SUMMON = 7,
+		SUCCESS = 8,
+		CURSED = 9,
+		CASH = 10,
+		OPERATING_HOURS = 11,
+		SKILL = 12,
+		UNIT_PRICE = 13,
+		REQ_STAT = 14,
+		UPGRADE_SLOTS = 15,
+		SCROLL_REQUIREMENTS = 16,
+		ITEM_EFFECT = 17,
+		TRIGGER_ITEM = 18,
+		MESO_VALUE = 19,
+
+		PET_COMMAND = 20,
+		PET_HUNGER = 21,
+		PET_EVOLVE = 22
+	;
+
+	private String dataPath;
+
+	public KvjItemDataLoader(String wzPath) {
+		this.dataPath = wzPath;
+	}
+
+	protected void load(int itemid)  {
+		String cat = getCategory(itemid);
+		File f;
+		String id = String.format("%08d", itemid);
+		if (cat.equals("Pet"))
+			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(String.format("%07d", itemid)).append(".img.kvj").toString());
+		else if (cat.equals("Equip"))
+			f = new File(new StringBuilder(dataPath).append("Character.wz").append(File.separator).append(getCharCat(itemid)).append(File.separator).append(id).append(".img.kvj").toString());
+		else
+			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(id.substring(0, 4)).append(".img").append(File.separator).append(id).append(".kvj").toString());
+		try {
+			doWork(itemid, new LittleEndianByteArrayReader(f));
+			loaded.add(Integer.valueOf(itemid));
+		} catch (IOException e) {
+			LOG.log(java.util.logging.Level.WARNING, "Could not read KVJ data file for item " + itemid, e);
+		}
+	}
+
+	public boolean loadAll() {
+		try {
+			File root = new File(dataPath + "Item.wz");
+			for (String cat : root.list()) {
+				File catFolder = new File(root.getAbsolutePath() + File.separatorChar + cat);
+				if (cat.equals("Pet")) {
+					for (String kvj : catFolder.list()) {
+						int itemid = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".img.kvj")));
+						doWork(itemid, new LittleEndianByteArrayReader(new File(catFolder.getAbsolutePath() + File.separatorChar + kvj)));
+						loaded.add(Integer.valueOf(itemid));
+					}
+				} else {
+					for (String pref : catFolder.list()) {
+						File prefFolder = new File(catFolder.getAbsolutePath() + File.separatorChar + pref);
+						for (String kvj : prefFolder.list()) {
+							int itemid = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".kvj")));
+							doWork(itemid, new LittleEndianByteArrayReader(new File(prefFolder.getAbsolutePath() + File.separatorChar + kvj)));
+							loaded.add(Integer.valueOf(itemid));
+						}
+					}
+				}
+			}
+			return true;
+		} catch (IOException ex) {
+			LOG.log(java.util.logging.Level.WARNING, "Could not load all item data from KVJ files.", ex);
+			return false;
+		}
+	}
+
+	public int loadedItems() {
+		return loaded.size();
+	}
+
+	public void doWork(int itemid, LittleEndianReader reader) {
+		Integer oId = Integer.valueOf(itemid);
+		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+			switch (now) {
+				case WHOLE_PRICE:
+					wholePrice.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case SLOT_MAX:
+					slotMax.put(oId, Short.valueOf(reader.readShort()));
+					break;
+				case IS_TRADE_BLOCKED:
+					tradeBlocked.add(oId);
+					break;
+				case IS_ONE_ONLY:
+					onlyOne.add(oId);
+					break;
+				case IS_QUEST_ITEM:
+					questItem.add(oId);
+					break;
+				case BONUS_STAT:
+					if (!bonusStats.containsKey(oId))
+						bonusStats.put(oId, new short[16]);
+					processBonusStat(reader, oId);
+					break;
+				case SUMMON:
+					if (!summons.containsKey(oId))
+						summons.put(oId, new ArrayList<int[]>());
+					summons.get(oId).add(processSummon(reader));
+					break;
+				case SUCCESS:
+					success.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case CURSED:
+					cursed.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case CASH:
+					cash.add(oId);
+					break;
+				case OPERATING_HOURS:
+					if (!operatingHours.containsKey(oId))
+						operatingHours.put(oId, new ArrayList<byte[]>());
+					operatingHours.get(oId).add(processOperatingHours(reader));
+					break;
+				case SKILL:
+					if (!skills.containsKey(oId))
+						skills.put(oId, new ArrayList<Integer>());
+					skills.get(oId).add(Integer.valueOf(reader.readInt()));
+					break;
+				case UNIT_PRICE:
+					unitPrice.put(oId, Double.valueOf(reader.readDouble()));
+					break;
+				case REQ_STAT:
+					if (!reqStats.containsKey(oId))
+						reqStats.put(oId, new short[16]);
+					processReqStat(reader, oId);
+					break;
+				case UPGRADE_SLOTS:
+					tuc.put(oId, Byte.valueOf(reader.readByte()));
+					break;
+				case SCROLL_REQUIREMENTS:
+					scrollReqs.put(oId, processScrollReqs(reader));
+					break;
+				case ITEM_EFFECT:
+					statEffects.put(oId, processEffect(reader));
+					break;
+				case TRIGGER_ITEM:
+					triggerItem.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case MESO_VALUE:
+					mesoValue.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+
+				case PET_COMMAND:
+					if (!petCommands.containsKey(oId))
+						petCommands.put(oId, new HashMap<Byte, int[]>());
+					processPetCmd(reader, oId);
+					break;
+				case PET_HUNGER:
+					petHunger.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case PET_EVOLVE:
+					if (!evolveChoices.containsKey(oId))
+						evolveChoices.put(oId, new ArrayList<int[]>());
+					evolveChoices.get(oId).add(processPetEvolve(reader));
+					break;
+			}
+		}
+	}
+
+	private void processBonusStat(LittleEndianReader reader, Integer oId) {
+		byte stat = reader.readByte();
+		short value = reader.readShort();
+		bonusStats.get(oId)[stat] = value;
+	}
+
+	private void processReqStat(LittleEndianReader reader, Integer oId) {
+		byte stat = reader.readByte();
+		short value = reader.readShort();
+		reqStats.get(oId)[stat] = value;
+	}
+
+	private List<Integer> processScrollReqs(LittleEndianReader reader) {
+		List<Integer> reqs = new ArrayList<Integer>();
+		for (int i = reader.readInt(); i > 0; i--)
+			reqs.add(Integer.valueOf(reader.readInt()));
+		return reqs;
+	}
+
+	private int[] processSummon(LittleEndianReader reader) {
+		int mobId = reader.readInt();
+		int prob = reader.readInt();
+		return new int[] { mobId, prob };
+	}
+
+	private byte[] processOperatingHours(LittleEndianReader reader) {
+		byte day = reader.readByte();
+		byte startHour = reader.readByte();
+		byte endHour = reader.readByte();
+		return new byte[] { day, startHour, endHour };
+	}
+
+	private void processPetCmd(LittleEndianReader reader, Integer oId) {
+		byte commandId = reader.readByte();
+		int prob = reader.readInt();
+		int expInc = reader.readInt();
+		petCommands.get(oId).put(Byte.valueOf(commandId), new int[] { prob, expInc });
+	}
+
+	private int[] processPetEvolve(LittleEndianReader reader) {
+		int itemId = reader.readInt();
+		int prob = reader.readInt();
+		return new int[] { itemId, prob };
+	}
+
+	private ItemEffect processEffect(LittleEndianReader reader) {
+		ItemEffect effect = new ItemEffect();
+		loop:
+		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+			switch (now) {
+				case KvjEffects.DURATION:
+					effect.setDuration(reader.readInt());
+					break;
+				case KvjEffects.WATK:
+					effect.setWatk(reader.readShort());
+					break;
+				case KvjEffects.WDEF:
+					effect.setWdef(reader.readShort());
+					break;
+				case KvjEffects.MATK:
+					effect.setMatk(reader.readShort());
+					break;
+				case KvjEffects.MDEF:
+					effect.setMdef(reader.readShort());
+					break;
+				case KvjEffects.ACCY:
+					effect.setAcc(reader.readShort());
+					break;
+				case KvjEffects.AVOID:
+					effect.setAvoid(reader.readShort());
+					break;
+				case KvjEffects.HP_BONUS:
+					effect.setHp(reader.readShort());
+					break;
+				case KvjEffects.MP_BONUS:
+					effect.setMp(reader.readShort());
+					break;
+				case KvjEffects.SPEED:
+					effect.setSpeed(reader.readShort());
+					break;
+				case KvjEffects.JUMP:
+					effect.setJump(reader.readShort());
+					break;
+				case KvjEffects.MORPH:
+					effect.setMorph(reader.readInt());
+					break;
+				case KvjEffects.MOVE_TO:
+					effect.setMoveTo(reader.readInt());
+					break;
+				case KvjEffects.POISON:
+					effect.setPoison();
+					break;
+				case KvjEffects.SEAL:
+					effect.setSeal();
+					break;
+				case KvjEffects.DARKNESS:
+					effect.setDarkness();
+					break;
+				case KvjEffects.WEAKNESS:
+					effect.setWeakness();
+					break;
+				case KvjEffects.CURSE:
+					effect.setCurse();
+					break;
+				case KvjEffects.CONSUME_ON_PICKUP:
+					effect.setConsumeOnPickup();
+					break;
+				case KvjEffects.PET_CONSUMABLE_BY:
+					effect.addPetConsumableBy(reader.readInt());
+					break;
+				case KvjEffects.END_EFFECT:
+					break loop;
+			}
+		}
+		return effect;
+	}
+}
