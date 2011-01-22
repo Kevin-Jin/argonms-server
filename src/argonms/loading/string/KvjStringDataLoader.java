@@ -1,0 +1,105 @@
+package argonms.loading.string;
+
+import argonms.tools.input.LittleEndianByteArrayReader;
+import argonms.tools.input.LittleEndianReader;
+import java.io.File;
+import java.io.IOException;
+
+/**
+ *
+ * @author GoldenKevin
+ */
+public class KvjStringDataLoader extends StringDataLoader {
+	private static final byte
+		NEXT = 1,
+		NAME = 2,
+		MAP_NAME = 3,
+		STREET_NAME = 4,
+		MSG = 5
+	;
+
+	private String dataPath;
+
+	public KvjStringDataLoader(String wzPath) {
+		this.dataPath = wzPath;
+	}
+
+	public boolean loadAll() {
+		String dir = dataPath + "String.wz" + File.separatorChar;
+		LittleEndianReader reader;
+		Integer key;
+		try {
+			for (String s : new String[] { "Eqp", "Consume", "Ins", "Etc", "Cash", "Pet" }) {
+				reader = new LittleEndianByteArrayReader(new File(dir + s + ".img.kvj"));
+				key = null;
+				for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+					switch (now) {
+						case NEXT:
+							key = Integer.valueOf(reader.readInt());
+							break;
+						case NAME:
+							itemNames.put(key, reader.readNullTerminatedString());
+							break;
+						case MSG:
+							itemMsgs.put(key, reader.readNullTerminatedString());
+							break;
+					}
+				}
+			}
+			reader = new LittleEndianByteArrayReader(new File(dir + "Map.img.kvj"));
+			key = null;
+			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+				switch (now) {
+					case NEXT:
+						key = Integer.valueOf(reader.readInt());
+						break;
+					case MAP_NAME:
+						mapNames.put(key, reader.readNullTerminatedString());
+						break;
+					case STREET_NAME:
+						streetNames.put(key, reader.readNullTerminatedString());
+						break;
+				}
+			}
+			reader = new LittleEndianByteArrayReader(new File(dir + "Mob.img.kvj"));
+			key = null;
+			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+				switch (now) {
+					case NEXT:
+						key = Integer.valueOf(reader.readInt());
+						break;
+					case NAME:
+						mobNames.put(key, reader.readNullTerminatedString());
+						break;
+				}
+			}
+			reader = new LittleEndianByteArrayReader(new File(dir + "Npc.img.kvj"));
+			key = null;
+			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+				switch (now) {
+					case NEXT:
+						key = Integer.valueOf(reader.readInt());
+						break;
+					case NAME:
+						npcNames.put(key, reader.readNullTerminatedString());
+						break;
+				}
+			}
+			reader = new LittleEndianByteArrayReader(new File(dir + "Skill.img.kvj"));
+			key = null;
+			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+				switch (now) {
+					case NEXT:
+						key = Integer.valueOf(reader.readInt());
+						break;
+					case NAME:
+						skillNames.put(key, reader.readNullTerminatedString());
+						break;
+				}
+			}
+			return true;
+		} catch (IOException ex) {
+			return false;
+		}
+	}
+}

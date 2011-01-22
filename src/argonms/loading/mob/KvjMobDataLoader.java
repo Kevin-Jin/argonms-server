@@ -1,0 +1,179 @@
+package argonms.loading.mob;
+
+import argonms.tools.input.LittleEndianByteArrayReader;
+import argonms.tools.input.LittleEndianReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author GoldenKevin
+ */
+public class KvjMobDataLoader extends MobDataLoader {
+	private static final Logger LOG = Logger.getLogger(KvjMobDataLoader.class.getName());
+
+	private static final byte
+		LEVEL = 1,
+		MAX_HP = 2,
+		MAX_MP = 3,
+		PHYSICAL_DAMAGE = 4,
+		EXP = 5,
+		UNDEAD = 6,
+		ELEM_ATTR = 7,
+		REMOVE_AFTER = 8,
+		HIDE_HP = 9,
+		HIDE_NAME = 10,
+		HP_TAG_COLOR = 11,
+		HP_TAG_BG_COLOR = 12,
+		BOSS = 13,
+		SELF_DESTRUCT = 14,
+		LOSE_ITEM = 15,
+		INVINCIBLE = 16,
+		REVIVE = 17,
+		FIRST_ATTACK = 18,
+		ATTACK = 19,
+		SKILL = 20,
+		BUFF = 21,
+		DELAY = 22
+	;
+
+	private String dataPath;
+
+	public KvjMobDataLoader(String wzPath) {
+		this.dataPath = wzPath;
+	}
+
+	protected void load(int mobid)  {
+		String id = String.format("%07d", mobid);
+
+		try {
+			MobStats stats = new MobStats();
+			doWork(new LittleEndianByteArrayReader(new File(new StringBuilder(dataPath).append("Mob.wz").append(File.separator).append(id).append(".img.kvj").toString())), stats);
+			mobStats.put(Integer.valueOf(mobid), stats);
+		} catch (IOException e) {
+			LOG.log(Level.WARNING, "Could not read KVJ data file for mob " + mobid, e);
+		}
+	}
+
+	public boolean loadAll() {
+		try {
+			File root = new File(dataPath + "Reactor.wz");
+			for (String kvj : root.list()) {
+				MobStats stats = new MobStats();
+				doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)), stats);
+				//InputStream is = new BufferedInputStream(new FileInputStream(prefFolder.getAbsolutePath() + File.separatorChar + kvj));
+				//doWork(new LittleEndianStreamReader(is), stats);
+				//is.close();
+				mobStats.put(Integer.valueOf(kvj.substring(0, kvj.lastIndexOf(".img.kvj"))), stats);
+			}
+			return true;
+		} catch (IOException ex) {
+			LOG.log(Level.WARNING, "Could not load all mob data from KVJ files.", ex);
+			return false;
+		}
+	}
+
+	public void doWork(LittleEndianReader reader, MobStats stats) {
+		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+			switch (now) {
+				case LEVEL:
+					stats.setLevel(reader.readInt());
+					break;
+				case MAX_HP:
+					stats.setMaxHp(reader.readInt());
+					break;
+				case MAX_MP:
+					stats.setMaxMp(reader.readInt());
+					break;
+				case PHYSICAL_DAMAGE:
+					stats.setPhysicalDamage(reader.readInt());
+					break;
+				case EXP:
+					stats.setExp(reader.readInt());
+					break;
+				case UNDEAD:
+					stats.setUndead();
+					break;
+				case ELEM_ATTR:
+					stats.setElementAttribute(reader.readNullTerminatedString());
+					break;
+				case REMOVE_AFTER:
+					stats.setRemoveAfter(reader.readInt());
+					break;
+				case HIDE_HP:
+					stats.setHideHp();
+					break;
+				case HIDE_NAME:
+					stats.setHideName();
+					break;
+				case HP_TAG_COLOR:
+					stats.setHpTagColor(reader.readInt());
+					break;
+				case HP_TAG_BG_COLOR:
+					stats.setHpTagBgColor(reader.readInt());
+					break;
+				case BOSS:
+					stats.setBoss();
+					break;
+				case SELF_DESTRUCT:
+					processSelfDestruct(reader, stats);
+					break;
+				case LOSE_ITEM:
+					stats.addLoseItem(reader.readInt());
+					break;
+				case INVINCIBLE:
+					stats.setInvincible();
+					break;
+				case REVIVE:
+					stats.addSummon(reader.readInt());
+					break;
+				case FIRST_ATTACK:
+					stats.setFirstAttack();
+					break;
+				case ATTACK:
+					processAttack(reader, stats);
+					break;
+				case SKILL:
+					processSkill(reader, stats);
+					break;
+				case BUFF:
+					stats.setBuffToGive(reader.readInt());
+					break;
+				case DELAY:
+					String name = reader.readNullTerminatedString();
+					int delay = reader.readInt();
+					stats.addDelay(name, delay);
+					break;
+			}
+		}
+	}
+
+	private void processSelfDestruct(LittleEndianReader reader, MobStats stats) {
+		SelfDestruct sd = new SelfDestruct();
+		sd.setAction(reader.readInt());
+		sd.setHp(reader.readInt());
+		sd.setRemoveAfter(reader.readInt());
+		stats.setSelfDestruct(sd);
+	}
+
+	private void processAttack(LittleEndianReader reader, MobStats stats) {
+		int attackid = reader.readInt();
+		Attack a = new Attack();
+		a.setDeadlyAttack(reader.readBool());
+		a.setMpBurn(reader.readInt());
+		a.setDiseaseSkill(reader.readInt());
+		a.setDiseaseLevel(reader.readInt());
+		a.setMpConsume(reader.readInt());
+		stats.addAttack(attackid, a);
+	}
+
+	private void processSkill(LittleEndianReader reader, MobStats stats) {
+		int skillid = reader.readInt();
+		Skill s = new Skill();
+		s.setSkill(reader.readInt());
+		s.setLevel(reader.readInt());
+		stats.addSkill(skillid, s);
+	}
+}
