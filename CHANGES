@@ -17,6 +17,10 @@
 	packet handlers in the login server first. A lot of low level code was taken
 	from OdinMS-derived sources in order to speed up development. Thanks guys!
 
+2011-01-22  GoldenKevin  (revision 2)
+
+	* Added AGPLv3 license headers to all Java source files.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
