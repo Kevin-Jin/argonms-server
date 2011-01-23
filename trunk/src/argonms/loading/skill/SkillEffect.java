@@ -46,79 +46,159 @@ public class SkillEffect extends StatEffects {
 	private short bulletCon;
 	private short moneyCon;
 
-	public void setMpConsume(short mpCon) {
+	protected SkillEffect() {
+		
+	}
+
+	protected void setMpConsume(short mpCon) {
 		this.mpCon = mpCon;
 	}
 
-	public void setHpConsume(short hpCon) {
+	protected void setHpConsume(short hpCon) {
 		this.hpCon = hpCon;
 	}
 
-	public void setX(int x) {
+	protected void setX(int x) {
 		this.x = x;
 	}
 
-	public void setY(int y) {
+	protected void setY(int y) {
 		this.y = y;
 	}
 
-	public void setZ(int z) {
+	protected void setZ(int z) {
 		this.z = z;
 	}
 
-	public void setDamage(short damage) {
+	protected void setDamage(short damage) {
 		this.damage = damage;
 	}
 
-	public void setLt(Point point) {
+	protected void setLt(Point point) {
 		this.lt = point;
 	}
 
-	public void setRb(Point point) {
+	protected void setRb(Point point) {
 		this.rb = point;
 	}
 
-	public void setMobCount(byte count) {
+	protected void setMobCount(byte count) {
 		this.mobCount = count;
 	}
 
-	public void setProp(double prop) {
+	protected void setProp(double prop) {
 		this.prop = prop;
 	}
 
-	public void setMastery(byte mastery) {
+	protected void setMastery(byte mastery) {
 		this.mastery = mastery;
 	}
 
-	public void setCooltime(short duration) {
+	protected void setCooltime(short duration) {
 		this.cooltime = duration;
 	}
 
-	public void setRange(short distance) {
+	protected void setRange(short distance) {
 		this.range = distance;
 	}
 
-	public void setAttackCount(byte count) {
+	protected void setAttackCount(byte count) {
 		this.attackCount = count;
 	}
 
-	public void setBulletCount(byte count) {
+	protected void setBulletCount(byte count) {
 		this.bulletCount = count;
 	}
 
-	public void setItemConsume(int itemCon) {
+	protected void setItemConsume(int itemCon) {
 		this.itemCon = itemCon;
 	}
 
-	public void setItemConsumeCount(byte count) {
+	protected void setItemConsumeCount(byte count) {
 		this.itemConCount = count;
 	}
 
-	public void setBulletConsume(short bulletCon) {
+	protected void setBulletConsume(short bulletCon) {
 		this.bulletCon = bulletCon;
 	}
 
-	public void setMoneyConsume(short moneyCon) {
+	protected void setMoneyConsume(short moneyCon) {
 		this.moneyCon = moneyCon;
+	}
+
+	public short getMpConsume() {
+		return mpCon;
+	}
+
+	public short getHpConsume() {
+		return hpCon;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getZ() {
+		return z;
+	}
+
+	public short getDamage() {
+		return damage;
+	}
+
+	public Point getLt() {
+		return lt;
+	}
+
+	public Point getRb() {
+		return rb;
+	}
+
+	public byte getMobCount() {
+		return mobCount;
+	}
+
+	public double getProp() {
+		return prop;
+	}
+
+	public byte getMastery() {
+		return mastery;
+	}
+
+	public short getCooltime() {
+		return cooltime;
+	}
+
+	public short getRange() {
+		return range;
+	}
+
+	public byte getAttackCount() {
+		return attackCount;
+	}
+
+	public byte setBulletCount() {
+		return bulletCount;
+	}
+
+	public int getItemConsume() {
+		return itemCon;
+	}
+
+	public byte getItemConsumeCount() {
+		return itemConCount;
+	}
+
+	public short getBulletConsume() {
+		return bulletCon;
+	}
+
+	public short getMoneyConsume() {
+		return moneyCon;
 	}
 }

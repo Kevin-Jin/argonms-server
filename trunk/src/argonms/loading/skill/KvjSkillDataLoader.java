@@ -53,7 +53,9 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		String id = String.format("%07d", skillid);
 
 		try {
-			doWork(new LittleEndianByteArrayReader(new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString())));
+			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
+			if (f.exists())
+				doWork(new LittleEndianByteArrayReader(f));
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for skill " + skillid, e);
 		}

@@ -18,6 +18,8 @@
 
 package argonms.loading.reactor;
 
+import java.awt.Point;
+
 /**
  *
  * @author GoldenKevin
@@ -25,35 +27,59 @@ package argonms.loading.reactor;
 public class State {
 	private int type;
 	private int nextState;
-	
+
 	//item event only
 	private int itemid, quantity;
 	private int ltx, lty;
 	private int rbx, rby;
-	
-	public void setType(int type) {
+
+	protected State() {
+		
+	}
+
+	protected void setType(int type) {
 		this.type = type;
 	}
-	
-	public void setNextState(int state) {
+
+	protected void setNextState(int state) {
 		this.nextState = state;
 	}
-	
-	public void setItem(int id, int quantity) {
+
+	protected void setItem(int id, int quantity) {
 		this.itemid = id;
 		this.quantity = quantity;
 	}
-	
-	public void setLt(int x, int y) {
+
+	protected void setLt(int x, int y) {
 		this.ltx = x;
 		this.lty = y;
 	}
-	
-	public void setRb(int x, int y) {
+
+	protected void setRb(int x, int y) {
 		this.rbx = x;
 		this.rby = y;
 	}
-	
+
+	public int getType() {
+		return type;
+	}
+
+	public int getNextState() {
+		return nextState;
+	}
+
+	public int[] getItem() {
+		return new int[] { itemid, quantity };
+	}
+
+	public Point getLt() {
+		return new Point(ltx, lty);
+	}
+
+	public Point getRb() {
+		return new Point(rbx, rby);
+	}
+
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		boolean itemEvent = (type == 100);

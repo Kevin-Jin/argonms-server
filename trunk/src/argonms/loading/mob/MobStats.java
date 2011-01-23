@@ -51,7 +51,7 @@ public class MobStats {
 	private int buff;
 	private Map<String, Integer> delays;
 
-	public MobStats() {
+	protected MobStats() {
 		this.loseItems = new ArrayList<Integer>();
 		this.summons = new ArrayList<Integer>();
 		this.attacks = new HashMap<Integer, Attack>();
@@ -59,91 +59,179 @@ public class MobStats {
 		this.delays = new HashMap<String, Integer>();
 	}
 
-	public void setLevel(int level) {
+	protected void setLevel(int level) {
 		this.level = level;
 	}
 
-	public void setMaxHp(int value) {
+	protected void setMaxHp(int value) {
 		this.maxHp = value;
 	}
 
-	public void setMaxMp(int value) {
+	protected void setMaxMp(int value) {
 		this.maxMp = value;
 	}
 
-	public void setPhysicalDamage(int pad) {
+	protected void setPhysicalDamage(int pad) {
 		this.pad = pad;
 	}
 
-	public void setExp(int exp) {
+	protected void setExp(int exp) {
 		this.exp = exp;
 	}
 
-	public void setUndead() {
+	protected void setUndead() {
 		this.undead = true;
 	}
 
-	public void setElementAttribute(String attr) {
+	protected void setElementAttribute(String attr) {
 		this.elemAttr = attr;
 	}
 
-	public void setRemoveAfter(int time) {
+	protected void setRemoveAfter(int time) {
 		this.removeAfter = time;
 	}
 
-	public void setHideHp() {
+	protected void setHideHp() {
 		this.hideHp = true;
 	}
 
-	public void setHideName() {
-		this.hideHp = true;
+	protected void setHideName() {
+		this.hideName = true;
 	}
 
-	public void setHpTagColor(int color) {
+	protected void setHpTagColor(int color) {
 		this.hpTagColor = color;
 	}
 
-	public void setHpTagBgColor(int color) {
+	protected void setHpTagBgColor(int color) {
 		this.hpTagBgColor = color;
 	}
 
-	public void setBoss() {
+	protected void setBoss() {
 		this.boss = true;
 	}
 
-	public void setSelfDestruct(SelfDestruct sd) {
+	protected void setSelfDestruct(SelfDestruct sd) {
 		this.sd = sd;
 	}
 
-	public void addLoseItem(int itemid) {
+	protected void addLoseItem(int itemid) {
 		this.loseItems.add(Integer.valueOf(itemid));
 	}
 
-	public void setInvincible() {
+	protected void setInvincible() {
 		this.invincible = true;
 	}
 
-	public void addSummon(int mobid) {
+	protected void addSummon(int mobid) {
 		this.summons.add(Integer.valueOf(mobid));
 	}
 
-	public void setFirstAttack() {
+	protected void setFirstAttack() {
 		this.firstAttack = true;
 	}
 
-	public void addAttack(int attackid, Attack attack) {
+	protected void addAttack(int attackid, Attack attack) {
 		this.attacks.put(Integer.valueOf(attackid), attack);
 	}
 
-	public void addSkill(int skillid, Skill skill) {
+	protected void addSkill(int skillid, Skill skill) {
 		this.skills.put(Integer.valueOf(skillid), skill);
 	}
 
-	public void setBuffToGive(int buffid) {
+	protected void setBuffToGive(int buffid) {
 		this.buff = buffid;
 	}
 
-	public void addDelay(String name, int delay) {
+	protected void addDelay(String name, int delay) {
 		this.delays.put(name, Integer.valueOf(delay));
+	}
+
+	public int getLevel() {
+		return level;
+	}
+
+	public int getMaxHp() {
+		return maxHp;
+	}
+
+	public int getMaxMp() {
+		return maxMp;
+	}
+
+	public int getPhysicalDamage() {
+		return pad;
+	}
+
+	public int getExp() {
+		return exp;
+	}
+
+	public boolean isUndead() {
+		return undead;
+	}
+
+	public String getElementAttribute() {
+		return elemAttr;
+	}
+
+	public int getRemoveAfter() {
+		return removeAfter;
+	}
+
+	public boolean isHpHidden() {
+		return hideHp;
+	}
+
+	public boolean isNameHidden() {
+		return hideName;
+	}
+
+	public int getHpTagColor() {
+		return hpTagColor;
+	}
+
+	public int getHpTagBgColor() {
+		return hpTagBgColor;
+	}
+
+	public boolean isBoss() {
+		return boss;
+	}
+
+	public SelfDestruct getSelfDestruct() {
+		return sd;
+	}
+
+	public List<Integer> getLoseItems() {
+		return loseItems;
+	}
+
+	public boolean isInvincible() {
+		return invincible;
+	}
+
+	public List<Integer> getSummons() {
+		return summons;
+	}
+
+	public boolean isFirstAttack() {
+		return firstAttack;
+	}
+
+	public Map<Integer, Attack> getAttacks() {
+		return attacks;
+	}
+
+	public Map<Integer, Skill> getSkills() {
+		return skills;
+	}
+
+	public int getBuffToGive() {
+		return buff;
+	}
+
+	public Map<String, Integer> getDelays() {
+		return delays;
 	}
 }

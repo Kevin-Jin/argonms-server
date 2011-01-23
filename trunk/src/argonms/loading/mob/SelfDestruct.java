@@ -26,19 +26,35 @@ public class SelfDestruct {
 	private int action;
 	private int hp;
 	private int removeAfter;
-	
-	public void setAction(int action) {
+
+	protected SelfDestruct() {
+		
+	}
+
+	protected void setAction(int action) {
 		this.action = action;
 	}
-	
-	public void setHp(int points) {
+
+	protected void setHp(int points) {
 		this.hp = points;
 	}
-	
-	public void setRemoveAfter(int time) {
+
+	protected void setRemoveAfter(int time) {
 		this.removeAfter = time;
 	}
-	
+
+	public int getAction() {
+		return action;
+	}
+
+	public int getHp() {
+		return hp;
+	}
+
+	public int getRemoveAfter() {
+		return removeAfter;
+	}
+
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("Action=").append(action);

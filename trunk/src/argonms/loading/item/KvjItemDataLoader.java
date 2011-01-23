@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -77,12 +78,14 @@ public class KvjItemDataLoader extends ItemDataLoader {
 			f = new File(new StringBuilder(dataPath).append("Character.wz").append(File.separator).append(getCharCat(itemid)).append(File.separator).append(id).append(".img.kvj").toString());
 		else
 			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(id.substring(0, 4)).append(".img").append(File.separator).append(id).append(".kvj").toString());
+		Integer oId = Integer.valueOf(itemid);
 		try {
-			doWork(itemid, new LittleEndianByteArrayReader(f));
-			loaded.add(Integer.valueOf(itemid));
+			if (f.exists())
+				doWork(oId, new LittleEndianByteArrayReader(f));
 		} catch (IOException e) {
-			LOG.log(java.util.logging.Level.WARNING, "Could not read KVJ data file for item " + itemid, e);
+			LOG.log(Level.WARNING, "Could not read KVJ data file for item " + itemid, e);
 		}
+		loaded.add(oId);
 	}
 
 	public boolean loadAll() {
@@ -109,7 +112,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 			}
 			return true;
 		} catch (IOException ex) {
-			LOG.log(java.util.logging.Level.WARNING, "Could not load all item data from KVJ files.", ex);
+			LOG.log(Level.WARNING, "Could not load all item data from KVJ files.", ex);
 			return false;
 		}
 	}
@@ -118,8 +121,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		return loaded.size();
 	}
 
-	public void doWork(int itemid, LittleEndianReader reader) {
-		Integer oId = Integer.valueOf(itemid);
+	private void doWork(Integer oId, LittleEndianReader reader) {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case WHOLE_PRICE:

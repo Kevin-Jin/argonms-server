@@ -34,51 +34,99 @@ public class Life {
 	private int cy;
 	private int rx0;
 	private int rx1;
-	
-	public void setType(char type) {
+
+	protected Life() {
+		
+	}
+
+	protected void setType(char type) {
 		this.type = type;
 	}
-	
-	public void setDataId(int id) {
+
+	protected void setDataId(int id) {
 		this.id = id;
 	}
-	
-	public void setX(int x) {
+
+	protected void setX(int x) {
 		this.x = x;
 	}
-	
-	public void setY(int y) {
+
+	protected void setY(int y) {
 		this.y = y;
 	}
-	
-	public void setMobTime(int time) {
+
+	protected void setMobTime(int time) {
 		this.mobTime = time;
 	}
-	
-	public void setF(boolean value) {
+
+	protected void setF(boolean value) {
 		this.f = value;
 	}
-	
-	public void setHide(boolean value) {
+
+	protected void setHide(boolean value) {
 		this.hide = value;
 	}
-	
-	public void setFoothold(int fh) {
+
+	protected void setFoothold(int fh) {
 		this.fh = fh;
 	}
-	
-	public void setCy(int cy) {
+
+	protected void setCy(int cy) {
 		this.cy = cy;
 	}
-	
-	public void setRx0(int rx0) {
+
+	protected void setRx0(int rx0) {
 		this.rx0 = rx0;
 	}
-	
-	public void setRx1(int rx1) {
+
+	protected void setRx1(int rx1) {
 		this.rx1 = rx1;
 	}
-	
+
+	public char getType() {
+		return type;
+	}
+
+	public int getDataId() {
+		return id;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getMobTime() {
+		return mobTime;
+	}
+
+	public boolean isF() {
+		return f;
+	}
+
+	public boolean isHidden() {
+		return hide;
+	}
+
+	public int getFoothold() {
+		return fh;
+	}
+
+	public int getCy() {
+		return cy;
+	}
+
+	public int getRx0() {
+		return rx0;
+	}
+
+	public int getRx1() {
+		return rx1;
+	}
+
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("type=").append(type);

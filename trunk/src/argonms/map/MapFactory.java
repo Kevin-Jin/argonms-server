@@ -16,36 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.loading.reactor;
+package argonms.map;
 
-import java.util.HashMap;
+import argonms.loading.map.MapDataLoader;
+import argonms.loading.map.MapStats;
 import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ReactorStats {
-	private int link;
-	private Map<Integer, State> states;
+public class MapFactory {
+	private Map<Integer, MapleMap> maps;
 
-	protected ReactorStats() {
-		states = new HashMap<Integer, State>();
-	}
-
-	protected void setLink(int reactorid) {
-		this.link = reactorid;
-	}
-
-	protected void addState(int stateid, State s) {
-		states.put(Integer.valueOf(stateid), s);
-	}
-
-	protected int getLink() {
-		return link;
-	}
-
-	public Map<Integer, State> getStates() {
-		return states;
+	public MapleMap getMap(int mapid) {
+		Integer oId = Integer.valueOf(mapid);
+		if (!maps.containsKey(oId)) {
+			MapStats stats = MapDataLoader.getInstance().getMapStats(mapid);
+			if (stats == null)
+				maps.put(oId, null);
+			else
+				maps.put(oId, new MapleMap(stats));
+		}
+		return maps.get(oId);
 	}
 }

@@ -98,18 +98,18 @@ public class ShopServer implements LocalServer {
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
 		StringDataLoader.setInstance(wzType, wzPath);
 		ItemDataLoader.setInstance(wzType, wzPath);
+		long start, end;
+		start = System.nanoTime();
+		System.out.print("Loading String data...");
+		StringDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
 		if (preloadAll) {
-			long start, end;
-			start = System.nanoTime();
-			System.out.print("Loading String data...");
-			StringDataLoader.getInstance().loadAll();
-			System.out.println("\tDone!");
 			System.out.print("Loading Item data...");
 			ItemDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
-			end = System.nanoTime();
-			System.out.println("Preloaded all data in " + ((end - start) / 1000000.0) + "ms.");
 		}
+		end = System.nanoTime();
+		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
 	}
 
 	public void centerConnected() {

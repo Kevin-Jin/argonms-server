@@ -21,6 +21,23 @@
 
 	* Added AGPLv3 license headers to all Java source files.
 
+2011-01-23  GoldenKevin  (revision 3)
+
+	* Removed "argonms.*.data.dir" for all client listening servers because it
+	is no longer used (Please specify the data directory with the System
+	property "argonms.data.dir")
+	* Added MCDB loading for maps data. Item data is soon to come followed by
+	the rest.
+	* Added error checking for KVJ loaders. When a piece of data doesn't exist,
+	the entry in the caches will be null and the load methods will no longer
+	throw FileNotFoundExceptions.
+	* String data now has to be preloaded on any server that uses it.
+	* Every data cache object now has a protected access modifier for all of
+	their mutator methods and for their constructor, while only their accessor
+	methods have public access. This way, the dynamically loaded data containing
+	these static cache objects cannot modify them for the other dynamic data
+	that use the same cache.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
