@@ -104,7 +104,7 @@ public class LoginServer implements LocalServer {
 			ItemDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
 			end = System.nanoTime();
-			System.out.println("Preloaded all data in " + ((end - start) / 1000000.0) + "ms.");
+			System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
 		}
 	}
 

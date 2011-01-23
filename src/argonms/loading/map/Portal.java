@@ -30,35 +30,67 @@ public class Portal {
 	private int tm;
 	private String tn;
 	private String script;
-	
-	public void setPortalName(String pn) {
+
+	protected Portal() {
+
+	}
+
+	protected void setPortalName(String pn) {
 		this.pn = pn;
 	}
-	
-	public void setPortalType(int pt) {
+
+	protected void setPortalType(int pt) {
 		this.pt = pt;
 	}
-	
-	public void setX(int x) {
+
+	protected void setX(int x) {
 		this.x = x;
 	}
-	
-	public void setY(int y) {
+
+	protected void setY(int y) {
 		this.y = y;
 	}
-	
-	public void setTargetMapId(int tm) {
+
+	protected void setTargetMapId(int tm) {
 		this.tm = tm;
 	}
-	
-	public void setTargetName(String tn) {
+
+	protected void setTargetName(String tn) {
 		this.tn = tn;
 	}
-	
-	public void setScript(String script) {
+
+	protected void setScript(String script) {
 		this.script = script;
 	}
-	
+
+	public String getPortalName() {
+		return pn;
+	}
+
+	public int getPortalType() {
+		return pt;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getTargetMapId() {
+		return tm;
+	}
+
+	public String getTargetName() {
+		return tn;
+	}
+
+	public String getScript() {
+		return script;
+	}
+
 	public String toString() {
 		StringBuilder ret = new StringBuilder();
 		ret.append("Name=").append(pn).append(", Type=").append(pt).append(", (").append(x).append(", ").append(y).append("), target=").append(tm);

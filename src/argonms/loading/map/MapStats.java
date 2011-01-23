@@ -43,7 +43,7 @@ public class MapStats {
 	private Map<Integer, Life> life;
 	private Map<Integer, Reactor> reactors;
 
-	public MapStats() {
+	protected MapStats() {
 		portals = new HashMap<Integer, Portal>();
 		areas = new HashMap<String, Area>();
 		footholds = new HashMap<Integer, Foothold>();
@@ -51,63 +51,123 @@ public class MapStats {
 		reactors = new HashMap<Integer, Reactor>();
 	}
 
-	public void setTown() {
+	protected void setTown() {
 		this.town = true;
 	}
 
-	public void setReturnMap(int mapid) {
+	protected void setReturnMap(int mapid) {
 		this.returnMapId = mapid;
 	}
 
-	public void setForcedReturn(int mapid) {
+	protected void setForcedReturn(int mapid) {
 		this.forcedReturn = mapid;
 	}
 
-	public void setMobRate(float rate) {
+	protected void setMobRate(float rate) {
 		this.monsterRate = rate;
 	}
 
-	public void setDecHp(int dec) {
+	protected void setDecHp(int dec) {
 		this.decHp = dec;
 	}
 
-	public void setTimeLimit(int limit) {
+	protected void setTimeLimit(int limit) {
 		this.timeLimit = limit;
 	}
 
-	public void setProtectItem(int item) {
+	protected void setProtectItem(int item) {
 		this.protectItem = item;
 	}
 
-	public void setEverlast() {
+	protected void setEverlast() {
 		this.everlast = true;
 	}
 
-	public void addLife(int id, Life l) {
+	protected void addLife(int id, Life l) {
 		life.put(Integer.valueOf(id), l);
 	}
 
-	public void addArea(String id, Area a) {
+	protected void addArea(String id, Area a) {
 		areas.put(id, a);
 	}
 
-	public void setClock() {
+	protected void setClock() {
 		this.clock = true;
 	}
 
-	public void setShip() {
+	protected void setShip() {
 		this.boat = true;
 	}
 
-	public void addReactor(int id, Reactor rt) {
+	protected void addReactor(int id, Reactor rt) {
 		reactors.put(Integer.valueOf(id), rt);
 	}
 
-	public void addFoothold(int id, Foothold fh) {
+	protected void addFoothold(int id, Foothold fh) {
 		footholds.put(Integer.valueOf(id), fh);
 	}
 
-	public void addPortal(int id, Portal p) {
+	protected void addPortal(int id, Portal p) {
 		portals.put(Integer.valueOf(id), p);
+	}
+
+	public boolean isTown() {
+		return town;
+	}
+
+	public int getReturnMap(int mapid) {
+		return returnMapId;
+	}
+
+	public int getForcedReturn(int mapid) {
+		return forcedReturn;
+	}
+
+	public float getMobRate(float rate) {
+		return monsterRate;
+	}
+
+	public int getDecHp(int dec) {
+		return decHp;
+	}
+
+	public int getTimeLimit(int limit) {
+		return timeLimit;
+	}
+
+	public int getProtectItem(int item) {
+		return protectItem;
+	}
+
+	public boolean isEverlast() {
+		return everlast;
+	}
+
+	public Map<Integer, Life> getLife() {
+		return life;
+	}
+
+	public Map<String, Area> gddAreas() {
+		return areas;
+	}
+
+	public boolean hasClock() {
+		return clock;
+	}
+
+	public boolean hasShip() {
+		return boat;
+	}
+
+	public Map<Integer, Reactor> getReactors() {
+		return reactors;
+	}
+
+	public Map<Integer, Foothold> getFootholds() {
+		return footholds;
+	}
+
+	public Map<Integer, Portal> getPortals() {
+		return portals;
 	}
 }

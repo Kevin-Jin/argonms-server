@@ -47,13 +47,17 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 	protected void load(int reactorid)  {
 		String id = String.format("%07d", reactorid);
 
+		ReactorStats stats = null;
 		try {
-			ReactorStats stats = new ReactorStats();
-			doWork(new LittleEndianByteArrayReader(new File(new StringBuilder(dataPath).append("Reactor.wz").append(File.separator).append(id).append(".img.kvj").toString())), stats);
-			reactorStats.put(Integer.valueOf(reactorid), stats);
+			File f = new File(new StringBuilder(dataPath).append("Reactor.wz").append(File.separator).append(id).append(".img.kvj").toString());
+			if (f.exists()) {
+				stats = new ReactorStats();
+				doWork(new LittleEndianByteArrayReader(f), stats);
+			}
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for reactor " + reactorid, e);
 		}
+		reactorStats.put(Integer.valueOf(reactorid), stats);
 	}
 
 	public boolean loadAll() {

@@ -16,36 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.loading.reactor;
+package argonms.map;
 
-import java.util.HashMap;
-import java.util.Map;
+import argonms.loading.map.MapStats;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ReactorStats {
-	private int link;
-	private Map<Integer, State> states;
+public class MapleMap {
+	private MapStats stats;
+	//private MapleObject objects;
+	//+ any other channel-specific dynamic map data. stats only contains static
+	//data for all maps with the same id but may be on different channels;
 
-	protected ReactorStats() {
-		states = new HashMap<Integer, State>();
-	}
-
-	protected void setLink(int reactorid) {
-		this.link = reactorid;
-	}
-
-	protected void addState(int stateid, State s) {
-		states.put(Integer.valueOf(stateid), s);
-	}
-
-	protected int getLink() {
-		return link;
-	}
-
-	public Map<Integer, State> getStates() {
-		return states;
+	protected MapleMap(MapStats stats) {
+		this.stats = stats;
+		//load reactors, life, etc. from stats
 	}
 }

@@ -103,12 +103,12 @@ public class GameServer implements LocalServer {
 		MobDataLoader.setInstance(wzType, wzPath);
 		ItemDataLoader.setInstance(wzType, wzPath);
 		MapDataLoader.setInstance(wzType, wzPath);
+		long start, end;
+		start = System.nanoTime();
+		System.out.print("Loading String data...");
+		StringDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
 		if (preloadAll) {
-			long start, end;
-			start = System.nanoTime();
-			System.out.print("Loading String data...");
-			StringDataLoader.getInstance().loadAll();
-			System.out.println("\tDone!");
 			System.out.print("Loading Skill data...");
 			SkillDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
@@ -124,9 +124,9 @@ public class GameServer implements LocalServer {
 			System.out.print("Loading Map data...");
 			MapDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
-			end = System.nanoTime();
-			System.out.println("Preloaded all data in " + ((end - start) / 1000000.0) + "ms.");
 		}
+		end = System.nanoTime();
+		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
 	}
 
 	public void centerConnected() {

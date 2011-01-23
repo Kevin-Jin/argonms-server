@@ -57,6 +57,9 @@ public abstract class MapDataLoader {
 			case KVJ:
 				instance = new KvjMapDataLoader(wzPath);
 				break;
+			case MCDB:
+				instance = new McdbMapDataLoader();
+				break;
 		}
 		return instance;
 	}

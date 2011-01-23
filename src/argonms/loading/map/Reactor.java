@@ -28,27 +28,51 @@ public class Reactor {
 	private int y;
 	private int reactorTime;
 	private String name;
-	
-	public void setDataId(int id) {
+
+	protected Reactor() {
+
+	}
+
+	protected void setDataId(int id) {
 		this.id = id;
 	}
-	
-	public void setX(int x) {
+
+	protected void setX(int x) {
 		this.x = x;
 	}
-	
-	public void setY(int y) {
+
+	protected void setY(int y) {
 		this.y = y;
 	}
-	
-	public void setReactorTime(int time) {
+
+	protected void setReactorTime(int time) {
 		this.reactorTime = time;
 	}
-	
-	public void setName(String name) {
+
+	protected void setName(String name) {
 		this.name = name;
 	}
-	
+
+	public int getDataId() {
+		return id;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public int getReactorTime() {
+		return reactorTime;
+	}
+
+	public String getName() {
+		return name;
+	}
+
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("id=").append(id);

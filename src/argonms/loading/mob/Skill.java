@@ -25,15 +25,23 @@ package argonms.loading.mob;
 public class Skill {
 	private int skill;
 	private int level;
-	
+
 	public void setSkill(int id) {
 		this.skill = id;
 	}
-	
+
 	public void setLevel(int level) {
 		this.level = level;
 	}
-	
+
+	public int getSkill() {
+		return skill;
+	}
+
+	public int getLevel() {
+		return level;
+	}
+
 	public String toString() {
 		return "Id=" + skill + ", Level=" + level;
 	}

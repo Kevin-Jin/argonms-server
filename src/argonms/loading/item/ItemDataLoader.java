@@ -48,7 +48,6 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, List<byte[]>> operatingHours;
 	protected List<Integer> useOnPickup;
 	protected Map<Integer, List<Integer>> skills;
-	protected Map<Integer, List<Integer>> petConsumableBy;
 	protected Map<Integer, Double> unitPrice;
 	protected Map<Integer, short[]> reqStats;
 	protected Map<Integer, List<Integer>> scrollReqs;
@@ -80,7 +79,6 @@ public abstract class ItemDataLoader {
 		operatingHours = new HashMap<Integer, List<byte[]>>();
 		useOnPickup = new ArrayList<Integer>();
 		skills = new HashMap<Integer, List<Integer>>();
-		petConsumableBy = new HashMap<Integer, List<Integer>>();
 		unitPrice = new HashMap<Integer, Double>();
 		reqStats = new HashMap<Integer, short[]>();
 		scrollReqs = new HashMap<Integer, List<Integer>>();
@@ -122,16 +120,6 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		return reqStats.containsKey(oId) ? reqStats.get(oId)[KvjEffects.Level] : 0;
-	}
-
-	public boolean canConsume(int petId, int itemId) {
-		Integer oId = Integer.valueOf(itemId);
-		if (!loaded.contains(oId))
-			load(itemId);
-		List<Integer> consumableBy = petConsumableBy.get(oId);
-		if (consumableBy != null)
-			return consumableBy.contains(Integer.valueOf(petId));
-		return false;
 	}
 
 	public boolean isRateCardOperating(int itemId) {
@@ -241,6 +229,9 @@ public abstract class ItemDataLoader {
 		switch (wzType) {
 			case KVJ:
 				instance = new KvjItemDataLoader(wzPath);
+				break;
+			case MCDB:
+				instance = new McdbItemDataLoader();
 				break;
 		}
 		return instance;

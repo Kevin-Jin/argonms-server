@@ -32,39 +32,71 @@ public class ItemEffect extends StatEffects {
 	private int moveTo;
 	private List<Integer> petConsumableBy;
 
-	public ItemEffect() {
+	protected ItemEffect() {
 		petConsumableBy = new ArrayList<Integer>();
 	}
 
-	public void setMoveTo(int map) {
+	protected void setMoveTo(int map) {
 		this.moveTo = map;
 	}
 
-	public void setPoison() {
+	protected void setPoison() {
 		this.poison = true;
 	}
 
-	public void setSeal() {
+	protected void setSeal() {
 		this.seal = true;
 	}
 
-	public void setDarkness() {
+	protected void setDarkness() {
 		this.darkness = true;
 	}
 
-	public void setWeakness() {
+	protected void setWeakness() {
 		this.weakness = true;
 	}
 
-	public void setCurse() {
+	protected void setCurse() {
 		this.curse = true;
 	}
 
-	public void setConsumeOnPickup() {
+	protected void setConsumeOnPickup() {
 		this.consumeOnPickup = true;
 	}
 
-	public void addPetConsumableBy(int petid) {
+	protected void addPetConsumableBy(int petid) {
 		petConsumableBy.add(Integer.valueOf(petid));
+	}
+
+	public int getMoveTo() {
+		return moveTo;
+	}
+
+	public boolean isPoison() {
+		return poison;
+	}
+
+	public boolean isSeal() {
+		return seal;
+	}
+
+	public boolean isDarkness() {
+		return darkness;
+	}
+
+	public boolean isWeakness() {
+		return weakness;
+	}
+
+	public boolean isCurse() {
+		return curse;
+	}
+
+	public boolean isConsumeOnPickup() {
+		return consumeOnPickup;
+	}
+
+	public boolean petCanConsume(int petId) {
+		return petConsumableBy.contains(Integer.valueOf(petId));
 	}
 }

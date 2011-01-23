@@ -28,27 +28,51 @@ public class Attack {
 	private int diseaseSkill;
 	private int diseaseLevel;
 	private int conMp;
-	
-	public void setDeadlyAttack(boolean value) {
+
+	protected Attack() {
+		
+	}
+
+	protected void setDeadlyAttack(boolean value) {
 		this.deadlyAttack = value;
 	}
-	
-	public void setMpBurn(int burn) {
+
+	protected void setMpBurn(int burn) {
 		this.mpBurn = burn;
 	}
-	
-	public void setDiseaseSkill(int skill) {
+
+	protected void setDiseaseSkill(int skill) {
 		this.diseaseSkill = skill;
 	}
-	
-	public void setDiseaseLevel(int level) {
+
+	protected void setDiseaseLevel(int level) {
 		this.diseaseLevel = level;
 	}
-	
-	public void setMpConsume(int con) {
+
+	protected void setMpConsume(int con) {
 		this.conMp = con;
 	}
-	
+
+	public boolean isDeadlyAttack() {
+		return deadlyAttack;
+	}
+
+	public int getMpBurn() {
+		return mpBurn;
+	}
+
+	public int getDiseaseSkill() {
+		return diseaseSkill;
+	}
+
+	public int getDiseaseLevel() {
+		return diseaseLevel;
+	}
+
+	public int getMpConsume() {
+		return conMp;
+	}
+
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("DeadlyAttack=").append(deadlyAttack);

@@ -66,13 +66,17 @@ public class KvjMobDataLoader extends MobDataLoader {
 	protected void load(int mobid)  {
 		String id = String.format("%07d", mobid);
 
+		MobStats stats = null;
 		try {
-			MobStats stats = new MobStats();
-			doWork(new LittleEndianByteArrayReader(new File(new StringBuilder(dataPath).append("Mob.wz").append(File.separator).append(id).append(".img.kvj").toString())), stats);
-			mobStats.put(Integer.valueOf(mobid), stats);
+			File f = new File(new StringBuilder(dataPath).append("Mob.wz").append(File.separator).append(id).append(".img.kvj").toString());
+			if (f.exists()) {
+				stats = new MobStats();
+				doWork(new LittleEndianByteArrayReader(f), stats);
+			}
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for mob " + mobid, e);
 		}
+		mobStats.put(Integer.valueOf(mobid), stats);
 	}
 
 	public boolean loadAll() {
@@ -93,7 +97,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		}
 	}
 
-	public void doWork(LittleEndianReader reader, MobStats stats) {
+	private void doWork(LittleEndianReader reader, MobStats stats) {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case LEVEL:

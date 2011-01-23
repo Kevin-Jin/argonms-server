@@ -59,13 +59,17 @@ public class KvjMapDataLoader extends MapDataLoader {
 	protected void load(int mapid)  {
 		String id = String.format("%09d", mapid);
 
+		MapStats stats = null;
 		try {
-			MapStats stats = new MapStats();
-			doWork(new LittleEndianByteArrayReader(new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString())), stats);
-			mapStats.put(Integer.valueOf(mapid), stats);
+			File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString());
+			if (f.exists()) {
+				stats = new MapStats();
+				doWork(new LittleEndianByteArrayReader(f), stats);
+			}
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for map " + mapid, e);
 		}
+		mapStats.put(Integer.valueOf(mapid), stats);
 	}
 
 	public boolean loadAll() {
