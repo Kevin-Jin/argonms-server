@@ -59,16 +59,6 @@ public class LoginServer implements LocalServer {
 
 	public void init() {
 		Properties prop = new Properties();
-		try {
-			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
-			prop.load(fr);
-			fr.close();
-			DatabaseConnection.setProps(prop);
-		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
-		}
-		DatabaseConnection.getConnection();
-		prop = new Properties();
 		String centerIp;
 		int centerPort;
 		String authKey;
@@ -90,6 +80,17 @@ public class LoginServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not load login server properties!", ex);
 			return;
 		}
+		prop = new Properties();
+		try {
+			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
+			prop.load(fr);
+			fr.close();
+			DatabaseConnection.setProps(prop, wzType == DataFileType.MCDB);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			return;
+		}
+		DatabaseConnection.getConnection();
 		wzPath = System.getProperty("argonms.data.dir");
 		lci = new LoginCenterInterface(authKey, this);
 		lci.connect(centerIp, centerPort);

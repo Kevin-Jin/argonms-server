@@ -295,6 +295,12 @@ public class KvjItemDataLoader extends ItemDataLoader {
 				case KvjEffects.MORPH:
 					effect.setMorph(reader.readInt());
 					break;
+				case KvjEffects.HP_RECOVER:
+					effect.setHpR(reader.readShort());
+					break;
+				case KvjEffects.MP_RECOVER:
+					effect.setMpR(reader.readShort());
+					break;
 				case KvjEffects.MOVE_TO:
 					effect.setMoveTo(reader.readInt());
 					break;

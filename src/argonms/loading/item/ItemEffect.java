@@ -29,6 +29,7 @@ import java.util.List;
 public class ItemEffect extends StatEffects {
 	private boolean poison, seal, darkness, weakness, curse;
 	private boolean consumeOnPickup;
+	private short hpR, mpR;
 	private int moveTo;
 	private List<Integer> petConsumableBy;
 
@@ -65,7 +66,15 @@ public class ItemEffect extends StatEffects {
 	}
 
 	protected void addPetConsumableBy(int petid) {
-		petConsumableBy.add(Integer.valueOf(petid));
+		this.petConsumableBy.add(Integer.valueOf(petid));
+	}
+
+	protected void setHpR(short recover) {
+		this.hpR = recover;
+	}
+
+	protected void setMpR(short recover) {
+		this.mpR = recover;
 	}
 
 	public int getMoveTo() {
@@ -98,5 +107,13 @@ public class ItemEffect extends StatEffects {
 
 	public boolean petCanConsume(int petId) {
 		return petConsumableBy.contains(Integer.valueOf(petId));
+	}
+
+	public short getHpR() {
+		return hpR;
+	}
+
+	public short getMpR() {
+		return mpR;
 	}
 }

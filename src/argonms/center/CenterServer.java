@@ -60,7 +60,7 @@ public class CenterServer {
 			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
 			prop.load(fr);
 			fr.close();
-			DatabaseConnection.setProps(prop);
+			DatabaseConnection.setProps(prop, false);
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Could not load database properties.", ex);
 		}
