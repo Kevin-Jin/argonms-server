@@ -18,7 +18,7 @@
 
 package argonms.loading.map;
 
-import argonms.tools.input.WzDatabaseConnection;
+import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -35,7 +35,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	private Connection con;
 
 	public McdbMapDataLoader() {
-		con = WzDatabaseConnection.getConnection();
+		con = DatabaseConnection.getWzConnection();
 	}
 
 	protected void load(int mapid)  {

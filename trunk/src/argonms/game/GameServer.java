@@ -58,17 +58,6 @@ public class GameServer implements LocalServer {
 
 	public void init() {
 		Properties prop = new Properties();
-		try {
-			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
-			prop.load(fr);
-			fr.close();
-			DatabaseConnection.setProps(prop);
-		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
-			return;
-		}
-		DatabaseConnection.getConnection();
-		prop = new Properties();
 		String centerIp;
 		int centerPort;
 		String authKey;
@@ -91,6 +80,17 @@ public class GameServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not load game" + world + " server properties!", ex);
 			return;
 		}
+		prop = new Properties();
+		try {
+			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
+			prop.load(fr);
+			fr.close();
+			DatabaseConnection.setProps(prop, wzType == DataFileType.MCDB);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			return;
+		}
+		DatabaseConnection.getConnection();
 		wzPath = System.getProperty("argonms.data.dir");
 		gci = new GameCenterInterface(world, authKey, this);
 		gci.connect(centerIp, centerPort);

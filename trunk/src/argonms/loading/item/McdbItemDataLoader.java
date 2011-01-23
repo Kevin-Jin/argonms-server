@@ -18,13 +18,16 @@
 
 package argonms.loading.item;
 
-import argonms.tools.input.WzDatabaseConnection;
+import argonms.loading.KvjEffects;
+import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,35 +40,28 @@ public class McdbItemDataLoader extends ItemDataLoader {
 	private Connection con;
 
 	public McdbItemDataLoader() {
-		con = WzDatabaseConnection.getConnection();
+		con = DatabaseConnection.getWzConnection();
 	}
 
 	protected void load(int itemid) {
 		String cat = getCategory(itemid);
 		String query;
-		Integer oId = Integer.valueOf(itemid);
-		boolean equip;
-		if (cat.equals("Equip")) {
+		if (cat.equals("Equip"))
+			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
+		else
 			query = "SELECT * FROM `itemdata` WHERE `itemid` = ?";
-			equip = true;
-		} else {
-			if (cat.equals("Pet"))
-				loadPetData(itemid);
-			query = "SELECT * FROM `itemdata` WHERE `itemid` = ?";
-			equip = false;
-		}
 		try {
 			PreparedStatement ps = con.prepareStatement(query);
 			ps.setInt(1, itemid);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
-				doWork(oId, rs, equip);
+				doWork(itemid, rs);
 			rs.close();
 			ps.close();
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not read MCDB data for item " + itemid, e);
 		}
-		loaded.add(oId);
+		loaded.add(Integer.valueOf(itemid));
 	}
 
 	public boolean loadAll() {
@@ -75,44 +71,16 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			ps = con.prepareStatement("SELECT * FROM `itemdata`");
 			rs = ps.executeQuery();
 			while (rs.next())
-				doWork(rs.getInt("itemid"), rs, false);
+				doWork(rs.getInt("itemid"), rs);
 			ps.close();
 			rs.close();
 
 			ps = con.prepareStatement("SELECT * FROM `equipdata`");
 			rs = ps.executeQuery();
 			while (rs.next())
-				doWork(rs.getInt("equipid"), rs, true);
+				doWork(rs.getInt("equipid"), rs);
 			ps.close();
 			rs.close();
-
-			ps = con.prepareStatement("SELECT `id`,`hunger` FROM `petdata`");
-			rs = ps.executeQuery();
-			while (rs.next())
-				petHunger.put(Integer.valueOf(rs.getInt(1)), Integer.valueOf(rs.getInt(2)));
-			rs.close();
-			ps.close();
-
-			Integer oId;
-			ps = con.prepareStatement("SELECT `id`,`command`,`increase`,`prob` FROM `petinteractdata`");
-			rs = ps.executeQuery();
-			while (rs.next()) {
-				oId = Integer.valueOf(rs.getInt(1));
-				if (!petCommands.containsKey(oId))
-					petCommands.put(oId, new HashMap<Byte, int[]>());
-				petCommands.get(oId).put(Byte.valueOf(rs.getByte(2)), new int[] { rs.getInt(4), rs.getInt(3) });
-			}
-			rs.close();
-			ps.close();
-
-			ps = con.prepareStatement("SELECT `petid`,`evol`,`prob` FROM `petevolvedata`");
-			rs = ps.executeQuery();
-			while (rs.next()) {
-				oId = Integer.valueOf(rs.getInt(1));
-				if (!evolveChoices.containsKey(oId))
-					evolveChoices.put(oId, new ArrayList<int[]>());
-				evolveChoices.get(oId).add(new int[] { rs.getInt(2), rs.getInt(3) });
-			}
 			return true;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load all item data from MCDB.", ex);
@@ -129,44 +97,288 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		}
 	}
 
-	private void loadPetData(int itemid) {
-		Integer oId = Integer.valueOf(itemid);
-		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `hunger` FROM `petdata` WHERE `id` = ?");
-			ps.setInt(1, itemid);
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				petHunger.put(oId, Integer.valueOf(rs.getInt(1)));
-			rs.close();
-			ps.close();
+	private void doWork(int itemid, ResultSet rs) throws SQLException {
+		String cat = getCategory(itemid);
+		Integer oId = itemid;
+		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));
+		short[] incStats = new short[16];
+		if (cat.equals("Equip")) {
+			incStats[KvjEffects.STR] = rs.getShort("str");
+			incStats[KvjEffects.DEX] = rs.getShort("dex");
+			incStats[KvjEffects.INT] = rs.getShort("int");
+			incStats[KvjEffects.LUK] = rs.getShort("luk");
+			incStats[KvjEffects.PAD] = rs.getShort("watk");
+			incStats[KvjEffects.PDD] = rs.getShort("wdef");
+			incStats[KvjEffects.MAD] = rs.getShort("matk");
+			incStats[KvjEffects.MDD] = rs.getShort("mdef");
+			incStats[KvjEffects.ACC] = rs.getShort("acc");
+			incStats[KvjEffects.EVA] = rs.getShort("avo");
+			incStats[KvjEffects.MHP] = rs.getShort("hp");
+			incStats[KvjEffects.MMP] = rs.getShort("mp");
+			incStats[KvjEffects.Speed] = rs.getShort("speed");
+			incStats[KvjEffects.Jump] = rs.getShort("jump");
 
-			ps = con.prepareStatement("SELECT `command`,`increase`,`prob` FROM `petinteractdata` WHERE `id` = ?");
-			ps.setInt(1, itemid);
-			rs = ps.executeQuery();
-			if (rs.next()) {
-				if (!petCommands.containsKey(oId))
-					petCommands.put(oId, new HashMap<Byte, int[]>());
-				petCommands.get(oId).put(Byte.valueOf(rs.getByte(1)), new int[] { rs.getInt(3), rs.getInt(2) });
-			}
-			rs.close();
-			ps.close();
+			if (rs.getInt("cash") != 0)
+				cash.add(oId);
 
-			ps = con.prepareStatement("SELECT `evol`,`prob` FROM `petevolvedata` WHERE `id` = ?");
-			ps.setInt(1, itemid);
-			rs = ps.executeQuery();
-			if (rs.next()) {
-				if (!evolveChoices.containsKey(oId))
-					evolveChoices.put(oId, new ArrayList<int[]>());
-				evolveChoices.get(oId).add(new int[] { rs.getInt(1), rs.getInt(2) });
+			tuc.put(oId, Byte.valueOf(rs.getByte("slots")));
+		} else {
+			slotMax.put(oId, Short.valueOf(rs.getShort("maxslot")));
+			if (rs.getInt("notrade") != 0)
+				tradeBlocked.add(oId);
+
+			if (cat.equals("Pet")) {
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `hunger` FROM `petdata` WHERE `id` = ?");
+					ps.setInt(1, itemid);
+					ResultSet prs = ps.executeQuery();
+					if (prs.next())
+						petHunger.put(oId, Integer.valueOf(prs.getInt(1)));
+					prs.close();
+					ps.close();
+
+					ps = con.prepareStatement("SELECT `command`,`increase`,`prob` FROM `petinteractdata` WHERE `id` = ?");
+					ps.setInt(1, itemid);
+					prs = ps.executeQuery();
+					if (prs.next()) {
+						if (!petCommands.containsKey(oId))
+							petCommands.put(oId, new HashMap<Byte, int[]>());
+						petCommands.get(oId).put(Byte.valueOf(prs.getByte(1)), new int[] { prs.getInt(3), prs.getInt(2) });
+					}
+					prs.close();
+					ps.close();
+
+					ps = con.prepareStatement("SELECT `evol`,`prob` FROM `petevolvedata` WHERE `petid` = ?");
+					ps.setInt(1, itemid);
+					prs = ps.executeQuery();
+					if (prs.next()) {
+						if (!evolveChoices.containsKey(oId))
+							evolveChoices.put(oId, new ArrayList<int[]>());
+						evolveChoices.get(oId).add(new int[] { prs.getInt(1), prs.getInt(2) });
+					}
+					prs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not load MCDB data for pet " + itemid, e);
+				}
 			}
-			rs.close();
-			ps.close();
-		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Could not read MCDB data for pet " + itemid, e);
+			if (cat.equals("Cash")) {
+				List<byte[]> hours = new ArrayList<byte[]>();
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `time` FROM `itemexpdropcarddata` WHERE `itemid` = ?");
+					ps.setInt(1, itemid);
+					ResultSet crs = ps.executeQuery();
+					while (crs.next()) {
+						String[] time = crs.getString(1).split(":");
+						String[] startEnd = time[1].split("-");
+						hours.add(new byte[] { getDayByteFromString(time[0]), Byte.parseByte(startEnd[0]), Byte.parseByte(startEnd[1]) });
+					}
+					crs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not load operating hours data of item " + itemid, e);
+				}
+				if (!hours.isEmpty())
+					operatingHours.put(oId, hours);
+			} else if (cat.equals("Consume")) {
+				incStats[KvjEffects.STR] = rs.getShort("istr");
+				incStats[KvjEffects.DEX] = rs.getShort("idex");
+				incStats[KvjEffects.INT] = rs.getShort("iint");
+				incStats[KvjEffects.LUK] = rs.getShort("iluk");
+				incStats[KvjEffects.PAD] = rs.getShort("iwatk");
+				incStats[KvjEffects.PDD] = rs.getShort("iwdef");
+				incStats[KvjEffects.MAD] = rs.getShort("imatk");
+				incStats[KvjEffects.MDD] = rs.getShort("imdef");
+				incStats[KvjEffects.ACC] = rs.getShort("iacc");
+				incStats[KvjEffects.EVA] = rs.getShort("iavo");
+				incStats[KvjEffects.MHP] = rs.getShort("ihp");
+				incStats[KvjEffects.MMP] = rs.getShort("imp");
+				incStats[KvjEffects.Speed] = rs.getShort("ispeed");
+				incStats[KvjEffects.Jump] = rs.getShort("ijump");
+
+				ArrayList<int[]> mobsToSpawn = new ArrayList<int[]>();
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `mobid`,`chance` FROM `itemsummondata` WHERE `itemid` = ?");
+					ps.setInt(1, oId.intValue());
+					ResultSet srs = ps.executeQuery();
+					while (srs.next())
+						mobsToSpawn.add(new int[] { srs.getInt(1), srs.getInt(2) } );
+					srs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not get mobs to summon for item " + itemid, e);
+				}
+				if (!mobsToSpawn.isEmpty())
+					summons.put(oId, mobsToSpawn);
+
+				int chance = rs.getInt("success");
+				if (chance != 0)
+					success.put(oId, Integer.valueOf(chance));
+				chance = rs.getInt("cursed");
+				if (chance != 0)
+					cursed.put(oId, Integer.valueOf(chance));
+
+				List<Integer> intList = new ArrayList<Integer>();
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `skillid` FROM `itemskilldata` WHERE `itemid` = ?");
+					ps.setInt(1, itemid);
+					ResultSet srs = ps.executeQuery();
+					while (srs.next())
+						intList.add(Integer.valueOf(srs.getInt(1)));
+					srs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not load skills list of item " + itemid, e);
+				}
+				if (!intList.isEmpty())
+					skills.put(oId, intList);
+
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `price` FROM `rechargedata` WHERE `itemid` = ?");
+					ps.setInt(1, itemid);
+					ResultSet prs = ps.executeQuery();
+					if (prs.next())
+						unitPrice.put(oId, Double.valueOf(prs.getDouble(1)));
+					prs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not load recharge data of item " + itemid, e);
+				}
+
+				try {
+					PreparedStatement ps = con.prepareStatement("SELECT `req` FROM `itemscrolltargets` WHERE `scrollid` = ?");
+					ps.setInt(1, itemid);
+					ResultSet rrs = ps.executeQuery();
+					while (rrs.next())
+						intList.add(Integer.valueOf(rrs.getInt("req")));
+					rrs.close();
+					ps.close();
+				} catch (SQLException e) {
+					LOG.log(Level.WARNING, "Could not get scroll requirements of " + itemid, e);
+				}
+				if (!intList.isEmpty())
+					scrollReqs.put(oId, intList);
+
+				//it would be a waste of memory if all these values were 0, hm...
+				ItemEffect effect = new ItemEffect();
+				effect.setDuration(rs.getInt("time") * 1000);
+				effect.setHp(rs.getShort("hp"));
+				effect.setMp(rs.getShort("mp"));
+				effect.setHpR(rs.getShort("hpr"));
+				effect.setMpR(rs.getShort("mpr"));
+				effect.setMorph(rs.getInt("morph"));
+				effect.setWatk(rs.getShort("watk"));
+				effect.setWdef(rs.getShort("wdef"));
+				effect.setMatk(rs.getShort("matk"));
+				effect.setMdef(rs.getShort("mdef"));
+				effect.setAcc(rs.getShort("acc"));
+				effect.setAvoid(rs.getShort("avo"));
+				effect.setSpeed(rs.getShort("speed"));
+				effect.setJump(rs.getShort("jump"));
+				effect.setMoveTo(rs.getInt("moveto"));
+				statEffects.put(oId, effect);
+			}
+			switch (itemid) {
+				case 5121006:
+					triggerItem.put(oId, 2022112);
+					break;
+				case 5122000:
+					triggerItem.put(oId, 2022302);
+					break;
+				case 5121000:
+					triggerItem.put(oId, 2022071);
+					break;
+				case 5121001:
+					triggerItem.put(oId, 2022072);
+					break;
+				case 5121002:
+					triggerItem.put(oId, 2022073);
+					break;
+				case 5121003:
+					triggerItem.put(oId, 2022094);
+					break;
+				case 5121004:
+					triggerItem.put(oId, 2022100);
+					break;
+				case 5121005:
+					triggerItem.put(oId, 2022101);
+					break;
+				case 5121007:
+					triggerItem.put(oId, 2022119);
+					break;
+				case 5121008:
+					triggerItem.put(oId, 2022153);
+					break;
+				case 5121009:
+					triggerItem.put(oId, 2022154);
+					break;
+				case 5121010:
+					triggerItem.put(oId, 2022183);
+					break;
+				case 5121011:
+					triggerItem.put(oId, 2022196);
+					break;
+				case 5121012:
+					triggerItem.put(oId, 2022197);
+					break;
+				case 5121013:
+					triggerItem.put(oId, 2022200);
+					break;
+				case 5121014:
+					triggerItem.put(oId, 2022265);
+					break;
+				case 5121015:
+					triggerItem.put(oId, 2022280);
+					break;
+				case 5121016:
+					triggerItem.put(oId, 2022285);
+					break;
+			}
+
+			switch (itemid) { //hack, since mcdb doesn't have this
+				//these are from the v62 xmls.
+				case 5200000:
+					mesoValue.put(oId, Integer.valueOf(1000000));
+					break;
+				case 5200001:
+					mesoValue.put(oId, Integer.valueOf(130000));
+					break;
+				case 5200002:
+					mesoValue.put(oId, Integer.valueOf(350000));
+					break;
+			}
 		}
+		for (int i = 0; i < 16; i++) {
+			if (incStats[i] != 0) {
+				bonusStats.put(oId, incStats);
+				break;
+			}
+		}
+		if (rs.getInt("onlyone") != 0)
+			onlyOne.add(oId);
+		if (rs.getInt("quest") != 0)
+			questItem.add(oId);
 	}
 
-	private void doWork(Integer oId, ResultSet rs, boolean equip) throws SQLException {
-		
+	private static byte getDayByteFromString(String str) {
+		if (str.equals("SUN")) {
+			return Calendar.SUNDAY;
+		} else if (str.equals("MON")) {
+			return Calendar.MONDAY;
+		} else if (str.equals("TUE")) {
+			return Calendar.TUESDAY;
+		} else if (str.equals("WED")) {
+			return Calendar.WEDNESDAY;
+		} else if (str.equals("THU")) {
+			return Calendar.THURSDAY;
+		} else if (str.equals("FRI")) {
+			return Calendar.FRIDAY;
+		} else if (str.equals("SAT")) {
+			return Calendar.SATURDAY;
+		} else if (str.equals("HOL")) {
+			return 8;
+		} else {
+			return 0;
+		}
 	}
 }

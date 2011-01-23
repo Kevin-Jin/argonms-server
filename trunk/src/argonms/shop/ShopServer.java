@@ -60,16 +60,6 @@ public class ShopServer implements LocalServer {
 
 	public void init() {
 		Properties prop = new Properties();
-		try {
-			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
-			prop.load(fr);
-			fr.close();
-			DatabaseConnection.setProps(prop);
-		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
-		}
-		DatabaseConnection.getConnection();
-		prop = new Properties();
 		String centerIp;
 		int centerPort;
 		String authKey;
@@ -90,6 +80,17 @@ public class ShopServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not load shop server properties!", ex);
 			return;
 		}
+		prop = new Properties();
+		try {
+			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
+			prop.load(fr);
+			fr.close();
+			DatabaseConnection.setProps(prop, wzType == DataFileType.MCDB);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			return;
+		}
+		DatabaseConnection.getConnection();
 		wzPath = System.getProperty("argonms.data.dir");
 		sci = new ShopCenterInterface(authKey, this);
 		sci.connect(centerIp, centerPort);

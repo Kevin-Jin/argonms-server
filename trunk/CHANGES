@@ -38,6 +38,12 @@
 	these static cache objects cannot modify them for the other dynamic data
 	that use the same cache.
 
+2012-01-23  GoldenKevin  (revision 4)
+
+	* Finished MCDB data loader for items.
+	* Merged WzDatabaseConnection into DatabaseConnection.
+	* Refactored DatabaseConnection to be more efficient I suppose?
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
