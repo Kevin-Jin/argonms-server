@@ -60,10 +60,6 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, Integer> petHunger;
 	protected Map<Integer, List<int[]>> evolveChoices;
 
-	protected abstract void load(int itemid);
-
-	public abstract boolean loadAll();
-
 	protected ItemDataLoader() {
 		loaded = new ArrayList<Integer>();
 		wholePrice = new HashMap<Integer, Integer>();
@@ -90,6 +86,16 @@ public abstract class ItemDataLoader {
 		petCommands = new HashMap<Integer, Map<Byte, int[]>>();
 		petHunger = new HashMap<Integer, Integer>();
 		evolveChoices = new HashMap<Integer, List<int[]>>();
+	}
+
+	protected abstract void load(int itemid);
+
+	public abstract boolean loadAll();
+
+	public abstract boolean canLoad(int itemid);
+
+	public int loadedItems() {
+		return loaded.size();
 	}
 
 	public int getWholePrice(int itemId) {
@@ -225,16 +231,17 @@ public abstract class ItemDataLoader {
 		}
 	}
 
-	public static ItemDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjItemDataLoader(wzPath);
-				break;
-			case MCDB:
-				instance = new McdbItemDataLoader();
-				break;
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjItemDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbItemDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static ItemDataLoader getInstance() {

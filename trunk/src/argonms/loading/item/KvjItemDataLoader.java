@@ -64,20 +64,12 @@ public class KvjItemDataLoader extends ItemDataLoader {
 
 	private String dataPath;
 
-	public KvjItemDataLoader(String wzPath) {
+	protected KvjItemDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 
-	protected void load(int itemid)  {
-		String cat = getCategory(itemid);
-		File f;
-		String id = String.format("%08d", itemid);
-		if (cat.equals("Pet"))
-			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(String.format("%07d", itemid)).append(".img.kvj").toString());
-		else if (cat.equals("Equip"))
-			f = new File(new StringBuilder(dataPath).append("Character.wz").append(File.separator).append(getCharCat(itemid)).append(File.separator).append(id).append(".img.kvj").toString());
-		else
-			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(id.substring(0, 4)).append(".img").append(File.separator).append(id).append(".kvj").toString());
+	protected void load(int itemid) {
+		File f = getFile(itemid);
 		Integer oId = Integer.valueOf(itemid);
 		try {
 			if (f.exists())
@@ -117,8 +109,21 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		}
 	}
 
-	public int loadedItems() {
-		return loaded.size();
+	public boolean canLoad(int itemid) {
+		return getFile(itemid).exists();
+	}
+
+	private File getFile(int iid) {
+		File f;
+		String id = String.format("%08d", iid);
+		String cat = getCategory(iid);
+		if (cat.equals("Pet"))
+			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(String.format("%07d", iid)).append(".img.kvj").toString());
+		else if (cat.equals("Equip"))
+			f = new File(new StringBuilder(dataPath).append("Character.wz").append(File.separator).append(getCharCat(iid)).append(File.separator).append(id).append(".img.kvj").toString());
+		else
+			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(id.substring(0, 4)).append(".img").append(File.separator).append(id).append(".kvj").toString());
+		return f;
 	}
 
 	private void doWork(Integer oId, LittleEndianReader reader) {

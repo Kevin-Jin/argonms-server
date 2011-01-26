@@ -37,13 +37,13 @@ import java.util.logging.Logger;
  */
 public class McdbItemDataLoader extends ItemDataLoader {
 	private static final Logger LOG = Logger.getLogger(McdbItemDataLoader.class.getName());
-	private Connection con;
 
-	public McdbItemDataLoader() {
-		con = DatabaseConnection.getWzConnection();
+	protected McdbItemDataLoader() {
+		
 	}
 
 	protected void load(int itemid) {
+		Connection con = DatabaseConnection.getWzConnection();
 		String cat = getCategory(itemid);
 		String query;
 		if (cat.equals("Equip"))
@@ -65,6 +65,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 	}
 
 	public boolean loadAll() {
+		Connection con = DatabaseConnection.getWzConnection();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -97,7 +98,31 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		}
 	}
 
+	public boolean canLoad(int itemid) {
+		Connection con = DatabaseConnection.getWzConnection();
+		boolean exists = false;
+		String cat = getCategory(itemid);
+		String query;
+		if (cat.equals("Equip"))
+			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
+		else
+			query = "SELECT * FROM `itemdata` WHERE `itemid` = ?";
+		try {
+			PreparedStatement ps = con.prepareStatement(query);
+			ps.setInt(1, itemid);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				exists = true;
+			rs.close();
+			ps.close();
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not use MCDB to determine whether item " + itemid + " is valid.", e);
+		}
+		return exists;
+	}
+
 	private void doWork(int itemid, ResultSet rs) throws SQLException {
+		Connection con = DatabaseConnection.getWzConnection();
 		String cat = getCategory(itemid);
 		Integer oId = itemid;
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));

@@ -40,11 +40,11 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 
 	private String dataPath;
 
-	public KvjReactorDataLoader(String wzPath) {
+	protected KvjReactorDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 
-	protected void load(int reactorid)  {
+	protected void load(int reactorid) {
 		String id = String.format("%07d", reactorid);
 
 		ReactorStats stats = null;
@@ -77,7 +77,13 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 			return false;
 		}
 	}
-	
+
+	public boolean canLoad(int reactorid) {
+		String id = String.format("%07d", reactorid);
+		File f = new File(new StringBuilder(dataPath).append("Reactor.wz").append(File.separator).append(id).append(".img.kvj").toString());
+		return f.exists();
+	}
+
 	private void doWork(LittleEndianReader reader, ReactorStats stats) {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {

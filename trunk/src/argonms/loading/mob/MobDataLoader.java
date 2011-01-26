@@ -39,6 +39,8 @@ public abstract class MobDataLoader {
 
 	public abstract boolean loadAll();
 
+	public abstract boolean canLoad(int mobid);
+
 	public MobStats getMobStats(int id) {
 		Integer oId;
 		MobStats stats;
@@ -52,13 +54,17 @@ public abstract class MobDataLoader {
 		return stats;
 	}
 
-	public static MobDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjMobDataLoader(wzPath);
-				break;
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjMobDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbMobDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static MobDataLoader getInstance() {

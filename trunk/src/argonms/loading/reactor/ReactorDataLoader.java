@@ -39,6 +39,8 @@ public abstract class ReactorDataLoader {
 
 	public abstract boolean loadAll();
 
+	public abstract boolean canLoad(int reactorid);
+
 	public ReactorStats getReactorStats(int id) {
 		Integer oId;
 		ReactorStats stats;
@@ -52,13 +54,17 @@ public abstract class ReactorDataLoader {
 		return stats;
 	}
 
-	public static ReactorDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjReactorDataLoader(wzPath);
-				break;
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjReactorDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbReactorDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static ReactorDataLoader getInstance() {

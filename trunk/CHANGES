@@ -1,4 +1,9 @@
-2011-01-22  GoldenKevin  (revision 1)
+2011-01-11  GoldenKevin  (revision 1)
+
+	Automatically created /trunk directory. We recommend you to put all your
+	code there
+
+2011-01-22  GoldenKevin  (revision 2)
 
 	* Initial import. Things currently working:
 		* Inter server communications between a central server and remote
@@ -17,11 +22,11 @@
 	packet handlers in the login server first. A lot of low level code was taken
 	from OdinMS-derived sources in order to speed up development. Thanks guys!
 
-2011-01-22  GoldenKevin  (revision 2)
+2011-01-22  GoldenKevin  (revision 3)
 
 	* Added AGPLv3 license headers to all Java source files.
 
-2011-01-23  GoldenKevin  (revision 3)
+2011-01-23  GoldenKevin  (revision 4)
 
 	* Removed "argonms.*.data.dir" for all client listening servers because it
 	is no longer used (Please specify the data directory with the System
@@ -38,11 +43,36 @@
 	these static cache objects cannot modify them for the other dynamic data
 	that use the same cache.
 
-2012-01-23  GoldenKevin  (revision 4)
+2011-01-23  GoldenKevin  (revision 5)
 
 	* Finished MCDB data loader for items.
 	* Merged WzDatabaseConnection into DatabaseConnection.
 	* Refactored DatabaseConnection to be more efficient I suppose?
+
+2011-01-25  GoldenKevin  (revision 6)
+
+	* Added MCDB data loading for strings.
+	* Please note that a new version of KVJ compiler is released. Please
+	recompile all KVJ files!
+	* I think I forgot all about how ThreadLocal worked when I created those
+	MCDB data loading classes... anyway, the getWzConnection() is called at each
+	method call now instead of being stored as a single instance variable for
+	all threads.
+	* Made constructors of all data loaders to protected and added
+	(instance == null) check for every setInstance method just so nobody
+	"accidentally" creates more than one instance of those singleton classes. I
+	don't mistake you guys as idiots, it's just a safe programming practice.
+	* Added MCDB loading for mobs and skills and enabled loading for strings
+	(a whoops from the last revision).
+	* All data loaders have an canLoad() method now to check if the data for an
+	object exists (all except for String apparently). Note that this is not an
+	exists() method, i.e. MCDB skills will return true even if the skill does
+	not exist as long as there are other skills with the same 3 digit prefix. It
+	only determines whether a piece of data can be loaded.
+	* In Skill data loader, the player skill operations are now separated from
+	those of mob skills, as they rightfully should be.
+	* I'm really getting ahead of myself by adding a MapFactory instance
+	variable in argonms.game.WorldChannel.
 
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are

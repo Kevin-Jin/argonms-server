@@ -39,6 +39,8 @@ public abstract class MapDataLoader {
 
 	public abstract boolean loadAll();
 
+	public abstract boolean canLoad(int mapid);
+
 	public MapStats getMapStats(int id) {
 		Integer oId;
 		MapStats stats;
@@ -52,16 +54,17 @@ public abstract class MapDataLoader {
 		return stats;
 	}
 
-	public static MapDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjMapDataLoader(wzPath);
-				break;
-			case MCDB:
-				instance = new McdbMapDataLoader();
-				break;
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjMapDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbMapDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static MapDataLoader getInstance() {

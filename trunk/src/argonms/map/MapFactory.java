@@ -20,6 +20,7 @@ package argonms.map;
 
 import argonms.loading.map.MapDataLoader;
 import argonms.loading.map.MapStats;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,6 +29,10 @@ import java.util.Map;
  */
 public class MapFactory {
 	private Map<Integer, MapleMap> maps;
+
+	public MapFactory() {
+		this.maps = new HashMap<Integer, MapleMap>();
+	}
 
 	public MapleMap getMap(int mapid) {
 		Integer oId = Integer.valueOf(mapid);

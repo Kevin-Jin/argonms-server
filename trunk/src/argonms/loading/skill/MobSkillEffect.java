@@ -18,45 +18,60 @@
 
 package argonms.loading.skill;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.awt.Point;
 
 /**
  *
  * @author GoldenKevin
  */
-public class SkillStats {
-	private int skillid;
-	private Map<Byte, SkillEffect> levels;
-	private String elemAttr;
-	private boolean isBuff, isCharged;
-	private int animationTime;
+public class MobSkillEffect {
+	private short mpCon;
+	private int duration;
+	private int x;
+	private int y;
+	private Point lt;
+	private Point rb;
+	private double prop;
+	private short cooltime;
+	private short hp;
 
-	protected SkillStats() {
-		levels = new HashMap<Byte, SkillEffect>();
+	protected MobSkillEffect() {
+
 	}
 
-	protected void addLevel(byte level, SkillEffect effect) {
-		levels.put(Byte.valueOf(level), effect);
+	protected void setMpConsume(short mpCon) {
+		this.mpCon = mpCon;
 	}
 
-	protected void setElemAttr(String attr) {
-		elemAttr = attr;
+	protected void setDuration(int time) {
+		this.duration = time;
 	}
 
-	protected void setBuff() {
-		isBuff = true;
+	protected void setX(int x) {
+		this.x = x;
 	}
 
-	protected void setChargedSkill() {
-		isCharged = true;
+	protected void setY(int y) {
+		this.y = y;
 	}
 
-	protected void setDelay(int delay) {
-		animationTime = delay;
+	protected void setLt(Point point) {
+		this.lt = point;
 	}
 
-	public SkillEffect getLevel(byte level) {
-		return levels.get(Byte.valueOf(level));
+	protected void setRb(Point point) {
+		this.rb = point;
+	}
+
+	protected void setProp(double prop) {
+		this.prop = prop;
+	}
+
+	protected void setCooltime(short duration) {
+		this.cooltime = duration;
+	}
+
+	protected void setHp(short hp) {
+		this.hp = hp;
 	}
 }

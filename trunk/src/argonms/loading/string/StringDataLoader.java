@@ -132,13 +132,17 @@ public abstract class StringDataLoader {
 		return retNpcs;
 	}
 
-	public static StringDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjStringDataLoader(wzPath);
-				break;
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjStringDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbStringDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static StringDataLoader getInstance() {
