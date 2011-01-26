@@ -52,11 +52,11 @@ public class KvjMapDataLoader extends MapDataLoader {
 
 	private String dataPath;
 
-	public KvjMapDataLoader(String wzPath) {
+	protected KvjMapDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 
-	protected void load(int mapid)  {
+	protected void load(int mapid) {
 		String id = String.format("%09d", mapid);
 
 		MapStats stats = null;
@@ -92,7 +92,13 @@ public class KvjMapDataLoader extends MapDataLoader {
 			return false;
 		}
 	}
-	
+
+	public boolean canLoad(int mapid) {
+		String id = String.format("%09d", mapid);
+		File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString());
+		return f.exists();
+	}
+
 	private void doWork(LittleEndianReader reader, MapStats stats) {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {

@@ -59,11 +59,11 @@ public class KvjMobDataLoader extends MobDataLoader {
 
 	private String dataPath;
 
-	public KvjMobDataLoader(String wzPath) {
+	protected KvjMobDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 
-	protected void load(int mobid)  {
+	protected void load(int mobid) {
 		String id = String.format("%07d", mobid);
 
 		MobStats stats = null;
@@ -81,7 +81,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 
 	public boolean loadAll() {
 		try {
-			File root = new File(dataPath + "Reactor.wz");
+			File root = new File(dataPath + "Mob.wz");
 			for (String kvj : root.list()) {
 				MobStats stats = new MobStats();
 				doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)), stats);
@@ -97,11 +97,17 @@ public class KvjMobDataLoader extends MobDataLoader {
 		}
 	}
 
+	public boolean canLoad(int mobid) {
+		String id = String.format("%07d", mobid);
+		File f = new File(new StringBuilder(dataPath).append("Mob.wz").append(File.separator).append(id).append(".img.kvj").toString());
+		return f.exists();
+	}
+
 	private void doWork(LittleEndianReader reader, MobStats stats) {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case LEVEL:
-					stats.setLevel(reader.readInt());
+					stats.setLevel(reader.readShort());
 					break;
 				case MAX_HP:
 					stats.setMaxHp(reader.readInt());
@@ -131,10 +137,10 @@ public class KvjMobDataLoader extends MobDataLoader {
 					stats.setHideName();
 					break;
 				case HP_TAG_COLOR:
-					stats.setHpTagColor(reader.readInt());
+					stats.setHpTagColor(reader.readByte());
 					break;
 				case HP_TAG_BG_COLOR:
-					stats.setHpTagBgColor(reader.readInt());
+					stats.setHpTagBgColor(reader.readByte());
 					break;
 				case BOSS:
 					stats.setBoss();
@@ -173,11 +179,12 @@ public class KvjMobDataLoader extends MobDataLoader {
 	}
 
 	private void processSelfDestruct(LittleEndianReader reader, MobStats stats) {
-		SelfDestruct sd = new SelfDestruct();
-		sd.setAction(reader.readInt());
-		sd.setHp(reader.readInt());
-		sd.setRemoveAfter(reader.readInt());
-		stats.setSelfDestruct(sd);
+		reader.readInt(); //TODO: Update KVJ Compiler. Do we really need "action"?
+		stats.setSelfDestructHp(reader.readInt());
+		stats.setRemoveAfter(reader.readInt());
+		//also remove removeAfter from the SelfDestruct object and just place it
+		//anywhere in the file. If we remove "action", we don't need a SelfDestruct
+		//object at all, and can replace it with an int for hp only.
 	}
 
 	private void processAttack(LittleEndianReader reader, MobStats stats) {
@@ -192,10 +199,9 @@ public class KvjMobDataLoader extends MobDataLoader {
 	}
 
 	private void processSkill(LittleEndianReader reader, MobStats stats) {
-		int skillid = reader.readInt();
 		Skill s = new Skill();
 		s.setSkill(reader.readInt());
 		s.setLevel(reader.readInt());
-		stats.addSkill(skillid, s);
+		stats.addSkill(s);
 	}
 }

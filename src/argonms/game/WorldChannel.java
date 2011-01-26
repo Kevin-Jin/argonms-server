@@ -18,6 +18,7 @@
 
 package argonms.game;
 
+import argonms.map.MapFactory;
 import argonms.net.client.ClientListener;
 import argonms.net.server.RemoteCenterOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
@@ -34,11 +35,13 @@ public class WorldChannel {
 	private ClientListener handler;
 	private byte world, channel;
 	private int port;
+	private MapFactory mapFactory;
 
 	protected WorldChannel(byte world, byte channel, int port) {
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
+		this.mapFactory = new MapFactory();
 	}
 
 	public void listen(boolean useNio) {
@@ -90,5 +93,9 @@ public class WorldChannel {
 
 	public int getPort() {
 		return port;
+	}
+
+	public MapFactory getMapFactory() {
+		return mapFactory;
 	}
 }

@@ -30,22 +30,33 @@ public abstract class SkillDataLoader {
 	private static SkillDataLoader instance;
 
 	protected Map<Integer, SkillStats> skillStats;
+	protected Map<Integer, MobSkillStats> mobSkillStats;
 
-	public SkillDataLoader() {
+	protected SkillDataLoader() {
 		skillStats = new HashMap<Integer, SkillStats>();
 	}
 
-	protected abstract void load(int skillid);
+	protected abstract void canLoadPlayerSkill(int skillid);
+
+	protected abstract void canLoadMobSkill(int skillid);
 
 	public abstract boolean loadAll();
 
-	public static SkillDataLoader setInstance(DataFileType wzType, String wzPath) {
-		switch (wzType) {
-			case KVJ:
-				instance = new KvjSkillDataLoader(wzPath);
-				break;
+	public abstract boolean validPlayerSkill(int skillid);
+
+	public abstract boolean validMobSkill(int skillid);
+
+	public static void setInstance(DataFileType wzType, String wzPath) {
+		if (instance == null) {
+			switch (wzType) {
+				case KVJ:
+					instance = new KvjSkillDataLoader(wzPath);
+					break;
+				case MCDB:
+					instance = new McdbSkillDataLoader();
+					break;
+			}
 		}
-		return instance;
 	}
 
 	public static SkillDataLoader getInstance() {

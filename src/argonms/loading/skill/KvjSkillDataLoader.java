@@ -45,11 +45,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	private String dataPath;
 
-	public KvjSkillDataLoader(String wzPath) {
+	protected KvjSkillDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 
-	protected void load(int skillid)  {
+	//TODO: Actually do real work to see if the skill exists in the file so we
+	//can name this method exists() instead of loadable?
+	protected void canLoadPlayerSkill(int skillid) {
 		String id = String.format("%07d", skillid);
 
 		try {
@@ -61,20 +63,54 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
+	//TODO: Actually do real work to see if the skill exists in the file so we
+	//can name this method exists() instead of loadable?
+	protected void canLoadMobSkill(int skillid) {
+		try {
+			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
+			if (f.exists())
+				doWork(new LittleEndianByteArrayReader(f));
+		} catch (IOException e) {
+			LOG.log(Level.WARNING, "Could not read KVJ data file for mob skill " + skillid, e);
+		}
+	}
+
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Skill.wz");
 			for (String kvj : root.list()) {
-				doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)));
-				//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
-				//doWork(new LittleEndianStreamReader(is));
-				//is.close();
+				if (kvj.equals("MobSkill.img.kvj")) {
+					doMobWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)));
+					//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
+					//doMobWork(new LittleEndianStreamReader(is));
+					//is.close();
+				} else {
+					doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)));
+					//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
+					//doWork(new LittleEndianStreamReader(is));
+					//is.close();
+				}
 			}
 			return true;
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Could not load all skill data from KVJ files.", ex);
 			return false;
 		}
+	}
+
+	//TODO: Actually do real work to see if the skill exists in the file so we
+	//can name this method exists() instead of loadable?
+	public boolean validPlayerSkill(int skillid) {
+		String id = String.format("%07d", skillid);
+		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
+		return f.exists();
+	}
+
+	//TODO: Actually do real work to see if the skill exists in the file so we
+	//can name this method exists() instead of loadable?
+	public boolean validMobSkill(int skillid) {
+		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
+		return f.exists();
 	}
 
 	private void doWork(LittleEndianReader reader) {
@@ -203,6 +239,74 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					break;
 				case KvjEffects.MORPH:
 					effect.setMorph(reader.readInt());
+					break;
+				case KvjEffects.END_EFFECT:
+					break loop;
+			}
+		}
+		return effect;
+	}
+
+	private void doMobWork(LittleEndianReader reader) {
+		MobSkillStats stats = null;
+		byte level;
+		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+			switch (now) {
+				case NEXT_SKILL:
+					stats = new MobSkillStats();
+					mobSkillStats.put(Integer.valueOf(reader.readInt()), stats);
+					break;
+				case ELEM_ATTR:
+					stats.setElemAttr(reader.readNullTerminatedString());
+					break;
+				case IS_BUFF:
+					stats.setBuff();
+					break;
+				case DELAY:
+					stats.setDelay(reader.readInt());
+					break;
+				case IS_CHARGE:
+					stats.setChargedSkill();
+					break;
+				case NEXT_LEVEL:
+					level = reader.readByte();
+					stats.addLevel(level, processMobEffect(reader));
+					break;
+			}
+		}
+	}
+
+	private MobSkillEffect processMobEffect(LittleEndianReader reader) {
+		MobSkillEffect effect = new MobSkillEffect();
+		loop:
+		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
+			switch (now) {
+				case KvjEffects.MP_CONSUME:
+					effect.setMpConsume(reader.readShort());
+					break;
+				case KvjEffects.DURATION:
+					effect.setDuration(reader.readInt());
+					break;
+				case KvjEffects.X:
+					effect.setX(reader.readInt());
+					break;
+				case KvjEffects.Y:
+					effect.setY(reader.readInt());
+					break;
+				case KvjEffects.LT:
+					effect.setLt(new Point(reader.readShort(), reader.readShort()));
+					break;
+				case KvjEffects.RB:
+					effect.setRb(new Point(reader.readShort(), reader.readShort()));
+					break;
+				case KvjEffects.PROP:
+					effect.setProp(reader.readInt() / 100.0);
+					break;
+				case KvjEffects.COOLTIME:
+					effect.setCooltime(reader.readShort());
+					break;
+				case KvjEffects.HP_BONUS:
+					effect.setHp(reader.readShort());
 					break;
 				case KvjEffects.END_EFFECT:
 					break loop;

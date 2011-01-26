@@ -38,7 +38,7 @@ public class KvjStringDataLoader extends StringDataLoader {
 
 	private String dataPath;
 
-	public KvjStringDataLoader(String wzPath) {
+	protected KvjStringDataLoader(String wzPath) {
 		this.dataPath = wzPath;
 	}
 

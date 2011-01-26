@@ -28,7 +28,7 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class MobStats {
-	private int level;
+	private short level;
 	private int maxHp;
 	private int maxMp;
 	private int pad;
@@ -38,16 +38,16 @@ public class MobStats {
 	private int removeAfter;
 	private boolean hideHp;
 	private boolean hideName;
-	private int hpTagColor;
-	private int hpTagBgColor;
+	private byte hpTagColor;
+	private byte hpTagBgColor;
 	private boolean boss;
-	private SelfDestruct sd;
+	private int sd;
 	private List<Integer> loseItems;
 	private boolean invincible;
 	private List<Integer> summons;
 	private boolean firstAttack;
 	private Map<Integer, Attack> attacks;
-	private Map<Integer, Skill> skills;
+	private List<Skill> skills;
 	private int buff;
 	private Map<String, Integer> delays;
 
@@ -55,11 +55,11 @@ public class MobStats {
 		this.loseItems = new ArrayList<Integer>();
 		this.summons = new ArrayList<Integer>();
 		this.attacks = new HashMap<Integer, Attack>();
-		this.skills = new HashMap<Integer, Skill>();
+		this.skills = new ArrayList<Skill>();
 		this.delays = new HashMap<String, Integer>();
 	}
 
-	protected void setLevel(int level) {
+	protected void setLevel(short level) {
 		this.level = level;
 	}
 
@@ -99,11 +99,11 @@ public class MobStats {
 		this.hideName = true;
 	}
 
-	protected void setHpTagColor(int color) {
+	protected void setHpTagColor(byte color) {
 		this.hpTagColor = color;
 	}
 
-	protected void setHpTagBgColor(int color) {
+	protected void setHpTagBgColor(byte color) {
 		this.hpTagBgColor = color;
 	}
 
@@ -111,8 +111,8 @@ public class MobStats {
 		this.boss = true;
 	}
 
-	protected void setSelfDestruct(SelfDestruct sd) {
-		this.sd = sd;
+	protected void setSelfDestructHp(int hp) {
+		this.sd = hp;
 	}
 
 	protected void addLoseItem(int itemid) {
@@ -135,8 +135,8 @@ public class MobStats {
 		this.attacks.put(Integer.valueOf(attackid), attack);
 	}
 
-	protected void addSkill(int skillid, Skill skill) {
-		this.skills.put(Integer.valueOf(skillid), skill);
+	protected void addSkill(Skill skill) {
+		this.skills.add(skill);
 	}
 
 	protected void setBuffToGive(int buffid) {
@@ -147,7 +147,7 @@ public class MobStats {
 		this.delays.put(name, Integer.valueOf(delay));
 	}
 
-	public int getLevel() {
+	public short getLevel() {
 		return level;
 	}
 
@@ -187,11 +187,11 @@ public class MobStats {
 		return hideName;
 	}
 
-	public int getHpTagColor() {
+	public byte getHpTagColor() {
 		return hpTagColor;
 	}
 
-	public int getHpTagBgColor() {
+	public byte getHpTagBgColor() {
 		return hpTagBgColor;
 	}
 
@@ -199,7 +199,7 @@ public class MobStats {
 		return boss;
 	}
 
-	public SelfDestruct getSelfDestruct() {
+	public int getSelfDestructHp() {
 		return sd;
 	}
 
@@ -223,7 +223,7 @@ public class MobStats {
 		return attacks;
 	}
 
-	public Map<Integer, Skill> getSkills() {
+	public List<Skill> getSkills() {
 		return skills;
 	}
 

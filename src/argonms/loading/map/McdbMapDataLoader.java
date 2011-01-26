@@ -32,13 +32,13 @@ import java.util.logging.Logger;
  */
 public class McdbMapDataLoader extends MapDataLoader {
 	private static final Logger LOG = Logger.getLogger(McdbMapDataLoader.class.getName());
-	private Connection con;
 
-	public McdbMapDataLoader() {
-		con = DatabaseConnection.getWzConnection();
+	protected McdbMapDataLoader() {
+		
 	}
 
-	protected void load(int mapid)  {
+	protected void load(int mapid) {
+		Connection con = DatabaseConnection.getWzConnection();
 		MapStats stats = null;
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapdata` WHERE `mapid` = ?");
@@ -57,6 +57,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	public boolean loadAll() {
+		Connection con = DatabaseConnection.getWzConnection();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -82,6 +83,23 @@ public class McdbMapDataLoader extends MapDataLoader {
 		}
 	}
 
+	public boolean canLoad(int mapid) {
+		Connection con = DatabaseConnection.getWzConnection();
+		boolean exists = false;
+		try {
+			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapdata` WHERE `mapid` = ?");
+			ps.setInt(1, mapid);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				exists = true;
+			rs.close();
+			ps.close();
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not use MCDB to determine whether map " + mapid + " is valid.", e);
+		}
+		return exists;
+	}
+
 	private int doWork(ResultSet rs, MapStats stats) throws SQLException {
 		int mapid = rs.getInt(1);
 		stats.setReturnMap(rs.getInt(6));
@@ -103,6 +121,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	private void loadLife(int mapid, MapStats stats) {
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `maplifedata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -129,6 +148,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	private void loadReactors(int mapid, MapStats stats) {
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapreactordata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -151,6 +171,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	private void loadFootholds(int mapid, MapStats stats) {
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapfootholddata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -174,6 +195,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	private void loadPortals(int mapid, MapStats stats) {
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapportaldata` where `mapid` = ?");
 			ps.setInt(1, mapid);
