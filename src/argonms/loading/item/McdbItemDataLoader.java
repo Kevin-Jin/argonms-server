@@ -147,10 +147,14 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				cash.add(oId);
 
 			tuc.put(oId, Byte.valueOf(rs.getByte("slots")));
+
+			if (getCharCat(itemid).equals("TamingMob")) {
+				byte tMobId = rs.getByte("tmob");
+				if (tMobId != 0)
+					tamingMobIds.put(oId, tMobId);
+			}
 		} else {
 			slotMax.put(oId, Short.valueOf(rs.getShort("maxslot")));
-			if (rs.getInt("notrade") != 0)
-				tradeBlocked.add(oId);
 
 			if (cat.equals("Pet")) {
 				try {
@@ -381,6 +385,8 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		}
 		if (rs.getInt("onlyone") != 0)
 			onlyOne.add(oId);
+		if (rs.getInt("notrade") != 0)
+			tradeBlocked.add(oId);
 		if (rs.getInt("quest") != 0)
 			questItem.add(oId);
 	}

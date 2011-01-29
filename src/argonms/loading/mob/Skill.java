@@ -23,22 +23,22 @@ package argonms.loading.mob;
  * @author GoldenKevin
  */
 public class Skill {
-	private int skill;
-	private int level;
+	private short skill;
+	private byte level;
 
-	public void setSkill(int id) {
+	public void setSkill(short id) {
 		this.skill = id;
 	}
 
-	public void setLevel(int level) {
+	public void setLevel(byte level) {
 		this.level = level;
 	}
 
-	public int getSkill() {
+	public short getSkill() {
 		return skill;
 	}
 
-	public int getLevel() {
+	public byte getLevel() {
 		return level;
 	}
 

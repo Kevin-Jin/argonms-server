@@ -59,7 +59,9 @@ public class KvjItemDataLoader extends ItemDataLoader {
 
 		PET_COMMAND = 20,
 		PET_HUNGER = 21,
-		PET_EVOLVE = 22
+		PET_EVOLVE = 22,
+
+		TAMING_MOB_ID = 23
 	;
 
 	private String dataPath;
@@ -99,6 +101,17 @@ public class KvjItemDataLoader extends ItemDataLoader {
 							doWork(itemid, new LittleEndianByteArrayReader(new File(prefFolder.getAbsolutePath() + File.separatorChar + kvj)));
 							loaded.add(Integer.valueOf(itemid));
 						}
+					}
+				}
+			}
+			root = new File(dataPath + "Character.wz");
+			for (String cat : root.list()) {
+				File catFolder = new File(root.getAbsolutePath() + File.separatorChar + cat);
+				if (!cat.equals("Afterimage") && !cat.equals("Face") && !cat.equals("Hair")) {
+					for (String kvj : catFolder.list()) {
+						int itemid = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".img.kvj")));
+						doWork(itemid, new LittleEndianByteArrayReader(new File(catFolder.getAbsolutePath() + File.separatorChar + kvj)));
+						loaded.add(Integer.valueOf(itemid));
 					}
 				}
 			}
@@ -209,6 +222,10 @@ public class KvjItemDataLoader extends ItemDataLoader {
 					if (!evolveChoices.containsKey(oId))
 						evolveChoices.put(oId, new ArrayList<int[]>());
 					evolveChoices.get(oId).add(processPetEvolve(reader));
+					break;
+
+				case TAMING_MOB_ID:
+					tamingMobIds.put(oId, Byte.valueOf(reader.readByte()));
 					break;
 			}
 		}

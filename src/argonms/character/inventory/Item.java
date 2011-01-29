@@ -16,31 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game;
-
-import argonms.character.Player;
-import argonms.net.client.RemoteClient;
+package argonms.character.inventory;
 
 /**
  *
  * @author GoldenKevin
  */
-public class GameClient extends RemoteClient {
-	private Player player;
+public class Item extends IItem implements Cloneable {
+	private short qty;
 
-	public GameClient(byte world, byte channel) {
-		setWorld(world);
-		setChannel(world);
-		this.player = new Player();
-		GameServer.getChannel(channel).increaseLoad();
+	public Item(int itemid) {
+		super(itemid);
+		qty = 1;
 	}
 
-	public Player getPlayer() {
-		return player;
+	public ItemType getType() {
+		return ItemType.ITEM;
 	}
 
-	public void disconnect() {
-		updateState(STATUS_NOTLOGGEDIN);
-		GameServer.getChannel(getChannel()).decreaseLoad();
+	public short getQuantity() {
+		return qty;
+	}
+
+	public void setQuantity(short newValue) {
+		this.qty = newValue;
+	}
+
+	public Item clone() {
+		Item copy = new Item(getItemId());
+		copy.setExpiration(getExpiration());
+		copy.setUniqueId(getUniqueId());
+
+		copy.setQuantity(getQuantity());
+		return copy;
 	}
 }

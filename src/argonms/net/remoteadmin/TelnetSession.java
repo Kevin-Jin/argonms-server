@@ -38,6 +38,27 @@ public class TelnetSession {
 
 	private enum State { LOGIN, PASSWORD, MESSAGE }
 
+	public static final byte
+		IAC = (byte) 0xFF,
+		DONT = (byte) 0xFE,
+		DO = (byte) 0xFD,
+		WONT = (byte) 0xFC,
+		WILL = (byte) 0xFB,
+		SB = (byte) 0xFA,
+		SE = (byte) 0xF0
+	;
+
+	public static final byte
+		BINARY = 0,
+		ECHO = 1,
+		SUPPRESS_GO_AHEAD = 3,
+		TERMINAL_TYPE = 24,
+		NAWS = 31,
+		TERMINAL_SPEED = 32,
+		AUTHENTICATION = 37,
+		NEW_ENVIRON = 39
+	;
+
 	private Channel ch;
 	private String username;
 	private State state;
@@ -49,6 +70,44 @@ public class TelnetSession {
 		channel.write("Login: ");
 	}
 
+	public int protocolCmd(byte[] array, int index) {
+		int delta = 1;
+		switch (array[index]) {
+			case WILL:
+				delta++;
+				switch (array[index + 1]) {
+					case TERMINAL_TYPE:
+						break;
+					case NAWS:
+						break;
+					case TERMINAL_SPEED:
+						break;
+					case NEW_ENVIRON:
+						break;
+					case SUPPRESS_GO_AHEAD:
+						ch.write(new byte[] { IAC, DO, SUPPRESS_GO_AHEAD });
+						break;
+				}
+				break;
+			case DO:
+				delta++;
+				switch (array[index + 1]) {
+					case ECHO:
+						ch.write(new byte[] { IAC, WILL, ECHO });
+						break;
+					case SUPPRESS_GO_AHEAD:
+						ch.write(new byte[] { IAC, WILL, SUPPRESS_GO_AHEAD });
+						break;
+				}
+				break;
+		}
+		return delta;
+	}
+
+	public boolean willEcho() {
+		return state != State.PASSWORD;
+	}
+
 	public void process(String message) {
 		switch (state) {
 			case LOGIN:
@@ -57,6 +116,7 @@ public class TelnetSession {
 				this.state = State.PASSWORD;
 				break;
 			case PASSWORD:
+				ch.write("\r\n");
 				authenticate(message);
 				break;
 			case MESSAGE:
@@ -78,7 +138,7 @@ public class TelnetSession {
 				byte gm = rs.getByte(4);
 				if (gm < UserPrivileges.ADMIN) {
 					this.state = State.LOGIN;
-					ch.write("You do not have sufficient permissions to administer this server.\r\n");
+					ch.write("You do not have sufficient permissions to administer this server.\r\n\r\n");
 					ch.write("Login: ");
 				} else if ((salt == null || salt.length() == 0) && (passhash.equals(pwd) || HashFunctions.checkSha1Hash(passhash, pwd))) {
 					salt = HashFunctions.makeSalt();
@@ -87,25 +147,29 @@ public class TelnetSession {
 					ps.setString(2, passhash);
 					ps.setString(3, salt);
 					ps.setString(4, username);
-					ch.write("Welcome, " + username + "!\r\n");
+					ch.write("Welcome, " + username + "!\r\n\r\n");
 					this.state = State.MESSAGE;
+					ch.write(">");
 				} else if (HashFunctions.checkSaltedSha512Hash(passhash, pwd, salt)) {
-					ch.write("Welcome, " + username + "!\r\n");
+					ch.write("Welcome, " + username + "!\r\n\r\n");
 					this.state = State.MESSAGE;
+					ch.write(">");
 				} else if (banExpire > 0) {
 					this.state = State.LOGIN;
-					ch.write("Your account is currently banned. Try again later.\r\n");
+					ch.write("Your account is currently banned. Try again later.\r\n\r\n");
 					ch.write("Login: ");
 				} else {
 					this.state = State.LOGIN;
-					ch.write("You have entered the wrong password. Try again.\r\n");
+					ch.write("You have entered the wrong password. Try again.\r\n\r\n");
 					ch.write("Login: ");
 				}
 			} else {
 				this.state = State.LOGIN;
-				ch.write("That in-game account does not exist. Try again.\r\n");
+				ch.write("That in-game account does not exist. Try again.\r\n\r\n");
 				ch.write("Login: ");
 			}
+			rs.close();
+			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not fetch login information for telnet user of account " + username, ex);
 			this.state = State.LOGIN;
@@ -115,6 +179,10 @@ public class TelnetSession {
 	}
 
 	private void processCommand(String message) {
-		
+		if (message.equals("exit") || message.equals("quit")) {
+			ch.close();
+			return;
+		}
+		ch.write(">");
 	}
 }

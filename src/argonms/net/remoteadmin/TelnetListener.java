@@ -19,10 +19,14 @@
 package argonms.net.remoteadmin;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -38,19 +42,19 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.oio.OioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.DelimiterBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.Delimiters;
+import org.jboss.netty.handler.codec.oneone.OneToOneDecoder;
+import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.jboss.netty.handler.codec.string.StringDecoder;
-import org.jboss.netty.handler.codec.string.StringEncoder;
 
 /**
- * TODO: This stuff doesn't handle special Telnet characters (any byte that has
- * a value greater than 127 (0x7F)! The processing of these special characters
- * is important, especially for initial negotiation and handshake.
- * Also make sure that we don't echo back the user's password when they're
- * typing it (or at least replace them with stars)!
+ * TODO: Don't echo backspace when user goes behind > or Login: Also don't
+ * include backspace in ascii string.
  * @author GoldenKevin
  */
 public class TelnetListener {
 	private static final Logger LOG = Logger.getLogger(TelnetListener.class.getName());
+	private static final Charset asciiEncoder = Charset.forName("US-ASCII");
+
 	private ServerBootstrap bootstrap;
 
 	public TelnetListener(boolean useNio) {
@@ -70,7 +74,7 @@ public class TelnetListener {
 		this.bootstrap.setPipelineFactory(new TelnetServerPipelineFactory());
 	}
 
-	public TelnetListener(int port, ServerBootstrap b) {
+	public TelnetListener(ServerBootstrap b) {
 		this.bootstrap = b;
 	}
 
@@ -88,11 +92,42 @@ public class TelnetListener {
 	private static final class TelnetServerPipelineFactory implements ChannelPipelineFactory {
 		public ChannelPipeline getPipeline() throws Exception {
 			ChannelPipeline pipeline = Channels.pipeline();
+			pipeline.addLast("specialChars", new TelnetDecoder());
 			pipeline.addLast("framer", new DelimiterBasedFrameDecoder(8192, Delimiters.lineDelimiter()));
 			pipeline.addLast("decoder", new StringDecoder());
-			pipeline.addLast("encoder", new StringEncoder());
+			pipeline.addLast("encoder", new TelnetEncoder());
 			pipeline.addLast("handler", new TelnetServerHandler());
 			return pipeline;
+		}
+	}
+
+	private static final class TelnetDecoder extends OneToOneDecoder {
+		protected Object decode(ChannelHandlerContext ctx, Channel chn, Object o) throws Exception {
+			boolean echo = sessions.get(chn).willEcho();
+			ChannelBuffer buf = (ChannelBuffer) o;
+			byte[] array = buf.array();
+			byte[] ascii = new byte[array.length];
+			int j = 0;
+			for (int i = 0; i < array.length; i++)
+				if (array[i] == TelnetSession.IAC)
+					i += sessions.get(chn).protocolCmd(array, i + 1);
+				else
+					ascii[j++] = array[i];
+			buf.skipBytes(array.length);
+			ChannelBuffer text = ChannelBuffers.copiedBuffer(ascii, 0, j);
+			if (echo)
+				chn.write(text);
+			return text;
+		}
+	}
+
+	private static final class TelnetEncoder extends OneToOneEncoder {
+		protected Object encode(ChannelHandlerContext chc, Channel chnl, Object o) throws Exception {
+			if (o instanceof String)
+				return ChannelBuffers.copiedBuffer(((String) o).getBytes(asciiEncoder));
+			else if (o instanceof byte[])
+				return ChannelBuffers.copiedBuffer((byte[]) o);
+			return o;
 		}
 	}
 

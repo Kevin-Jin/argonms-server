@@ -18,7 +18,7 @@
 
 package argonms.shop;
 
-import argonms.game.Player;
+import argonms.character.Player;
 import argonms.net.client.RemoteClient;
 
 /**

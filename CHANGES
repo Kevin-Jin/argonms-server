@@ -74,6 +74,21 @@
 	* I'm really getting ahead of myself by adding a MapFactory instance
 	variable in argonms.game.WorldChannel.
 
+2011-01-29  GoldenKevin  (revision 7)
+
+	* Made some progress on the Telnet listener. Now special telnet chars
+	( > 0x7F) are handled properly and won't be in the ASCII string. Just a few
+	more tweaks to the way some ASCII chars are handled and it will be ready...
+	* Fixed NullPointerException in SkillDataLoader.
+	* Fixed MCDB loading of mobs and skills.
+	* Added classes for inventory (items, equips, pets, rings, etc.) and moved
+	Player class from argonms.game to argonms.character.
+	* Support for KvjCompiler r14. Changes include Character.wz compiling and
+	reduced size of Mob files.
+	* Character.wz is now processed in KvjItemDataLoader. Taming Mob IDs are now
+	read in McdbItemDataLoader as well. In McdbItemDataLoader, equips can now be
+	made tradeBlocked.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
