@@ -25,7 +25,7 @@ import java.nio.charset.Charset;
  * @author GoldenKevin
  */
 public abstract class LittleEndianWriter {
-	private static Charset asciiEncoder = Charset.forName("US-ASCII");
+	private static final Charset asciiEncoder = Charset.forName("US-ASCII");
 
 	protected abstract void write(byte b);
 	protected abstract void write(byte[] bytes);

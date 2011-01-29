@@ -16,31 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game;
-
-import argonms.character.Player;
-import argonms.net.client.RemoteClient;
+package argonms.character;
 
 /**
  *
  * @author GoldenKevin
  */
-public class GameClient extends RemoteClient {
-	private Player player;
-
-	public GameClient(byte world, byte channel) {
-		setWorld(world);
-		setChannel(world);
-		this.player = new Player();
-		GameServer.getChannel(channel).increaseLoad();
-	}
-
-	public Player getPlayer() {
-		return player;
-	}
-
-	public void disconnect() {
-		updateState(STATUS_NOTLOGGEDIN);
-		GameServer.getChannel(getChannel()).decreaseLoad();
-	}
+public class Player {
+	private short level;
+	private short str, dex, _int, luk;
+	private int exp;
+	private int mesos;
 }

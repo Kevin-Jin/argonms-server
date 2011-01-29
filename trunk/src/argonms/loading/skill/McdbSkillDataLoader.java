@@ -187,7 +187,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 				effect.setBulletConsume(bulletcon);
 			else
 				effect.setBulletCount(bulletcon == 0 ? 1 : (byte) bulletcon);
-			effect.setItemConsume(rs.getShort(9));
+			effect.setItemConsume(rs.getInt(9));
 			effect.setItemConsumeCount(rs.getByte(10));
 			effect.setMoneyConsume(rs.getShort(12));
 			effect.setMorph(rs.getInt(26));

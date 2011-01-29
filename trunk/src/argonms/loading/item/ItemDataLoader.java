@@ -60,6 +60,8 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, Integer> petHunger;
 	protected Map<Integer, List<int[]>> evolveChoices;
 
+	protected Map<Integer, Byte> tamingMobIds;
+
 	protected ItemDataLoader() {
 		loaded = new ArrayList<Integer>();
 		wholePrice = new HashMap<Integer, Integer>();
@@ -86,6 +88,8 @@ public abstract class ItemDataLoader {
 		petCommands = new HashMap<Integer, Map<Byte, int[]>>();
 		petHunger = new HashMap<Integer, Integer>();
 		evolveChoices = new HashMap<Integer, List<int[]>>();
+
+		tamingMobIds = new HashMap<Integer, Byte>();
 	}
 
 	protected abstract void load(int itemid);

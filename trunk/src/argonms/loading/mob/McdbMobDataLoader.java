@@ -126,10 +126,10 @@ public class McdbMobDataLoader extends MobDataLoader {
 		ps = con.prepareStatement("SELECT `skillid`,`level` FROM `mobskilldata` WHERE `mobid` = ?");
 		ps.setInt(1, mobid);
 		rs2 = ps.executeQuery();
-		while(rs2.next()) {
+		while (rs2.next()) {
 			Skill s = new Skill();
-			s.setSkill(rs.getByte(1));
-			s.setLevel(rs.getInt(2));
+			s.setSkill(rs2.getShort(1));
+			s.setLevel(rs2.getByte(2));
 			stats.addSkill(s);
 		}
 		rs2.close();

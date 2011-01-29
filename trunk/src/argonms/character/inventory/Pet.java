@@ -16,31 +16,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game;
-
-import argonms.character.Player;
-import argonms.net.client.RemoteClient;
+package argonms.character.inventory;
 
 /**
  *
  * @author GoldenKevin
  */
-public class GameClient extends RemoteClient {
-	private Player player;
-
-	public GameClient(byte world, byte channel) {
-		setWorld(world);
-		setChannel(world);
-		this.player = new Player();
-		GameServer.getChannel(channel).increaseLoad();
+public class Pet extends IItem {
+	public Pet(int itemid) {
+		super(itemid);
 	}
 
-	public Player getPlayer() {
-		return player;
+	public ItemType getType() {
+		return ItemType.PET;
 	}
 
-	public void disconnect() {
-		updateState(STATUS_NOTLOGGEDIN);
-		GameServer.getChannel(getChannel()).decreaseLoad();
+	public short getQuantity() {
+		return 1;
+	}
+
+	public void setQuantity(short newValue) {
+		throw new UnsupportedOperationException("Cannot change quantity of a pet.");
+	}
+
+	public Pet clone() {
+		Pet copy = new Pet(getItemId());
+		copy.setExpiration(getExpiration());
+		copy.setUniqueId(getUniqueId());
+
+		return copy;
 	}
 }

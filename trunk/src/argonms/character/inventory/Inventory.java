@@ -16,15 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game;
+package argonms.character.inventory;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Player {
-	private short level;
-	private short str, dex, _int, luk;
-	private int exp;
-	private int mesos;
+public class Inventory {
+
 }

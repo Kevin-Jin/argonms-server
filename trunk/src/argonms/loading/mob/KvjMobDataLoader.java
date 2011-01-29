@@ -200,8 +200,8 @@ public class KvjMobDataLoader extends MobDataLoader {
 
 	private void processSkill(LittleEndianReader reader, MobStats stats) {
 		Skill s = new Skill();
-		s.setSkill(reader.readInt());
-		s.setLevel(reader.readInt());
+		s.setSkill(reader.readShort());
+		s.setLevel(reader.readByte());
 		stats.addSkill(s);
 	}
 }
