@@ -18,6 +18,7 @@
 
 package argonms.net.client;
 
+import argonms.net.client.handler.GameHandler;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,6 +32,18 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 
 	public void process(LittleEndianReader reader, RemoteClient s) {
 		switch (reader.readShort()) {
+			case ClientRecvOps.PLAYER_CONNECTED:
+				GameHandler.handlePlayerConnection(reader, s);
+				break;
+			case ClientRecvOps.PONG:
+				s.receivedPong();
+				break;
+			case ClientRecvOps.CLIENT_ERROR:
+				s.clientError(reader.readLengthPrefixedString());
+				break;
+			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
+				//no-op
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;

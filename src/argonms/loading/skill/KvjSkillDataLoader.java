@@ -169,10 +169,10 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setDamage(reader.readShort());
 					break;
 				case KvjEffects.LT:
-					effect.setLt(new Point(reader.readShort(), reader.readShort()));
+					effect.setLt(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.RB:
-					effect.setRb(new Point(reader.readShort(), reader.readShort()));
+					effect.setRb(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.MOB_COUNT:
 					effect.setMobCount(reader.readByte());

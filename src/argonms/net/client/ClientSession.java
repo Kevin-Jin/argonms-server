@@ -18,6 +18,8 @@
 
 package argonms.net.client;
 
+import java.net.SocketAddress;
+
 import argonms.ServerType;
 import argonms.game.GameClient;
 import argonms.login.LoginClient;
@@ -47,7 +49,7 @@ public class ClientSession {
 		if (world == ServerType.LOGIN)
 			this.client = new LoginClient();
 		else if (world == ServerType.SHOP)
-			this.client = new ShopClient(world, channel);
+			this.client = new ShopClient();
 		else
 			this.client = new GameClient(world, channel);
 	}
@@ -62,6 +64,10 @@ public class ClientSession {
 
 	public RemoteClient getClient() {
 		return client;
+	}
+
+	public SocketAddress getAddress() {
+		return ch.getRemoteAddress();
 	}
 
 	public void send(byte[] input) {

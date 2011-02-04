@@ -18,10 +18,13 @@
 
 package argonms.login;
 
+import argonms.ServerType;
+import argonms.character.Player;
 import argonms.net.HashFunctions;
+import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.tools.output.LittleEndianWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -48,6 +51,8 @@ public class LoginClient extends RemoteClient {
 	private byte chars;
 	private int banExpire;
 	private byte banReason;
+	private byte gm;
+	private boolean serverTransition;
 
 	/*
 	 * 0 = ok
@@ -64,7 +69,7 @@ public class LoginClient extends RemoteClient {
 		byte result = 0;
 		Connection con = DatabaseConnection.getConnection();
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`banexpire`,`banreason` FROM `accounts` WHERE `name` = ?");
+			PreparedStatement ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`banexpire`,`banreason`,`gm` FROM `accounts` WHERE `name` = ?");
 			ps.setString(1, getAccountName());
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
@@ -82,6 +87,7 @@ public class LoginClient extends RemoteClient {
 				byte onlineStatus = rs.getByte(8);
 				banExpire = rs.getInt(9);
 				banReason = rs.getByte(10);
+				gm = rs.getByte(11);
 				rs.close();
 				ps.close();
 				if ((salt == null || salt.length() == 0) && (passhash.equals(pwd) || HashFunctions.checkSha1Hash(passhash, pwd))) {
@@ -89,6 +95,10 @@ public class LoginClient extends RemoteClient {
 				} else if (!HashFunctions.checkSaltedSha512Hash(passhash, pwd, salt)) {
 					result = 4;
 				} else if (onlineStatus != STATUS_NOTLOGGEDIN) {
+					//TODO: there is a high chance that the player is not really
+					//in game if they have an onlineStatus of STATUS_MIGRATION.
+					//Make a way to check if they really are/will be connected
+					//to a server
 					result = 7;
 				} else if (banExpire > 0) {
 					result = 2;
@@ -139,6 +149,10 @@ public class LoginClient extends RemoteClient {
 		return pin;
 	}
 
+	public byte getGm() {
+		return gm;
+	}
+
 	public void setGender(byte gender) {
 		this.gender = gender;
 		Connection con = DatabaseConnection.getConnection();
@@ -151,7 +165,6 @@ public class LoginClient extends RemoteClient {
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not set gender of account " + getAccountId(), ex);
 		}
-		
 	}
 
 	public void setPin(String pin) {
@@ -168,8 +181,9 @@ public class LoginClient extends RemoteClient {
 		}
 	}
 
-	public void addCharacters(LittleEndianByteArrayWriter lew) {
+	public void addCharacters(LittleEndianWriter lew) {
 		Connection con = DatabaseConnection.getConnection();
+		//TODO: There's gotta be a way to not have to query the database twice?
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT count(*) FROM `characters` WHERE `accountid` = ? AND `world` = ?");
 			ps.setInt(1, getAccountId());
@@ -180,65 +194,12 @@ public class LoginClient extends RemoteClient {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT * FROM `characters` WHERE `accountid` = ? AND `world` = ?");
+			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE `accountid` = ? AND `world` = ?");
 			ps.setInt(1, getAccountId());
 			ps.setInt(2, getWorld());
 			rs = ps.executeQuery();
-			while (rs.next()) {
-				byte gender = rs.getByte(5);
-				byte skin = rs.getByte(6);
-				int eyes = rs.getInt(7);
-				int hair = rs.getInt(8);
-				lew.writeInt(rs.getInt(3)); //char id
-				lew.writePaddedAsciiString(rs.getString(4), 13); //name
-				lew.writeByte(gender); //gender
-				lew.writeByte(skin); //skin
-				lew.writeByte((byte) eyes); //eyes
-				lew.writeByte((byte) hair); //hair
-				lew.writeLong(0); //pet1
-				lew.writeLong(0); //pet2
-				lew.writeLong(0); //pet3
-				lew.writeByte(rs.getByte(9)); //level
-				lew.writeShort(rs.getShort(10)); //job
-				lew.writeShort(rs.getShort(11)); //str
-				lew.writeShort(rs.getShort(12)); //dex
-				lew.writeShort(rs.getShort(13)); //int
-				lew.writeShort(rs.getShort(14)); //luk
-				lew.writeShort(rs.getShort(15)); //hp
-				lew.writeShort(rs.getShort(16)); //max hp
-				lew.writeShort(rs.getShort(17)); //mp
-				lew.writeShort(rs.getShort(18)); //max mp
-				lew.writeShort(rs.getShort(19)); //ap
-				lew.writeShort(rs.getShort(20)); //sp
-				lew.writeInt(rs.getInt(21)); //exp
-				lew.writeShort(rs.getShort(22)); //fame
-				lew.writeInt(rs.getInt(23)); // spouse
-				lew.writeInt(rs.getInt(24)); //map
-				lew.writeByte(rs.getByte(25)); //spawnpoint
-				lew.writeInt(0); //unknown
-
-				lew.writeByte(gender); //gender
-				lew.writeByte(skin); //skin
-				lew.writeInt(eyes); //eyes
-				lew.writeBool(true); //messenger/megaphone
-				lew.writeInt(hair); //hair
-				//equips stuff.. blah
-				lew.writeByte((byte) 0xFF); //end of visible equips
-				lew.writeByte((byte) 0xFF); //end of masked equips
-				lew.writeInt(0); //cash weapon
-				lew.writeInt(0); //unknown
-				lew.writeLong(0); //unknown
-
-				if (rs.getBoolean(33)) { //if gm
-					lew.writeByte((byte) 0); //world rank disabled
-				} else {
-					/*writer.WriteByte(1); // world rank enabled (next 4 ints are not sent if disabled)
-					writer.WriteInt(chr.getRank()); // world rank
-					writer.WriteInt(chr.getRankMove()); // move (negative is downwards)
-					writer.WriteInt(chr.getJobRank()); // job rank
-					writer.WriteInt(chr.getJobRankMove()); // move (negative is downwards)*/
-				}
-			}
+			while (rs.next())
+				CommonPackets.writeCharEntry(lew, Player.loadPlayer(this, rs.getInt(1)));
 			rs.close();
 			ps.close();
 		} catch (SQLException ex) {
@@ -246,8 +207,73 @@ public class LoginClient extends RemoteClient {
 		}
 	}
 
+	//TODO: Find more status codes.
+	public byte deleteCharacter(int characterid, int enteredBirthday) {
+		byte status = 18;
+		if (birthday == 0 || birthday == enteredBirthday) {
+			Connection con = DatabaseConnection.getConnection();
+			try {
+				PreparedStatement ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
+				ps.setInt(1, characterid);
+				int rowsUpdated = ps.executeUpdate();
+				ps.close();
+				if (rowsUpdated != 0)
+					status = 0;
+				else
+					status = 1;
+			} catch (SQLException ex) {
+				LOG.log(Level.WARNING, "Could not delete character " + characterid + " of account " + getAccountId(), ex);
+				status = 1;
+			}
+		}
+		return status;
+	}
+
+	//TODO: I guess we're gonna have to save the mac address to the SQL so we
+	//can unban them when they're not logged in...
+	public boolean hasBannedMac(String macData) {
+		String[] macAddresses = macData.split(", ");
+		StringBuilder query = new StringBuilder("SELECT COUNT(*) FROM `macbans` WHERE `mac` IN (");
+		for (int i = 0; i < macAddresses.length; i++)
+			query.append("?, ");
+
+		Connection con = DatabaseConnection.getConnection();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement(query.replace(query.length() - 2, query.length(), ")").toString());
+			for (int i = 0; i < macAddresses.length; i++)
+				ps.setString(i + 1, macAddresses[i]);
+			rs = ps.executeQuery();
+			if (rs.next() && rs.getInt(1) > 0)
+				return true;
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not update MAC addresses of account " + getAccountId(), e);
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (ps != null)
+					ps.close();
+			} catch (SQLException ex) {
+				//nothing we can do...
+			}
+		}
+		return false;
+	}
+
+	public void hostMigration() {
+		serverTransition = true;
+		updateState(STATUS_MIGRATION);
+	}
+
+	public byte getServerType() {
+		return ServerType.LOGIN;
+	}
+
 	public void disconnect() {
-		if (getAccountId() != 0)
+		stopPingTask();
+		if (!serverTransition && getAccountId() != 0)
 			updateState(STATUS_NOTLOGGEDIN);
 	}
 }

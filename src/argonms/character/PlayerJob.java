@@ -16,50 +16,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character;
 
 /**
- *
+ * A helper class with static methods that accept job id parameters and check
+ * various conditions.
  * @author GoldenKevin
  */
-public abstract class IItem implements Comparable<IItem>, Cloneable {
-	public enum ItemType { EQUIP, ITEM, PET }
-
-	private int id;
-	private long expire;
-	private int uid;
-
-	protected IItem(int itemid) {
-		this.id = itemid;
+public class PlayerJob {
+	public static boolean isWarrior(short jobid) {
+		return ((jobid / 100) == 1);
 	}
 
-	public abstract ItemType getType();
-	public abstract short getQuantity();
-	public abstract void setQuantity(short value);
-
-	public int getItemId() {
-		return id;
+	public static boolean isMage(short jobid) {
+		return ((jobid / 100) == 2);
 	}
 
-	public long getExpiration() {
-		return expire;
+	public static boolean isArcher(short jobid) {
+		return ((jobid / 100) == 3);
 	}
 
-	public void setExpiration(long expire) {
-		this.expire = expire;
+	public static boolean isThief(short jobid) {
+		return ((jobid / 100) == 4);
 	}
 
-	public int getUniqueId() {
-		return uid;
+	public static boolean isPirate(short jobid) {
+		return ((jobid / 100) == 5);
 	}
 
-	public void setUniqueId(int id) {
-		this.uid = id;
+	public static boolean isModerator(short jobid) {
+		return ((jobid / 100) == 9);
 	}
-
-	public int compareTo(IItem item) {
-		return this.getItemId() - item.getItemId();
-	}
-
-	public abstract IItem clone();
 }

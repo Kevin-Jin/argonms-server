@@ -74,12 +74,12 @@ public class SkillEffect extends StatEffects {
 		this.damage = damage;
 	}
 
-	protected void setLt(Point point) {
-		this.lt = point;
+	protected void setLt(short x, short y) {
+		this.lt = new Point(x, y);
 	}
 
-	protected void setRb(Point point) {
-		this.rb = point;
+	protected void setRb(short x, short y) {
+		this.rb = new Point(x, y);
 	}
 
 	protected void setMobCount(byte count) {

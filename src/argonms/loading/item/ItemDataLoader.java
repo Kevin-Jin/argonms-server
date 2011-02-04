@@ -18,6 +18,7 @@
 
 package argonms.loading.item;
 
+import argonms.character.inventory.InventoryTools;
 import argonms.loading.DataFileType;
 import argonms.loading.KvjEffects;
 import java.util.ArrayList;
@@ -114,7 +115,7 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		if (!slotMax.containsKey(oId))
-			slotMax.put(oId, Short.valueOf((short) (!getCategory(itemId).equals("Equip") ? 100 : 1)));
+			slotMax.put(oId, Short.valueOf((short) (!InventoryTools.getCategory(itemId).equals("Equip") ? 100 : 1)));
 		return slotMax.get(oId).shortValue();
 	}
 
@@ -130,6 +131,15 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		return reqStats.containsKey(oId) ? reqStats.get(oId)[KvjEffects.Level] : 0;
+	}
+
+	public short[] getBonusStats(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		short[] ret = bonusStats.get(oId);
+		//don't trust the caller not to alter the array for the rest of us...
+		return ret != null ? ret.clone() : null;
 	}
 
 	public boolean isRateCardOperating(int itemId) {
@@ -152,87 +162,11 @@ public abstract class ItemDataLoader {
 		return false;
 	}
 
-	public static String getCategory(int itemid) {
-		switch (itemid / 1000000) {
-			case 1:
-				return "Equip";
-			case 2:
-				return "Consume";
-			case 3:
-				return "Install";
-			case 4:
-				return "Etc";
-			case 5:
-				if (itemid >= 5000000 && itemid <= 5000100)
-					return "Pet";
-				else
-					return "Cash";
-			default:
-				return null;
-		}
-	}
-
-	public static String getCharCat(int id) {
-		switch (id / 10000) {
-			case 2:
-				return "Face";
-			case 3:
-				return "Hair";
-			case 100:
-				return "Cap";
-			case 101:
-			case 102:
-			case 103:
-			case 112:
-				return "Accessory";
-			case 104:
-				return "Coat";
-			case 105:
-				return "Longcoat";
-			case 106:
-				return "Pants";
-			case 107:
-				return "Shoes";
-			case 108:
-				return "Glove";
-			case 109:
-				return "Shield";
-			case 110:
-				return "Cape";
-			case 111:
-				return "Ring";
-			case 130:
-			case 131:
-			case 132:
-			case 133:
-			case 137:
-			case 138:
-			case 139:
-			case 140:
-			case 141:
-			case 142:
-			case 143:
-			case 144:
-			case 145:
-			case 146:
-			case 147:
-			case 148:
-			case 149:
-			case 160:
-			case 170:
-				return "Weapon";
-			case 180:
-			case 181:
-			case 182:
-			case 183:
-				return "PetEquip";
-			case 190:
-			case 191:
-			case 193:
-				return "TamingMob";
-			default:
-				return null;
-		}
+	public byte getUpgradeSlots(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return tuc.get(oId) != null ? tuc.get(oId).byteValue() : 7;
 	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {

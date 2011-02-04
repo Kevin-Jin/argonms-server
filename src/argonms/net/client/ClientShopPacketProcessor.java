@@ -31,6 +31,9 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor {
 
 	public void process(LittleEndianReader reader, RemoteClient s) {
 		switch (reader.readShort()) {
+			case ClientRecvOps.PONG:
+				s.receivedPong();
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;

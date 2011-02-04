@@ -22,7 +22,7 @@ package argonms.character.inventory;
  *
  * @author GoldenKevin
  */
-public class Item extends IItem implements Cloneable {
+public class Item extends InventorySlot implements Cloneable {
 	private short qty;
 
 	public Item(int itemid) {

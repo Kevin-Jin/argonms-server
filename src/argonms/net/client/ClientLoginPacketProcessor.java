@@ -36,6 +36,9 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.LOGIN_PASSWORD:
 				AuthHandler.handleLogin(reader, s);
 				break;
+			case ClientRecvOps.SERVERLIST_REREQUEST:
+				WorldlistHandler.handleWorldListRequest(reader, s);
+				break;
 			case ClientRecvOps.CHARLIST_REQ:
 				WorldlistHandler.handleCharlist(reader, s);
 				break;
@@ -54,17 +57,40 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.SERVERLIST_REQUEST:
 				WorldlistHandler.handleWorldListRequest(reader, s);
 				break;
+			case ClientRecvOps.EXIT_CHARLIST:
+				//I guess if we're loading a character right now, we cancel it?
+				break;
 			case ClientRecvOps.VIEW_ALL_CHARS:
-				WorldlistHandler.sendAllChars(reader, s);
+				WorldlistHandler.handleViewAllChars(reader, s);
+				break;
+			case ClientRecvOps.PICK_ALL_CHAR:
+				WorldlistHandler.handlePickFromAllChars(reader, s);
+				break;
+			case ClientRecvOps.ENTER_EXIT_VIEW_ALL:
+				//I guess if we're loading a character right now, we cancel it?
+				break;
+			case ClientRecvOps.CHAR_SELECT:
+				WorldlistHandler.handlePickFromWorldCharlist(reader, s);
 				break;
 			case ClientRecvOps.CHECK_CHAR_NAME:
-				WorldlistHandler.checkName(reader, s);
+				WorldlistHandler.handleNameCheck(reader, s);
 				break;
 			case ClientRecvOps.CREATE_CHAR:
-				WorldlistHandler.createCharacter(reader, s);
+				WorldlistHandler.handleCreateCharacter(reader, s);
 				break;
+			case ClientRecvOps.DELETE_CHAR:
+				WorldlistHandler.handleDeleteChar(reader, s);
+				break;
+			case ClientRecvOps.PONG:
+				s.receivedPong();
+				break;
+			case ClientRecvOps.CLIENT_ERROR:
+				s.clientError(reader.readNullTerminatedString());
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
+				break;
+			case ClientRecvOps.RELOG:
+				WorldlistHandler.backToLogin(reader, s);
 				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });

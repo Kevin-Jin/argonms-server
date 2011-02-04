@@ -22,9 +22,38 @@ package argonms.character.inventory;
  *
  * @author GoldenKevin
  */
-public class Pet extends IItem {
+public class Pet extends InventorySlot {
+	private String name;
+	private byte level;
+	private short closeness;
+	private byte fullness;
+	private boolean expired;
+
+	/**
+	 * After this method is called, the name of the newly created pet will still
+	 * be null so set it with a call to the method
+	 * setName(StringDataLoader.getInstance().getItemNameFromId(getItemId()))
+	 * @param itemid
+	 */
 	public Pet(int itemid) {
 		super(itemid);
+
+		//set all the default stats except for name, because StringDataLoader
+		//might not be available (and if it was, it would be too expensive).
+		this.level = 1;
+		this.closeness = 0;
+		this.fullness = 100;
+		this.expired = false;
+	}
+
+	public Pet(int id, String name, byte lvl, short cn, byte fn, boolean expd) {
+		super(id);
+
+		this.name = name;
+		this.level = lvl;
+		this.closeness = cn;
+		this.fullness = fn;
+		this.expired = expd;
 	}
 
 	public ItemType getType() {
@@ -39,10 +68,56 @@ public class Pet extends IItem {
 		throw new UnsupportedOperationException("Cannot change quantity of a pet.");
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setLevel(byte level) {
+		this.level = level;
+	}
+
+	public void setCloseness(short closeness) {
+		this.closeness = closeness;
+	}
+
+	public void setFullness(byte fullness) {
+		this.fullness = fullness;
+	}
+
+	public void setExpired(boolean expired) {
+		this.expired = expired;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public byte getLevel() {
+		return level;
+	}
+
+	public short getCloseness() {
+		return closeness;
+	}
+
+	public byte getFullness() {
+		return fullness;
+	}
+
+	public boolean isExpired() {
+		return expired;
+	}
+
 	public Pet clone() {
 		Pet copy = new Pet(getItemId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
+
+		copy.setName(getName());
+		copy.setLevel(getLevel());
+		copy.setCloseness(getCloseness());
+		copy.setFullness(getFullness());
+		copy.setExpired(isExpired());
 
 		return copy;
 	}

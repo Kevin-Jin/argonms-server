@@ -18,8 +18,10 @@
 
 package argonms.game;
 
+import argonms.character.Player;
 import argonms.map.MapFactory;
 import argonms.net.client.ClientListener;
+import argonms.net.client.PlayerLog;
 import argonms.net.server.RemoteCenterOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.util.logging.Level;
@@ -36,12 +38,14 @@ public class WorldChannel {
 	private byte world, channel;
 	private int port;
 	private MapFactory mapFactory;
+	private PlayerLog storage;
 
 	protected WorldChannel(byte world, byte channel, int port) {
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
 		this.mapFactory = new MapFactory();
+		this.storage = new PlayerLog();
 	}
 
 	public void listen(boolean useNio) {
@@ -52,7 +56,29 @@ public class WorldChannel {
 			shutdown();
 	}
 
-	public void increaseLoad() {
+	public void addPlayer(Player p) {
+		storage.addPlayer(p);
+		increaseLoad();
+	}
+
+	public void removePlayer(Player p) {
+		storage.deletePlayer(p);
+		decreaseLoad();
+	}
+
+	public Player getPlayerById(int characterid) {
+		return storage.getPlayer(characterid);
+	}
+
+	public Player getPlayerByName(String name) {
+		return storage.getPlayer(name);
+	}
+
+	public boolean isPlayerConnected(int characterid) {
+		return storage.getPlayer(characterid) != null;
+	}
+
+	private void increaseLoad() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);
@@ -60,7 +86,7 @@ public class WorldChannel {
 		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
 	}
 
-	public void decreaseLoad() {
+	private void decreaseLoad() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);

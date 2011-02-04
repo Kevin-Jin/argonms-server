@@ -26,6 +26,7 @@ import argonms.net.client.ClientListener;
 import argonms.tools.DatabaseConnection;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -128,8 +129,14 @@ public class LoginServer implements LocalServer {
 	}
 
 	public void gameConnected(byte world, String host, int[] ports) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(world), host });
-		onlineWorlds.put(Byte.valueOf(world), new World(world, host, ports));
+		try {
+			World w = new World(world, host, ports);
+			onlineWorlds.put(Byte.valueOf(world), w);
+			LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(world), host });
+		} catch (UnknownHostException e) {
+			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(world)
+					+ " server because its address could not be resolved!", e);
+		}
 	}
 
 	public void gameDisconnected(byte world) {

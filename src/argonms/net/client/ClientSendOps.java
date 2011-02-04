@@ -32,7 +32,12 @@ public final class ClientSendOps {
 		ALL_CHARLIST = 0x08,
 		WORLD_ENTRY = 0x0A,
 		CHARLIST = 0x0B,
-		CHECK_NAME_RESP = 0x0D
+		CHANNEL_ADDRESS = 0x0C,
+		CHECK_NAME_RESP = 0x0D,
+		CHAR_CREATED = 0x0E,
+		DELETE_CHAR_RESPONSE = 0x0F,
+		PING = 0x11,
+		RELOG_RESPONSE = 0x16
 	;
 	
 	private ClientSendOps() {

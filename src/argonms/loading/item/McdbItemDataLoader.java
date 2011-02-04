@@ -18,6 +18,7 @@
 
 package argonms.loading.item;
 
+import argonms.character.inventory.InventoryTools;
 import argonms.loading.KvjEffects;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
@@ -25,7 +26,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -44,7 +44,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 
 	protected void load(int itemid) {
 		Connection con = DatabaseConnection.getWzConnection();
-		String cat = getCategory(itemid);
+		String cat = InventoryTools.getCategory(itemid);
 		String query;
 		if (cat.equals("Equip"))
 			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
@@ -101,7 +101,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 	public boolean canLoad(int itemid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
-		String cat = getCategory(itemid);
+		String cat = InventoryTools.getCategory(itemid);
 		String query;
 		if (cat.equals("Equip"))
 			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
@@ -123,7 +123,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 
 	private void doWork(int itemid, ResultSet rs) throws SQLException {
 		Connection con = DatabaseConnection.getWzConnection();
-		String cat = getCategory(itemid);
+		String cat = InventoryTools.getCategory(itemid);
 		Integer oId = itemid;
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));
 		short[] incStats = new short[16];
@@ -148,7 +148,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 
 			tuc.put(oId, Byte.valueOf(rs.getByte("slots")));
 
-			if (getCharCat(itemid).equals("TamingMob")) {
+			if (InventoryTools.getCharCat(itemid).equals("TamingMob")) {
 				byte tMobId = rs.getByte("tmob");
 				if (tMobId != 0)
 					tamingMobIds.put(oId, tMobId);
@@ -200,7 +200,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 					while (crs.next()) {
 						String[] time = crs.getString(1).split(":");
 						String[] startEnd = time[1].split("-");
-						hours.add(new byte[] { getDayByteFromString(time[0]), Byte.parseByte(startEnd[0]), Byte.parseByte(startEnd[1]) });
+						hours.add(new byte[] { InventoryTools.getDayByteFromString(time[0]), Byte.parseByte(startEnd[0]), Byte.parseByte(startEnd[1]) });
 					}
 					crs.close();
 					ps.close();
@@ -389,27 +389,5 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			tradeBlocked.add(oId);
 		if (rs.getInt("quest") != 0)
 			questItem.add(oId);
-	}
-
-	private static byte getDayByteFromString(String str) {
-		if (str.equals("SUN")) {
-			return Calendar.SUNDAY;
-		} else if (str.equals("MON")) {
-			return Calendar.MONDAY;
-		} else if (str.equals("TUE")) {
-			return Calendar.TUESDAY;
-		} else if (str.equals("WED")) {
-			return Calendar.WEDNESDAY;
-		} else if (str.equals("THU")) {
-			return Calendar.THURSDAY;
-		} else if (str.equals("FRI")) {
-			return Calendar.FRIDAY;
-		} else if (str.equals("SAT")) {
-			return Calendar.SATURDAY;
-		} else if (str.equals("HOL")) {
-			return 8;
-		} else {
-			return 0;
-		}
 	}
 }
