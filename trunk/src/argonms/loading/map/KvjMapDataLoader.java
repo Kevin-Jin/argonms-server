@@ -206,8 +206,9 @@ public class KvjMapDataLoader extends MapDataLoader {
 		Portal p = new Portal();
 		p.setPortalName(reader.readNullTerminatedString());
 		p.setPortalType(reader.readInt());
-		p.setX(reader.readInt());
-		p.setY(reader.readInt());
+		int x = reader.readInt();
+		int y = reader.readInt();
+		p.setPosition(x, y);
 		p.setTargetMapId(reader.readInt());
 		p.setTargetName(reader.readNullTerminatedString());
 		p.setScript(reader.readNullTerminatedString());

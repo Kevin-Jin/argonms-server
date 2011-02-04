@@ -205,8 +205,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 				Portal p = new Portal();
 				String name = rs.getString(3);
 				p.setPortalName(name);
-				p.setX(rs.getInt(4));
-				p.setY(rs.getInt(5));
+				p.setPosition(rs.getInt(4), rs.getInt(5));
 				int to = rs.getInt(6);
 				int type = 0;
 				String script = rs.getString(8);

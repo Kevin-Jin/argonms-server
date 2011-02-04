@@ -82,6 +82,6 @@ public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 		int newPort = packet.readInt();
 		World w = local.getWorlds().get(Byte.valueOf(world));
 		if (w != null)
-			w.getPorts()[channel] = newPort;
+			w.getPorts()[channel - 1] = newPort;
 	}
 }

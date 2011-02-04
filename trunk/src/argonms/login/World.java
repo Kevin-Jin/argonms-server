@@ -18,6 +18,9 @@
 
 package argonms.login;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  *
  * @author GoldenKevin
@@ -26,37 +29,37 @@ public class World {
 	private static final String[] names = { "Scania", "Bera", "Broa", "Windia", "Khaini", "Bellocan", "Mardia", "Kradia", "Yellonde", "Demethos", "Elnido", "Kastia", "Judis", "Arkenia", "Plana" };
 
 	private String name;
-	private String host;
+	private byte[] host;
 	private int[] channelPorts;
 	private short[] loads;
 	private byte flag;
 	private String eventMessage;
 
-	public World(String name, String host, int[] ports) {
+	public World(String name, String host, int[] ports) throws UnknownHostException {
 		this.name = name;
-		this.host = host;
+		this.host = InetAddress.getByName(host).getAddress();
 		this.channelPorts = ports;
 		this.loads = new short[channelPorts.length];
 		this.eventMessage = "";
 	}
 
-	public World(byte worldId, String host, int[] ports) {
+	public World(byte worldId, String host, int[] ports) throws UnknownHostException {
 		this(names[worldId], host, ports);
 	}
 
 	public void incrementLoad(byte channel) {
-		loads[channel]++;
+		loads[channel - 1]++;
 	}
 
 	public void decrementLoad(byte channel) {
-		loads[channel]--;
+		loads[channel - 1]--;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public String getHost() {
+	public byte[] getHost() {
 		return host;
 	}
 

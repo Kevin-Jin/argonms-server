@@ -166,8 +166,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setX(rs.getInt(13));
 			effect.setY(rs.getInt(14));
 			effect.setDamage(rs.getShort(8));
-			effect.setLt(new Point(rs.getShort(27), rs.getShort(28)));
-			effect.setRb(new Point(rs.getShort(29), rs.getShort(30)));
+			effect.setLt(rs.getShort(27), rs.getShort(28));
+			effect.setRb(rs.getShort(29), rs.getShort(30));
 			effect.setMobCount(rs.getByte(3));
 			effect.setProp(rs.getInt(25) / 100.0);
 			effect.setCooltime(rs.getShort(31));

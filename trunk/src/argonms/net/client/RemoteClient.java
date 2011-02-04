@@ -19,9 +19,12 @@
 package argonms.net.client;
 
 import argonms.tools.DatabaseConnection;
+import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,18 +34,26 @@ import java.util.logging.Logger;
  */
 public abstract class RemoteClient {
 	private static final Logger LOG = Logger.getLogger(RemoteClient.class.getName());
-
+	private static final int TIMEOUT = 10000; //in milliseconds
 	public static final byte
 		STATUS_NOTLOGGEDIN = 0,
-		STATUS_INLOGIN = 1,
-		STATUS_INGAME = 2,
-		STATUS_INSHOP = 3
+		STATUS_MIGRATION = 1,
+		STATUS_INLOGIN = 2,
+		STATUS_INGAME = 3,
+		STATUS_INSHOP = 4
 	;
+
+	private static ScheduledThreadPoolExecutor timer;
+
+	static {
+		timer = new ScheduledThreadPoolExecutor(4);
+	}
 
 	private int id;
 	private String name;
 	private ClientSession session;
 	private byte world, channel;
+	private KeepAliveTask heartbeat;
 
 	public int getAccountId() {
 		return id;
@@ -85,11 +96,30 @@ public abstract class RemoteClient {
 		this.channel = channel;
 	}
 
+	public void receivedPong() {
+		heartbeat.receivedResponse();
+	}
+
+	public void startPingTask() {
+		heartbeat = new KeepAliveTask();
+		timer.scheduleAtFixedRate(heartbeat, 0, TIMEOUT, TimeUnit.MILLISECONDS);
+	}
+
+	public void stopPingTask() {
+		if (heartbeat != null)
+			timer.remove(heartbeat);
+	}
+
+	public void clientError(String message) {
+		LOG.log(Level.WARNING, "Received error from client at {0}: {1}",
+				new Object[] { getSession().getAddress(), message });
+	}
+
 	public void updateState(byte currentState) {
 		Connection con = DatabaseConnection.getConnection();
 		try {
 			PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
-			ps.setByte(1, STATUS_NOTLOGGEDIN);
+			ps.setByte(1, currentState);
 			ps.setInt(2, id);
 			ps.executeUpdate();
 			ps.close();
@@ -98,6 +128,8 @@ public abstract class RemoteClient {
 		}
 	}
 
+	public abstract byte getServerType();
+
 	/**
 	 * Notify the other players on the server that this player is logging off
 	 * and save the player's stats to the database.
@@ -105,4 +137,32 @@ public abstract class RemoteClient {
 	 * getSession().close() INSTEAD.
 	 */
 	public abstract void disconnect();
+
+	private static byte[] pingMessage() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(2);
+		lew.writeShort(ClientSendOps.PING);
+		return lew.getBytes();
+	}
+
+	private class KeepAliveTask implements Runnable {
+		private long lastPong;
+
+		public KeepAliveTask() {
+			lastPong = System.currentTimeMillis();
+		}
+
+		public void run() {
+			if (System.currentTimeMillis() - lastPong > TIMEOUT) {
+				LOG.log(Level.INFO, "Account {0} timed out after " + TIMEOUT
+						+ " milliseconds.", getAccountName());
+				getSession().close();
+			} else {
+				getSession().send(pingMessage());
+			}
+		}
+
+		public void receivedResponse() {
+			lastPong = System.currentTimeMillis();
+		}
+	}
 }

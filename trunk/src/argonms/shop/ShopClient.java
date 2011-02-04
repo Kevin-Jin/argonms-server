@@ -18,9 +18,12 @@
 
 package argonms.shop;
 
+import argonms.ServerType;
 import argonms.character.Player;
 import argonms.net.client.RemoteClient;
 
+//world and channel are needed to redirect player to game server when they exit
+//world is easy (in characters db table), but how do we get channel...?
 /**
  *
  * @author GoldenKevin
@@ -28,13 +31,12 @@ import argonms.net.client.RemoteClient;
 public class ShopClient extends RemoteClient {
 	private Player player;
 
-	//world and channel needed to redirect player to game server when they exit
-	public ShopClient(int world, int channel) {
-		this.player = new Player();
-	}
-
 	public Player getPlayer() {
 		return player;
+	}
+
+	public byte getServerType() {
+		return ServerType.SHOP;
 	}
 
 	public void disconnect() {

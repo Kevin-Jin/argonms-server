@@ -18,29 +18,63 @@
 
 package argonms.game;
 
+import argonms.ServerType;
 import argonms.character.Player;
 import argonms.net.client.RemoteClient;
+import argonms.tools.DatabaseConnection;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameClient extends RemoteClient {
+	private static final Logger LOG = Logger.getLogger(GameClient.class.getName());
+
 	private Player player;
 
 	public GameClient(byte world, byte channel) {
 		setWorld(world);
 		setChannel(world);
-		this.player = new Player();
-		GameServer.getChannel(channel).increaseLoad();
 	}
 
 	public Player getPlayer() {
 		return player;
 	}
 
+	public void setPlayer(Player p) {
+		this.player = p;
+	}
+
+	public byte getOnlineState() {
+		Connection con = DatabaseConnection.getConnection();
+		byte ret;
+		try {
+			PreparedStatement ps = con.prepareStatement("SELECT `connected` FROM `accounts` WHERE `id` = ?");
+			ps.setInt(1, getAccountId());
+			ResultSet rs = ps.executeQuery();
+			ret = rs.next() ? rs.getByte(1) : -1;
+			rs.close();
+			ps.close();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not get connected status of account " + getAccountId(), ex);
+			ret = -1;
+		}
+		return ret;
+	}
+
+	public byte getServerType() {
+		return ServerType.GAME;
+	}
+
 	public void disconnect() {
 		updateState(STATUS_NOTLOGGEDIN);
-		GameServer.getChannel(getChannel()).decreaseLoad();
+		if (player != null)
+			GameServer.getChannel(getChannel()).removePlayer(player);
 	}
 }

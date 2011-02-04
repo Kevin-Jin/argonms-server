@@ -19,6 +19,9 @@
 package argonms.map;
 
 import argonms.loading.map.MapStats;
+import argonms.loading.map.Portal;
+import java.awt.Point;
+import java.util.Map.Entry;
 
 /**
  *
@@ -33,5 +36,23 @@ public class MapleMap {
 	protected MapleMap(MapStats stats) {
 		this.stats = stats;
 		//load reactors, life, etc. from stats
+	}
+
+	public int getMapId() {
+		return stats.getMapId();
+	}
+
+	public byte nearestSpawnPoint(Point from) {
+		byte closest = 0;
+		double shortestDistance = Double.POSITIVE_INFINITY;
+		for (Entry<Byte, Portal> entry : stats.getPortals().entrySet()) {
+			Portal portal = entry.getValue();
+			double distance = portal.getPosition().distanceSq(from);
+			if (portal.getPortalType() >= 0 && portal.getPortalType() <= 2 && distance < shortestDistance) {
+				closest = entry.getKey().byteValue();
+				shortestDistance = distance;
+			}
+		}
+		return closest;
 	}
 }

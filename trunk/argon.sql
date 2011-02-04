@@ -19,21 +19,20 @@
 DROP TABLE IF EXISTS `accounts`;
 CREATE TABLE `accounts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(12) DEFAULT NULL,
-  `password` varchar(128) DEFAULT NULL,
+  `name` varchar(12) NOT NULL,
+  `password` varchar(128) NOT NULL,
   `salt` varchar(32) DEFAULT NULL,
   `pin` char(4) DEFAULT NULL,
-  `gender` tinyint(1) DEFAULT NULL, /*NOT NULL DEFAULT 10*/
-  `birthday` int(8) DEFAULT NULL, /*NOT NULL DEFAULT 0*/
-  `characters` tinyint(1) DEFAULT NULL, /*NOT NULL DEFAULT 3*/
+  `gender` tinyint(1) NOT NULL DEFAULT 10,
+  `birthday` int(8) DEFAULT NULL,
+  `characters` tinyint(1) NOT NULL DEFAULT 3,
   `connected` tinyint(1) NOT NULL DEFAULT 0,
   `banexpire` int(11) UNSIGNED DEFAULT NULL,
   `banreason` tinyint(3) DEFAULT NULL,
   `banmessage` varchar(255) DEFAULT NULL,
-  `gm` tinyint(3) DEFAULT NULL,
+  `gm` tinyint(3) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-)
-ENGINE = InnoDB;
+) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `characters`;
 CREATE TABLE `characters` (
@@ -43,34 +42,107 @@ CREATE TABLE `characters` (
   `name` varchar(12) NOT NULL,
   `gender` tinyint(1) NOT NULL,
   `skin` tinyint(3) NOT NULL,
-  `eyes` smallint(5) NOT NULL, /* too small? */
-  `hair` smallint(5) NOT NULL, /* too small? */
-  `level` tinyint(3) UNSIGNED NOT NULL,
-  `job` smallint(5) NOT NULL,
+  `eyes` smallint(5) NOT NULL,
+  `hair` smallint(5) NOT NULL,
+  `level` tinyint(3) UNSIGNED NOT NULL DEFAULT 1,
+  `job` smallint(5) NOT NULL DEFAULT 0,
   `str` smallint(5) NOT NULL,
   `dex` smallint(5) NOT NULL,
   `int` smallint(5) NOT NULL,
   `luk` smallint(5) NOT NULL,
-  `hp` smallint(5) NOT NULL,
-  `maxhp` smallint(5) NOT NULL,
-  `mp` smallint(5) NOT NULL,
-  `maxmp` smallint(5) NOT NULL,
-  `ap` smallint(5) NOT NULL,
-  `sp` smallint(5) NOT NULL,
-  `exp` int(11) NOT NULL,
-  `fame` smallint(5) NOT NULL,
-  `spouse` int(11) NOT NULL,
-  `map` int(11) NOT NULL,
-  `spawnpoint` tinyint(3) NOT NULL,
-  `mesos` int(11) NOT NULL,
-  `equipslots` tinyint(3) UNSIGNED NOT NULL,
-  `useslots` tinyint(3) UNSIGNED NOT NULL,
-  `setupslots` tinyint(3) UNSIGNED NOT NULL,
-  `etcslots` tinyint(3) UNSIGNED NOT NULL,
-  `cashslots` tinyint(3) UNSIGNED NOT NULL,
-  `storageslots` tinyint(3) UNSIGNED NOT NULL,
+  `hp` smallint(5) NOT NULL DEFAULT 50,
+  `maxhp` smallint(5) NOT NULL DEFAULT 50,
+  `mp` smallint(5) NOT NULL DEFAULT 50,
+  `maxmp` smallint(5) NOT NULL DEFAULT 50,
+  `ap` smallint(5) NOT NULL DEFAULT 0,
+  `sp` smallint(5) NOT NULL DEFAULT 0,
+  `exp` int(11) NOT NULL DEFAULT 0,
+  `fame` smallint(5) NOT NULL DEFAULT 0,
+  `spouse` int(11) NOT NULL DEFAULT 0,
+  `map` int(11) NOT NULL DEFAULT 0,
+  `spawnpoint` tinyint(3) NOT NULL DEFAULT 0,
+  `mesos` int(11) NOT NULL DEFAULT 0,
+  `equipslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
+  `useslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
+  `setupslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
+  `etcslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
+  `cashslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
+  `storageslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 4,
   `gm` tinyint(3) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `accountid` (`accountid`),
   CONSTRAINT `characters_ibfk_1` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=30000 DEFAULT CHARSET=latin1;
+
+DROP TABLE IF EXISTS `inventoryitems`;
+CREATE TABLE `inventoryitems` (
+  `inventoryitemid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `accountid` int(11) DEFAULT NULL, /* only needed for cash shop inventory and storage */
+  `inventorytype` tinyint(1) DEFAULT NULL, /* only needed for cash shop inventory and storage and equipped */
+  `position` smallint(5) NOT NULL,
+  `itemid` int(11) NOT NULL,
+  `expiredate` int(11) UNSIGNED NOT NULL,
+  `uniqueid` int(11) UNSIGNED NOT NULL,
+  `owner` tinytext DEFAULT NULL,
+  `quantity` smallint(5) NOT NULL, /* separate this into a `inventoryitems` table and rename this one `inventories`? */
+  PRIMARY KEY (`inventoryitemid`),
+  KEY `characterid` (`characterid`),
+  KEY `uniqueid` (`uniqueid`),
+  CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `inventoryequipment`;
+CREATE TABLE `inventoryequipment` (
+  `inventoryequipmentid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventoryitemid` int(11) UNSIGNED NOT NULL,
+  `str` smallint(5) NOT NULL,
+  `dex` smallint(5) NOT NULL,
+  `int` smallint(5) NOT NULL,
+  `luk` smallint(5) NOT NULL,
+  `hp` smallint(5) NOT NULL,
+  `mp` smallint(5) NOT NULL,
+  `watk` smallint(5) NOT NULL,
+  `matk` smallint(5) NOT NULL,
+  `wdef` smallint(5) NOT NULL,
+  `mdef` smallint(5) NOT NULL,
+  `acc` smallint(5) NOT NULL,
+  `avoid` smallint(5) NOT NULL,
+  `speed` smallint(5) NOT NULL,
+  `jump` smallint(5) NOT NULL,
+  `upgradeslots` tinyint(3) NOT NULL,
+  PRIMARY KEY (`inventoryequipmentid`),
+  KEY `inventoryitemid` (`inventoryitemid`),
+  CONSTRAINT `inventoryequipment_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `inventorypets`;
+CREATE TABLE `inventorypets` (
+  `inventorypetid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventoryitemid` int(11) UNSIGNED NOT NULL,
+  `position` tinyint(1) NOT NULL,
+  `name` varchar(13) NOT NULL,
+  `level` tinyint(2) NOT NULL,
+  `closeness` smallint(5) NOT NULL,
+  `fullness` tinyint(3) NOT NULL,
+  `expired` tinyint(1) NOT NULL,
+  PRIMARY KEY (`inventorypetid`),
+  KEY `inventoryitemid` (`inventoryitemid`),
+  CONSTRAINT `inventorypets_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `inventoryrings`;
+CREATE TABLE `inventoryrings` (
+  `inventoryringid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventoryitemid` int(10) UNSIGNED NOT NULL,
+  `partnerchrid` int(11) NOT NULL,
+  `partnerringid` int(11) NOT NULL,
+  PRIMARY KEY (`inventoryringid`),
+  KEY `inventoryitemid` (`inventoryitemid`),
+  CONSTRAINT `inventoryrings_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `macbans`;
+CREATE TABLE `macbans` (
+  `mac` tinytext NOT NULL
+) ENGINE=InnoDB;

@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class MapStats {
 	private int mapid;
-	private Map<Integer, Portal> portals;
+	private Map<Byte, Portal> portals;
 	private Map<String, Area> areas;
 	private int returnMapId;
 	private float monsterRate;
@@ -44,7 +44,7 @@ public class MapStats {
 	private Map<Integer, Reactor> reactors;
 
 	protected MapStats() {
-		portals = new HashMap<Integer, Portal>();
+		portals = new HashMap<Byte, Portal>();
 		areas = new HashMap<String, Area>();
 		footholds = new HashMap<Integer, Foothold>();
 		life = new HashMap<Integer, Life>();
@@ -108,11 +108,15 @@ public class MapStats {
 	}
 
 	protected void addPortal(int id, Portal p) {
-		portals.put(Integer.valueOf(id), p);
+		portals.put(Byte.valueOf((byte) id), p);
 	}
 
 	public boolean isTown() {
 		return town;
+	}
+
+	public int getMapId() {
+		return mapid;
 	}
 
 	public int getReturnMap(int mapid) {
@@ -167,7 +171,7 @@ public class MapStats {
 		return footholds;
 	}
 
-	public Map<Integer, Portal> getPortals() {
+	public Map<Byte, Portal> getPortals() {
 		return portals;
 	}
 }

@@ -24,17 +24,30 @@ package argonms.character.inventory;
  */
 public class Ring extends Equip implements Cloneable {
 	private int partnerCharId;
+	private int partnerRingUid;
 
 	public Ring(int itemid) {
 		super(itemid);
+	}
+
+	public ItemType getType() {
+		return ItemType.RING;
 	}
 
 	public int getPartnerCharId() {
 		return partnerCharId;
 	}
 
+	public int getPartnerRingId() {
+		return partnerRingUid;
+	}
+
 	public void setPartnerCharId(int cid) {
 		this.partnerCharId = cid;
+	}
+
+	public void setPartnerRingId(int uid) {
+		this.partnerRingUid = uid;
 	}
 
 	public Ring clone() {
@@ -54,7 +67,6 @@ public class Ring extends Equip implements Cloneable {
 		copy.setMdef(getMdef());
 		copy.setAcc(getAcc());
 		copy.setAvoid(getAvoid());
-		copy.setHands(getHands());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 		copy.setUpgradeSlots(getUpgradeSlots());

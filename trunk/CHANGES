@@ -89,6 +89,29 @@
 	read in McdbItemDataLoader as well. In McdbItemDataLoader, equips can now be
 	made tradeBlocked.
 
+2011-02-02  GoldenKevin  (revision 8)
+
+	* Fixed some inconsistencies when passing java.awt.Point/(x,y) parameters to
+	mutator methods in data loader objects. Now all parameters are passed as
+	x and y integers to reduce imports.
+	* Renamed IItem to InventorySlot. Equips don't have any bonuses for "hands"
+	so that was removed from the Equip class. Inventory class now implemented.
+	Pets now are implemented and Rings have been updated.
+	* Player class has been implemented enough for Login Server usage. Some code
+	was copied directly from OdinMS, so some stuff needed for the Game Server
+	do not work yet or are inefficient (ahem, MapleMap.nearestSpawnPoint).
+	* Login server now has matured to a point where the client can be
+	transferred to the game server! Characters can be created and loaded from
+	world charlists and global charlists. Fixed some
+	ArrayIndexOutOfBoundExceptions caused by off by one errors.
+	* Refactored Game Server accept in Login Server. Now the IP address of each
+	world is resolved upon their connection so we won't have to do it every time
+	a client selects a character in the Login Server.
+	* GameClient has been updated. There are small stubs of code for Game Server
+	loading of a player (copied directly from OdinMS), although there's still a
+	long way before the player can actually be placed in a map.
+	* Added a CheatTracker class that does... nothing! Yet.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

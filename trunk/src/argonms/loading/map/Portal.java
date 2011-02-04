@@ -18,6 +18,8 @@
 
 package argonms.loading.map;
 
+import java.awt.Point;
+
 /**
  *
  * @author GoldenKevin
@@ -25,8 +27,7 @@ package argonms.loading.map;
 public class Portal {
 	private String pn;
 	private int pt;
-	private int x;
-	private int y;
+	private Point pos;
 	private int tm;
 	private String tn;
 	private String script;
@@ -43,12 +44,8 @@ public class Portal {
 		this.pt = pt;
 	}
 
-	protected void setX(int x) {
-		this.x = x;
-	}
-
-	protected void setY(int y) {
-		this.y = y;
+	protected void setPosition(int x, int y) {
+		this.pos = new Point(x, y);
 	}
 
 	protected void setTargetMapId(int tm) {
@@ -71,12 +68,8 @@ public class Portal {
 		return pt;
 	}
 
-	public int getX() {
-		return x;
-	}
-
-	public int getY() {
-		return y;
+	public Point getPosition() {
+		return pos;
 	}
 
 	public int getTargetMapId() {
@@ -93,7 +86,7 @@ public class Portal {
 
 	public String toString() {
 		StringBuilder ret = new StringBuilder();
-		ret.append("Name=").append(pn).append(", Type=").append(pt).append(", (").append(x).append(", ").append(y).append("), target=").append(tm);
+		ret.append("Name=").append(pn).append(", Type=").append(pt).append(", (").append(pos.x).append(", ").append(pos.y).append("), target=").append(tm);
 		if (!tn.isEmpty())
 			ret.append(" (").append(tn).append(")");
 		if (!script.isEmpty())

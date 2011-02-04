@@ -22,7 +22,7 @@ package argonms.character.inventory;
  *
  * @author GoldenKevin
  */
-public class Equip extends IItem implements Cloneable {
+public class Equip extends InventorySlot implements Cloneable {
 	private short
 		str,
 		dex,
@@ -36,7 +36,6 @@ public class Equip extends IItem implements Cloneable {
 		mdef,
 		acc,
 		avoid,
-		hands,
 		speed,
 		jump
 	;
@@ -107,10 +106,6 @@ public class Equip extends IItem implements Cloneable {
 		return avoid;
 	}
 
-	public short getHands() {
-		return hands;
-	}
-
 	public short getSpeed() {
 		return speed;
 	}
@@ -171,10 +166,6 @@ public class Equip extends IItem implements Cloneable {
 		this.avoid = value;
 	}
 
-	public void setHands(short value) {
-		this.hands = value;
-	}
-
 	public void setSpeed(short value) {
 		this.speed = value;
 	}
@@ -204,7 +195,6 @@ public class Equip extends IItem implements Cloneable {
 		copy.setMdef(getMdef());
 		copy.setAcc(getAcc());
 		copy.setAvoid(getAvoid());
-		copy.setHands(getHands());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 		copy.setUpgradeSlots(getUpgradeSlots());

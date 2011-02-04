@@ -168,6 +168,13 @@ public class GameServer implements LocalServer {
 		return gci;
 	}
 
+	public byte channelOfPlayer(int characterid) {
+		for (int i = 0; i < channels.length; i++)
+			if (channels[i].isPlayerConnected(characterid))
+				return (byte) (i + 1);
+		return -1;
+	}
+
 	public static WorldChannel getChannel(byte c) {
 		return getInstance().channels[c];
 	}

@@ -30,8 +30,8 @@ public class State {
 
 	//item event only
 	private int itemid, quantity;
-	private int ltx, lty;
-	private int rbx, rby;
+	private Point lt;
+	private Point rb;
 
 	protected State() {
 		
@@ -51,13 +51,11 @@ public class State {
 	}
 
 	protected void setLt(int x, int y) {
-		this.ltx = x;
-		this.lty = y;
+		this.lt = new Point(x, y);
 	}
 
 	protected void setRb(int x, int y) {
-		this.rbx = x;
-		this.rby = y;
+		this.rb = new Point(x, y);
 	}
 
 	public int getType() {
@@ -73,11 +71,11 @@ public class State {
 	}
 
 	public Point getLt() {
-		return new Point(ltx, lty);
+		return lt;
 	}
 
 	public Point getRb() {
-		return new Point(rbx, rby);
+		return rb;
 	}
 
 	public String toString() {
@@ -87,8 +85,8 @@ public class State {
 		builder.append(", nextState=").append(nextState);
 		if (itemEvent) {
 			builder.append(", itemid=").append(itemid).append(" (Qty=").append(quantity).append(')');
-			builder.append(", lt=(").append(ltx).append(", ").append(lty).append(')');
-			builder.append(", rb=(").append(rbx).append(", ").append(rby).append(')');
+			builder.append(", lt=(").append(lt.x).append(", ").append(lt.y).append(')');
+			builder.append(", rb=(").append(rb.x).append(", ").append(rb.y).append(')');
 		}
 		return builder.toString();
 	}
