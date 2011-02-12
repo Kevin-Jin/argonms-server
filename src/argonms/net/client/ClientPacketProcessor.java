@@ -19,6 +19,9 @@
 package argonms.net.client;
 
 import argonms.ServerType;
+import argonms.game.ClientGamePacketProcessor;
+import argonms.login.ClientLoginPacketProcessor;
+import argonms.shop.ClientShopPacketProcessor;
 import argonms.tools.input.LittleEndianReader;
 
 /**

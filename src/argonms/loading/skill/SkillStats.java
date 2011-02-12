@@ -26,7 +26,6 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class SkillStats {
-	private int skillid;
 	private Map<Byte, SkillEffect> levels;
 	private String elemAttr;
 	private boolean isBuff, isCharged;
@@ -58,5 +57,21 @@ public class SkillStats {
 
 	public SkillEffect getLevel(byte level) {
 		return levels.get(Byte.valueOf(level));
+	}
+
+	public String getElemAttr() {
+		return elemAttr;
+	}
+
+	public boolean isBuff() {
+		return isBuff;
+	}
+
+	public boolean isChargedSkill() {
+		return isCharged;
+	}
+
+	public int getDelay() {
+		return animationTime;
 	}
 }

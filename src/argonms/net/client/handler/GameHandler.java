@@ -18,12 +18,22 @@
 
 package argonms.net.client.handler;
 
+import argonms.UserPrivileges;
+import argonms.character.KeyBinding;
 import argonms.character.Player;
+import argonms.character.SkillMacro;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.WorldChannel;
+import argonms.loading.skill.SkillDataLoader;
+import argonms.net.client.ClientSendOps;
+import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
+import argonms.tools.TimeUtil;
 import argonms.tools.input.LittleEndianReader;
+import argonms.tools.output.LittleEndianByteArrayWriter;
+import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -41,7 +51,7 @@ public class GameHandler {
 		if (player == null)
 			return;
 		client.setPlayer(player);
-		boolean allowLogin = true;
+		boolean allowLogin;
 		byte state = client.getOnlineState();
 		//if already online, has to be on this world since loadPlayer checks
 		//if this world and world from db match.
@@ -50,6 +60,8 @@ public class GameHandler {
 		else
 			allowLogin = false;
 		if (!allowLogin) {
+			LOG.log(Level.WARNING, "Player {0} tried to double login on world"
+					+ " {1}", new Object[] { player.getName(), rc.getWorld() });
 			client.getSession().close();
 			return;
 		}
@@ -75,16 +87,14 @@ public class GameHandler {
 			} catch (RemoteException e) {
 				c.getChannelServer().reconnectWorld();
 			}
-		}
-		c.getSession().write(MaplePacketCreator.getCharInfo(player));
-		if (player.isGM()) {
-			// need to be hidden before being on the map o.o
-			SkillFactory.getSkill(9101004).getEffect(1).applyTo(player);
-		}
+		}*/
+		client.getSession().send(writeEnterMap(player));
+		if (player.getPrivileges() >= UserPrivileges.JUNIOR_GM) //hide
+			player.applyEffect(SkillDataLoader.getInstance().getSkill(9101004).getLevel((byte) 1));
 		player.getMap().addPlayer(player);
 
-		try {
-			Collection<BuddylistEntry> buddies = player.getBuddylist().getBuddies();
+		/*try {
+			Collection<BuddylistEntry> buddies = player.getBuddyList().getBuddies();
 			int buddyIds[] = player.getBuddylist().getBuddyIds();
 
 			cserv.getWorldInterface().loggedOn(player.getName(), player.getId(), c.getChannel(), buddyIds);
@@ -114,11 +124,11 @@ public class GameHandler {
 			c.getPlayer().showNote();
 		} catch (SQLException e) {
 			LOG.error("LOADING NOTE", e);
-		}
-		player.sendKeymap();
-		player.sendMacros();
+		}*/
+		client.getSession().send(writeKeymap(player.getKeyMap()));
+		client.getSession().send(writeMacros(player.getMacros()));
 
-		for (MapleQuestStatus status : player.getStartedQuests()) {
+		/*for (MapleQuestStatus status : player.getStartedQuests()) {
 			if (status.hasMobKills()) {
 				c.getSession().write(MaplePacketCreator.updateQuestMobKills(status));
 			}
@@ -133,5 +143,58 @@ public class GameHandler {
 		player.checkMessenger();
 		player.checkBerserk();
 		player.expirationTask();*/
+	}
+
+	private static byte[] writeEnterMap(Player p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.CHANGE_MAP);
+		lew.writeInt(p.getClient().getChannel() - 1);
+		lew.writeByte((byte) 1);
+		lew.writeByte((byte) 1);
+		lew.writeShort((short) 0);
+		lew.writeInt(CommonPackets.RNG.nextInt());
+		lew.writeInt(CommonPackets.RNG.nextInt());
+		lew.writeInt(CommonPackets.RNG.nextInt());
+
+		CommonPackets.writeCharData(lew, p);
+
+		lew.writeLong(TimeUtil.unixToWindowsTime(System.currentTimeMillis()));
+		return lew.getBytes();
+	}
+
+	private static byte[] writeKeymap(KeyBinding[] bindings) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(453);
+
+		lew.writeShort(ClientSendOps.KEYMAP);
+		lew.writeByte((byte) 0);
+
+		for (int i = 0; i < 90; i++) {
+			KeyBinding binding = bindings[i];
+			if (binding != null) {
+				lew.writeByte(binding.getType());
+				lew.writeInt(binding.getAction());
+			} else {
+				lew.writeByte((byte) 0);
+				lew.writeInt(0);
+			}
+		}
+		return lew.getBytes();
+	}
+
+	private static byte[] writeMacros(List<SkillMacro> macros) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SKILL_MACRO);
+		lew.writeByte((byte) macros.size()); // number of macros
+		for (SkillMacro macro : macros) {
+			lew.writeLengthPrefixedString(macro.getName());
+			lew.writeBool(macro.shout());
+			lew.writeInt(macro.getFirstSkill());
+			lew.writeInt(macro.getSecondSkill());
+			lew.writeInt(macro.getThirdSkill());
+		}
+
+		return lew.getBytes();
 	}
 }

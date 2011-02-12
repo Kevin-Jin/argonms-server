@@ -181,32 +181,6 @@ public class LoginClient extends RemoteClient {
 		}
 	}
 
-	public void addCharacters(LittleEndianWriter lew) {
-		Connection con = DatabaseConnection.getConnection();
-		//TODO: There's gotta be a way to not have to query the database twice?
-		try {
-			PreparedStatement ps = con.prepareStatement("SELECT count(*) FROM `characters` WHERE `accountid` = ? AND `world` = ?");
-			ps.setInt(1, getAccountId());
-			ps.setInt(2, getWorld());
-			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				lew.writeByte(rs.getByte(1));
-			rs.close();
-			ps.close();
-
-			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE `accountid` = ? AND `world` = ?");
-			ps.setInt(1, getAccountId());
-			ps.setInt(2, getWorld());
-			rs = ps.executeQuery();
-			while (rs.next())
-				CommonPackets.writeCharEntry(lew, Player.loadPlayer(this, rs.getInt(1)));
-			rs.close();
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not load characters of account " + getAccountId(), ex);
-		}
-	}
-
 	//TODO: Find more status codes.
 	public byte deleteCharacter(int characterid, int enteredBirthday) {
 		byte status = 18;

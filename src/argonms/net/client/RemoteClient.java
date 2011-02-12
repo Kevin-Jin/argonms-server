@@ -19,12 +19,12 @@
 package argonms.net.client;
 
 import argonms.tools.DatabaseConnection;
+import argonms.tools.Timer;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,12 +42,6 @@ public abstract class RemoteClient {
 		STATUS_INGAME = 3,
 		STATUS_INSHOP = 4
 	;
-
-	private static ScheduledThreadPoolExecutor timer;
-
-	static {
-		timer = new ScheduledThreadPoolExecutor(4);
-	}
 
 	private int id;
 	private String name;
@@ -102,12 +96,15 @@ public abstract class RemoteClient {
 
 	public void startPingTask() {
 		heartbeat = new KeepAliveTask();
-		timer.scheduleAtFixedRate(heartbeat, 0, TIMEOUT, TimeUnit.MILLISECONDS);
+		ScheduledFuture<?> f = Timer.getInstance().runRepeatedly(heartbeat, 0, TIMEOUT);
+		heartbeat.setFuture(f);
 	}
 
 	public void stopPingTask() {
-		if (heartbeat != null)
-			timer.remove(heartbeat);
+		if (heartbeat != null) {
+			heartbeat.stop();
+			heartbeat = null;
+		}
 	}
 
 	public void clientError(String message) {
@@ -146,6 +143,7 @@ public abstract class RemoteClient {
 
 	private class KeepAliveTask implements Runnable {
 		private long lastPong;
+		private ScheduledFuture<?> future;
 
 		public KeepAliveTask() {
 			lastPong = System.currentTimeMillis();
@@ -161,8 +159,17 @@ public abstract class RemoteClient {
 			}
 		}
 
+		public void setFuture(ScheduledFuture<?> future) {
+			this.future = future;
+		}
+
 		public void receivedResponse() {
 			lastPong = System.currentTimeMillis();
+		}
+
+		public void stop() {
+			future.cancel(true);
+			future = null;
 		}
 	}
 }

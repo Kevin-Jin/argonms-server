@@ -16,8 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.net.client;
+package argonms.login;
 
+import argonms.net.client.ClientPacketProcessor;
+import argonms.net.client.ClientRecvOps;
+import argonms.net.client.RemoteClient;
 import argonms.net.client.handler.AuthHandler;
 import argonms.net.client.handler.WorldlistHandler;
 import argonms.tools.input.LittleEndianReader;

@@ -23,6 +23,27 @@ package argonms.loading;
  * @author GoldenKevin
  */
 public abstract class StatEffects {
+	public enum Effect { ITEM, SKILL }
+
+	public static final byte //indicies for a stats array (bonus or req)
+		STR = 0,
+		DEX = 1,
+		INT = 2,
+		LUK = 3,
+		PAD = 4,
+		PDD = 5,
+		MAD = 6,
+		MDD = 7,
+		ACC = 8,
+		EVA = 9,
+		MHP = 10,
+		MMP = 11,
+		Speed = 12,
+		Jump = 13,
+		Level = 14,
+		MaxLevel = 15
+	;
+
 	private int duration;
 	private short watk;
 	private short wdef;
@@ -35,6 +56,8 @@ public abstract class StatEffects {
 	private short speed;
 	private short jump;
 	private int morph;
+
+	public abstract Effect getType();
 
 	public void setDuration(int time) {
 		this.duration = time;
@@ -82,5 +105,53 @@ public abstract class StatEffects {
 
 	public void setMorph(int id) {
 		this.morph = id;
+	}
+
+	public int getDuration() {
+		return duration;
+	}
+
+	public short getWatk() {
+		return watk;
+	}
+
+	public short getWdef() {
+		return wdef;
+	}
+
+	public short getMatk() {
+		return matk;
+	}
+
+	public short getMdef() {
+		return mdef;
+	}
+
+	public short getAcc() {
+		return acc;
+	}
+
+	public short getAvoid() {
+		return avoid;
+	}
+
+	public short getHp() {
+		return hp;
+	}
+
+	public short getMp() {
+		return mp;
+	}
+
+	public short getSpeed() {
+		return speed;
+	}
+
+	public short getJump() {
+		return jump;
+	}
+
+	public int getMorph() {
+		return morph;
 	}
 }

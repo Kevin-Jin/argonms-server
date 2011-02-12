@@ -88,8 +88,12 @@ public abstract class LittleEndianWriter {
 	}
 
 	public LittleEndianWriter writeLengthPrefixedString(String str) {
-		writeShort((short) str.length());
-		writeBytes(str.getBytes(asciiEncoder));
+		if (str != null) {
+			writeShort((short) str.length());
+			writeBytes(str.getBytes(asciiEncoder));
+		} else {
+			writeShort((short) 0);
+		}
 		return this;
 	}
 
@@ -104,8 +108,9 @@ public abstract class LittleEndianWriter {
 	}
 
 	public LittleEndianWriter writeBytes(byte[] b) {
-		for (int i = 0; i < b.length; i++)
-			writeByte(b[i]);
+		//for (int i = 0; i < b.length; i++)
+			//writeByte(b[i]);
+		write(b);
 		return this;
 	}
 }

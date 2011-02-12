@@ -23,18 +23,26 @@ package argonms.character.inventory;
  * @author GoldenKevin
  */
 public abstract class InventorySlot implements Comparable<InventorySlot>, Cloneable {
-	public enum ItemType { EQUIP, ITEM, PET, RING }
+	public enum ItemType { EQUIP, ITEM, PET, RING, MOUNT }
+
+	public static final byte
+		EQUIP = 1,
+		ITEM = 2,
+		PET = 3
+	;
 
 	private int id;
 	private long expire;
 	private int uid;
 	private String owner;
+	private byte flag;
 
 	protected InventorySlot(int itemid) {
 		this.id = itemid;
 	}
 
 	public abstract ItemType getType();
+	public abstract byte getTypeByte();
 	public abstract short getQuantity();
 	public abstract void setQuantity(short value);
 
@@ -64,6 +72,14 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 
 	public void setOwner(String owner) {
 		this.owner = owner;
+	}
+
+	public byte getFlag() {
+		return flag;
+	}
+
+	public void setFlag(byte flag) {
+		this.flag = flag;
 	}
 
 	public int compareTo(InventorySlot item) {

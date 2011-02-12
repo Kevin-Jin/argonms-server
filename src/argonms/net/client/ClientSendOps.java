@@ -37,7 +37,12 @@ public final class ClientSendOps {
 		CHAR_CREATED = 0x0E,
 		DELETE_CHAR_RESPONSE = 0x0F,
 		PING = 0x11,
-		RELOG_RESPONSE = 0x16
+		RELOG_RESPONSE = 0x16,
+		SKILL_MACRO = 0x5B,
+		CHANGE_MAP = 0x5C,
+		MTS_OPEN = 0x5D,
+		CS_OPEN = 0x5E,
+		KEYMAP = 0x107
 	;
 	
 	private ClientSendOps() {

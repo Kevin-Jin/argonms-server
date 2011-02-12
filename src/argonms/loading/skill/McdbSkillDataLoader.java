@@ -19,7 +19,6 @@
 package argonms.loading.skill;
 
 import argonms.tools.DatabaseConnection;
-import java.awt.Point;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,7 +37,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		
 	}
 
-	protected void canLoadPlayerSkill(int skillid) {
+	protected void loadPlayerSkill(int skillid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		SkillStats stats = null;
 		try {
@@ -57,7 +56,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		skillStats.put(Integer.valueOf(skillid), stats);
 	}
 
-	protected void canLoadMobSkill(int skillid) {
+	protected void loadMobSkill(int skillid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		MobSkillStats stats = null;
 		try {
@@ -111,7 +110,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	public boolean validPlayerSkill(int skillid) {
+	public boolean canLoadPlayerSkill(int skillid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
@@ -128,7 +127,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		return exists;
 	}
 
-	public boolean validMobSkill(int skillid) {
+	public boolean canLoadMobSkill(int skillid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
@@ -216,8 +215,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setDuration(rs.getInt(3));
 			effect.setX(rs.getInt(5));
 			effect.setY(rs.getInt(6));
-			effect.setLt(new Point(rs.getShort(10), rs.getShort(11)));
-			effect.setRb(new Point(rs.getShort(12), rs.getShort(13)));
+			effect.setLt(rs.getShort(10), rs.getShort(11));
+			effect.setRb(rs.getShort(12), rs.getShort(13));
 			effect.setProp(rs.getInt(7) / 100.0);
 			effect.setCooltime(rs.getShort(9));
 			effect.setHp(rs.getShort(14));

@@ -23,26 +23,7 @@ package argonms.loading;
  * @author GoldenKevin
  */
 public final class KvjEffects {
-	public static final byte //stats
-		STR = 0,
-		DEX = 1,
-		INT = 2,
-		LUK = 3,
-		PAD = 4,
-		PDD = 5,
-		MAD = 6,
-		MDD = 7,
-		ACC = 8,
-		EVA = 9,
-		MHP = 10,
-		MMP = 11,
-		Speed = 12,
-		Jump = 13,
-		Level = 14,
-		MaxLevel = 15
-	;
-
-	public static final byte //effects
+	public static final byte
 		END_EFFECT = 0,
 		MP_CONSUME = 1,
 		HP_CONSUME = 2,
@@ -62,7 +43,7 @@ public final class KvjEffects {
 		WDEF = 16,
 		MATK = 17,
 		MDEF = 18,
-		ACCY = 19,
+		ACC = 19,
 		AVOID = 20,
 		HP_BONUS = 21,
 		MP_BONUS = 22,

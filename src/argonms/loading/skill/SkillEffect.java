@@ -50,6 +50,10 @@ public class SkillEffect extends StatEffects {
 		
 	}
 
+	public Effect getType() {
+		return Effect.SKILL;
+	}
+
 	protected void setMpConsume(short mpCon) {
 		this.mpCon = mpCon;
 	}

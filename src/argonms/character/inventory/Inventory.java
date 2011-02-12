@@ -19,12 +19,12 @@
 package argonms.character.inventory;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -65,7 +65,7 @@ public class Inventory {
 
 	public Inventory(short maxSlots) {
 		this.maxSlots = maxSlots;
-		this.slots = new HashMap<Short, InventorySlot>();
+		this.slots = new TreeMap<Short, InventorySlot>();
 	}
 
 	public void put(short slot, InventorySlot item) {
@@ -115,7 +115,7 @@ public class Inventory {
 		Set<Short> occupied = slots.keySet();
 		//keep it in insertion order! (which should keep it sorted ascending)
 		List<Short> empty = new LinkedList<Short>();
-		for (short i = 0; i < maxSlots && empty.size() < needed; i++) {
+		for (short i = 1; i <= maxSlots && empty.size() < needed; i++) {
 			Short s = Short.valueOf(i);
 			if (!occupied.contains(s)) {
 				empty.add(s);
