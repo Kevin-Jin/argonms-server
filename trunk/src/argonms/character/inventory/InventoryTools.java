@@ -18,7 +18,7 @@
 
 package argonms.character.inventory;
 
-import argonms.loading.KvjEffects;
+import argonms.loading.StatEffects;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
 import java.util.ArrayList;
@@ -128,9 +128,10 @@ public class InventoryTools {
 	 * @return true if successful, false if there was not enough room.
 	 */
 	public static boolean unequip(Inventory equipped, Inventory equips, short src, short dest) {
-		List<Short> freeSlots = equips.getFreeSlots(1);
-		if (freeSlots.isEmpty())
-			return false;
+		//trust the client into knowing best. don't check for inventory full
+		//List<Short> freeSlots = equips.getFreeSlots(1);
+		//if (freeSlots.isEmpty())
+			//return false;
 		equips.put(dest, equipped.remove(src));
 		return true;
 	}
@@ -144,24 +145,41 @@ public class InventoryTools {
 			else
 				e = new Equip(itemId);
 			short[] statUps = ItemDataLoader.getInstance().getBonusStats(itemId);
-			e.setStr(statUps[KvjEffects.STR]);
-			e.setDex(statUps[KvjEffects.DEX]);
-			e.setInt(statUps[KvjEffects.INT]);
-			e.setLuk(statUps[KvjEffects.LUK]);
-			e.setHp(statUps[KvjEffects.MHP]);
-			e.setMp(statUps[KvjEffects.MMP]);
-			e.setWatk(statUps[KvjEffects.PAD]);
-			e.setMatk(statUps[KvjEffects.MAD]);
-			e.setWdef(statUps[KvjEffects.PDD]);
-			e.setMdef(statUps[KvjEffects.MDD]);
-			e.setAcc(statUps[KvjEffects.ACC]);
-			e.setAvoid(statUps[KvjEffects.EVA]);
-			e.setSpeed(statUps[KvjEffects.Speed]);
-			e.setJump(statUps[KvjEffects.Jump]);
+			e.setStr(statUps[StatEffects.STR]);
+			e.setDex(statUps[StatEffects.DEX]);
+			e.setInt(statUps[StatEffects.INT]);
+			e.setLuk(statUps[StatEffects.LUK]);
+			e.setHp(statUps[StatEffects.MHP]);
+			e.setMp(statUps[StatEffects.MMP]);
+			e.setWatk(statUps[StatEffects.PAD]);
+			e.setMatk(statUps[StatEffects.MAD]);
+			e.setWdef(statUps[StatEffects.PDD]);
+			e.setMdef(statUps[StatEffects.MDD]);
+			e.setAcc(statUps[StatEffects.ACC]);
+			e.setAvoid(statUps[StatEffects.EVA]);
+			e.setSpeed(statUps[StatEffects.Speed]);
+			e.setJump(statUps[StatEffects.Jump]);
 			e.setUpgradeSlots(ItemDataLoader.getInstance().getUpgradeSlots(itemId));
 			equipCache.put(oId, e);
 		}
 		return equipCache.get(oId).clone();
+	}
+
+	public static boolean isThrowingStar(int itemId) {
+		return (itemId >= 2070000 && itemId < 2080000);
+	}
+
+	public static boolean isBullet(int itemId) {
+		return (itemId >= 2330000 && itemId < 2340000);
+	}
+
+	public static boolean isRechargable(int itemId) {
+		int cat = itemId / 10000;
+		return (cat == 233 || cat == 207);
+	}
+
+	public static boolean isOverall(int itemId) {
+		return itemId >= 1050000 && itemId < 1060000;
 	}
 
 	public static boolean isPet(int itemId) {
@@ -171,6 +189,18 @@ public class InventoryTools {
 	public static boolean isRing(int itemId) {
 		return (itemId >= 1112000 && itemId < 1112100 ||
 				itemId >= 1112800 && itemId < 1112803);
+	}
+
+	public static boolean isMount(int itemId) {
+		return (itemId >= 1900000 && itemId < 1940000);
+	}
+
+	public static boolean isArrowForCrossBow(int itemId) {
+		return itemId >= 2061000 && itemId < 2062000;
+	}
+
+	public static boolean isArrowForBow(int itemId) {
+		return itemId >= 2060000 && itemId < 2061000;
 	}
 
 	public static String getCategory(int itemid) {

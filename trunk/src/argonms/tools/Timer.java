@@ -16,44 +16,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.tools;
+
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
+public class Timer {
+	private static Timer instance;
+	private ScheduledThreadPoolExecutor timer;
 
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
+	private Timer() {
+		timer = new ScheduledThreadPoolExecutor(4);
 	}
 
-	public ItemType getType() {
-		return ItemType.ITEM;
+	public ScheduledFuture<?>  runAfterDelay(Runnable r, long delay) {
+		return timer.schedule(r, delay, TimeUnit.MILLISECONDS);
 	}
 
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
+	public ScheduledFuture<?>  runRepeatedly(Runnable r, long delay, long period) {
+		return timer.scheduleAtFixedRate(r, delay, period, TimeUnit.MILLISECONDS);
 	}
 
-	public short getQuantity() {
-		return qty;
+	public void shutdown() {
+		timer.shutdown();
 	}
 
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
+	public static void enable() {
+		instance = new Timer();
 	}
 
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+	public static Timer getInstance() {
+		return instance;
 	}
 }

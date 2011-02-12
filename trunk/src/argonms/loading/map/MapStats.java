@@ -119,27 +119,27 @@ public class MapStats {
 		return mapid;
 	}
 
-	public int getReturnMap(int mapid) {
+	public int getReturnMap() {
 		return returnMapId;
 	}
 
-	public int getForcedReturn(int mapid) {
+	public int getForcedReturn() {
 		return forcedReturn;
 	}
 
-	public float getMobRate(float rate) {
+	public float getMobRate() {
 		return monsterRate;
 	}
 
-	public int getDecHp(int dec) {
+	public int getDecHp() {
 		return decHp;
 	}
 
-	public int getTimeLimit(int limit) {
+	public int getTimeLimit() {
 		return timeLimit;
 	}
 
-	public int getProtectItem(int item) {
+	public int getProtectItem() {
 		return protectItem;
 	}
 

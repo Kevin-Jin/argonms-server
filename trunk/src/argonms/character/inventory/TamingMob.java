@@ -22,36 +22,58 @@ package argonms.character.inventory;
  *
  * @author GoldenKevin
  */
-public class Ring extends Equip implements Cloneable {
-	private int partnerCharId;
-	private int partnerRingUid;
+public class TamingMob extends Equip {
+	private byte level;
+	private short exp;
+	private byte tiredness;
 
-	public Ring(int itemid) {
+	public TamingMob(int itemid) {
 		super(itemid);
+
+		//set all the default stats
+		this.level = 1;
+		this.exp = 0;
+		this.tiredness = 100;
+	}
+
+	public TamingMob(int id, byte level, short exp, byte tiredness) {
+		super(id);
+
+		this.level = level;
+		this.exp = exp;
+		this.tiredness = tiredness;
 	}
 
 	public ItemType getType() {
-		return ItemType.RING;
+		return ItemType.MOUNT;
 	}
 
-	public int getPartnerCharId() {
-		return partnerCharId;
+	public byte getMountLevel() {
+		return level;
 	}
 
-	public int getPartnerRingId() {
-		return partnerRingUid;
+	public short getExp() {
+		return exp;
 	}
 
-	public void setPartnerCharId(int cid) {
-		this.partnerCharId = cid;
+	public byte getTiredness() {
+		return tiredness;
 	}
 
-	public void setPartnerRingId(int uid) {
-		this.partnerRingUid = uid;
+	public void setMountLevel(byte level) {
+		this.level = level;
 	}
 
-	public Ring clone() {
-		Ring copy = new Ring(getItemId());
+	public void setExp(short exp) {
+		this.exp = exp;
+	}
+
+	public void setTiredness(byte tiredness) {
+		this.tiredness = tiredness;
+	}
+
+	public TamingMob clone() {
+		TamingMob copy = new TamingMob(getItemId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());
@@ -74,8 +96,9 @@ public class Ring extends Equip implements Cloneable {
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 
-		copy.setPartnerCharId(getPartnerCharId());
-		copy.setPartnerRingId(getPartnerRingId());
+		copy.setLevel(getMountLevel());
+		copy.setExp(getExp());
+		copy.setTiredness(getTiredness());
 		return copy;
 	}
 }

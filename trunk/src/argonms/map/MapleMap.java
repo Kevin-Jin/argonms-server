@@ -18,20 +18,24 @@
 
 package argonms.map;
 
+import argonms.character.Player;
 import argonms.loading.map.MapStats;
 import argonms.loading.map.Portal;
 import java.awt.Point;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
 public class MapleMap {
-	private MapStats stats;
-	//private MapleObject objects;
-	//+ any other channel-specific dynamic map data. stats only contains static
-	//data for all maps with the same id but may be on different channels;
+	private final MapStats stats;
+	private final Map<Integer, MapObject> objects = new LinkedHashMap<Integer, MapObject>();
+	private final Set<Player> players = new LinkedHashSet<Player>();
 
 	protected MapleMap(MapStats stats) {
 		this.stats = stats;
@@ -40,6 +44,14 @@ public class MapleMap {
 
 	public int getMapId() {
 		return stats.getMapId();
+	}
+
+	public int getReturnMap() {
+		return stats.getReturnMap();
+	}
+
+	public int getForcedReturnMap() {
+		return stats.getForcedReturn();
 	}
 
 	public byte nearestSpawnPoint(Point from) {
@@ -54,5 +66,14 @@ public class MapleMap {
 			}
 		}
 		return closest;
+	}
+
+	public void addPlayer(Player p) {
+		synchronized (players) {
+			players.add(p);
+		}
+		synchronized (objects) {
+			objects.put(Integer.valueOf(p.getId()), p);
+		}
 	}
 }

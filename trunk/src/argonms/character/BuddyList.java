@@ -16,44 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
+public class BuddyList {
+	private short capacity;
+	private Map<Integer, BuddyListEntry> buddies;
 
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
+	public BuddyList(short capacity) {
+		this.capacity = capacity;
+		this.buddies = new LinkedHashMap<Integer, BuddyListEntry>();
 	}
 
-	public ItemType getType() {
-		return ItemType.ITEM;
+	public Map<Integer, BuddyListEntry> getBuddies() {
+		return Collections.unmodifiableMap(buddies);
 	}
 
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
-	}
-
-	public short getQuantity() {
-		return qty;
-	}
-
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
-	}
-
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+	public short getCapacity() {
+		return capacity;
 	}
 }

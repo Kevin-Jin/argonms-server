@@ -16,44 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
+public class SkillMacro {
+	private String name;
+	private boolean shout;
+	private int skill1, skill2, skill3;
 
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
+	public SkillMacro(String name, boolean shout, int sk1, int sk2, int sk3) {
+		this.name = name;
+		this.shout = shout;
+		this.skill1 = sk1;
+		this.skill2 = sk2;
+		this.skill3 = sk3;
 	}
 
-	public ItemType getType() {
-		return ItemType.ITEM;
+	public String getName() {
+		return name;
 	}
 
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
+	public boolean shout() {
+		return shout;
 	}
 
-	public short getQuantity() {
-		return qty;
+	public int getFirstSkill() {
+		return skill1;
 	}
 
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
+	public int getSecondSkill() {
+		return skill2;
 	}
 
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+	public int getThirdSkill() {
+		return skill3;
 	}
 }

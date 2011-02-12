@@ -60,6 +60,10 @@ public class Pet extends InventorySlot {
 		return ItemType.PET;
 	}
 
+	public byte getTypeByte() {
+		return InventorySlot.PET;
+	}
+
 	public short getQuantity() {
 		return 1;
 	}
@@ -112,6 +116,8 @@ public class Pet extends InventorySlot {
 		Pet copy = new Pet(getItemId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
+		copy.setOwner(getOwner());
+		copy.setFlag(getFlag());
 
 		copy.setName(getName());
 		copy.setLevel(getLevel());

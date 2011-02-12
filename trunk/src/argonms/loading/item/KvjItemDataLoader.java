@@ -297,7 +297,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 				case KvjEffects.MDEF:
 					effect.setMdef(reader.readShort());
 					break;
-				case KvjEffects.ACCY:
+				case KvjEffects.ACC:
 					effect.setAcc(reader.readShort());
 					break;
 				case KvjEffects.AVOID:

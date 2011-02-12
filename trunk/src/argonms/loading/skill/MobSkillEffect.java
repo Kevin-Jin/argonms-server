@@ -55,12 +55,12 @@ public class MobSkillEffect {
 		this.y = y;
 	}
 
-	protected void setLt(Point point) {
-		this.lt = point;
+	protected void setLt(short x, short y) {
+		this.lt = new Point(x, y);
 	}
 
-	protected void setRb(Point point) {
-		this.rb = point;
+	protected void setRb(short x, short y) {
+		this.rb = new Point(x, y);
 	}
 
 	protected void setProp(double prop) {
@@ -73,5 +73,41 @@ public class MobSkillEffect {
 
 	protected void setHp(short hp) {
 		this.hp = hp;
+	}
+
+	public short getMpConsume() {
+		return mpCon;
+	}
+
+	public int getDuration() {
+		return duration;
+	}
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
+
+	public Point getLt() {
+		return lt;
+	}
+
+	public Point getRb() {
+		return rb;
+	}
+
+	public double getProp() {
+		return prop;
+	}
+
+	public short getCooltime() {
+		return cooltime;
+	}
+
+	public short getHp() {
+		return hp;
 	}
 }

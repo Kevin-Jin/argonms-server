@@ -195,7 +195,10 @@ public class MapleAESOFB {
 	 * @return The length of the packet.
 	 */
 	public static int getPacketLength(byte[] packetHeader) {
-		return (packetHeader[0] + ((packetHeader[1] << 8) & 0xFF)) ^ (packetHeader[2] + ((packetHeader[3] << 8) & 0xFF));
+		//read two short (16-bit integers) and XOR them. just copied the read
+		//short routine from LittleEndianReader/LittleEndianByteArrayReader.
+		return (((packetHeader[0] & 0xFF) + ((packetHeader[1] & 0xFF) << 8)) ^
+				((packetHeader[2] & 0xFF) + ((packetHeader[3] & 0xFF) << 8)));
 	}
 
 	/**

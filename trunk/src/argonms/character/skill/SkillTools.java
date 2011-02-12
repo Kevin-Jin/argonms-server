@@ -16,44 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character.skill;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
-
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
-	}
-
-	public ItemType getType() {
-		return ItemType.ITEM;
-	}
-
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
-	}
-
-	public short getQuantity() {
-		return qty;
-	}
-
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
-	}
-
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+public class SkillTools {
+	public static boolean isFourthJob(int skillid) {
+		return ((skillid / 10000) % 10) == 2;
 	}
 }

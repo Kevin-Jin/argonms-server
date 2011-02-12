@@ -19,7 +19,7 @@
 package argonms.loading.item;
 
 import argonms.character.inventory.InventoryTools;
-import argonms.loading.KvjEffects;
+import argonms.loading.StatEffects;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -128,20 +128,20 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));
 		short[] incStats = new short[16];
 		if (cat.equals("Equip")) {
-			incStats[KvjEffects.STR] = rs.getShort("str");
-			incStats[KvjEffects.DEX] = rs.getShort("dex");
-			incStats[KvjEffects.INT] = rs.getShort("int");
-			incStats[KvjEffects.LUK] = rs.getShort("luk");
-			incStats[KvjEffects.PAD] = rs.getShort("watk");
-			incStats[KvjEffects.PDD] = rs.getShort("wdef");
-			incStats[KvjEffects.MAD] = rs.getShort("matk");
-			incStats[KvjEffects.MDD] = rs.getShort("mdef");
-			incStats[KvjEffects.ACC] = rs.getShort("acc");
-			incStats[KvjEffects.EVA] = rs.getShort("avo");
-			incStats[KvjEffects.MHP] = rs.getShort("hp");
-			incStats[KvjEffects.MMP] = rs.getShort("mp");
-			incStats[KvjEffects.Speed] = rs.getShort("speed");
-			incStats[KvjEffects.Jump] = rs.getShort("jump");
+			incStats[StatEffects.STR] = rs.getShort("str");
+			incStats[StatEffects.DEX] = rs.getShort("dex");
+			incStats[StatEffects.INT] = rs.getShort("int");
+			incStats[StatEffects.LUK] = rs.getShort("luk");
+			incStats[StatEffects.PAD] = rs.getShort("watk");
+			incStats[StatEffects.PDD] = rs.getShort("wdef");
+			incStats[StatEffects.MAD] = rs.getShort("matk");
+			incStats[StatEffects.MDD] = rs.getShort("mdef");
+			incStats[StatEffects.ACC] = rs.getShort("acc");
+			incStats[StatEffects.EVA] = rs.getShort("avo");
+			incStats[StatEffects.MHP] = rs.getShort("hp");
+			incStats[StatEffects.MMP] = rs.getShort("mp");
+			incStats[StatEffects.Speed] = rs.getShort("speed");
+			incStats[StatEffects.Jump] = rs.getShort("jump");
 
 			if (rs.getInt("cash") != 0)
 				cash.add(oId);
@@ -210,20 +210,20 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				if (!hours.isEmpty())
 					operatingHours.put(oId, hours);
 			} else if (cat.equals("Consume")) {
-				incStats[KvjEffects.STR] = rs.getShort("istr");
-				incStats[KvjEffects.DEX] = rs.getShort("idex");
-				incStats[KvjEffects.INT] = rs.getShort("iint");
-				incStats[KvjEffects.LUK] = rs.getShort("iluk");
-				incStats[KvjEffects.PAD] = rs.getShort("iwatk");
-				incStats[KvjEffects.PDD] = rs.getShort("iwdef");
-				incStats[KvjEffects.MAD] = rs.getShort("imatk");
-				incStats[KvjEffects.MDD] = rs.getShort("imdef");
-				incStats[KvjEffects.ACC] = rs.getShort("iacc");
-				incStats[KvjEffects.EVA] = rs.getShort("iavo");
-				incStats[KvjEffects.MHP] = rs.getShort("ihp");
-				incStats[KvjEffects.MMP] = rs.getShort("imp");
-				incStats[KvjEffects.Speed] = rs.getShort("ispeed");
-				incStats[KvjEffects.Jump] = rs.getShort("ijump");
+				incStats[StatEffects.STR] = rs.getShort("istr");
+				incStats[StatEffects.DEX] = rs.getShort("idex");
+				incStats[StatEffects.INT] = rs.getShort("iint");
+				incStats[StatEffects.LUK] = rs.getShort("iluk");
+				incStats[StatEffects.PAD] = rs.getShort("iwatk");
+				incStats[StatEffects.PDD] = rs.getShort("iwdef");
+				incStats[StatEffects.MAD] = rs.getShort("imatk");
+				incStats[StatEffects.MDD] = rs.getShort("imdef");
+				incStats[StatEffects.ACC] = rs.getShort("iacc");
+				incStats[StatEffects.EVA] = rs.getShort("iavo");
+				incStats[StatEffects.MHP] = rs.getShort("ihp");
+				incStats[StatEffects.MMP] = rs.getShort("imp");
+				incStats[StatEffects.Speed] = rs.getShort("ispeed");
+				incStats[StatEffects.Jump] = rs.getShort("ijump");
 
 				ArrayList<int[]> mobsToSpawn = new ArrayList<int[]>();
 				try {

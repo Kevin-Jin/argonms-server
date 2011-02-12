@@ -23,6 +23,9 @@ package argonms.character.inventory;
  * @author GoldenKevin
  */
 public class Equip extends InventorySlot implements Cloneable {
+	private byte tuc;
+	private byte level;
+
 	private short
 		str,
 		dex,
@@ -36,11 +39,10 @@ public class Equip extends InventorySlot implements Cloneable {
 		mdef,
 		acc,
 		avoid,
+		hands,
 		speed,
 		jump
 	;
-
-	private byte tuc;
 
 	public Equip(int itemid) {
 		super(itemid);
@@ -50,12 +52,24 @@ public class Equip extends InventorySlot implements Cloneable {
 		return ItemType.EQUIP;
 	}
 
+	public byte getTypeByte() {
+		return InventorySlot.EQUIP;
+	}
+
 	public short getQuantity() {
 		return 1;
 	}
 
 	public void setQuantity(short newValue) {
 		throw new UnsupportedOperationException("Cannot change quantity of an equip.");
+	}
+
+	public byte getUpgradeSlots() {
+		return tuc;
+	}
+
+	public byte getLevel() {
+		return level;
 	}
 
 	public short getStr() {
@@ -106,6 +120,10 @@ public class Equip extends InventorySlot implements Cloneable {
 		return avoid;
 	}
 
+	public short getHands() {
+		return hands;
+	}
+
 	public short getSpeed() {
 		return speed;
 	}
@@ -114,8 +132,12 @@ public class Equip extends InventorySlot implements Cloneable {
 		return jump;
 	}
 
-	public byte getUpgradeSlots() {
-		return tuc;
+	public void setUpgradeSlots(byte value) {
+		this.tuc = value;
+	}
+
+	public void setLevel(byte value) {
+		this.level = value;
 	}
 
 	public void setStr(short value) {
@@ -174,15 +196,15 @@ public class Equip extends InventorySlot implements Cloneable {
 		this.jump = value;
 	}
 
-	public void setUpgradeSlots(byte value) {
-		this.tuc = value;
-	}
-
 	public Equip clone() {
 		Equip copy = new Equip(getItemId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
+		copy.setOwner(getOwner());
+		copy.setFlag(getFlag());
 
+		copy.setUpgradeSlots(getUpgradeSlots());
+		copy.setLevel(getLevel());
 		copy.setStr(getStr());
 		copy.setDex(getDex());
 		copy.setInt(getInt());
@@ -197,7 +219,6 @@ public class Equip extends InventorySlot implements Cloneable {
 		copy.setAvoid(getAvoid());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
-		copy.setUpgradeSlots(getUpgradeSlots());
 		return copy;
 	}
 }

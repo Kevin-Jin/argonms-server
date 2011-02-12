@@ -20,7 +20,7 @@ package argonms.loading.item;
 
 import argonms.character.inventory.InventoryTools;
 import argonms.loading.DataFileType;
-import argonms.loading.KvjEffects;
+import argonms.loading.StatEffects;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -130,7 +130,7 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return reqStats.containsKey(oId) ? reqStats.get(oId)[KvjEffects.Level] : 0;
+		return reqStats.containsKey(oId) ? reqStats.get(oId)[StatEffects.Level] : 0;
 	}
 
 	public short[] getBonusStats(int itemId) {

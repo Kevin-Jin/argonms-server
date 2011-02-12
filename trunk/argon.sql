@@ -68,6 +68,7 @@ CREATE TABLE `characters` (
   `etcslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
   `cashslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 24,
   `storageslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 4,
+  `buddyslots` tinyint(3) UNSIGNED NOT NULL DEFAULT 20,
   `gm` tinyint(3) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `accountid` (`accountid`),
@@ -89,6 +90,7 @@ CREATE TABLE `inventoryitems` (
   PRIMARY KEY (`inventoryitemid`),
   KEY `characterid` (`characterid`),
   KEY `uniqueid` (`uniqueid`),
+  /* hmm, gonna be a problem when a character is deleted and the account's storage and cash shop inventory is deleted with it... */
   CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -114,6 +116,18 @@ CREATE TABLE `inventoryequipment` (
   PRIMARY KEY (`inventoryequipmentid`),
   KEY `inventoryitemid` (`inventoryitemid`),
   CONSTRAINT `inventoryequipment_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `inventorymounts`;
+CREATE TABLE `inventorymounts` (
+  `inventorymountid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `inventoryitemid` int(10) UNSIGNED NOT NULL,
+  `level` tinyint(2) UNSIGNED NOT NULL,
+  `exp` smallint(4) UNSIGNED NOT NULL,
+  `tiredness` tinyint(3) UNSIGNED NOT NULL,
+  PRIMARY KEY (`inventorymountid`),
+  KEY `inventoryitemid` (`inventoryitemid`),
+  CONSTRAINT `inventorymounts_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventorypets`;
@@ -142,7 +156,46 @@ CREATE TABLE `inventoryrings` (
   CONSTRAINT `inventoryrings_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `keymaps`;
+CREATE TABLE `keymaps` (
+  `entryid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `key` tinyint(3) NOT NULL,
+  `type` tinyint(1) NOT NULL,
+  `action` int(11) NOT NULL,
+  PRIMARY KEY(`entryid`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `keymaps_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `skillmacros`;
+CREATE TABLE `skillmacros` (
+  `entryid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `position` tinyint(1) NOT NULL,
+  `name` tinytext NOT NULL,
+  `shout` tinyint(1) NOT NULL,
+  `skill1` int(11) NOT NULL,
+  `skill2` int(11) NOT NULL,
+  `skill3` int(11) NOT NULL,
+  PRIMARY KEY(`entryid`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `skillmacros_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `macbans`;
 CREATE TABLE `macbans` (
   `mac` tinytext NOT NULL
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `skills`;
+CREATE TABLE `skills` (
+  `entryid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `skillid` int(11) NOT NULL,
+  `level` tinyint(2) NOT NULL,
+  `mastery` tinyint(2) DEFAULT NULL,
+  PRIMARY KEY (`entryid`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `skills_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;

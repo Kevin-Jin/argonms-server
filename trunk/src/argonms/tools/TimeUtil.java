@@ -16,27 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.net.client;
-
-import argonms.tools.input.LittleEndianReader;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+package argonms.tools;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ClientShopPacketProcessor extends ClientPacketProcessor {
-	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
+public final class TimeUtil {
+	/**
+	 * Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
+	 */
+	private static final long EPOCH_BIAS = 116444736000000000L;
 
-	public void process(LittleEndianReader reader, RemoteClient s) {
-		switch (reader.readShort()) {
-			case ClientRecvOps.PONG:
-				s.receivedPong();
-				break;
-			default:
-				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
-				break;
-		}
+	/**
+	 * Converts a POSIX/Unix timestamp AKA time_t (milliseconds since the Unix
+	 * epoch -  January 1, 1970 00:00) to a Windows/ANSI timestamp AKA FILETIME
+	 * (ticks, or hundreds of nanoseconds since January 1, 1601 00:00).
+	 * @param unixTime time_t
+	 * @return FILETIME
+	 */
+	public static long unixToWindowsTime(long unixTime) {
+		return (unixTime * 10000 + EPOCH_BIAS);
 	}
 }

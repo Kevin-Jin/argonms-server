@@ -89,7 +89,7 @@
 	read in McdbItemDataLoader as well. In McdbItemDataLoader, equips can now be
 	made tradeBlocked.
 
-2011-02-02  GoldenKevin  (revision 8)
+2011-02-04  GoldenKevin  (revision 8)
 
 	* Fixed some inconsistencies when passing java.awt.Point/(x,y) parameters to
 	mutator methods in data loader objects. Now all parameters are passed as
@@ -111,6 +111,31 @@
 	loading of a player (copied directly from OdinMS), although there's still a
 	long way before the player can actually be placed in a map.
 	* Added a CheatTracker class that does... nothing! Yet.
+
+2011-02-12  GoldenKevin  (revision 9)
+
+	* Fixed logging of unhandled packets from clients.
+	* Moved argonms.net.client.ClientLoginPacketProcessor
+	to argonms.login.ClientLoginPacketProcessor
+	* Moved argonms.net.client.ClientGamePacketProcessor
+	to argonms.game.ClientGamePacketProcessor
+	* Moved argonms.net.client.ClientShopPacketProcessor
+	to argonms.shop.ClientShopPacketProcessor
+	* Moved several constants from KvjEffects to StatEffects because their use
+	wasn't limited to KVJ effects loading.
+	* Added accessor methods to MobSkillEffect and StatEffects. Lt and Rb
+	mutator methods for MobSkillEffects now accept two shorts instead of a Point
+	* Fixed negative array index size occurring when packet length was greater
+	than the maximum value (127) of a signed 8-bit integer (byte).
+	* Fixed finding the next free item position in inventory
+	(Inventory.getFreeSlots). First item is 1, not 0!
+	* Added Taming Mobs/Mounts as another inventory item type. Hopefully, this
+	should be the last one as the inheritance for InventorySlot is getting
+	complicated...
+	* Player can now enter a map in the GameServer. While they can move, they
+	can't see other players and other players can't see them. They cannot
+	interact with anything or change maps/channels and there are no spawns for
+	NPCs/Mobs. All of these additions will come gradually.
 
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are

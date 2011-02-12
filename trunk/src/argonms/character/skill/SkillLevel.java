@@ -16,44 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character.skill;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
+public class SkillLevel {
+	private byte level, master;
 
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
+	public SkillLevel(byte currentLevel, byte masterLevel) {
+		this.level = currentLevel;
+		this.master = masterLevel;
 	}
 
-	public ItemType getType() {
-		return ItemType.ITEM;
+	public int getLevel() {
+		return level;
 	}
 
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
+	public void incrementCurrentLevel() {
+		++level;
 	}
 
-	public short getQuantity() {
-		return qty;
+	public int getMasterLevel() {
+		return master;
 	}
 
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
-	}
-
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+	public void changeMasterLevel(byte newLevel) {
+		this.master = newLevel;
 	}
 }

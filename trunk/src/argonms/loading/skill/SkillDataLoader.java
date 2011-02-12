@@ -37,15 +37,29 @@ public abstract class SkillDataLoader {
 		mobSkillStats = new HashMap<Integer, MobSkillStats>();
 	}
 
-	protected abstract void canLoadPlayerSkill(int skillid);
+	protected abstract void loadPlayerSkill(int skillid);
 
-	protected abstract void canLoadMobSkill(int skillid);
+	protected abstract void loadMobSkill(int skillid);
 
 	public abstract boolean loadAll();
 
-	public abstract boolean validPlayerSkill(int skillid);
+	public abstract boolean canLoadPlayerSkill(int skillid);
 
-	public abstract boolean validMobSkill(int skillid);
+	public abstract boolean canLoadMobSkill(int skillid);
+
+	public SkillStats getSkill(int skillid) {
+		Integer oId = Integer.valueOf(skillid);
+		if (!skillStats.containsKey(oId))
+			loadPlayerSkill(skillid);
+		return skillStats.get(oId);
+	}
+
+	public MobSkillStats getMobSkill(int skillid) {
+		Integer oId = Integer.valueOf(skillid);
+		if (!mobSkillStats.containsKey(oId))
+			loadMobSkill(skillid);
+		return mobSkillStats.get(oId);
+	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {
 		if (instance == null) {

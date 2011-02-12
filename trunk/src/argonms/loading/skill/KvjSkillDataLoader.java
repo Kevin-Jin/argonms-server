@@ -21,7 +21,6 @@ package argonms.loading.skill;
 import argonms.loading.KvjEffects;
 import argonms.tools.input.LittleEndianByteArrayReader;
 import argonms.tools.input.LittleEndianReader;
-import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -49,9 +48,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		this.dataPath = wzPath;
 	}
 
-	//TODO: Actually do real work to see if the skill exists in the file so we
-	//can name this method exists() instead of loadable?
-	protected void canLoadPlayerSkill(int skillid) {
+	protected void loadPlayerSkill(int skillid) {
 		String id = String.format("%07d", skillid);
 
 		try {
@@ -63,9 +60,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	//TODO: Actually do real work to see if the skill exists in the file so we
-	//can name this method exists() instead of loadable?
-	protected void canLoadMobSkill(int skillid) {
+	protected void loadMobSkill(int skillid) {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 			if (f.exists())
@@ -100,7 +95,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
-	public boolean validPlayerSkill(int skillid) {
+	public boolean canLoadPlayerSkill(int skillid) {
 		String id = String.format("%07d", skillid);
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
 		return f.exists();
@@ -108,7 +103,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
-	public boolean validMobSkill(int skillid) {
+	public boolean canLoadMobSkill(int skillid) {
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 		return f.exists();
 	}
@@ -201,7 +196,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 				case KvjEffects.MDEF:
 					effect.setMdef(reader.readShort());
 					break;
-				case KvjEffects.ACCY:
+				case KvjEffects.ACC:
 					effect.setAcc(reader.readShort());
 					break;
 				case KvjEffects.AVOID:
@@ -294,10 +289,10 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setY(reader.readInt());
 					break;
 				case KvjEffects.LT:
-					effect.setLt(new Point(reader.readShort(), reader.readShort()));
+					effect.setLt(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.RB:
-					effect.setRb(new Point(reader.readShort(), reader.readShort()));
+					effect.setRb(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.PROP:
 					effect.setProp(reader.readInt() / 100.0);

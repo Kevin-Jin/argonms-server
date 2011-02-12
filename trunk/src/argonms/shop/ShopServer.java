@@ -20,10 +20,12 @@ package argonms.shop;
 
 import argonms.LocalServer;
 import argonms.ServerType;
+import argonms.character.Player;
 import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
 import argonms.net.client.ClientListener;
+import argonms.net.client.PlayerLog;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Pair;
 import java.io.FileReader;
@@ -53,6 +55,7 @@ public class ShopServer implements LocalServer {
 	private String wzPath;
 	private boolean useNio;
 	private boolean centerConnected;
+	private PlayerLog storage;
 
 	private ShopServer() {
 		onlineWorlds = new HashMap<Byte, Pair<String, int[]>>();
@@ -151,6 +154,22 @@ public class ShopServer implements LocalServer {
 
 	public int[] getClientPorts() {
 		return new int[] { port };
+	}
+
+	public void addPlayer(Player p) {
+		storage.addPlayer(p);
+	}
+
+	public void removePlayer(Player p) {
+		storage.deletePlayer(p);
+	}
+
+	public Player getPlayerById(int characterid) {
+		return storage.getPlayer(characterid);
+	}
+
+	public Player getPlayerByName(String name) {
+		return storage.getPlayer(name);
 	}
 
 	public static void main(String[] args) {

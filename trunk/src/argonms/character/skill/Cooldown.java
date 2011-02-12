@@ -16,44 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.inventory;
+package argonms.character.skill;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Item extends InventorySlot implements Cloneable {
-	private short qty;
+public class Cooldown {
+	private int skillId;
+	private long endTime;
 
-	public Item(int itemid) {
-		super(itemid);
-		qty = 1;
+	public Cooldown(int skillId, long startTime, int length) {
+		this.skillId = skillId;
+		this.endTime = startTime + length;
 	}
 
-	public ItemType getType() {
-		return ItemType.ITEM;
+	public int getParentSkill() {
+		return skillId;
 	}
 
-	public byte getTypeByte() {
-		return InventorySlot.ITEM;
+	public int getMillisecondsRemaining() {
+		return (int) (endTime - System.currentTimeMillis());
 	}
 
-	public short getQuantity() {
-		return qty;
-	}
-
-	public void setQuantity(short newValue) {
-		this.qty = newValue;
-	}
-
-	public Item clone() {
-		Item copy = new Item(getItemId());
-		copy.setExpiration(getExpiration());
-		copy.setUniqueId(getUniqueId());
-		copy.setOwner(getOwner());
-		copy.setFlag(getFlag());
-
-		copy.setQuantity(getQuantity());
-		return copy;
+	public short getSecondsRemaining() {
+		return (short) ((endTime - System.currentTimeMillis()) / 1000);
 	}
 }

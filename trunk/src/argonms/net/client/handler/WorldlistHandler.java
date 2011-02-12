@@ -19,6 +19,7 @@
 package argonms.net.client.handler;
 
 import argonms.character.Player;
+import argonms.character.PlayerJob;
 import argonms.login.LoginClient;
 import argonms.login.LoginServer;
 import argonms.login.World;
@@ -28,6 +29,7 @@ import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.tools.output.LittleEndianWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,6 +53,35 @@ public class WorldlistHandler {
 		SERVERSTATUS_MAX = 2 //"The Concurrent Users in This World Have Reached the Max. Please Try Again Later."
 	;
 
+	private static void loadCharacters(LittleEndianWriter lew, LoginClient c) {
+		Connection con = DatabaseConnection.getConnection();
+		//TODO: There's gotta be a way to not have to query the database twice?
+		try {
+			PreparedStatement ps = con.prepareStatement("SELECT count(*) "
+					+ "FROM `characters` WHERE `accountid` = ? AND `world` = ?");
+			ps.setInt(1, c.getAccountId());
+			ps.setInt(2, c.getWorld());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				lew.writeByte(rs.getByte(1));
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE "
+					+ "`accountid` = ? AND `world` = ?");
+			ps.setInt(1, c.getAccountId());
+			ps.setInt(2, c.getWorld());
+			rs = ps.executeQuery();
+			while (rs.next())
+				writeCharEntry(lew, Player.loadPlayer(c, rs.getInt(1)));
+			rs.close();
+			ps.close();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not load characters of account "
+					+ c.getAccountId(), ex);
+		}
+	}
+
 	public static void handleCharlist(LittleEndianReader packet, RemoteClient rc) {
 		LoginClient client = (LoginClient) rc;
 
@@ -64,11 +95,11 @@ public class WorldlistHandler {
 			writer.writeByte((byte) 8); //"The connection could not be made because of a system error."
 		} else {
 			writer.writeByte((byte) 0); //show characters
-			client.addCharacters(writer);
+			loadCharacters(writer, client);
 			writer.writeInt(client.getMaxCharacters());
 		}
 
-		rc.getSession().send(writer.getBytes());
+		client.getSession().send(writer.getBytes());
 	}
 
 	public static void sendServerStatus(LittleEndianReader packet, RemoteClient rc) {
@@ -136,7 +167,7 @@ public class WorldlistHandler {
 			lew.writeByte(world);
 			client.setWorld(world);
 			//TODO: don't get lazy and optimize this part?
-			client.addCharacters(lew);
+			loadCharacters(lew, client);
 			client.getSession().send(lew.getBytes());
 		}
 	}
@@ -257,7 +288,7 @@ public class WorldlistHandler {
 			Player p = Player.saveNewPlayer((LoginClient) rc, name, eyes,
 					hair + hairColor, skin, gender, str, dex, _int, luk,
 					top, bottom, shoes, weapon);
-			CommonPackets.writeCharEntry(lew, p);
+			writeCharEntry(lew, p);
 		} else {
 			LOG.log(Level.WARNING, "Player from account {0} tried to create a "
 					+ "stats hacked character named {1} ",
@@ -323,11 +354,25 @@ public class WorldlistHandler {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.CHANNEL_ADDRESS);
 		lew.writeShort((short) 0);
-		lew.write(host);
+		lew.writeBytes(host);
 		lew.writeShort((short) port);
 		lew.writeInt(charid);
 		lew.writeInt(0);
 		lew.writeByte((byte) 0);
 		return lew.getBytes();
+	}
+
+	private static void writeCharEntry(LittleEndianWriter lew, Player p) {
+		CommonPackets.writeCharStats(lew, p);
+		CommonPackets.writeAvatar(lew, p, false);
+		if (!PlayerJob.isModerator(p.getJob())) {
+			lew.writeBool(true);
+			lew.writeInt(0); //world rank
+			lew.writeInt(0); //world rank change
+			lew.writeInt(0); //job rank
+			lew.writeInt(0); //job rank change
+		} else {
+			lew.writeBool(false);
+		}
 	}
 }

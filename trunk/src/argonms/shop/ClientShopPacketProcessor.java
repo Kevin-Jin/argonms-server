@@ -16,9 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.net.client;
+package argonms.shop;
 
-import argonms.net.client.handler.GameHandler;
+import argonms.net.client.ClientPacketProcessor;
+import argonms.net.client.ClientRecvOps;
+import argonms.net.client.RemoteClient;
+import argonms.net.client.handler.ShopHandler;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,13 +30,13 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ClientGamePacketProcessor extends ClientPacketProcessor {
+public class ClientShopPacketProcessor extends ClientPacketProcessor {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
 	public void process(LittleEndianReader reader, RemoteClient s) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.PLAYER_CONNECTED:
-				GameHandler.handlePlayerConnection(reader, s);
+				ShopHandler.handlePlayerConnection(reader, s);
 				break;
 			case ClientRecvOps.PONG:
 				s.receivedPong();

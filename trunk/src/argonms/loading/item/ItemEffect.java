@@ -37,6 +37,10 @@ public class ItemEffect extends StatEffects {
 		petConsumableBy = new ArrayList<Integer>();
 	}
 
+	public Effect getType() {
+		return Effect.ITEM;
+	}
+
 	protected void setMoveTo(int map) {
 		this.moveTo = map;
 	}
