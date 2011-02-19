@@ -107,16 +107,25 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return wholePrice.containsKey(oId) ? wholePrice.get(oId).intValue() : 0;
+		Integer ret = wholePrice.get(oId);
+		return ret != null ? ret.intValue() : 0;
+	}
+
+	public double getUnitPrice(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		Double ret = unitPrice.get(oId);
+		return ret != null ? ret.doubleValue() : 0;
 	}
 
 	public short getSlotMax(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		if (!slotMax.containsKey(oId))
-			slotMax.put(oId, Short.valueOf((short) (!InventoryTools.getCategory(itemId).equals("Equip") ? 100 : 1)));
-		return slotMax.get(oId).shortValue();
+		Short ret = slotMax.get(oId);
+		return ret != null ? ret.shortValue() : (short)
+				(!InventoryTools.getCategory(itemId).equals("Equip") ? 100 : 1);
 	}
 
 	public boolean isTradeBlocked(int itemId) {
@@ -130,7 +139,8 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return reqStats.containsKey(oId) ? reqStats.get(oId)[StatEffects.Level] : 0;
+		short[] ret = reqStats.get(oId);
+		return ret != null ? ret[StatEffects.Level] : 0;
 	}
 
 	public short[] getBonusStats(int itemId) {
@@ -166,7 +176,8 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return tuc.get(oId) != null ? tuc.get(oId).byteValue() : 7;
+		Byte ret = tuc.get(oId);
+		return ret != null ? ret.byteValue() : 7;
 	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {

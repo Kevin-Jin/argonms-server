@@ -19,12 +19,9 @@
 package argonms.login;
 
 import argonms.ServerType;
-import argonms.character.Player;
 import argonms.net.HashFunctions;
-import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
-import argonms.tools.output.LittleEndianWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -104,21 +101,23 @@ public class LoginClient extends RemoteClient {
 					result = 2;
 				}
 
-				if (hashUpdate) {
-					salt = HashFunctions.makeSalt();
-					passhash = HashFunctions.makeSaltedSha512Hash(pwd, salt);
-					ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?, `password` = ?, `salt` = ? WHERE `id` = ?");
-					ps.setByte(1, STATUS_INLOGIN);
-					ps.setString(2, passhash);
-					ps.setString(3, salt);
-					ps.setInt(4, getAccountId());
-				} else {
-					ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
-					ps.setByte(1, STATUS_INLOGIN);
-					ps.setInt(2, getAccountId());
+				if (result == 0) {
+					if (hashUpdate) {
+						salt = HashFunctions.makeSalt();
+						passhash = HashFunctions.makeSaltedSha512Hash(pwd, salt);
+						ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?, `password` = ?, `salt` = ? WHERE `id` = ?");
+						ps.setByte(1, STATUS_INLOGIN);
+						ps.setString(2, passhash);
+						ps.setString(3, salt);
+						ps.setInt(4, getAccountId());
+					} else {
+						ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
+						ps.setByte(1, STATUS_INLOGIN);
+						ps.setInt(2, getAccountId());
+					}
+					ps.executeUpdate();
+					ps.close();
 				}
-				ps.executeUpdate();
-				ps.close();
 			} else {
 				result = 5;
 			}

@@ -24,15 +24,15 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class Portal {
+public class PortalData {
 	private String pn;
-	private int pt;
+	private byte pt;
 	private Point pos;
 	private int tm;
 	private String tn;
 	private String script;
 
-	protected Portal() {
+	protected PortalData() {
 
 	}
 
@@ -40,11 +40,11 @@ public class Portal {
 		this.pn = pn;
 	}
 
-	protected void setPortalType(int pt) {
+	protected void setPortalType(byte pt) {
 		this.pt = pt;
 	}
 
-	protected void setPosition(int x, int y) {
+	protected void setPosition(short x, short y) {
 		this.pos = new Point(x, y);
 	}
 
@@ -64,7 +64,7 @@ public class Portal {
 		return pn;
 	}
 
-	public int getPortalType() {
+	public byte getPortalType() {
 		return pt;
 	}
 

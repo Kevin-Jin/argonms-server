@@ -19,6 +19,7 @@
 package argonms.character;
 
 import argonms.character.skill.SkillLevel;
+import argonms.character.skill.Skills;
 import argonms.ServerType;
 import argonms.character.inventory.Equip;
 import argonms.character.inventory.InventorySlot;
@@ -34,11 +35,12 @@ import argonms.game.GameServer;
 import argonms.loading.StatEffects;
 import argonms.login.LoginClient;
 import argonms.map.MapObject;
-import argonms.map.MapleMap;
+import argonms.map.GameMap;
+import argonms.map.movement.LifeMovementFragment;
+import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Timer;
-import java.awt.Point;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,7 +68,6 @@ public class Player extends MapObject {
 	private RemoteClient client;
 	private byte gm;
 
-	private int id;
 	private String name;
 	private short eyes, hair;
 	private byte skin;
@@ -81,9 +82,8 @@ public class Player extends MapObject {
 	private int exp;
 	private int mesos;
 	private short fame;
-	private MapleMap map;
+	private GameMap map;
 	private int savedMapId;
-	private Point position;
 	private byte savedSpawnPoint;
 	private int partner;
 	private BuddyList buddies;
@@ -96,6 +96,8 @@ public class Player extends MapObject {
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<StatEffects, ScheduledFuture<?>> effectCancels;
 
+	private List<MapObject> visibleObjects;
+
 	private Player () {
 		bindings = new TreeMap<Byte, KeyBinding>();
 		skillMacros = new ArrayList<SkillMacro>(5);
@@ -104,6 +106,7 @@ public class Player extends MapObject {
 		skills = new HashMap<Integer, SkillLevel>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		effectCancels = new HashMap<StatEffects, ScheduledFuture<?>>();
+		visibleObjects = new ArrayList<MapObject>();
 	}
 
 	public void saveCharacter() {
@@ -123,7 +126,7 @@ public class Player extends MapObject {
 			}
 			con.commit();
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save character " + id
+			LOG.log(Level.WARNING, "Could not save character " + getId()
 					+ ". Rolling back all changes...", ex);
 			try {
 				con.rollback();
@@ -171,22 +174,22 @@ public class Player extends MapObject {
 			ps.setShort(16, remMp);
 			ps.setShort(17, maxMp);
 			ps.setShort(18, remAp);
-			ps.setShort(18, remSp);
-			ps.setInt(19, exp);
-			ps.setShort(20, fame);
-			ps.setInt(21, partner);
-			ps.setInt(22, getMapId());
-			ps.setByte(23, map != null ? map.nearestSpawnPoint(position) : savedSpawnPoint);
-			ps.setInt(24, mesos);
-			ps.setShort(25, inventories.get(InventoryType.EQUIP).getMaxSlots());
-			ps.setShort(26, inventories.get(InventoryType.USE).getMaxSlots());
-			ps.setShort(27, inventories.get(InventoryType.SETUP).getMaxSlots());
-			ps.setShort(28, inventories.get(InventoryType.ETC).getMaxSlots());
-			ps.setShort(29, inventories.get(InventoryType.CASH).getMaxSlots());
-			ps.setShort(30, inventories.get(InventoryType.STORAGE).getMaxSlots());
-			ps.setShort(31, buddies.getCapacity());
-			ps.setByte(32, gm);
-			ps.setInt(33, id);
+			ps.setShort(19, remSp);
+			ps.setInt(20, exp);
+			ps.setShort(21, fame);
+			ps.setInt(22, partner);
+			ps.setInt(23, getMapId());
+			ps.setByte(24, map != null ? map.nearestSpawnPoint(getPosition()) : savedSpawnPoint);
+			ps.setInt(25, mesos);
+			ps.setShort(26, inventories.get(InventoryType.EQUIP).getMaxSlots());
+			ps.setShort(27, inventories.get(InventoryType.USE).getMaxSlots());
+			ps.setShort(28, inventories.get(InventoryType.SETUP).getMaxSlots());
+			ps.setShort(29, inventories.get(InventoryType.ETC).getMaxSlots());
+			ps.setShort(30, inventories.get(InventoryType.CASH).getMaxSlots());
+			ps.setShort(31, inventories.get(InventoryType.STORAGE).getMaxSlots());
+			ps.setShort(32, buddies.getCapacity());
+			ps.setByte(33, gm);
+			ps.setInt(34, getId());
 			int updateRows = ps.executeUpdate();
 			if (updateRows < 1)
 				LOG.log(Level.WARNING, "Updating a deleted character with name "
@@ -206,7 +209,7 @@ public class Player extends MapObject {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM "
 					+ "`inventoryitems` WHERE `characterid` = ? AND "
 					+ "`inventorytype` <= " + InventoryType.CASH.value());
-			ps.setInt(1, id);
+			ps.setInt(1, getId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -223,7 +226,7 @@ public class Player extends MapObject {
 					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?)",
 					PreparedStatement.RETURN_GENERATED_KEYS);
-			ps.setInt(1, id);
+			ps.setInt(1, getId());
 			ps.setInt(2, client.getAccountId());
 			for (Entry<InventoryType, Inventory> ent : inventories.entrySet()) {
 				ps.setInt(3, ent.getKey().value());
@@ -338,7 +341,7 @@ public class Player extends MapObject {
 		try {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM `keymaps` "
 					+ "WHERE `characterid` = ?");
-			ps.setInt(1,  id);
+			ps.setInt(1,  getId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -346,7 +349,7 @@ public class Player extends MapObject {
 			//rewriteBatchedStatements=true or else this would take over 2 secs!
 			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
 					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
-			ps.setInt(1, id);
+			ps.setInt(1, getId());
 			for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
 				KeyBinding binding = entry.getValue();
 				ps.setByte(2, entry.getKey().byteValue());
@@ -359,7 +362,7 @@ public class Player extends MapObject {
 
 			ps = con.prepareStatement("DELETE FROM `skillmacros` WHERE "
 					+ "`characterid` = ?");
-			ps.setInt(1,  id);
+			ps.setInt(1,  getId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -367,7 +370,7 @@ public class Player extends MapObject {
 			ps = con.prepareStatement("INSERT INTO `skillmacros` "
 					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,"
 					+ "`skill2`,`skill3`) VALUES (?,?,?,?,?,?,?)");
-			ps.setInt(1, id);
+			ps.setInt(1, getId());
 			for (SkillMacro macro : skillMacros) {
 				ps.setByte(2, pos++);
 				ps.setString(3, macro.getName());
@@ -419,7 +422,7 @@ public class Player extends MapObject {
 			}
 			Player p = new Player();
 			p.client = c;
-			p.id = id;
+			p.setId(id);
 			p.name = rs.getString(4);
 			p.gender = rs.getByte(5);
 			p.skin = rs.getByte(6);
@@ -441,9 +444,11 @@ public class Player extends MapObject {
 			p.fame = rs.getShort(22);
 			p.partner = rs.getInt(23);
 			p.savedMapId = rs.getInt(24);
-			if (ServerType.isGame(c.getServerType()))
-				p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
 			p.savedSpawnPoint = rs.getByte(25);
+			if (ServerType.isGame(c.getServerType())) {
+				p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
+				p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
+			}
 			p.mesos = rs.getInt(26);
 			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getByte(27)));
 			p.inventories.put(InventoryType.USE, new Inventory(rs.getByte(28)));
@@ -629,10 +634,6 @@ public class Player extends MapObject {
 		return gm;
 	}
 
-	public int getId() {
-		return id;
-	}
-
 	public String getName() {
 		return name;
 	}
@@ -728,16 +729,16 @@ public class Player extends MapObject {
 		return fame;
 	}
 
-	public MapleMap getMap() {
+	public GameMap getMap() {
 		return map;
 	}
 
-	public MapleMap getReturnMap() {
+	public GameMap getReturnMap() {
 		return GameServer.getChannel(client.getChannel())
 				.getMapFactory().getMap(map.getReturnMap());
 	}
 
-	public MapleMap getForcedReturnMap() {
+	public GameMap getForcedReturnMap() {
 		return GameServer.getChannel(client.getChannel())
 				.getMapFactory().getMap(map.getForcedReturnMap());
 	}
@@ -769,6 +770,10 @@ public class Player extends MapObject {
 		return -1;
 	}
 
+	public TamingMob getEquippedMount() {
+		return equippedMount;
+	}
+
 	public Map<Integer, SkillLevel> getSkills() {
 		return Collections.unmodifiableMap(skills);
 	}
@@ -795,9 +800,90 @@ public class Player extends MapObject {
 		}
 	}
 
+	public int getItemEffect() {
+		return 0;
+	}
+
+	public int getChair() {
+		return 0;
+	}
+
 	public void close() {
 		for (ScheduledFuture<?> f : effectCancels.values())
 			f.cancel(true);
+		if (map != null)
+			map.removePlayer(this);
+		saveCharacter();
+	}
+
+	public void move(List<LifeMovementFragment> moves) {
+		map.playerMoved(this, moves);
+	}
+
+	public boolean canSeeObject(MapObject o) {
+		return visibleObjects.contains(o);
+	}
+
+	public void addToVisibleMapObjects(MapObject o) {
+		visibleObjects.add(o);
+	}
+
+	public List<MapObject> getVisibleMapObjects() {
+		return visibleObjects;
+	}
+
+	public void removeVisibleMapObject(MapObject o) {
+		visibleObjects.remove(o);
+	}
+
+	public MapObjectType getObjectType() {
+		return MapObjectType.PLAYER;
+	}
+
+	public boolean isVisible() {
+		return skills.containsKey(Integer.valueOf(Skills.HIDE));
+	}
+
+	public byte[] getCreationMessage() {
+		int size;
+		byte[] charState = CommonPackets.writeShowPlayer(this);
+		size = charState.length;
+		List<byte[]> petStates = new ArrayList<byte[]>();
+		for (byte i = 0; i < 3; i++) {
+			if (equippedPets[i] != null) {
+				byte[] petData = CommonPackets.writeShowPet(this, i, equippedPets[i], true, false);
+				petStates.add(petData);
+				size += petData.length;
+			}
+		}
+		byte[] combined = new byte[size];
+		System.arraycopy(charState, 0, combined, 0, charState.length);
+		size = charState.length;
+		for (byte[] b : petStates) {
+			System.arraycopy(b, 0, combined, size, b.length);
+			size += b.length;
+		}
+		return combined;
+	}
+
+	public byte[] getShowObjectMessage() {
+		return getCreationMessage();
+	}
+
+	public byte[] getOutOfViewMessage() {
+		return null;
+	}
+
+	public byte[] getDestructionMessage() {
+		return CommonPackets.writeRemovePlayer(this);
+	}
+
+	public boolean isNonRangedType() {
+		return true;
+	}
+
+	public String toString() {
+		return "[Player: " + getName() + ']';
 	}
 
 	public static Player saveNewPlayer(LoginClient account, String name,
@@ -903,7 +989,7 @@ public class Player extends MapObject {
 			ps.executeUpdate();
 			ResultSet rs = ps.getGeneratedKeys();
 			if (rs.next())
-				p.id = rs.getInt(1);
+				p.setId(rs.getInt(1));
 			rs.close();
 			ps.close();
 

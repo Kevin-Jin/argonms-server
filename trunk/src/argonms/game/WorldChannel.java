@@ -19,10 +19,12 @@
 package argonms.game;
 
 import argonms.character.Player;
+import argonms.map.GameMap;
 import argonms.map.MapFactory;
 import argonms.net.client.ClientListener;
 import argonms.net.client.PlayerLog;
 import argonms.net.server.RemoteCenterOps;
+import argonms.tools.Timer;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,6 +51,12 @@ public class WorldChannel {
 	}
 
 	public void listen(boolean useNio) {
+		Timer.getInstance().runRepeatedly(new Runnable() {
+			public void run() {
+				for (GameMap map : mapFactory.getMaps().values())
+					map.respawn();
+			}
+		}, 0, 10000);
 		handler = new ClientListener(world, channel, useNio);
 		if (handler.bind(port))
 			LOG.log(Level.INFO, "Channel {0} is online.", channel);

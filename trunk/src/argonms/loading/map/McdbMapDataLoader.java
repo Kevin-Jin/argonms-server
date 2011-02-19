@@ -45,8 +45,8 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ps.setInt(1, mapid);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				stats = new MapStats();
-				doWork(rs, stats);
+				stats = new MapStats(mapid);
+				doWork(rs, mapid, stats);
 			}
 			rs.close();
 			ps.close();
@@ -64,8 +64,10 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ps = con.prepareStatement("SELECT * FROM `mapdata`");
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				MapStats stats = new MapStats();
-				mapStats.put(doWork(rs, stats), stats);
+				int mapid = rs.getInt(1);
+				MapStats stats = new MapStats(mapid);
+				doWork(rs, mapid, stats);
+				mapStats.put(Integer.valueOf(mapid), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
@@ -84,6 +86,8 @@ public class McdbMapDataLoader extends MapDataLoader {
 	}
 
 	public boolean canLoad(int mapid) {
+		if (mapStats.containsKey(mapid))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
@@ -100,8 +104,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		return exists;
 	}
 
-	private int doWork(ResultSet rs, MapStats stats) throws SQLException {
-		int mapid = rs.getInt(1);
+	private void doWork(ResultSet rs, int mapid, MapStats stats) throws SQLException {
 		stats.setReturnMap(rs.getInt(6));
 		stats.setForcedReturn(rs.getInt(7));
 		stats.setDecHp(rs.getInt(10));
@@ -117,7 +120,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		loadReactors(mapid, stats);
 		loadFootholds(mapid, stats);
 		loadPortals(mapid, stats);
-		return mapid;
+		stats.finished();
 	}
 
 	private void loadLife(int mapid, MapStats stats) {
@@ -128,15 +131,15 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				int id = rs.getInt(2);
-				Life l = new Life();
+				SpawnData l = new SpawnData();
 				l.setType(rs.getInt(3) == 0 ? 'm' : 'n');
 				l.setDataId(rs.getInt(4));
-				l.setX(rs.getInt(5));
-				l.setY(rs.getInt(6));
-				l.setCy(rs.getInt(6));
-				l.setFoothold(rs.getInt(7));
-				l.setRx0(rs.getInt(8));
-				l.setRx1(rs.getInt(9));
+				l.setX(rs.getShort(5));
+				l.setY(rs.getShort(6));
+				l.setCy(rs.getShort(6));
+				l.setFoothold(rs.getShort(7));
+				l.setRx0(rs.getShort(8));
+				l.setRx1(rs.getShort(9));
 				l.setMobTime(rs.getInt(10));
 				stats.addLife(id, l);
 			}
@@ -155,10 +158,10 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				int id = rs.getInt(2);
-				Reactor rt = new Reactor();
+				ReactorData rt = new ReactorData();
 				rt.setDataId(rs.getInt(3));
-				rt.setX(rs.getInt(4));
-				rt.setY(rs.getInt(5));
+				rt.setX(rs.getShort(4));
+				rt.setY(rs.getShort(5));
 				rt.setReactorTime(rs.getInt(6));
 				rt.setName("");
 				stats.addReactor(id, rt);
@@ -177,15 +180,14 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ps.setInt(1, mapid);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				int id = rs.getInt(2);
 				Foothold fh = new Foothold();
-				fh.setX1(rs.getInt(3));
-				fh.setY1(rs.getInt(4));
-				fh.setX2(rs.getInt(5));
-				fh.setY2(rs.getInt(6));
-				fh.setPrev(rs.getInt(7));
-				fh.setNext(rs.getInt(8));
-				stats.addFoothold(id, fh);
+				fh.setX1(rs.getShort(3));
+				fh.setY1(rs.getShort(4));
+				fh.setX2(rs.getShort(5));
+				fh.setY2(rs.getShort(6));
+				fh.setPrev(rs.getShort(7));
+				fh.setNext(rs.getShort(8));
+				stats.addFoothold(fh);
 			}
 			rs.close();
 			ps.close();
@@ -202,12 +204,12 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				int id = rs.getInt(2);
-				Portal p = new Portal();
+				PortalData p = new PortalData();
 				String name = rs.getString(3);
 				p.setPortalName(name);
-				p.setPosition(rs.getInt(4), rs.getInt(5));
+				p.setPosition(rs.getShort(4), rs.getShort(5));
 				int to = rs.getInt(6);
-				int type = 0;
+				byte type = 0;
 				String script = rs.getString(8);
 				if (to != 999999999) //warp portal
 					type = 2; //1 or 2?

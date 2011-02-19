@@ -22,20 +22,20 @@ package argonms.loading.map;
  *
  * @author GoldenKevin
  */
-public class Life {
+public class SpawnData {
 	private char type;
 	private int id;
-	private int x;
-	private int y;
+	private short x;
+	private short y;
 	private int mobTime;
 	private boolean f;
 	private boolean hide;
-	private int fh;
-	private int cy;
-	private int rx0;
-	private int rx1;
+	private short fh;
+	private short cy;
+	private short rx0;
+	private short rx1;
 
-	protected Life() {
+	protected SpawnData() {
 		
 	}
 
@@ -47,11 +47,11 @@ public class Life {
 		this.id = id;
 	}
 
-	protected void setX(int x) {
+	protected void setX(short x) {
 		this.x = x;
 	}
 
-	protected void setY(int y) {
+	protected void setY(short y) {
 		this.y = y;
 	}
 
@@ -67,19 +67,19 @@ public class Life {
 		this.hide = value;
 	}
 
-	protected void setFoothold(int fh) {
+	protected void setFoothold(short fh) {
 		this.fh = fh;
 	}
 
-	protected void setCy(int cy) {
+	protected void setCy(short cy) {
 		this.cy = cy;
 	}
 
-	protected void setRx0(int rx0) {
+	protected void setRx0(short rx0) {
 		this.rx0 = rx0;
 	}
 
-	protected void setRx1(int rx1) {
+	protected void setRx1(short rx1) {
 		this.rx1 = rx1;
 	}
 
@@ -91,11 +91,11 @@ public class Life {
 		return id;
 	}
 
-	public int getX() {
+	public short getX() {
 		return x;
 	}
 
-	public int getY() {
+	public short getY() {
 		return y;
 	}
 
@@ -111,19 +111,19 @@ public class Life {
 		return hide;
 	}
 
-	public int getFoothold() {
+	public short getFoothold() {
 		return fh;
 	}
 
-	public int getCy() {
+	public short getCy() {
 		return cy;
 	}
 
-	public int getRx0() {
+	public short getRx0() {
 		return rx0;
 	}
 
-	public int getRx1() {
+	public short getRx1() {
 		return rx1;
 	}
 

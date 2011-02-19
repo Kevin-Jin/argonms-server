@@ -84,7 +84,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				SkillStats stats = new SkillStats();
-				skillStats.put(doWork(rs, stats), stats);
+				skillStats.put(Integer.valueOf(doWork(rs, stats)), stats);
 			}
 			rs.close();
 			ps.close();
@@ -111,6 +111,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 	}
 
 	public boolean canLoadPlayerSkill(int skillid) {
+		if (skillStats.containsKey(skillid))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
@@ -128,6 +130,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 	}
 
 	public boolean canLoadMobSkill(int skillid) {
+		if (mobSkillStats.containsKey(skillid))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {

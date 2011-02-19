@@ -18,6 +18,9 @@
 
 package argonms.character.inventory;
 
+import java.awt.Point;
+
+//are pets considered MapObjects? o.o
 /**
  *
  * @author GoldenKevin
@@ -28,6 +31,10 @@ public class Pet extends InventorySlot {
 	private short closeness;
 	private byte fullness;
 	private boolean expired;
+
+	private Point position;
+	private byte stance;
+	private int foothold;
 
 	/**
 	 * After this method is called, the name of the newly created pet will still
@@ -110,6 +117,18 @@ public class Pet extends InventorySlot {
 
 	public boolean isExpired() {
 		return expired;
+	}
+
+	public Point getPosition() {
+		return position;
+	}
+
+	public byte getStance() {
+		return stance;
+	}
+
+	public int getFoothold() {
+		return foothold;
 	}
 
 	public Pet clone() {

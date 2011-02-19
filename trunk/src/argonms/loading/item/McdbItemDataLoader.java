@@ -99,6 +99,8 @@ public class McdbItemDataLoader extends ItemDataLoader {
 	}
 
 	public boolean canLoad(int itemid) {
+		if (loaded.contains(Integer.valueOf(itemid)))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		String cat = InventoryTools.getCategory(itemid);

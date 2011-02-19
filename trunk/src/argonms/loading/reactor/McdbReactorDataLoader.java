@@ -65,7 +65,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				ReactorStats stats = new ReactorStats();
-				reactorStats.put(doWork(rs, stats), stats);
+				reactorStats.put(Integer.valueOf(doWork(rs, stats)), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
@@ -84,6 +84,8 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 	}
 
 	public boolean canLoad(int reactorid) {
+		if (reactorStats.containsKey(reactorid))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
