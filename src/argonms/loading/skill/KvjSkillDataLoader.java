@@ -96,6 +96,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
 	public boolean canLoadPlayerSkill(int skillid) {
+		if (skillStats.containsKey(skillid))
+			return true;
 		String id = String.format("%07d", skillid);
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
 		return f.exists();
@@ -104,6 +106,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
 	public boolean canLoadMobSkill(int skillid) {
+		if (mobSkillStats.containsKey(skillid))
+			return true;
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 		return f.exists();
 	}

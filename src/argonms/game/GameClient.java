@@ -20,6 +20,7 @@ package argonms.game;
 
 import argonms.ServerType;
 import argonms.character.Player;
+import argonms.game.npcscript.NpcConversationActions;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
@@ -37,6 +38,7 @@ public class GameClient extends RemoteClient {
 	private static final Logger LOG = Logger.getLogger(GameClient.class.getName());
 
 	private Player player;
+	private NpcConversationActions npc;
 
 	public GameClient(byte world, byte channel) {
 		setWorld(world);
@@ -68,13 +70,25 @@ public class GameClient extends RemoteClient {
 		return ret;
 	}
 
+	public void setNpc(NpcConversationActions npc) {
+		this.npc = npc;
+	}
+
+	public NpcConversationActions getNpc() {
+		return npc;
+	}
+
 	public byte getServerType() {
 		return ServerType.GAME;
 	}
 
 	public void disconnect() {
-		updateState(STATUS_NOTLOGGEDIN);
-		if (player != null)
+		if (npc != null)
+			npc.endConversation();
+		if (player != null) {
+			player.close();
 			GameServer.getChannel(getChannel()).removePlayer(player);
+		}
+		updateState(STATUS_NOTLOGGEDIN);
 	}
 }

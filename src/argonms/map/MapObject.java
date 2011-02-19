@@ -18,10 +18,63 @@
 
 package argonms.map;
 
+import java.awt.Point;
+
 /**
  *
  * @author GoldenKevin
  */
 public abstract class MapObject {
+	public enum MapObjectType {
+		NPC, MONSTER, ITEM, PLAYER, DOOR, SUMMON, MIST, REACTOR, HIRED_MERCHANT,
+		PLAYER_NPC, MINI_GAME, PLAYER_SHOP, TRADE
+	}
 
+	private int objectid;
+	private Point pos;
+	private byte stance;
+	private short foothold;
+
+	public abstract MapObjectType getObjectType();
+
+	public abstract boolean isVisible();
+
+	public abstract byte[] getCreationMessage();
+	public abstract byte[] getShowObjectMessage(); //for nonranged types, make this call getCreationMessage().
+	public abstract byte[] getOutOfViewMessage(); //nonranged types can return null
+	public abstract byte[] getDestructionMessage();
+
+	public int getId() {
+		return objectid;
+	}
+
+	public void setId(int newOid) {
+		objectid = newOid;
+	}
+
+	public Point getPosition() {
+		return pos;
+	}
+
+	public void setPosition(Point newPos) {
+		pos = newPos;
+	}
+
+	public byte getStance() {
+		return stance;
+	}
+
+	public void setStance(byte newStance) {
+		stance = newStance;
+	}
+
+	public short getFoothold() {
+		return foothold;
+	}
+
+	public void setFoothold(short newFh) {
+		foothold = newFh;
+	}
+
+	public abstract boolean isNonRangedType();
 }

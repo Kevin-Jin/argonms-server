@@ -22,14 +22,14 @@ package argonms.loading.map;
  *
  * @author GoldenKevin
  */
-public class Reactor {
+public class ReactorData {
 	private int id;
-	private int x;
-	private int y;
+	private short x;
+	private short y;
 	private int reactorTime;
 	private String name;
 
-	protected Reactor() {
+	protected ReactorData() {
 
 	}
 
@@ -37,11 +37,11 @@ public class Reactor {
 		this.id = id;
 	}
 
-	protected void setX(int x) {
+	protected void setX(short x) {
 		this.x = x;
 	}
 
-	protected void setY(int y) {
+	protected void setY(short y) {
 		this.y = y;
 	}
 
@@ -57,11 +57,11 @@ public class Reactor {
 		return id;
 	}
 
-	public int getX() {
+	public short getX() {
 		return x;
 	}
 
-	public int getY() {
+	public short getY() {
 		return y;
 	}
 

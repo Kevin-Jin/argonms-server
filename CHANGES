@@ -137,6 +137,32 @@
 	interact with anything or change maps/channels and there are no spawns for
 	NPCs/Mobs. All of these additions will come gradually.
 
+2011-02-19  GoldenKevin  (revision 10)
+
+	* Fixed bug in LittleEndianByteArrayWriter. If a large enough byte array was
+	copied to a small buffer, there was an ArrayIndexOutOfBoundsException. Also,
+	a one byte long LittleEndianByteArrayWriter can now grow!
+	* Renamed MapleMap to GameMap.
+	* You can now see other players moving around in a map (you can't see them
+	attacking yet though). NPCs are visible (at least in map 0), but I think
+	mobs currently crash clients. Portals still don't work yet... A lot of
+	credit should go to OdinMS for this particular update!
+	* Made some progress on making a scripting interface for NPCs. I think I
+	might actually write my own language if I don't find ways to circumvent my
+	current issues with it. A sample 2100.js script is included.
+	* Added code stubs for NPC shops. It should be easy to implement later on.
+	* Refactored map object related code. Players now keep their charid in the
+	MapObject class (referred to as an "object id"). I think MapObjects are a
+	bit more modular/OO now...
+	* Fixed bug where an account was recorded as being logged in even if their
+	login attempt was not successful. Also fixed a client error reading bug.
+	* canLoad methods for the data loaders now check if the stats are in the
+	cache before delving into their IO routines.
+	* And a whole lot of other bug fixes/improvements on things that I was not
+	able to spot before.
+	Kvj structure updated - Update your KvjCompiler and recompile your data.
+	Consult the KvjBin changelog to see a list of changes in r15.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

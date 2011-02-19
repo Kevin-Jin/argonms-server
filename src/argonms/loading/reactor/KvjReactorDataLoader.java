@@ -79,6 +79,8 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 	}
 
 	public boolean canLoad(int reactorid) {
+		if (reactorStats.containsKey(reactorid))
+			return true;
 		String id = String.format("%07d", reactorid);
 		File f = new File(new StringBuilder(dataPath).append("Reactor.wz").append(File.separator).append(id).append(".img.kvj").toString());
 		return f.exists();

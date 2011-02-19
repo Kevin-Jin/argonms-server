@@ -124,7 +124,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 	}
 
 	public boolean canLoad(int itemid) {
-		return getFile(itemid).exists();
+		return loaded.contains(Integer.valueOf(itemid)) || getFile(itemid).exists();
 	}
 
 	private File getFile(int iid) {

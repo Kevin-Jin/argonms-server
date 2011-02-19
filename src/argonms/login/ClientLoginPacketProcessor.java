@@ -88,7 +88,7 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor {
 				s.receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
-				s.clientError(reader.readNullTerminatedString());
+				s.clientError(reader.readLengthPrefixedString());
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
 				break;

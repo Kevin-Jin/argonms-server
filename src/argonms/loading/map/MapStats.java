@@ -21,17 +21,18 @@ package argonms.loading.map;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  *
  * @author GoldenKevin
  */
 public class MapStats {
 	private int mapid;
-	private Map<Byte, Portal> portals;
-	private Map<String, Area> areas;
+	private Map<Byte, PortalData> portals;
+	private Map<String, AreaData> areas;
 	private int returnMapId;
 	private float monsterRate;
-	private Map<Integer, Foothold> footholds;
+	private FootholdTree footholds;
 	private boolean town;
 	private boolean clock;
 	private boolean everlast;
@@ -40,15 +41,16 @@ public class MapStats {
 	private int protectItem;
 	private int decHp;
 	private int timeLimit;
-	private Map<Integer, Life> life;
-	private Map<Integer, Reactor> reactors;
+	private Map<Integer, SpawnData> life;
+	private Map<Integer, ReactorData> reactors;
 
-	protected MapStats() {
-		portals = new HashMap<Byte, Portal>();
-		areas = new HashMap<String, Area>();
-		footholds = new HashMap<Integer, Foothold>();
-		life = new HashMap<Integer, Life>();
-		reactors = new HashMap<Integer, Reactor>();
+	protected MapStats(int mapid) {
+		this.mapid = mapid;
+		portals = new HashMap<Byte, PortalData>();
+		areas = new HashMap<String, AreaData>();
+		footholds = new FootholdTree();
+		life = new HashMap<Integer, SpawnData>();
+		reactors = new HashMap<Integer, ReactorData>();
 	}
 
 	protected void setTown() {
@@ -83,11 +85,11 @@ public class MapStats {
 		this.everlast = true;
 	}
 
-	protected void addLife(int id, Life l) {
+	protected void addLife(int id, SpawnData l) {
 		life.put(Integer.valueOf(id), l);
 	}
 
-	protected void addArea(String id, Area a) {
+	protected void addArea(String id, AreaData a) {
 		areas.put(id, a);
 	}
 
@@ -99,16 +101,20 @@ public class MapStats {
 		this.boat = true;
 	}
 
-	protected void addReactor(int id, Reactor rt) {
+	protected void addReactor(int id, ReactorData rt) {
 		reactors.put(Integer.valueOf(id), rt);
 	}
 
-	protected void addFoothold(int id, Foothold fh) {
-		footholds.put(Integer.valueOf(id), fh);
+	protected void addFoothold(Foothold fh) {
+		footholds.load(fh);
 	}
 
-	protected void addPortal(int id, Portal p) {
+	protected void addPortal(int id, PortalData p) {
 		portals.put(Byte.valueOf((byte) id), p);
+	}
+
+	protected void finished() {
+		footholds.finished();
 	}
 
 	public boolean isTown() {
@@ -147,11 +153,11 @@ public class MapStats {
 		return everlast;
 	}
 
-	public Map<Integer, Life> getLife() {
+	public Map<Integer, SpawnData> getLife() {
 		return life;
 	}
 
-	public Map<String, Area> gddAreas() {
+	public Map<String, AreaData> getAreas() {
 		return areas;
 	}
 
@@ -163,15 +169,15 @@ public class MapStats {
 		return boat;
 	}
 
-	public Map<Integer, Reactor> getReactors() {
+	public Map<Integer, ReactorData> getReactors() {
 		return reactors;
 	}
 
-	public Map<Integer, Foothold> getFootholds() {
+	public FootholdTree getFootholds() {
 		return footholds;
 	}
 
-	public Map<Byte, Portal> getPortals() {
+	public Map<Byte, PortalData> getPortals() {
 		return portals;
 	}
 }

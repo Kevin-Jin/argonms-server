@@ -18,16 +18,24 @@
 
 package argonms.loading.mob;
 
+import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.Item;
+import argonms.character.inventory.Pet;
+import argonms.loading.string.StringDataLoader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  *
  * @author GoldenKevin
  */
 public class MobStats {
+	private int mobid;
 	private short level;
 	private int maxHp;
 	private int maxMp;
@@ -50,13 +58,17 @@ public class MobStats {
 	private List<Skill> skills;
 	private int buff;
 	private Map<String, Integer> delays;
+	private Map<Integer, Integer> itemDrops;
+	private MesoDropChance mesoDrop;
 
-	protected MobStats() {
+	protected MobStats(int mobid) {
+		this.mobid = mobid;
 		this.loseItems = new ArrayList<Integer>();
 		this.summons = new ArrayList<Integer>();
 		this.attacks = new HashMap<Integer, Attack>();
 		this.skills = new ArrayList<Skill>();
 		this.delays = new HashMap<String, Integer>();
+		this.itemDrops = new HashMap<Integer, Integer>();
 	}
 
 	protected void setLevel(short level) {
@@ -147,6 +159,18 @@ public class MobStats {
 		this.delays.put(name, Integer.valueOf(delay));
 	}
 
+	protected void addItemDrop(int itemid, int chance) {
+		this.itemDrops.put(Integer.valueOf(itemid), Integer.valueOf(chance));
+	}
+
+	protected void setMesoDrop(int chance, int min, int max) {
+		this.mesoDrop = new MesoDropChance(chance, min, max);
+	}
+
+	public int getMobId() {
+		return mobid;
+	}
+
 	public short getLevel() {
 		return level;
 	}
@@ -204,7 +228,7 @@ public class MobStats {
 	}
 
 	public List<Integer> getLoseItems() {
-		return loseItems;
+		return Collections.unmodifiableList(loseItems);
 	}
 
 	public boolean isInvincible() {
@@ -212,7 +236,7 @@ public class MobStats {
 	}
 
 	public List<Integer> getSummons() {
-		return summons;
+		return Collections.unmodifiableList(summons);
 	}
 
 	public boolean isFirstAttack() {
@@ -224,7 +248,7 @@ public class MobStats {
 	}
 
 	public List<Skill> getSkills() {
-		return skills;
+		return Collections.unmodifiableList(skills);
 	}
 
 	public int getBuffToGive() {
@@ -232,6 +256,74 @@ public class MobStats {
 	}
 
 	public Map<String, Integer> getDelays() {
-		return delays;
+		return Collections.unmodifiableMap(delays);
+	}
+
+	/**
+	 * Randomly select an amount of mesos for this monster to drop when killed,
+	 * using the chances that have been given in setMesoDrop.
+	 * @return the amount of mesos that this monster will drop. If this monster
+	 * should not drop any mesos, 0 will be returned.
+	 */
+	public int getMesosToDrop() {
+		if (mesoDrop == null) {
+			//taken from OdinMS (simplified a bit). It works surprisingly well.
+			double factor = Math.pow(0.93, getExp() / 300.0);
+			if (factor > 1.0)
+				factor = 1.0;
+			else if (factor < 0.001)
+				factor = 0.005;
+			return Math.min(30000, (int) (factor * getExp() * Math.random() * 2.1));
+		} else {
+			if (Math.random() < mesoDrop.getDropChance()) {
+				int min = mesoDrop.getMinMesoDrop();
+				int max = mesoDrop.getMaxMesoDrop();
+				return (int) (Math.random() * (max - min + 1)) + min;
+			}
+			return 0;
+		}
+	}
+
+	public List<InventorySlot> getItemsToDrop() {
+		List<InventorySlot> items = new ArrayList<InventorySlot>();
+		for (Entry<Integer, Integer> entry : itemDrops.entrySet()) {
+			if (Math.random() < (entry.getValue().intValue() / 1000000.0)) {
+				int itemid = entry.getKey().intValue();
+				if (InventoryTools.getCategory(itemid).equals("Equip")) {
+					items.add(InventoryTools.getCleanEquip(itemid));
+				} else if (InventoryTools.isPet(itemid)) {
+					Pet p = new Pet(itemid);
+					p.setName(StringDataLoader.getInstance().getItemNameFromId(itemid));
+					items.add(p);
+				} else {
+					items.add(new Item(itemid));
+				}
+			}
+		}
+		return items;
+	}
+
+	private static class MesoDropChance {
+		private int chance;
+		private int min;
+		private int max;
+
+		public MesoDropChance(int chance, int min, int max) {
+			this.chance = chance;
+			this.min = min;
+			this.max = max;
+		}
+
+		public double getDropChance() {
+			return chance / 1000000.0;
+		}
+
+		public int getMinMesoDrop() {
+			return min;
+		}
+
+		public int getMaxMesoDrop() {
+			return max;
+		}
 	}
 }

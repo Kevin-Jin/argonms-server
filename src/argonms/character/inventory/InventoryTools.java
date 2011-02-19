@@ -18,6 +18,7 @@
 
 package argonms.character.inventory;
 
+import argonms.character.Player;
 import argonms.loading.StatEffects;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
@@ -136,12 +137,15 @@ public class InventoryTools {
 		return true;
 	}
 
+	//TODO: We need a bit of variation in the stats. They need to have a range...
 	public static Equip getCleanEquip(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!equipCache.containsKey(oId)) {
 			Equip e;
 			if (isRing(itemId))
 				e = new Ring(itemId);
+			else if (isMount(itemId))
+				e = new TamingMob(itemId);
 			else
 				e = new Equip(itemId);
 			short[] statUps = ItemDataLoader.getInstance().getBonusStats(itemId);
@@ -163,6 +167,12 @@ public class InventoryTools {
 			equipCache.put(oId, e);
 		}
 		return equipCache.get(oId).clone();
+	}
+
+	//in the future, this should take into account a player's
+	//skills and stats (i.e. claw mastery for stars)
+	public static short getPersonalSlotMax(Player p, int itemid) {
+		return ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 	}
 
 	public static boolean isThrowingStar(int itemId) {

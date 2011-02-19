@@ -20,6 +20,8 @@ package argonms.map;
 
 import argonms.loading.map.MapDataLoader;
 import argonms.loading.map.MapStats;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,21 +30,25 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class MapFactory {
-	private Map<Integer, MapleMap> maps;
+	private Map<Integer, GameMap> maps;
 
 	public MapFactory() {
-		this.maps = new HashMap<Integer, MapleMap>();
+		this.maps = new HashMap<Integer, GameMap>();
 	}
 
-	public MapleMap getMap(int mapid) {
+	public GameMap getMap(int mapid) {
 		Integer oId = Integer.valueOf(mapid);
 		if (!maps.containsKey(oId)) {
 			MapStats stats = MapDataLoader.getInstance().getMapStats(mapid);
 			if (stats == null)
 				maps.put(oId, null);
 			else
-				maps.put(oId, new MapleMap(stats));
+				maps.put(oId, new GameMap(stats));
 		}
 		return maps.get(oId);
+	}
+
+	public Map<Integer, GameMap> getMaps() {
+		return Collections.unmodifiableMap(maps);
 	}
 }

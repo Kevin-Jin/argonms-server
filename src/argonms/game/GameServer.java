@@ -24,9 +24,11 @@ import argonms.loading.item.ItemDataLoader;
 import argonms.loading.map.MapDataLoader;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.reactor.ReactorDataLoader;
+import argonms.loading.shop.NpcShopDataLoader;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.string.StringDataLoader;
 import argonms.tools.DatabaseConnection;
+import argonms.tools.Timer;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Properties;
@@ -103,6 +105,7 @@ public class GameServer implements LocalServer {
 		MobDataLoader.setInstance(wzType, wzPath);
 		ItemDataLoader.setInstance(wzType, wzPath);
 		MapDataLoader.setInstance(wzType, wzPath);
+		NpcShopDataLoader.setInstance(wzType, wzPath);
 		long start, end;
 		start = System.nanoTime();
 		System.out.print("Loading String data...");
@@ -124,6 +127,9 @@ public class GameServer implements LocalServer {
 			System.out.print("Loading Map data...");
 			MapDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
+			System.out.print("Loading Shop data...");
+			NpcShopDataLoader.getInstance().loadAll();
+			System.out.println("\tDone!");
 		}
 		end = System.nanoTime();
 		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
@@ -133,6 +139,7 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
+		Timer.enable();
 		for (byte i = 0; i < channels.length; i++)
 			channels[i].listen(useNio);
 		gci.serverReady();

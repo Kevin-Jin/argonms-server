@@ -29,13 +29,21 @@ import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
+import argonms.character.inventory.TamingMob;
 import argonms.character.skill.Cooldown;
+import argonms.map.movement.LifeMovementFragment;
+import argonms.map.object.ItemDrop;
+import argonms.map.object.Mob;
+import argonms.map.object.Npc;
 import argonms.tools.HexTool;
 import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
+import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -140,8 +148,9 @@ public class CommonPackets {
 			InventorySlot cWeapon = equip.get((short) 111);
 			lew.writeInt(cWeapon != null ? cWeapon.getItemId() : 0);
 		}
-		lew.writeInt(0);
-		lew.writeLong(0);
+		Pet[] pets = p.getPets();
+		for (int i = 0; i < 3; i++)
+			lew.writeInt(pets[i] == null ? 0 : pets[i].getItemId());
 	}
 
 	private static void addItemInfo(LittleEndianWriter lew, short pos,
@@ -355,21 +364,305 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeChangeMap(int mapid, byte spawnPoint, Player p) {
-		LittleEndianByteArrayWriter mplew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
-		mplew.writeShort(ClientSendOps.CHANGE_MAP);
-		mplew.writeInt(p.getClient().getChannel() - 1);
-		mplew.writeShort((short) 2);
-		mplew.writeShort((short) 0);
-		mplew.writeInt(mapid);
-		mplew.writeByte(spawnPoint);
-		mplew.writeShort(p.getHp()); // hp (???)
-		mplew.writeByte((byte) 0);
+		lew.writeShort(ClientSendOps.CHANGE_MAP);
+		lew.writeInt(p.getClient().getChannel() - 1);
+		lew.writeShort((short) 2);
+		lew.writeShort((short) 0);
+		lew.writeInt(mapid);
+		lew.writeByte(spawnPoint);
+		lew.writeShort(p.getHp()); // hp (???)
+		lew.writeByte((byte) 0);
 		//long questMask = 0x1FFFFFFFFFFFFFFL;
 		long questMask = TimeUtil.unixToWindowsTime((long) System.currentTimeMillis());
-		mplew.writeLong(questMask);
+		lew.writeLong(questMask);
 
-		return mplew.getBytes();
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowPlayer(Player p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SHOW_PLAYER);
+		lew.writeInt(p.getId());
+		lew.writeLengthPrefixedString(p.getName());
+		/*if (p.getGuildId() > 0) {
+			MapleGuildSummary gs = p.getClient().getChannelServer().getGuildSummary(p.getGuildId());
+
+			if (gs != null) {
+				lew.writeLengthPrefixedString(gs.getName());
+				lew.writeShort(gs.getLogoBG());
+				lew.writeByte(gs.getLogoBGColor());
+				lew.writeShort(gs.getLogo());
+				lew.writeByte(gs.getLogoColor());
+			} else {
+				lew.writeLengthPrefixedString("");
+				lew.writeShort((short) 0);
+				lew.writeByte((byte) 0);
+				lew.writeShort((short) 0);
+				lew.writeByte((byte) 0);
+			}
+		} else {*/
+			lew.writeLengthPrefixedString("");
+			lew.writeShort((short) 0);
+			lew.writeByte((byte) 0);
+			lew.writeShort((short) 0);
+			lew.writeByte((byte) 0);
+		//}
+		lew.writeInt(0);
+		lew.writeInt(1);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0xF8);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeInt(0);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeInt(0);
+		int CHAR_MAGIC_SPAWN = RNG.nextInt();
+		lew.writeInt(CHAR_MAGIC_SPAWN);
+		lew.writeShort((short) 0);
+		lew.writeLong(0);
+		lew.writeInt(CHAR_MAGIC_SPAWN);
+		lew.writeShort((short) 0);
+		lew.writeLong(0);
+		lew.writeInt(CHAR_MAGIC_SPAWN);
+		lew.writeShort((short) 0);
+		/*if (p.getBuffedValue(MapleBuffStat.MONSTER_RIDING) != null) {
+			TamingMob mount = p.getEquippedMount();
+			if (mount != null) {
+				lew.writeInt(mount.getItemId());
+				lew.writeInt(mount.getSkillId());
+				lew.writeInt(CHAR_MAGIC_SPAWN);
+			} else {
+				lew.writeInt(1932000);
+				lew.writeInt(5221006);
+				lew.writeInt(CHAR_MAGIC_SPAWN);
+			}
+		} else {*/
+			lew.writeInt(0);
+			lew.writeInt(0);
+			lew.writeInt(CHAR_MAGIC_SPAWN);
+		//}
+
+		lew.writeLong(0);
+		lew.writeInt(CHAR_MAGIC_SPAWN);
+		lew.writeLong(0);
+		lew.writeInt(0);
+		lew.writeShort((short) 0);
+		lew.writeInt(CHAR_MAGIC_SPAWN);
+		lew.writeInt(0);
+		lew.writeShort(p.getJob()); // 40 01?
+		writeAvatar(lew, p, false);
+		lew.writeInt(0);
+		lew.writeInt(p.getItemEffect());
+		lew.writeInt(p.getChair());
+		Point pos = p.getPosition();
+		lew.writeShort((short) pos.x);
+		lew.writeShort((short) pos.y);
+		lew.writeByte((byte) p.getStance());
+		lew.writeShort(p.getFoothold());
+		lew.writeByte((byte) 0);
+		for (Pet pet : p.getPets()) {
+			if (pet != null) {
+				lew.writeByte((byte) 1);
+				lew.writeInt(pet.getItemId());
+				lew.writeLengthPrefixedString(pet.getName());
+				lew.writeLong(pet.getUniqueId());
+				pos = pet.getPosition();
+				lew.writeShort((short) pos.x);
+				lew.writeShort((short) pos.y);
+				lew.writeByte(pet.getStance());
+				lew.writeInt(pet.getFoothold());
+			}
+		}
+		/*PlayerInteractionRoom room = p.getInteractionRoom();
+		if (room != null && room.isOwner(p))
+			addAnnounceBox(lew, room);
+		else
+			lew.writeByte((byte) 0);
+
+		lew.writeShort((short) 0);
+		Map<Short, InventorySlot> equippedC = p.getInventory(InventoryType.EQUIPPED).getAll();
+		List<Ring> rings = new ArrayList<Ring>();
+		for (Entry<Short, InventorySlot> slot : equippedC.entrySet()) {
+			if (slot.getValue().getType() == ItemType.RING) {
+				rings.add((Ring) slot.getValue());
+			}
+		}
+		if (rings.size() > 0) {
+			lew.writeByte((byte) 0);
+			for (Ring ring : rings) {
+				lew.writeByte((byte) 1);
+				lew.writeInt(ring.getUniqueId());
+				lew.writeInt(0);
+				lew.writeInt(ring.getPartnerRingId());
+				lew.writeInt(0);
+				lew.writeInt(ring.getItemId());
+			}
+			lew.writeShort((short) 0);
+		} else {
+			lew.writeInt(0);
+		}*/
+		lew.writeByte((byte) 0);
+		lew.writeShort((short) 1);
+		lew.writeInt(0);
+		lew.writeInt(0);
+		lew.writeInt(0);
+		lew.writeInt(0);
+		lew.writeInt(0);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemovePlayer(Player p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.REMOVE_PLAYER);
+		lew.writeInt(p.getId());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowPet(Player p, byte slot, Pet pet,
+			boolean equip, boolean hunger) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SHOW_PET);
+		lew.writeInt(p.getId());
+		lew.writeByte(slot);
+		lew.writeBool(equip);
+		lew.writeBool(hunger);
+		if (equip) {
+			lew.writeInt(pet.getItemId());
+			lew.writeLengthPrefixedString(pet.getName());
+			lew.writeLong(pet.getUniqueId());
+			Point pos = pet.getPosition();
+			lew.writeShort((short) pos.x);
+			lew.writeShort((short) pos.y);
+			lew.writeByte(pet.getStance());
+			lew.writeInt(pet.getFoothold());
+		}
+
+		return lew.getBytes();
+	}
+
+	private static void writeMonsterData(LittleEndianWriter lew, Mob monster, boolean newSpawn, byte effect) {
+		lew.writeInt(monster.getId());
+		lew.writeByte((byte) 5);
+		lew.writeInt(monster.getMobId());
+		lew.writeByte((byte) 0);
+		lew.writeShort((short) 0);
+		lew.writeByte((byte) 8);
+		lew.writeInt(0);
+		Point pos = monster.getPosition();
+		lew.writeShort((short) pos.x);
+		lew.writeShort((short) pos.y);
+		lew.writeByte(monster.getStance());
+		lew.writeShort((byte) 0);
+		lew.writeShort((byte) monster.getFoothold());
+		if (effect > 0) {
+			lew.writeByte(effect);
+			lew.writeByte((byte) 0);
+			lew.writeShort((short) 0);
+		}
+		lew.writeShort((short) (newSpawn ? -2 : -1));
+		lew.writeInt(0);
+	}
+
+	public static byte[] writeMonsterControl(Mob monster, boolean aggro) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.SHOW_MONSTER_CONTROL);
+		lew.writeByte((byte) (!monster.isVisible() ? aggro ? 2 : 1 : 0));
+		if (monster.isVisible())
+			writeMonsterData(lew, monster, false, (byte) 0);
+		else
+			lew.writeInt(monster.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowMonster(Mob monster, boolean newSpawn, byte effect) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.SHOW_MONSTER);
+		writeMonsterData(lew, monster, newSpawn, effect);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveMonster(Mob m, byte animation) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.REMOVE_MONSTER);
+		lew.writeInt(m.getId());
+		lew.writeByte(animation);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeDropItemFromMapObject(ItemDrop drop) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.DROP_ITEM_FROM_MAPOBJECT);
+		lew.writeByte(drop.getMod()); // 1 = animation, 2 = none
+		lew.writeInt(drop.getId());
+		lew.writeByte(drop.getDropType());
+		lew.writeInt(drop.getItemId());
+		lew.writeInt(drop.getOwner());
+		lew.writeByte((byte) 0);
+		Point pos = drop.getPosition();
+		lew.writeShort((short) pos.x);
+		lew.writeShort((short) pos.y);
+		if (drop.getMod() != 2) {
+			lew.writeInt(drop.getOwner());
+			pos = drop.getSourcePos();
+			lew.writeShort((short) pos.x);
+			lew.writeShort((short) pos.y);
+		} else {
+			lew.writeInt(drop.getSourceObjectId());
+		}
+
+		lew.writeByte((byte) 0);
+		if (drop.getMod() != 2) {
+			lew.writeByte((byte) 0);
+			lew.writeByte((byte) 1);
+		}
+
+		if (drop.getDropType() != ItemDrop.MESOS) {
+			addItemExpire(lew, drop.getItemExpire(), true);
+			lew.writeByte((byte) 1);
+		}
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SPAWN_NPC);
+		lew.writeInt(npc.getId());
+		lew.writeInt(npc.getNpcId());
+		lew.writeShort((short) npc.getPosition().x);
+		lew.writeShort(npc.getCy());
+		lew.writeBool(!npc.isF());
+
+		lew.writeShort(npc.getFoothold());
+		lew.writeShort(npc.getRx0());
+		lew.writeShort(npc.getRx1());
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(0);
+		return lew.getBytes();
+	}
+
+	public static void writeSerializedMovements(LittleEndianByteArrayWriter lew, List<LifeMovementFragment> moves) {
+		lew.writeByte((byte) moves.size());
+		for (LifeMovementFragment move : moves)
+			move.serialize(lew);
 	}
 
 	/*public static byte[] writeEnterCs(Player p) {

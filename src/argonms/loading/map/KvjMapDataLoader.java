@@ -63,7 +63,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString());
 			if (f.exists()) {
-				stats = new MapStats();
+				stats = new MapStats(mapid);
 				doWork(new LittleEndianByteArrayReader(f), stats);
 			}
 		} catch (IOException e) {
@@ -78,12 +78,13 @@ public class KvjMapDataLoader extends MapDataLoader {
 			for (String cat : root.list()) {
 				File prefFolder = new File(root.getAbsolutePath() + File.separatorChar + cat);
 				for (String kvj : prefFolder.list()) {
-					MapStats stats = new MapStats();
+					int mapid = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".img.kvj")));
+					MapStats stats = new MapStats(mapid);
 					doWork(new LittleEndianByteArrayReader(new File(prefFolder.getAbsolutePath() + File.separatorChar + kvj)), stats);
 					//InputStream is = new BufferedInputStream(new FileInputStream(prefFolder.getAbsolutePath() + File.separatorChar + kvj));
 					//doWork(new LittleEndianStreamReader(is), stats);
 					//is.close();
-					mapStats.put(Integer.valueOf(kvj.substring(0, kvj.lastIndexOf(".img.kvj"))), stats);
+					mapStats.put(Integer.valueOf(mapid), stats);
 				}
 			}
 			return true;
@@ -94,6 +95,8 @@ public class KvjMapDataLoader extends MapDataLoader {
 	}
 
 	public boolean canLoad(int mapid) {
+		if (mapStats.containsKey(Integer.valueOf(mapid)))
+			return true;
 		String id = String.format("%09d", mapid);
 		File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString());
 		return f.exists();
@@ -149,65 +152,65 @@ public class KvjMapDataLoader extends MapDataLoader {
 					break;
 			}
 		}
+		stats.finished();
 	}
 
 	private void processLife(LittleEndianReader reader, MapStats stats) {
 		int id = reader.readInt();
-		Life l = new Life();
+		SpawnData l = new SpawnData();
 		l.setType(reader.readChar());
 		l.setDataId(reader.readInt());
-		l.setX(reader.readInt());
-		l.setY(reader.readInt());
+		l.setX(reader.readShort());
+		l.setY(reader.readShort());
 		l.setMobTime(reader.readInt());
 		l.setF(reader.readBool());
 		l.setHide(reader.readBool());
-		l.setFoothold(reader.readInt());
-		l.setCy(reader.readInt());
-		l.setRx0(reader.readInt());
-		l.setRx1(reader.readInt());
+		l.setFoothold(reader.readShort());
+		l.setCy(reader.readShort());
+		l.setRx0(reader.readShort());
+		l.setRx1(reader.readShort());
 		stats.addLife(id, l);
 	}
 
 	private void processArea(LittleEndianReader reader, MapStats stats) {
 		String id = reader.readNullTerminatedString();
-		Area a = new Area();
-		a.setX1(reader.readInt());
-		a.setX2(reader.readInt());
-		a.setY1(reader.readInt());
-		a.setY2(reader.readInt());
+		AreaData a = new AreaData();
+		a.setX1(reader.readShort());
+		a.setX2(reader.readShort());
+		a.setY1(reader.readShort());
+		a.setY2(reader.readShort());
 		stats.addArea(id, a);
 	}
 
 	private void processReactor(LittleEndianReader reader, MapStats stats) {
 		int id = reader.readInt();
-		Reactor rt = new Reactor();
+		ReactorData rt = new ReactorData();
 		rt.setDataId(reader.readInt());
-		rt.setX(reader.readInt());
-		rt.setY(reader.readInt());
+		rt.setX(reader.readShort());
+		rt.setY(reader.readShort());
 		rt.setReactorTime(reader.readInt());
 		rt.setName(reader.readNullTerminatedString());
 		stats.addReactor(id, rt);
 	}
 
 	private void processFoothold(LittleEndianReader reader, MapStats stats) {
-		int id = reader.readInt();
 		Foothold fh = new Foothold();
-		fh.setX1(reader.readInt());
-		fh.setY1(reader.readInt());
-		fh.setX2(reader.readInt());
-		fh.setY2(reader.readInt());
-		fh.setPrev(reader.readInt());
-		fh.setNext(reader.readInt());
-		stats.addFoothold(id, fh);
+		fh.setX1(reader.readShort());
+		fh.setY1(reader.readShort());
+		fh.setX2(reader.readShort());
+		fh.setY2(reader.readShort());
+		fh.setPrev(reader.readShort());
+		fh.setNext(reader.readShort());
+		stats.addFoothold(fh);
 	}
 
 	private void processPortal(LittleEndianReader reader, MapStats stats) {
 		int id = reader.readInt();
-		Portal p = new Portal();
+		PortalData p = new PortalData();
 		p.setPortalName(reader.readNullTerminatedString());
-		p.setPortalType(reader.readInt());
-		int x = reader.readInt();
-		int y = reader.readInt();
+		p.setPortalType(reader.readByte());
+		short x = reader.readShort();
+		short y = reader.readShort();
 		p.setPosition(x, y);
 		p.setTargetMapId(reader.readInt());
 		p.setTargetName(reader.readNullTerminatedString());

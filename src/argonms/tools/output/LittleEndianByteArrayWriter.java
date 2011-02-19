@@ -38,7 +38,10 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 	}
 
 	private void grow() {
-		byte[] copy = new byte[data.length + data.length / 2];
+		int newSize = data.length + data.length / 2;
+		while (newSize <= data.length)
+			newSize++;
+		byte[] copy = new byte[newSize];
 		System.arraycopy(data, 0, copy, 0, data.length);
 		data = copy;
 	}
@@ -51,7 +54,7 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 	}
 
 	public void write(byte[] bytes) {
-		if (index + bytes.length >= data.length + 1)
+		while (index + bytes.length >= data.length + 1)
 			grow();
 
 		System.arraycopy(bytes, 0, data, index, bytes.length);

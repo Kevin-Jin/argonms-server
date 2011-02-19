@@ -16,50 +16,57 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.loading.mob;
+package argonms.loading.map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class SelfDestruct {
-	private int action;
-	private int hp;
-	private int removeAfter;
+public class AreaData {
+	private short x1;
+	private short y1;
+	private short x2;
+	private short y2;
 
-	protected SelfDestruct() {
+	protected AreaData() {
 		
 	}
 
-	protected void setAction(int action) {
-		this.action = action;
+	protected void setX1(short x1) {
+		this.x1 = x1;
 	}
 
-	protected void setHp(int points) {
-		this.hp = points;
+	protected void setY1(short y1) {
+		this.y1 = y1;
 	}
 
-	protected void setRemoveAfter(int time) {
-		this.removeAfter = time;
+	protected void setX2(short x2) {
+		this.x2 = x2;
 	}
 
-	public int getAction() {
-		return action;
+	protected void setY2(short y2) {
+		this.y2 = y2;
 	}
 
-	public int getHp() {
-		return hp;
+	public short getX1() {
+		return x1;
 	}
 
-	public int getRemoveAfter() {
-		return removeAfter;
+	public short getY1() {
+		return y1;
+	}
+
+	public short getX2() {
+		return x2;
+	}
+
+	public short getY2() {
+		return y2;
 	}
 
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("Action=").append(action);
-		builder.append(", Hp=").append(hp);
-		builder.append(", RemoveAfter=").append(removeAfter);
-		return builder.toString();
+		StringBuilder ret = new StringBuilder();
+		ret.append('(').append(x1).append(", ").append(y1).append("), (").append(x2).append(", ").append(y2).append(")");
+		return ret.toString();
 	}
 }

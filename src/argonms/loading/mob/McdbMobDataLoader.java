@@ -45,8 +45,8 @@ public class McdbMobDataLoader extends MobDataLoader {
 			ps.setInt(1, mobid);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				stats = new MobStats();
-				doWork(rs, stats);
+				stats = new MobStats(mobid);
+				doWork(rs, mobid, stats);
 			}
 			rs.close();
 			ps.close();
@@ -64,8 +64,10 @@ public class McdbMobDataLoader extends MobDataLoader {
 			ps = con.prepareStatement("SELECT * FROM `mobdata`");
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				MobStats stats = new MobStats();
-				mobStats.put(doWork(rs, stats), stats);
+				int mobid = rs.getInt(1);
+				MobStats stats = new MobStats(mobid);
+				doWork(rs, mobid, stats);
+				mobStats.put(Integer.valueOf(mobid), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
@@ -84,6 +86,8 @@ public class McdbMobDataLoader extends MobDataLoader {
 	}
 
 	public boolean canLoad(int mobid) {
+		if (mobStats.containsKey(mobid))
+			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
 		try {
@@ -100,9 +104,8 @@ public class McdbMobDataLoader extends MobDataLoader {
 		return exists;
 	}
 
-	private int doWork(ResultSet rs, MobStats stats) throws SQLException {
+	private void doWork(ResultSet rs, int mobid, MobStats stats) throws SQLException {
 		Connection con = DatabaseConnection.getWzConnection();
-		int mobid = rs.getInt(1);
 		stats.setLevel(rs.getShort(2));
 		stats.setMaxHp(rs.getInt(3));
 		stats.setMaxMp(rs.getInt(4));
@@ -135,6 +138,15 @@ public class McdbMobDataLoader extends MobDataLoader {
 		rs2.close();
 		ps.close();
 		stats.setBuffToGive(rs.getInt(10));
-		return mobid;
+		ps = con.prepareStatement("SELECT `ismesos`,`itemid`,`min`,`max`,`chance` FROM `dropdata` WHERE `dropperid` = ?");
+		ps.setInt(1, mobid);
+		rs2 = ps.executeQuery();
+		while (rs2.next())
+			if (rs2.getBoolean(1))
+				stats.setMesoDrop(rs.getInt(5), rs.getInt(3), rs.getInt(4));
+			else
+				stats.addItemDrop(rs.getInt(2), rs.getInt(5));
+		rs2.close();
+		ps.close();
 	}
 }

@@ -91,7 +91,7 @@ public class GameHandler {
 		client.getSession().send(writeEnterMap(player));
 		if (player.getPrivileges() >= UserPrivileges.JUNIOR_GM) //hide
 			player.applyEffect(SkillDataLoader.getInstance().getSkill(9101004).getLevel((byte) 1));
-		player.getMap().addPlayer(player);
+		player.getMap().spawnPlayer(player);
 
 		/*try {
 			Collection<BuddylistEntry> buddies = player.getBuddyList().getBuddies();
