@@ -70,6 +70,8 @@ public class ShopClient extends RemoteClient {
 	}
 
 	public void disconnect() {
-		updateState(STATUS_NOTLOGGEDIN);
+		stopPingTask();
+		if (!isMigrating())
+			updateState(STATUS_NOTLOGGEDIN);
 	}
 }

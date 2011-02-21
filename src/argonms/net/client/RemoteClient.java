@@ -48,6 +48,7 @@ public abstract class RemoteClient {
 	private ClientSession session;
 	private byte world, channel;
 	private KeepAliveTask heartbeat;
+	private boolean serverTransition;
 
 	public int getAccountId() {
 		return id;
@@ -110,6 +111,15 @@ public abstract class RemoteClient {
 	public void clientError(String message) {
 		LOG.log(Level.WARNING, "Received error from client at {0}:\n{1}",
 				new Object[] { getSession().getAddress(), message });
+	}
+
+	public void migrateHost() {
+		serverTransition = true;
+		updateState(STATUS_MIGRATION);
+	}
+
+	protected boolean isMigrating() {
+		return serverTransition;
 	}
 
 	public void updateState(byte currentState) {

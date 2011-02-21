@@ -26,4 +26,31 @@
  * @author GoldenKevin
  */
 
-npc.askYesNo("Hello! Welcome to the world of MapleStory. Would you like a cookie?");
+var answered = false;
+
+var result = npc.askYesNo("Hello! Welcome to the world of MapleStory. Would you like a cookie?");
+respond();
+
+function endChat() {
+	if (!answered) {
+		result = npc.askYesNo("Do you really want to leave before answering me?");
+		if (result == 1) {
+			npc.sayNext("What kind of person would give up a cookie?! Jeez.");
+			npc.say("But, since you insist, I guess I'll stop pestering you");
+		} else {
+			result = npc.askYesNo("Would you like a cookie?");
+			respond();
+		}
+	}
+}
+
+function respond() {
+	answered = true;
+	if (result == 1) {
+		npc.sayNext("Just wait a sec...");
+		npc.sayNext("Almost there...");
+		npc.say("Oh too bad! I don't have any!");
+	} else {
+		npc.say("No? Well, that's okay!");
+	}
+}

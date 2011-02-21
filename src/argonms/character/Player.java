@@ -808,6 +808,27 @@ public class Player extends MapObject {
 		return 0;
 	}
 
+	/*public boolean changeMap(int mapid) {
+		return changeMap(mapid, (byte) 0);
+	}
+
+	public boolean changeMap(int mapid, byte initialPortal) {
+		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
+		if (goTo != null) {
+			map.removePlayer(this);
+			map = goTo;
+			setPosition(map.getPortalPosition(initialPortal));
+			client.getSession().send(CommonPackets.writeChangeMap(mapid, initialPortal, this));
+			map.spawnPlayer(this);
+			return true;
+		}
+		return false;
+	}
+
+	public void prepareChannelChange() {
+		client.migrateHost();
+	}*/
+
 	public void close() {
 		for (ScheduledFuture<?> f : effectCancels.values())
 			f.cancel(true);
