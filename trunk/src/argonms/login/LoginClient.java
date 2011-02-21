@@ -49,7 +49,6 @@ public class LoginClient extends RemoteClient {
 	private int banExpire;
 	private byte banReason;
 	private byte gm;
-	private boolean serverTransition;
 
 	/*
 	 * 0 = ok
@@ -235,18 +234,13 @@ public class LoginClient extends RemoteClient {
 		return false;
 	}
 
-	public void hostMigration() {
-		serverTransition = true;
-		updateState(STATUS_MIGRATION);
-	}
-
 	public byte getServerType() {
 		return ServerType.LOGIN;
 	}
 
 	public void disconnect() {
 		stopPingTask();
-		if (!serverTransition && getAccountId() != 0)
+		if (!isMigrating() && getAccountId() != 0)
 			updateState(STATUS_NOTLOGGEDIN);
 	}
 }

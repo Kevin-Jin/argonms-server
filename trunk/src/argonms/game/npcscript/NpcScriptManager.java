@@ -18,53 +18,49 @@
 
 package argonms.game.npcscript;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
 import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContinuationPending;
+import org.mozilla.javascript.Script;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
-public class NpcScriptManager implements Runnable {
+public class NpcScriptManager {
 	private static final Logger LOG = Logger.getLogger(NpcScriptManager.class.getName());
 
-	private GameClient client;
-	private int npcId;
-
-	public NpcScriptManager(GameClient client, int npc) {
-		this.client = client;
-		this.npcId = npc;
-	}
-
-	public void run() {
-		ScriptEngineManager mgr = new ScriptEngineManager();
-		ScriptEngine jsEngine = mgr.getEngineByName("JavaScript");
-		NpcConversationActions convoActs = new NpcConversationActions(npcId, client);
-		jsEngine.put("npc", convoActs);
+	public static void runScript(int npcId, GameClient client) {
+		Context cx = Context.enter();
+		NpcConversationActions convoMan = null;
 		try {
-			FileReader fr = new FileReader("scripts/" + npcId + ".js");
-			client.setNpc(convoActs);
-			jsEngine.eval(fr);
-			fr.close();
+			FileReader reader = new FileReader("scripts/" + npcId + ".js");
+			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(-1); // must use interpreter mode
+			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
+			globalScope.put("npc", globalScope, convoMan);
+			client.setNpc(convoMan);
+			Script script = cx.compileReader(reader, Integer.toString(npcId), 1, null);
+			reader.close();
+			cx.executeScriptWithContinuations(script, globalScope);
+			convoMan.endConversation(false);
+		} catch (ContinuationPending pending) {
+			convoMan.setContinuation(pending.getContinuation());
 		} catch (FileNotFoundException ex) {
 			client.getSession().send(unscriptedNpc(npcId));
-			return;
-		} catch (ScriptException ex) {
-			LOG.log(Level.INFO, "Error running NPC script " + npcId, ex);
-		} catch (/*IO*/Exception ex) {
-			LOG.log(Level.INFO, "Error while running NPC script " + npcId, ex);
+		} catch (IOException ex) {
+			LOG.log(Level.WARNING, "Error executing NPC script " + npcId, ex);
+		} finally {
+			Context.exit();
 		}
-		convoActs.endConversation();
 	}
 
 	private static byte[] unscriptedNpc(int npc) {

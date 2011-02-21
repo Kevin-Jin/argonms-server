@@ -19,9 +19,6 @@
 package argonms.net.client.handler;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import argonms.character.Player;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameClient;
@@ -45,12 +42,6 @@ import argonms.tools.output.LittleEndianByteArrayWriter;
  * @author GoldenKevin
  */
 public class GameNpcHandler {
-	private static ExecutorService threadPool;
-
-	static {
-		threadPool = Executors.newCachedThreadPool();
-	}
-
 	public static void handleStartConversation(LittleEndianReader packet, RemoteClient rc) {
 		GameClient client = (GameClient) rc;
 		int oid = packet.readInt();
@@ -79,9 +70,8 @@ public class GameNpcHandler {
 				break;
 			}
 		}
-		if (npc != null) //yeah, due to the way I implemented stateless scripts,
-			//we have to use a dedicated thread for running the NPC conversation. =(
-			threadPool.execute(new NpcScriptManager(client, npc.getNpcId()));
+		if (npc != null)
+			NpcScriptManager.runScript(npc.getNpcId(), client);
 	}
 
 	public static void handleContinueConversation(LittleEndianReader packet, RemoteClient rc) {

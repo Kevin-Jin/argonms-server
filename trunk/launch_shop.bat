@@ -18,7 +18,7 @@
 
 @echo off
 @title Shop Server Console
-set CLASSPATH=.;dist\argonms.jar;dist\mysql-connector-java-bin.jar;dist\netty.jar
+set CLASSPATH=.;dist\argonms.jar;dist\js.jar;dist\mysql-connector-java-bin.jar;dist\netty.jar
 java -Xmx600m -Dargonms.shop.config.file=shop.properties ^
 -Djava.util.logging.config.file=logging.properties ^
 -Dargonms.db.config.file=db.properties ^

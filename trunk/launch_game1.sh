@@ -18,7 +18,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-export CLASSPATH=".:dist/argonms.jar:dist/mysql-connector-java-bin.jar:dist/netty.jar"
+export CLASSPATH=".:dist/argonms.jar:dist/js.jar:dist/mysql-connector-java-bin.jar:dist/netty.jar"
 java -Xmx600m -Dargonms.game.world=1 -Dargonms.game.config.file=game1.properties \
 -Djava.util.logging.config.file=logging.properties \
 -Dargonms.db.config.file=db.properties \

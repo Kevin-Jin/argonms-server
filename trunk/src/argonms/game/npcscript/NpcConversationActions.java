@@ -23,15 +23,28 @@ import argonms.net.client.ClientSendOps;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
-
-import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//I really need to write my own language and script parser.
-//Rhino/JS doesn't work out well when using say/sayPrev/sayPrevNext/sayNext...
-//By the way, NullPointerExceptions when pressing 'End Chat' is totally normal,
-//until I think of a better way to implement this.
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContinuationPending;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.Scriptable;
+
+// Limitations:
+//1. While I am able to make intelligent guesses about whether to show the
+//previous button, you're going to have to explicitly state whether to show the
+//button because Rhino doesn't let me process a script line by line so I cannot
+//determine if there is another "say" after the current one. So, be sure that
+//when you want to send consecutive plain ol' says (no menu, yes/no,
+//accept/decline, askText, askNumber, askAvatar, etc.), make them all "sayNext"
+//except for the last one, which should just be "say".
+//2. With my implementation of previous messages, when you revisit a
+//"say"/"sayNext" that has already been executed from the script, it will have
+//the exact same message as when we executed it. If you used a variable in that
+//previous message and you changed that variable between it's first execution
+//and our current revisit, then you'll see the old value of the variable instead
+//of an updated one.
 /**
  *
  * @author GoldenKevin
@@ -40,13 +53,20 @@ public class NpcConversationActions {
 	private static final Logger LOG = Logger.getLogger(NpcConversationActions.class.getName());
 
 	private int npcId;
-	private Object response;
-	private CountDownLatch latch;
 	private GameClient client;
+	private Context cx;
+	private Scriptable globalScope;
+	private Object continuation;
+	private boolean endingChat;
+	private PreviousMessageCache prevs;
 
-	public NpcConversationActions(int npcId, GameClient client) {
+	public NpcConversationActions(int npcId, GameClient client, Context cx, Scriptable globalScope) {
 		this.npcId = npcId;
 		this.client = client;
+		this.cx = cx;
+		this.globalScope = globalScope;
+		this.endingChat = false;
+		this.prevs = new PreviousMessageCache();
 	}
 
 	private static final byte
@@ -62,97 +82,124 @@ public class NpcConversationActions {
 		ASK_ACCEPT_NO_ESC = 0x0D
 	;
 
-	private void waitForResponse() {
-		response = null;
-		latch = new CountDownLatch(1);
-		try {
-			latch.await();
-		} catch (InterruptedException e) {
-			LOG.log(Level.INFO, "NPC conversation interrupted", e);
-		}
+	protected void setContinuation(Object continuation) {
+		this.continuation = continuation;
 	}
 
-	//in Wvs, say checks if there are more things to say after the current
-	//line. if there are, then there's a next, otherwise there's an ok. 
-	//if there is a line before, there's also a previous button.
+	//I guess some scripts would want to put some
+	//consecutive sayNexts or a say without back buttons...
+	public void clearBackButton() {
+		prevs.clear();
+	}
+
 	public void say(String message) {
-		client.getSession().send(writeNpcSay(npcId, message, false, false));
-		waitForResponse();
-	}
-
-	public void sayPrev(String message) {
-		client.getSession().send(writeNpcSay(npcId, message, true, false));
-		waitForResponse();
+		boolean hasPrev = prevs.hasPrevOrIsFirst();
+		if (hasPrev)
+			prevs.add(message, false);
+		else
+			clearBackButton();
+		client.getSession().send(writeNpcSay(npcId, message, hasPrev, false));
+		throw cx.captureContinuation();
 	}
 
 	public void sayNext(String message) {
-		client.getSession().send(writeNpcSay(npcId, message, false, true));
-		waitForResponse();
+		prevs.add(message, true);
+		client.getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
+		throw cx.captureContinuation();
 	}
 
-	public void sayPrevNext(String message) {
-		client.getSession().send(writeNpcSay(npcId, message, true, true));
-		waitForResponse();
-	}
 	public byte askYesNo(String message) {
+		clearBackButton();
 		client.getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
-		waitForResponse();
-		return ((Byte) response).byteValue();
+		throw cx.captureContinuation();
 	}
 
 	public byte askAccept(String message) {
+		clearBackButton();
 		client.getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
-		waitForResponse();
-		return ((Byte) response).byteValue();
+		throw cx.captureContinuation();
 	}
 
 	public byte askAcceptNoESC(String message) {
+		clearBackButton();
 		client.getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
-		waitForResponse();
-		return ((Byte) response).byteValue();
+		throw cx.captureContinuation();
 	}
 
 	public String askQuiz(byte type, int objectId, int correct, int questions, int time) {
+		clearBackButton();
 		client.getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
-		waitForResponse();
-		return (String) response;
+		throw cx.captureContinuation();
 	}
 
 	public String askQuizQuestion(String title, String problem,
 			String hint, int min, int max, int timeLimit) {
+		clearBackButton();
 		client.getSession().send(writeNpcQuizQuestion(npcId,
 				title, problem, hint, min, max, timeLimit));
-		waitForResponse();
-		return (String) response;
+		throw cx.captureContinuation();
 	}
 
 	public String askText(String message, String def, short min, short max) {
+		clearBackButton();
 		client.getSession().send(writeNpcAskText(npcId, message, def, min, max));
-		waitForResponse();
-		return (String) response;
+		throw cx.captureContinuation();
 	}
 
-	public String askBoxText(String message, String def, int col, int line) {
-		waitForResponse();
-		return (String) response;
-	}
+	//I think this is probably 14 (0x0E)...
+	/*public String askBoxText(String message, String def, int col, int line) {
+		clearBackButton();
+		client.getSession().send(writeNpcBoxText(npcId, message, def, col, line));
+		throw cx.captureContinuation();
+	}*/
 
 	public int askNumber(String message, int def, int min, int max) {
+		clearBackButton();
 		client.getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
-		waitForResponse();
-		return ((Integer) response).intValue();
+		throw cx.captureContinuation();
 	}
 
 	public int askMenu(String message) {
+		clearBackButton();
 		client.getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
-		waitForResponse();
-		return ((Integer) response).intValue();
+		throw cx.captureContinuation();
 	}
 
 	public int askAvatar(String message, int... styles) {
+		clearBackButton();
 		client.getSession().send(writeNpcAskAvatar(npcId, message, styles));
-		waitForResponse();
-		return ((Integer) response).intValue();
+		throw cx.captureContinuation();
+	}
+
+	private void endChatHook() {
+		if (!endingChat) {
+			endingChat = true;
+			clearBackButton(); //we probably don't want a back button in the end chat hook...
+			Object f = globalScope.get("endChat", globalScope);
+			if (f != Scriptable.NOT_FOUND) {
+				try {
+					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
+					endConversation(false);
+				} catch (ContinuationPending pending) {
+					setContinuation(pending.getContinuation());
+				}
+			} else {
+				endConversation(false);
+			}
+		} else {
+			endConversation(false);
+		}
+	}
+
+	private void resume(Object obj) {
+		if (!cx.isSealed()) {
+			try {
+				cx.resumeContinuation(continuation, globalScope, obj);
+				endConversation(false);
+			} catch (ContinuationPending pending) {
+				setContinuation(pending.getContinuation());
+			}
+		}
 	}
 
 	public void responseReceived(LittleEndianReader packet) {
@@ -162,47 +209,58 @@ public class NpcConversationActions {
 			case SAY:
 				switch (action) {
 					case -1: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 0: //prev
+						client.getSession().send(writeNpcSay(npcId, prevs.goBackAndGet(), prevs.hasPrev(), true));
 						break;
 					case 1: //ok/next
+						if (prevs.hasNext()) {
+							client.getSession().send(writeNpcSay(npcId, prevs.goUpAndGet(), prevs.hasPrev(), prevs.showNext()));
+						} else {
+							resume(null);
+						}
 						break;
 				}
 				break;
 			case ASK_YES_NO:
 				switch (action) {
 					case -1: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 0: //no
 					case 1: //yes
-						this.response = Byte.valueOf(action);
+						resume(Byte.valueOf(action));
 						break;
 				}
 				break;
 			case ASK_TEXT:
 				switch (action) {
 					case 0: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 1: //ok
-						this.response = packet.readLengthPrefixedString();
+						resume(packet.readLengthPrefixedString());
 						break;
 				}
 				break;
 			case ASK_NUMBER:
 				switch (action) {
 					case 0: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 1: //ok
-						this.response = Integer.valueOf(packet.readInt());
+						resume(Integer.valueOf(packet.readInt()));
 						break;
 				}
 				break;
 			case ASK_MENU:
 				switch (action) {
 					case 0: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 1: //selected a link
-						this.response = Integer.valueOf(packet.readInt());
+						resume(Integer.valueOf(packet.readInt()));
 						break;
 				}
 				break;
@@ -212,10 +270,11 @@ public class NpcConversationActions {
 			case ASK_ACCEPT:
 				switch (action) {
 					case -1: //end chat (or esc key)
+						endChatHook();
 						break;
 					case 0: //decline
 					case 1: //accept
-						this.response = Byte.valueOf(action);
+						resume(Byte.valueOf(action));
 						break;
 				}
 				break;
@@ -223,7 +282,7 @@ public class NpcConversationActions {
 				switch (action) {
 					case 0: //decline
 					case 1: //accept
-						this.response = Byte.valueOf(action);
+						resume(Byte.valueOf(action));
 						break;
 				}
 				break;
@@ -232,16 +291,34 @@ public class NpcConversationActions {
 						new Object[] { type, packet });
 				break;
 		}
-		latch.countDown();
 	}
 
-	public void endConversation() {
-		if (latch != null) { //interrupt any waitForResponses...
-			while (latch.getCount() > 0)
-				latch.countDown();
-			latch = null;
-		}
+	public int getNpcId() {
+		return npcId;
+	}
+
+	public GameClient getClient() {
+		return client;
+	}
+
+	public void endConversation(boolean inProgress) {
 		client.setNpc(null);
+		if (!cx.isSealed()) {
+			//should we invoke cx.decompileScript()?
+
+			if (inProgress) {
+				try { //most elegant way I can think of doing it at the moment...
+					//if we are not waiting for a continuation at the moment
+					cx.captureContinuation(); //we will wait for a continuation
+				} catch (IllegalStateException e) { //"Interpreter frames not found"
+					//if we are already waiting for a continuation at this moment
+					//just seal it before we get a response
+				}
+			}
+			//when cx is sealed, we don't resume our continuation in resume(Object)!
+			//(so the script is essentially finished)
+			cx.seal(null);
+		}
 	}
 
 	private static void writeCommonNpcAction(LittleEndianWriter lew, int npcId, byte type, String msg) {
@@ -324,5 +401,66 @@ public class NpcConversationActions {
 		for (byte i = 0; i < styles.length; i++)
 			lew.writeInt(styles[i]);
 		return lew.getBytes();
+	}
+
+	private static class PreviousMessageCache {
+		private Node first;
+		private Node cursor;
+
+		public void add(String data, boolean showNext) {
+			Node insert = new Node(data, showNext);
+			if (first == null) {
+				first = insert;
+			} else {
+				Node current = first;
+				while (current.next != null)
+					current = current.next;
+				current.next = insert;
+				insert.prev = current;
+			}
+			cursor = insert;
+		}
+
+		public void clear() {
+			first = cursor = null;
+		}
+
+		public String goBackAndGet() {
+			cursor = cursor.prev;
+			return cursor.data;
+		}
+
+		public String goUpAndGet() {
+			cursor = cursor.next;
+			return cursor.data;
+		}
+
+		public boolean showNext() {
+			return cursor.showNext;
+		}
+
+		public boolean hasPrevOrIsFirst() {
+			return cursor != null && (cursor == first || cursor.prev != null);
+		}
+
+		public boolean hasPrev() {
+			return cursor != null && cursor.prev != null;
+		}
+
+		public boolean hasNext() {
+			return cursor != null && cursor.next != null;
+		}
+
+		private static class Node {
+			private Node prev;
+			private String data;
+			private boolean showNext;
+			private Node next;
+
+			public Node(String data, boolean showNext) {
+				this.data = data;
+				this.showNext = showNext;
+			}
+		}
 	}
 }

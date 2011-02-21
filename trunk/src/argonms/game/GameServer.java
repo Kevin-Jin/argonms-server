@@ -53,9 +53,11 @@ public class GameServer implements LocalServer {
 	private String wzPath;
 	private boolean useNio;
 	private boolean centerConnected;
+	private GameRegistry registry;
 
 	private GameServer(byte world) {
 		this.world = world;
+		this.registry = new GameRegistry();
 	}
 
 	public void init() {
@@ -182,12 +184,20 @@ public class GameServer implements LocalServer {
 		return -1;
 	}
 
+	public GameRegistry getRegistry() {
+		return registry;
+	}
+
 	public static WorldChannel getChannel(byte c) {
 		return getInstance().channels[c];
 	}
 
 	public static GameServer getInstance() {
 		return instance;
+	}
+
+	public static GameRegistry getVariables() {
+		return instance.getRegistry();
 	}
 
 	public static void main(String[] args) {

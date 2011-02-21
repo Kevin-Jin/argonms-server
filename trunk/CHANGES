@@ -163,6 +163,23 @@
 	Kvj structure updated - Update your KvjCompiler and recompile your data.
 	Consult the KvjBin changelog to see a list of changes in r15.
 
+2011-02-21  GoldenKevin  (revision 11)
+
+	* Improved "say" commands for NPC scripts. Now the "prev" button is handled
+	correctly, although you have to keep in mind special cases and limitations.
+	(read the comments in NpcConversationActions for more details).
+	* Mozilla's latest version of Rhino (1.72R2) is now used instead of Java 6's
+	modified version 1.6R2 in javax.script. 1.72R2 is much more flexible and
+	contains features that I needed for efficient stateless NPC scripts. Now
+	endChat hooks are supported and each NPC script doesn't require a dedicated
+	thread anymore. Updated Sera script to show a bit of it's capabilities.
+	(you don't have to have a endChat function and scripts don't need any
+	functions. Just be sure to call the function in the global scope if you do
+	want to invoke one). Be sure your classpath now includes Rhino's js.jar.
+	* A bunch of other code stubs for map/channel changing, and for channel
+	variables (e.g. exp, meso, and drop rates) that I will finish in the future.
+	Some routines that were previously LoginClient specific are now common.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
