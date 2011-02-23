@@ -18,6 +18,10 @@
 
 package argonms.game;
 
+/**
+ *
+ * @author GoldenKevin
+ */
 public class GameRegistry {
 	private boolean itemExpires;
 	private boolean buffCooldowns;

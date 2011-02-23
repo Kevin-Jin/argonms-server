@@ -18,12 +18,9 @@
 
 package argonms.center;
 
-import argonms.center.recv.RemoteCenterPacketProcessor;
 import argonms.center.send.CenterRemoteInterface;
 import argonms.center.send.CenterGameInterface;
 import argonms.ServerType;
-import argonms.center.CenterServer;
-import argonms.center.recv.RemoteCenterPacketProcessor;
 import argonms.net.server.CenterRemoteOps;
 import argonms.net.server.RemoteCenterOps;
 import argonms.tools.input.LittleEndianByteArrayReader;
@@ -43,34 +40,31 @@ public class CenterRemoteSession {
 	private static final Logger LOG = Logger.getLogger(CenterRemoteSession.class.getName());
 
 	private String interServerPwd;
-	private Channel ch;
-	private RemoteCenterPacketProcessor pp;
+	private Channel commChn;
 	private CenterRemoteInterface cri;
-	private byte serverId;
 
 	public CenterRemoteSession(Channel channel, String authKey) {
-		this.ch = channel;
+		this.commChn = channel;
 		this.interServerPwd = authKey;
-		this.serverId = ServerType.UNDEFINED;
 	}
 
 	public SocketAddress getAddress() {
-		return ch.getRemoteAddress();
+		return commChn.getRemoteAddress();
 	}
 
 	public void process(byte[] message) {
 		LittleEndianByteArrayReader packet = new LittleEndianByteArrayReader(message);
-		if (pp != null) {
-			pp.process(packet);
+		if (cri != null) {
+			cri.getPacketProcessor().process(packet);
 		} else {
 			String error;
 
 			if (packet.available() >= 4 && packet.readByte() == RemoteCenterOps.AUTH) {
-				serverId = packet.readByte();
+				byte serverId = packet.readByte();
 				if (packet.readLengthPrefixedString().equals(interServerPwd)) {
 					if (!CenterServer.getInstance().isServerConnected(serverId)) {
-						cri = CenterRemoteInterface.getByServerId(serverId, this);
-						pp = cri.createPacketProcessor();
+						cri = CenterRemoteInterface.makeByServerId(serverId, this);
+						cri.makePacketProcessor(); //don't leak Interface reference in its constructor
 						error = null;
 						if (ServerType.isGame(serverId)) {
 							byte world = packet.readByte();
@@ -114,7 +108,6 @@ public class CenterRemoteSession {
 			response.writeLengthPrefixedString(error == null ? "" : error);
 			send(response.getBytes());
 			if (error != null) {
-				serverId = ServerType.UNDEFINED;
 				cri = null;
 				close();
 				return;
@@ -123,11 +116,7 @@ public class CenterRemoteSession {
 	}
 
 	public void send(byte[] b) {
-		ch.write(b);
-	}
-
-	public void setServerId(byte serverId) {
-		this.serverId = serverId;
+		commChn.write(b);
 	}
 
 	/**
@@ -137,11 +126,11 @@ public class CenterRemoteSession {
 	 * INSTEAD.
 	 */
 	public void disconnect() {
-		if (serverId != ServerType.UNDEFINED && cri != null)
+		if (cri != null)
 			cri.disconnect();
 	}
 
 	public void close() {
-		ch.disconnect();
+		commChn.disconnect();
 	}
 }

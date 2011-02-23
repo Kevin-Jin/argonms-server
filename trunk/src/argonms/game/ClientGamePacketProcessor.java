@@ -23,6 +23,7 @@ import argonms.net.client.ClientRecvOps;
 import argonms.net.client.RemoteClient;
 import argonms.net.client.handler.GameChatHandler;
 import argonms.net.client.handler.GameEnterHandler;
+import argonms.net.client.handler.GameGoToHandler;
 import argonms.net.client.handler.GameMovementHandler;
 import argonms.net.client.handler.GameNpcHandler;
 import argonms.tools.input.LittleEndianReader;
@@ -58,6 +59,15 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
 				break;
+			case ClientRecvOps.CHANGE_MAP:
+				GameGoToHandler.handleMapChange(reader, s);
+				break;
+			case ClientRecvOps.CHANGE_CHANNEL:
+				GameGoToHandler.handleChangeChannel(reader, s);
+				break;
+			case ClientRecvOps.ENTER_CASH_SHOP:
+				GameGoToHandler.handleWarpCs(reader, s);
+				break;
 			case ClientRecvOps.MOVE_PLAYER:
 				GameMovementHandler.handleMovePlayer(reader, s);
 				break;
@@ -69,6 +79,15 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				break;
 			case ClientRecvOps.NPC_TALK_MORE:
 				GameNpcHandler.handleContinueConversation(reader, s);
+				break;
+			case ClientRecvOps.CHANGE_MAP_SPECIAL:
+				GameGoToHandler.handleEnteredSpecialPortal(reader, s);
+				break;
+			case ClientRecvOps.QUEST_ACTION:
+				GameNpcHandler.handleQuestAction(reader, s);
+				break;
+			case ClientRecvOps.PLAYER_UPDATE:
+				((GameClient) s).getPlayer().saveCharacter();
 				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });

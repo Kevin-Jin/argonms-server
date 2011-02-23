@@ -16,28 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.login;
-
-import java.awt.Point;
-
 /**
  *
  * @author GoldenKevin
  */
-public class Message {
-	private Point pos;
-	private String text;
 
-	public Message(Point pos, String text) {
-		this.pos = pos;
-		this.text = text;
-	}
-
-	public Point getPosition() {
-		return pos;
-	}
-
-	public String getText() {
-		return text;
-	}
-}
+portal.showHint("You can move by using the arrow keys.", 250, 5);

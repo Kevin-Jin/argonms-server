@@ -811,7 +811,7 @@ public class Player extends MapObject {
 		return 0;
 	}
 
-	/*public boolean changeMap(int mapid) {
+	public boolean changeMap(int mapid) {
 		return changeMap(mapid, (byte) 0);
 	}
 
@@ -829,8 +829,11 @@ public class Player extends MapObject {
 	}
 
 	public void prepareChannelChange() {
+		GameServer.getChannel(client.getChannel()).removePlayer(this);
+		if (map != null)
+			map.removePlayer(this);
 		client.migrateHost();
-	}*/
+	}
 
 	public int getGuildId() {
 		return guild;

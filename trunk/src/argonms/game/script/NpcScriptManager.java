@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.npcscript;
+package argonms.game.script;
 
 import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;
@@ -42,7 +42,7 @@ public class NpcScriptManager {
 		Context cx = Context.enter();
 		NpcConversationActions convoMan = null;
 		try {
-			FileReader reader = new FileReader("scripts/" + npcId + ".js");
+			FileReader reader = new FileReader("scripts/npcs/" + npcId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
@@ -61,6 +61,31 @@ public class NpcScriptManager {
 		} finally {
 			Context.exit();
 		}
+	}
+
+	public static void runQuestScript(int questId, GameClient client) {
+		/*Context cx = Context.enter();
+		NpcConversationActions convoMan = null;
+		try {
+			FileReader reader = new FileReader("scripts/quest/" + questId + ".js");
+			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(-1); // must use interpreter mode
+			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
+			globalScope.put("npc", globalScope, convoMan);
+			client.setNpc(convoMan);
+			Script script = cx.compileReader(reader, Integer.toString(npcId), 1, null);
+			reader.close();
+			cx.executeScriptWithContinuations(script, globalScope);
+			convoMan.endConversation(false);
+		} catch (ContinuationPending pending) {
+			convoMan.setContinuation(pending.getContinuation());
+		} catch (FileNotFoundException ex) {
+			client.getSession().send(unscriptedNpc(npcId));
+		} catch (IOException ex) {
+			LOG.log(Level.WARNING, "Error executing quest script " + questId, ex);
+		} finally {
+			Context.exit();
+		}*/
 	}
 
 	private static byte[] unscriptedNpc(int npc) {

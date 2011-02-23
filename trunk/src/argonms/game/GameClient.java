@@ -18,9 +18,8 @@
 
 package argonms.game;
 
-import argonms.ServerType;
 import argonms.character.Player;
-import argonms.game.npcscript.NpcConversationActions;
+import argonms.game.script.NpcConversationActions;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
