@@ -24,7 +24,7 @@ package argonms.character.inventory;
  */
 public class Ring extends Equip implements Cloneable {
 	private int partnerCharId;
-	private int partnerRingUid;
+	private long partnerRingUid;
 
 	public Ring(int itemid) {
 		super(itemid);
@@ -38,7 +38,7 @@ public class Ring extends Equip implements Cloneable {
 		return partnerCharId;
 	}
 
-	public int getPartnerRingId() {
+	public long getPartnerRingId() {
 		return partnerRingUid;
 	}
 
@@ -46,7 +46,7 @@ public class Ring extends Equip implements Cloneable {
 		this.partnerCharId = cid;
 	}
 
-	public void setPartnerRingId(int uid) {
+	public void setPartnerRingId(long uid) {
 		this.partnerRingUid = uid;
 	}
 

@@ -84,7 +84,7 @@ CREATE TABLE `inventoryitems` (
   `position` smallint(5) NOT NULL,
   `itemid` int(11) NOT NULL,
   `expiredate` int(11) UNSIGNED NOT NULL,
-  `uniqueid` int(11) UNSIGNED NOT NULL,
+  `uniqueid` bigint(20) UNSIGNED NOT NULL,
   `owner` tinytext DEFAULT NULL,
   `quantity` smallint(5) NOT NULL, /* separate this into a `inventoryitems` table and rename this one `inventories`? */
   PRIMARY KEY (`inventoryitemid`),
@@ -150,7 +150,7 @@ CREATE TABLE `inventoryrings` (
   `inventoryringid` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` int(10) UNSIGNED NOT NULL,
   `partnerchrid` int(11) NOT NULL,
-  `partnerringid` int(11) NOT NULL,
+  `partnerringid` bigint(20) NOT NULL,
   PRIMARY KEY (`inventoryringid`),
   KEY `inventoryitemid` (`inventoryitemid`),
   CONSTRAINT `inventoryrings_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE

@@ -47,14 +47,12 @@ import org.jboss.netty.channel.socket.oio.OioClientSocketChannelFactory;
 public abstract class RemoteCenterInterface {
 	private static final Logger LOG = Logger.getLogger(RemoteCenterInterface.class.getName());
 
-	private LocalServer local;
 	private String interServerPwd;
 	private Channel ch;
 	private CenterRemotePacketProcessor pp;
 	private ClientBootstrap bootstrap;
 
-	public RemoteCenterInterface(LocalServer local, String password, CenterRemotePacketProcessor pp) {
-		this.local = local;
+	public RemoteCenterInterface(String password, CenterRemotePacketProcessor pp) {
 		this.interServerPwd = password;
 		this.pp = pp;
 
@@ -90,21 +88,23 @@ public abstract class RemoteCenterInterface {
 		bootstrap.releaseExternalResources();
 	}
 
-	private void init() {
-		send(auth(getWorld(), interServerPwd));
+	protected String getInterserverPwd() {
+		String ret = interServerPwd;
+		interServerPwd = null;
+		return ret;
 	}
 
-	public LocalServer getLocalServer() {
-		return local;
+	protected void init() {
+		send(auth(getServerId(), getInterserverPwd()));
 	}
+
+	public abstract LocalServer getLocalServer();
 
 	private void process(byte[] message) {
 		pp.process(new LittleEndianByteArrayReader(message), this);
 	}
 
-	public void serverReady() {
-		send(serverReady(local.getExternalIp(), local.getClientPorts()));
-	}
+	public abstract void serverReady();
 
 	//maybe we should encrypt because we do send a plaintext password after all
 	public void send(byte[] b) {
@@ -118,14 +118,14 @@ public abstract class RemoteCenterInterface {
 	 * INSTEAD.
 	 */
 	public void disconnect() {
-		local.centerDisconnected();
+		getLocalServer().centerDisconnected();
 	}
 
 	public void close() {
 		ch.disconnect();
 	}
 
-	protected abstract byte getWorld();
+	protected abstract byte getServerId();
 
 	private class InterServerHandler extends SimpleChannelUpstreamHandler {
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
@@ -156,25 +156,12 @@ public abstract class RemoteCenterInterface {
 		}
 	}
 
-	private static byte[] auth(byte world, String pwd) {
+	private static byte[] auth(byte serverId, String pwd) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + pwd.length());
 
 		lew.writeByte(RemoteCenterOps.AUTH);
-		lew.writeByte(world);
+		lew.writeByte(serverId);
 		lew.writeLengthPrefixedString(pwd);
-
-		return lew.getBytes();
-	}
-
-	private static byte[] serverReady(String ip, int[] ports) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + ip.length() + 4 * ports.length);
-
-		lew.writeByte(RemoteCenterOps.ONLINE);
-		lew.writeLengthPrefixedString(ip);
-		byte length = (byte) ports.length;
-		lew.writeByte(length);
-		for (int i = 0; i < length; i++)
-			lew.writeInt(ports[i]);
 
 		return lew.getBytes();
 	}

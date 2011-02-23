@@ -18,6 +18,11 @@
 
 package argonms.game;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import argonms.net.server.CenterRemoteOps;
 import argonms.net.server.CenterRemotePacketProcessor;
 import argonms.net.server.RemoteCenterInterface;
@@ -28,6 +33,8 @@ import argonms.tools.input.LittleEndianReader;
  * @author GoldenKevin
  */
 public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
+	private static final Logger LOG = Logger.getLogger(CenterGamePacketProcessor.class.getName());
+
 	private GameServer local;
 
 	public CenterGamePacketProcessor(GameServer gs) {
@@ -39,13 +46,42 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.AUTH_RESPONSE:
 				processAuthResponse(packet, r.getLocalServer());
 				break;
+			case CenterRemoteOps.GAME_CONNECTED:
+				processGameConnected(packet);
+				break;
+			case CenterRemoteOps.GAME_DISCONNECTED:
+				processGameDisconnected(packet);
+				break;
 			case CenterRemoteOps.SHOP_CONNECTED:
 				processShopConnected(packet);
 				break;
 			case CenterRemoteOps.SHOP_DISCONNECTED:
 				processShopDisconnected(packet);
 				break;
+			case CenterRemoteOps.INTER_CHANNEL_RELAY:
+				processInterChannelMessage(packet);
+				break;
+			default:
+				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
+				break;
 		}
+	}
+
+	private void processGameConnected(LittleEndianReader packet) {
+		byte serverId = packet.readByte();
+		packet.readByte(); //world - we don't need it
+		String host = packet.readLengthPrefixedString();
+		byte size = packet.readByte();
+		Map<Byte, Integer> ports = new HashMap<Byte, Integer>(size);
+		for (int i = 0; i < size; i++)
+			ports.put(Byte.valueOf(packet.readByte()), Integer.valueOf(packet.readInt()));
+		local.gameConnected(serverId, host, ports);
+	}
+
+	private void processGameDisconnected(LittleEndianReader packet) {
+		byte serverId = packet.readByte();
+		packet.readByte(); //world - we don't need it
+		local.gameDisconnected(serverId);
 	}
 
 	private void processShopConnected(LittleEndianReader packet) {
@@ -56,5 +92,15 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 
 	private void processShopDisconnected(LittleEndianReader packet) {
 		local.shopDisconnected();
+	}
+
+	private void processInterChannelMessage(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		if (channel == (byte) -1) { //all channels
+			for (WorldChannel ch : local.getChannels().values())
+				ch.getInterChannelInterface().receivedPacket(packet);
+		} else {
+			GameServer.getChannel(channel).getInterChannelInterface().receivedPacket(packet);
+		}
 	}
 }

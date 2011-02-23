@@ -18,8 +18,11 @@
 
 package argonms.login;
 
+import argonms.LocalServer;
 import argonms.ServerType;
 import argonms.net.server.RemoteCenterInterface;
+import argonms.net.server.RemoteCenterOps;
+import argonms.tools.output.LittleEndianByteArrayWriter;
 
 /**
  * Provides an interface for the login server between it and the center server.
@@ -27,11 +30,32 @@ import argonms.net.server.RemoteCenterInterface;
  * @author GoldenKevin
  */
 public class LoginCenterInterface extends RemoteCenterInterface {
+	private LoginServer local;
+
 	public LoginCenterInterface(String password, LoginServer ls) {
-		super(ls, password, new CenterLoginPacketProcessor(ls));
+		super(password, new CenterLoginPacketProcessor(ls));
+		this.local = ls;
 	}
 
-	protected byte getWorld() {
+	protected byte getServerId() {
 		return ServerType.LOGIN;
+	}
+
+	public void serverReady() {
+		send(serverReady(local.getExternalIp(), local.getClientPort()));
+	}
+
+	private static byte[] serverReady(String ip, int port) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + ip.length());
+
+		lew.writeByte(RemoteCenterOps.ONLINE);
+		lew.writeLengthPrefixedString(ip);
+		lew.writeInt(port);
+
+		return lew.getBytes();
+	}
+
+	public LocalServer getLocalServer() {
+		return local;
 	}
 }

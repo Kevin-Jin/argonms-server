@@ -180,6 +180,35 @@
 	variables (e.g. exp, meso, and drop rates) that I will finish in the future.
 	Some routines that were previously LoginClient specific are now common.
 
+2011-02-23  GoldenKevin  (revision 12)
+
+	* Replaced isSealed() checks with our own boolean instance variable in
+	NpcConversationActions. I realized you can't seal it before throwing the
+	continuation, but I can't throw the continuation before sealing it. I didn't
+	catch this before because it's a very rare occurrence to have the script
+	forcefully halted while in the middle of evaluation (and not while waiting
+	for a response) - Rhino/JavaScript isn't THAT slow. I'm probably going to
+	have to also synchronize the terminated variable, but I will leave it the
+	way it is until I start get cases of it acting up.
+	* NpcConversationActions.askAvatar now returns the player's selection.
+	* Some InventorySlot changes. Unique IDs are now long. Corrected pet packet
+	structure - footholds are now short, and the other two bytes were actually
+	bools. Ring's partnerRingUid are now long (even though the current packet
+	structure for rings gives it as an int).
+	* Renamed GameHandler to GameEnterHandler to disambiguate it's purpose
+	somewhat (since it handles connections and map entering).
+	* Completely rewrote interserver communication to accommodate splitted
+	worlds, i.e. so that all channels of one world don't have to be running on
+	the same process (so that channels can be spread out across many servers).
+	Modified game0.properties, game1.properties, and added game2.properties to
+	demonstrate how to use the new features.
+	* Restructured classes for interserver communications. Classes only required
+	by the Center Server are now in the argonms.center package, and only the
+	classes required by the remote servers (e.g. abstract classes) or required
+	by both the Center Server and remote servers (e.g. packet header values) are
+	located in argonms.net.server. Many classes have been renamed and overall
+	there has been a huge refactoring in the structure.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -18,19 +18,43 @@
 
 package argonms.shop;
 
+import argonms.LocalServer;
 import argonms.ServerType;
 import argonms.net.server.RemoteCenterInterface;
+import argonms.net.server.RemoteCenterOps;
+import argonms.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ShopCenterInterface extends RemoteCenterInterface {
+	private ShopServer local;
+
 	public ShopCenterInterface(String password, ShopServer ss) {
-		super(ss, password, new CenterShopPacketProcessor(ss));
+		super(password, new CenterShopPacketProcessor(ss));
+		this.local = ss;
 	}
 
-	protected byte getWorld() {
+	protected byte getServerId() {
 		return ServerType.SHOP;
+	}
+
+	public void serverReady() {
+		send(serverReady(local.getExternalIp(), local.getClientPort()));
+	}
+
+	private static byte[] serverReady(String ip, int port) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + ip.length());
+
+		lew.writeByte(RemoteCenterOps.ONLINE);
+		lew.writeLengthPrefixedString(ip);
+		lew.writeInt(port);
+
+		return lew.getBytes();
+	}
+
+	public LocalServer getLocalServer() {
+		return local;
 	}
 }

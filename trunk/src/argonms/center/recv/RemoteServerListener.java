@@ -16,8 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.net.server;
+package argonms.center.recv;
 
+import argonms.center.CenterRemoteSession;
+import argonms.net.server.InterServerPacketDecoder;
+import argonms.net.server.InterServerPacketEncoder;
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.Executors;
@@ -89,7 +92,7 @@ public class RemoteServerListener {
 		}
 	}
 
-	public static final ChannelLocal<CenterRemoteInterface> sessions = new ChannelLocal<CenterRemoteInterface>();
+	public static final ChannelLocal<CenterRemoteSession> sessions = new ChannelLocal<CenterRemoteSession>();
 
 	private class CenterServerHandler extends SimpleChannelUpstreamHandler {
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
@@ -98,7 +101,7 @@ public class RemoteServerListener {
 
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Remote server connected from {0}", e.getChannel().getRemoteAddress());
-			sessions.set(e.getChannel(), new CenterRemoteInterface(e.getChannel(), interServerPassword));
+			sessions.set(e.getChannel(), new CenterRemoteSession(e.getChannel(), interServerPassword));
 		}
 
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {

@@ -21,7 +21,8 @@ package argonms.game;
 import argonms.net.client.ClientPacketProcessor;
 import argonms.net.client.ClientRecvOps;
 import argonms.net.client.RemoteClient;
-import argonms.net.client.handler.GameHandler;
+import argonms.net.client.handler.GameChatHandler;
+import argonms.net.client.handler.GameEnterHandler;
 import argonms.net.client.handler.GameMovementHandler;
 import argonms.net.client.handler.GameNpcHandler;
 import argonms.tools.input.LittleEndianReader;
@@ -46,7 +47,7 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				//lol, char loading lag...
 				break;
 			case ClientRecvOps.PLAYER_CONNECTED:
-				GameHandler.handlePlayerConnection(reader, s);
+				GameEnterHandler.handlePlayerConnection(reader, s);
 				break;
 			case ClientRecvOps.PONG:
 				s.receivedPong();
@@ -60,6 +61,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.MOVE_PLAYER:
 				GameMovementHandler.handleMovePlayer(reader, s);
 				break;
+			case ClientRecvOps.MAP_CHAT:
+				GameChatHandler.handleMapChat(reader, s);
+				break;
 			case ClientRecvOps.NPC_TALK:
 				GameNpcHandler.handleStartConversation(reader, s);
 				break;
@@ -67,7 +71,7 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				GameNpcHandler.handleContinueConversation(reader, s);
 				break;
 			default:
-				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
+				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;
 		}
 	}

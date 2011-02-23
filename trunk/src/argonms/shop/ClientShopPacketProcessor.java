@@ -48,7 +48,7 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor {
 				//no-op
 				break;
 			default:
-				LOG.log(Level.FINE, "Received unhandled packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
+				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;
 		}
 	}

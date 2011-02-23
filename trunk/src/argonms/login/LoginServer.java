@@ -26,8 +26,12 @@ import argonms.net.client.ClientListener;
 import argonms.tools.DatabaseConnection;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -47,7 +51,8 @@ public class LoginServer implements LocalServer {
 	private String address;
 	private int port;
 	private boolean usePin;
-	private Map<Byte, World> onlineWorlds;
+	private List<Message> messages;
+	private Map<Byte, LoginWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
@@ -55,7 +60,8 @@ public class LoginServer implements LocalServer {
 	private boolean centerConnected;
 
 	private LoginServer() {
-		onlineWorlds = new HashMap<Byte, World>();
+		messages = new ArrayList<Message>();
+		onlineWorlds = new HashMap<Byte, LoginWorld>();
 	}
 
 	public void init() {
@@ -128,20 +134,29 @@ public class LoginServer implements LocalServer {
 		}
 	}
 
-	public void gameConnected(byte world, String host, int[] ports) {
+	public void gameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		try {
-			World w = new World(world, host, ports);
-			onlineWorlds.put(Byte.valueOf(world), w);
-			LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(world), host });
+			byte[] ip = InetAddress.getByName(host).getAddress();
+			LoginWorld w = onlineWorlds.get(Byte.valueOf(world));
+			if (w == null) {
+				w = new LoginWorld(world);
+				onlineWorlds.put(Byte.valueOf(world), w);
+			}
+			w.addGameServer(ip, ports, serverId);
+			LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(world)
 					+ " server because its address could not be resolved!", e);
 		}
 	}
 
-	public void gameDisconnected(byte world) {
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(world));
-		onlineWorlds.remove(Byte.valueOf(world));
+	public void gameDisconnected(byte serverId, byte world) {
+		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(serverId));
+		Byte oW = Byte.valueOf(world);
+		LoginWorld w = onlineWorlds.get(oW);
+		w.removeGameServer(serverId);
+		if (w.getChannelCount() == 0)
+			onlineWorlds.remove(oW);
 	}
 
 	public void changePopulation(byte world, byte channel, boolean increase) {
@@ -155,8 +170,21 @@ public class LoginServer implements LocalServer {
 		return usePin;
 	}
 
-	public Map<Byte, World> getWorlds() {
-		return onlineWorlds;
+	public Map<Byte, LoginWorld> getAllWorlds() {
+		return Collections.unmodifiableMap(onlineWorlds);
+	}
+
+	/**
+	 * This may return null if no channels of this world have connected yet.
+	 * @param world
+	 * @return
+	 */
+	public LoginWorld getWorld(byte world) {
+		return onlineWorlds.get(Byte.valueOf(world));
+	}
+
+	public List<Message> getMessages() {
+		return Collections.unmodifiableList(messages);
 	}
 
 	public static LoginServer getInstance() {
@@ -167,8 +195,8 @@ public class LoginServer implements LocalServer {
 		return address;
 	}
 
-	public int[] getClientPorts() {
-		return new int[] { port };
+	public int getClientPort() {
+		return port;
 	}
 
 	public static void main(String[] args) {

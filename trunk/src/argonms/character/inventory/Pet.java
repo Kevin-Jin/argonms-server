@@ -32,9 +32,11 @@ public class Pet extends InventorySlot {
 	private byte fullness;
 	private boolean expired;
 
-	private Point position;
+	//map position/animation info only needed for equipped pets.
+	//I'm surprised that pets don't require their own map object id...
+	private Point pos;
 	private byte stance;
-	private int foothold;
+	private short foothold;
 
 	/**
 	 * After this method is called, the name of the newly created pet will still
@@ -120,14 +122,14 @@ public class Pet extends InventorySlot {
 	}
 
 	public Point getPosition() {
-		return position;
+		return pos;
 	}
 
 	public byte getStance() {
 		return stance;
 	}
 
-	public int getFoothold() {
+	public short getFoothold() {
 		return foothold;
 	}
 

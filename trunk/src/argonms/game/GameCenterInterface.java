@@ -18,21 +18,79 @@
 
 package argonms.game;
 
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import argonms.LocalServer;
 import argonms.net.server.RemoteCenterInterface;
+import argonms.net.server.RemoteCenterOps;
+import argonms.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameCenterInterface extends RemoteCenterInterface {
+	private GameServer local;
+	private byte serverId;
 	private byte world;
 
-	public GameCenterInterface(byte world, String password, GameServer gs) {
-		super(gs, password, new CenterGamePacketProcessor(gs));
+	public GameCenterInterface(byte serverId, byte world, String password, GameServer gs) {
+		super(password, new CenterGamePacketProcessor(gs));
+		this.local = gs;
+		this.serverId = serverId;
 		this.world = world;
 	}
 
-	protected byte getWorld() {
+	public byte getServerId() {
+		return serverId;
+	}
+
+	public byte getWorld() {
 		return world;
+	}
+
+	protected void init() {
+		send(auth(serverId, getInterserverPwd(), world, local.getChannels().keySet()));
+	}
+
+	public void serverReady() {
+		send(serverReady(local.getExternalIp(), world, local.getClientPorts()));
+	}
+
+	private static byte[] auth(byte serverId, String pwd, byte world, Set<Byte> channels) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + pwd.length());
+
+		lew.writeByte(RemoteCenterOps.AUTH);
+		lew.writeByte(serverId);
+		lew.writeLengthPrefixedString(pwd);
+		lew.writeByte(world);
+		lew.writeByte((byte) channels.size());
+		for (Byte ch : channels)
+			lew.writeByte(ch.byteValue());
+
+		return lew.getBytes();
+	}
+
+	private static byte[] serverReady(String ip, byte world, Map<Byte, Integer> ports) {
+		byte length = (byte) ports.size();
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + ip.length() + 5 * length);
+
+		lew.writeByte(RemoteCenterOps.ONLINE);
+		lew.writeLengthPrefixedString(ip);
+		lew.writeByte(world);
+		lew.writeByte(length);
+		for (Entry<Byte, Integer> entry : ports.entrySet()) {
+			lew.writeByte(entry.getKey().byteValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+
+		return lew.getBytes();
+	}
+
+	public LocalServer getLocalServer() {
+		return local;
 	}
 }

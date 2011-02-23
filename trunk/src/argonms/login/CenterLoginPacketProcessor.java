@@ -18,6 +18,11 @@
 
 package argonms.login;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import argonms.net.server.CenterRemoteOps;
 import argonms.net.server.CenterRemotePacketProcessor;
 import argonms.net.server.RemoteCenterInterface;
@@ -29,6 +34,8 @@ import argonms.tools.input.LittleEndianReader;
  * @author GoldenKevin
  */
 public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
+	private static final Logger LOG = Logger.getLogger(CenterLoginPacketProcessor.class.getName());
+
 	private LoginServer local;
 
 	public CenterLoginPacketProcessor(LoginServer ls) {
@@ -52,21 +59,27 @@ public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.CHANNEL_PORT_CHANGE:
 				processChannelPortChange(packet);
 				break;
+			default:
+				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
+				break;
 		}
 	}
 
 	private void processGameConnected(LittleEndianReader packet) {
+		byte serverId = packet.readByte();
 		byte world = packet.readByte();
 		String host = packet.readLengthPrefixedString();
-		int[] ports = new int[packet.readByte()];
-		for (int i = 0; i < ports.length; i++)
-			ports[i] = packet.readInt();
-		local.gameConnected(world, host, ports);
+		byte size = packet.readByte();
+		Map<Byte, Integer> ports = new HashMap<Byte, Integer>(size);
+		for (int i = 0; i < size; i++)
+			ports.put(Byte.valueOf(packet.readByte()), Integer.valueOf(packet.readInt()));
+		local.gameConnected(serverId, world, host, ports);
 	}
 
 	private void processGameDisconnected(LittleEndianReader packet) {
+		byte serverId = packet.readByte();
 		byte world = packet.readByte();
-		local.gameDisconnected(world);
+		local.gameDisconnected(serverId, world);
 	}
 
 	private void processPopulationChange(LittleEndianReader packet) {
@@ -80,8 +93,6 @@ public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 		byte world = packet.readByte();
 		byte channel = packet.readByte();
 		int newPort = packet.readInt();
-		World w = local.getWorlds().get(Byte.valueOf(world));
-		if (w != null)
-			w.getPorts()[channel - 1] = newPort;
+		local.getWorld(Byte.valueOf(world)).setPort(channel, newPort);
 	}
 }

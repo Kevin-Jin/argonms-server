@@ -42,7 +42,7 @@ public class GameClient extends RemoteClient {
 
 	public GameClient(byte world, byte channel) {
 		setWorld(world);
-		setChannel(world);
+		setChannel(channel);
 	}
 
 	public Player getPlayer() {
@@ -78,8 +78,8 @@ public class GameClient extends RemoteClient {
 		return npc;
 	}
 
-	public byte getServerType() {
-		return ServerType.GAME;
+	public byte getServerId() {
+		return GameServer.getInstance().getServerId();
 	}
 
 	public void disconnect() {

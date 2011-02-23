@@ -28,7 +28,9 @@ public class RemoteCenterOps {
 		AUTH = 0x00,
 		ONLINE = 0x01,
 		POPULATION_CHANGED = 0x02,
-		MODIFY_CHANNEL_PORT = 0x03
+		MODIFY_CHANNEL_PORT = 0x03,
+		INTER_CHANNEL = 0x04,
+		INTER_CHANNEL_ALL = 0x05
 	;
 
 	private RemoteCenterOps() {
