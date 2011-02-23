@@ -21,9 +21,12 @@ package argonms.center;
 import argonms.ServerType;
 import argonms.net.client.RemoteClient;
 import argonms.net.remoteadmin.TelnetListener;
+import argonms.center.send.CenterGameInterface;
+import argonms.center.send.CenterLoginInterface;
+import argonms.center.send.CenterRemoteInterface;
 import argonms.net.server.CenterRemoteOps;
-import argonms.net.server.CenterRemoteInterface;
-import argonms.net.server.RemoteServerListener;
+import argonms.center.send.CenterShopInterface;
+import argonms.center.recv.RemoteServerListener;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.io.FileReader;
@@ -31,7 +34,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -48,10 +53,12 @@ public class CenterServer {
 	private static CenterServer instance;
 
 	private RemoteServerListener listener;
-	private Map<Byte, CenterRemoteInterface> connectedRemotes;
+	private CenterLoginInterface loginServer;
+	private CenterShopInterface shopServer;
+	private Map<Byte, CenterGameInterface> gameServers;
 
 	private CenterServer() {
-		connectedRemotes = new HashMap<Byte, CenterRemoteInterface>();
+		gameServers = new HashMap<Byte, CenterGameInterface>();
 	}
 
 	public void init() {
@@ -98,60 +105,109 @@ public class CenterServer {
 		}
 	}
 
-	public void serverConnected(byte world, CenterRemoteInterface remote) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[]{ServerType.getName(world), remote.getRemoteEndpoint()});
-		connectedRemotes.put(Byte.valueOf(world), remote);
-		if (ServerType.isGame(world)) {
-			notifyGameConnected(world, remote.getHost(), remote.getClientPorts());
-			sendConnectedShop(remote);
-		} else if (ServerType.isShop(world)) {
-			notifyShopConnected(remote.getHost(), remote.getClientPorts()[0]);
-			sendConnectedGames(remote);
-		} else if (ServerType.isLogin(world)) {
-			sendConnectedGames(remote);
+	public List<CenterGameInterface> getAllServersOfWorld(byte world, byte exclusion) {
+		List<CenterGameInterface> servers = new ArrayList<CenterGameInterface>();
+		for (Entry<Byte, CenterGameInterface> entry : gameServers.entrySet()) {
+			byte serverId = entry.getKey().byteValue();
+			CenterGameInterface server = entry.getValue();
+			if (serverId != exclusion && server.getWorld() == world)
+				servers.add(server);
 		}
+		return servers;
 	}
 
-	public void serverDisconnected(byte world) {
-		if (connectedRemotes.containsKey(Byte.valueOf(world))) {
-			LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(world));
-			connectedRemotes.remove(Byte.valueOf(world));
-			if (ServerType.isGame(world)) {
-				notifyGameDisconnected(world);
-			} else if (ServerType.isShop(world)) {
-				notifyShopDisconnected();
-			}
-		}
+	public void loginConnected(CenterLoginInterface remote) {
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(ServerType.LOGIN), remote.getSession().getAddress() });
+		loginServer = remote;
+		sendConnectedGames(remote);
 	}
 
-	private void notifyGameConnected(byte world, String host, int[] ports) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(host.length() + 5 + ports.length * 4);
+	public void gameConnected(CenterGameInterface remote) {
+		byte serverId = remote.getServerId();
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(serverId), remote.getSession().getAddress() });
+		gameServers.put(Byte.valueOf(serverId), remote);
+		notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
+		sendConnectedShop(remote);
+		sendConnectedGamesOfWorld(remote);
+	}
+
+	public void shopConnected(CenterShopInterface remote) {
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(ServerType.SHOP), remote.getSession().getAddress() });
+		shopServer = remote;
+		notifyShopConnected(remote.getHost(), remote.getClientPort());
+		sendConnectedGames(remote);
+	}
+
+	public void loginDisconnected() {
+		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.LOGIN));
+		loginServer = null;
+	}
+
+	public void gameDisconnected(CenterGameInterface remote) {
+		byte serverId = remote.getServerId();
+		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(remote.getServerId()));
+		notifyGameDisconnected(remote.getWorld(), serverId);
+		gameServers.remove(Byte.valueOf(serverId));
+	}
+
+	public void shopDisconnected() {
+		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.SHOP));
+		notifyShopDisconnected();
+		shopServer = null;
+	}
+
+	public void channelPortChanged(byte world, byte serverId, byte channel, int newPort) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeByte(CenterRemoteOps.CHANNEL_PORT_CHANGE);
+		lew.writeByte(world);
+		lew.writeByte(serverId);
+		lew.writeByte(channel);
+		lew.writeInt(newPort);
+		byte[] bytes = lew.getBytes();
+
+		if (loginServer != null)
+			loginServer.getSession().send(bytes);
+		if (shopServer != null)
+			shopServer.getSession().send(bytes);
+		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
+			gameServer.getSession().send(bytes);
+	}
+
+	private void notifyGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
+		byte size = (byte) ports.size();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(host.length() + 5 + size * 5);
 		lew.writeByte(CenterRemoteOps.GAME_CONNECTED);
+		lew.writeByte(serverId);
 		lew.writeByte(world);
 		lew.writeLengthPrefixedString(host);
-		lew.writeByte((byte) ports.length);
-		for (int i = 0; i < ports.length; i++)
-			lew.writeInt(ports[i]);
+		lew.writeByte(size);
+		for (Entry<Byte, Integer> entry : ports.entrySet()) {
+			lew.writeByte(entry.getKey().byteValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		byte[] bytes = lew.getBytes();
 
-		CenterRemoteInterface remote = connectedRemotes.get(Byte.valueOf(ServerType.LOGIN));
-		if (remote != null)
-			remote.send(lew.getBytes());
-		remote = connectedRemotes.get(Byte.valueOf(ServerType.SHOP));
-		if (remote != null)
-			remote.send(lew.getBytes());
+		if (loginServer != null)
+			loginServer.getSession().send(bytes);
+		if (shopServer != null)
+			shopServer.getSession().send(bytes);
+		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
+			gameServer.getSession().send(bytes);
 	}
 
-	private void notifyGameDisconnected(byte world) {
+	private void notifyGameDisconnected(byte world, byte serverId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(2);
 		lew.writeByte(CenterRemoteOps.GAME_DISCONNECTED);
+		lew.writeByte(serverId);
 		lew.writeByte(world);
+		byte[] bytes = lew.getBytes();
 
-		CenterRemoteInterface remote = connectedRemotes.get(Byte.valueOf(ServerType.LOGIN));
-		if (remote != null)
-			remote.send(lew.getBytes());
-		remote = connectedRemotes.get(Byte.valueOf(ServerType.SHOP));
-		if (remote != null)
-			remote.send(lew.getBytes());
+		if (loginServer != null)
+			loginServer.getSession().send(bytes);
+		if (shopServer != null)
+			shopServer.getSession().send(bytes);
+		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
+			gameServer.getSession().send(bytes);
 	}
 
 	private void notifyShopConnected(String host, int port) {
@@ -159,70 +215,106 @@ public class CenterServer {
 		lew.writeByte(CenterRemoteOps.SHOP_CONNECTED);
 		lew.writeLengthPrefixedString(host);
 		lew.writeInt(port);
+		byte[] bytes = lew.getBytes();
 
-		for (Entry<Byte, CenterRemoteInterface> entry : connectedRemotes.entrySet())
-			if (ServerType.isGame(entry.getKey().byteValue()))
-				entry.getValue().send(lew.getBytes());
+		for (CenterGameInterface gameServer : gameServers.values())
+			gameServer.getSession().send(bytes);
 	}
 
 	private void notifyShopDisconnected() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
 		lew.writeByte(CenterRemoteOps.SHOP_DISCONNECTED);
+		byte[] bytes = lew.getBytes();
 
-		for (Entry<Byte, CenterRemoteInterface> entry : connectedRemotes.entrySet())
-			if (ServerType.isGame(entry.getKey().byteValue()))
-				entry.getValue().send(lew.getBytes());
+		for (CenterGameInterface gameServer : gameServers.values())
+			gameServer.getSession().send(bytes);
 	}
 
-	private void sendConnectedShop(CenterRemoteInterface game) {
-		CenterRemoteInterface remote = connectedRemotes.get(Byte.valueOf(ServerType.SHOP));
-		if (remote != null) {
-			String host = remote.getHost();
-			int port = remote.getClientPorts()[0];
+	private void sendConnectedShop(CenterGameInterface game) {
+		if (shopServer != null) {
+			String host = shopServer.getHost();
+			int port = shopServer.getClientPort();
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(host.length() + 7);
 			lew.writeByte(CenterRemoteOps.SHOP_CONNECTED);
 			lew.writeLengthPrefixedString(host);
 			lew.writeInt(port);
-			game.send(lew.getBytes());
+			game.getSession().send(lew.getBytes());
 		}
 	}
 
 	private void sendConnectedGames(CenterRemoteInterface connected) {
 		LittleEndianByteArrayWriter lew;
-		CenterRemoteInterface game;
+		CenterGameInterface game;
 		String host;
-		int[] ports;
-		for (Entry<Byte, CenterRemoteInterface> entry : connectedRemotes.entrySet()) {
-			if (ServerType.isGame(entry.getKey().byteValue())) {
-				game = entry.getValue();
-				host = game.getHost();
-				ports = game.getClientPorts();
-				lew = new LittleEndianByteArrayWriter(host.length() + 5 + ports.length * 4);
+		Map<Byte, Integer> ports;
+		for (Entry<Byte, CenterGameInterface> entry : gameServers.entrySet()) {
+			game = entry.getValue();
+			host = game.getHost();
+			ports = game.getClientPorts();
+			byte size = (byte) ports.size();
+			lew = new LittleEndianByteArrayWriter(host.length() + 5 + size * 5);
+			lew.writeByte(CenterRemoteOps.GAME_CONNECTED);
+			lew.writeByte(entry.getKey().byteValue());
+			lew.writeByte(entry.getValue().getWorld());
+			lew.writeLengthPrefixedString(host);
+			lew.writeByte(size);
+			for (Entry<Byte, Integer> port : ports.entrySet()) {
+				lew.writeByte(port.getKey().byteValue());
+				lew.writeInt(port.getValue().intValue());
+			}
+			connected.getSession().send(lew.getBytes());
+		}
+	}
+
+	private void sendConnectedGamesOfWorld(CenterGameInterface connected) {
+		byte ourServerId = connected.getServerId();
+		byte ourWorld = connected.getWorld();
+		LittleEndianByteArrayWriter lew;
+		CenterGameInterface server;
+		String host;
+		Map<Byte, Integer> ports;
+		for (Entry<Byte, CenterGameInterface> entry : gameServers.entrySet()) {
+			byte serverId = entry.getKey().byteValue();
+			server = entry.getValue();
+			if (serverId != ourServerId && server.getWorld() == ourWorld) {
+				host = server.getHost();
+				ports = server.getClientPorts();
+				byte size = (byte) ports.size();
+				lew = new LittleEndianByteArrayWriter(host.length() + 5 + size * 5);
 				lew.writeByte(CenterRemoteOps.GAME_CONNECTED);
 				lew.writeByte(entry.getKey().byteValue());
+				lew.writeByte(server.getWorld());
 				lew.writeLengthPrefixedString(host);
-				lew.writeByte((byte) ports.length);
-				for (int i = 0; i < ports.length; i++)
-					lew.writeInt(ports[i]);
-				connected.send(lew.getBytes());
+				lew.writeByte(size);
+				for (Entry<Byte, Integer> port : ports.entrySet()) {
+					lew.writeByte(port.getKey().byteValue());
+					lew.writeInt(port.getValue().intValue());
+				}
+				connected.getSession().send(lew.getBytes());
 			}
 		}
 	}
 
-	public boolean isServerConnected(byte world) {
-		return connectedRemotes.containsKey(Byte.valueOf(world));
+	public boolean isServerConnected(byte serverId) {
+		if (ServerType.isGame(serverId))
+			return gameServers.containsKey(Byte.valueOf(serverId));
+		if (ServerType.isLogin(serverId))
+			return loginServer != null;
+		if (ServerType.isShop(serverId))
+			return shopServer != null;
+		return false;
 	}
 
-	public CenterRemoteInterface getShopServer() {
-		return connectedRemotes.get(Byte.valueOf(ServerType.SHOP));
+	public CenterShopInterface getShopServer() {
+		return shopServer;
 	}
 
-	public CenterRemoteInterface getLoginServer() {
-		return connectedRemotes.get(Byte.valueOf(ServerType.LOGIN));
+	public CenterLoginInterface getLoginServer() {
+		return loginServer;
 	}
 
-	public CenterRemoteInterface getGameServer(byte world) {
-		return connectedRemotes.get(Byte.valueOf(world));
+	public CenterGameInterface getGameServer(byte serverId) {
+		return gameServers.get(Byte.valueOf(serverId));
 	}
 
 	public static CenterServer getInstance() {

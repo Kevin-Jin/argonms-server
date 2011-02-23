@@ -40,8 +40,8 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class GameHandler {
-	private static final Logger LOG = Logger.getLogger(GameHandler.class.getName());
+public class GameEnterHandler {
+	private static final Logger LOG = Logger.getLogger(GameEnterHandler.class.getName());
 
 	public static void handlePlayerConnection(LittleEndianReader packet, RemoteClient rc) {
 		GameClient client = (GameClient) rc;
@@ -89,7 +89,7 @@ public class GameHandler {
 			}
 		}*/
 		client.getSession().send(writeEnterMap(player));
-		if (player.getPrivileges() >= UserPrivileges.JUNIOR_GM) //hide
+		if (player.getPrivilegeLevel() >= UserPrivileges.JUNIOR_GM) //hide
 			player.applyEffect(SkillDataLoader.getInstance().getSkill(9101004).getLevel((byte) 1));
 		player.getMap().spawnPlayer(player);
 

@@ -135,7 +135,7 @@ public abstract class RemoteClient {
 		}
 	}
 
-	public abstract byte getServerType();
+	public abstract byte getServerId();
 
 	/**
 	 * Notify the other players on the server that this player is logging off

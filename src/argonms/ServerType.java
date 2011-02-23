@@ -31,8 +31,7 @@ public final class ServerType {
 		UNDEFINED = -4,
 		CENTER = -3,
 		SHOP = -2,
-		LOGIN = -1,
-		GAME = 0
+		LOGIN = -1
 	;
 
 	private ServerType() {
@@ -56,27 +55,24 @@ public final class ServerType {
 	}
 
 	public static byte getType() {
+		if (GameServer.getInstance() != null)
+			return GameServer.getInstance().getServerId();
 		if (LoginServer.getInstance() != null)
 			return LOGIN;
-		else if (GameServer.getInstance() != null)
-			return GAME;
-		else if (ShopServer.getInstance() != null)
+		if (ShopServer.getInstance() != null)
 			return SHOP;
 		return UNDEFINED;
 	}
 
-	public static String getName(byte type) {
-		switch (type) {
-			case CENTER:
-				return "Center";
-			case SHOP:
-				return "Shop";
-			case LOGIN:
-				return "Login";
-			default:
-				if (type >= 0)
-					return "Game" + type;
-				return null;
-		}
+	public static String getName(byte serverId) {
+		if (isGame(serverId))
+			return "Game" + serverId;
+		if (isLogin(serverId))
+			return "Login";
+		if (isShop(serverId))
+			return "Shop";
+		if (isCenter(serverId))
+			return "Center";
+		return null;
 	}
 }

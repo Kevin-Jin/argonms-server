@@ -65,7 +65,7 @@ public class ShopClient extends RemoteClient {
 		return ret;
 	}
 
-	public byte getServerType() {
+	public byte getServerId() {
 		return ServerType.SHOP;
 	}
 

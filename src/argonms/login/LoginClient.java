@@ -234,7 +234,7 @@ public class LoginClient extends RemoteClient {
 		return false;
 	}
 
-	public byte getServerType() {
+	public byte getServerId() {
 		return ServerType.LOGIN;
 	}
 

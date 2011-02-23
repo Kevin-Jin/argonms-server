@@ -16,21 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center;
+package argonms.center.recv;
 
+import argonms.center.CenterServer;
+import argonms.center.send.CenterLoginInterface;
 import argonms.net.server.RemoteCenterOps;
-import argonms.net.server.RemoteCenterPacketProcessor;
-import argonms.net.server.CenterRemoteInterface;
+import argonms.center.recv.RemoteCenterPacketProcessor;
 import argonms.tools.input.LittleEndianReader;
 
 /**
- * Processes packet sent from the shop server and received at the center
+ * Processes packet sent from the login server and received at the center
  * server.
  * @author GoldenKevin
  */
-public class ShopCenterPacketProcessor extends RemoteCenterPacketProcessor {
-	public ShopCenterPacketProcessor(CenterRemoteInterface r, byte world) {
-		super(r, world);
+public class LoginCenterPacketProcessor extends RemoteCenterPacketProcessor {
+	private CenterLoginInterface r;
+
+	public LoginCenterPacketProcessor(CenterLoginInterface r) {
+		this.r = r;
 	}
 
 	public void process(LittleEndianReader packet) {
@@ -39,5 +42,12 @@ public class ShopCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				serverOnline(packet);
 				break;
 		}
+	}
+
+	private void serverOnline(LittleEndianReader packet)  {
+		r.setHost(packet.readLengthPrefixedString());
+		int port = packet.readInt();
+		r.setClientPort(port);
+		CenterServer.getInstance().loginConnected(r);
 	}
 }

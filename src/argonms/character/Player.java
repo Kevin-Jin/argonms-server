@@ -98,6 +98,9 @@ public class Player extends MapObject {
 
 	private List<MapObject> visibleObjects;
 
+	private int guild;
+	private Party party;
+
 	private Player () {
 		bindings = new TreeMap<Byte, KeyBinding>();
 		skillMacros = new ArrayList<SkillMacro>(5);
@@ -120,7 +123,7 @@ public class Player extends MapObject {
 			con.setAutoCommit(false);
 			updateDbStats(con);
 			updateDbInventory(con);
-			if (ServerType.isGame(client.getServerType())) {
+			if (ServerType.isGame(client.getServerId())) {
 				//updateDbSkills(con);
 				updateDbBindings(con);
 			}
@@ -236,7 +239,7 @@ public class Player extends MapObject {
 					ps.setShort(4, e.getKey().shortValue());
 					ps.setInt(5, item.getItemId());
 					ps.setLong(6, item.getExpiration());
-					ps.setInt(7, item.getUniqueId());
+					ps.setLong(7, item.getUniqueId());
 					ps.setString(8, item.getOwner());
 					ps.setShort(9, item.getQuantity());
 					//TODO: refactor so we can use addBatch here for inventories
@@ -259,7 +262,7 @@ public class Player extends MapObject {
 									+ "`partnerringid`) VALUES(?,?,?)");
 							rps.setInt(1, inventoryKey);
 							rps.setInt(2, ring.getPartnerCharId());
-							rps.setInt(3, ring.getPartnerRingId());
+							rps.setLong(3, ring.getPartnerRingId());
 							rps.executeUpdate();
 							rps.close();
 							insertEquipIntoDb(ring, inventoryKey, con);
@@ -403,7 +406,7 @@ public class Player extends MapObject {
 				return null;
 			}
 			int accountid = rs.getInt(1);
-			if (c.getServerType() != ServerType.LOGIN) { //game/shop server
+			if (c.getServerId() != ServerType.LOGIN) { //game/shop server
 				c.setAccountId(accountid); //we aren't aware of our accountid yet
 			} else if (accountid != c.getAccountId()) { //login server
 				LOG.log(Level.WARNING, "Client account {0} is trying to load "
@@ -412,7 +415,7 @@ public class Player extends MapObject {
 				return null;
 			}
 			byte world = rs.getByte(2);
-			if (c.getServerType() == ServerType.SHOP) {
+			if (c.getServerId() == ServerType.SHOP) {
 				c.setWorld(world); //we aren't aware of our world yet
 			} else if (world != c.getWorld()) {
 				LOG.log(Level.WARNING, "Client account {0} is trying to load "
@@ -445,7 +448,7 @@ public class Player extends MapObject {
 			p.partner = rs.getInt(23);
 			p.savedMapId = rs.getInt(24);
 			p.savedSpawnPoint = rs.getByte(25);
-			if (ServerType.isGame(c.getServerType())) {
+			if (ServerType.isGame(c.getServerId())) {
 				p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
 				p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
 			}
@@ -457,9 +460,9 @@ public class Player extends MapObject {
 			p.inventories.put(InventoryType.CASH, new Inventory(rs.getByte(31)));
 			//TODO: get real equipped inventory size?
 			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
-			if (ServerType.isGame(c.getServerType()))
+			if (ServerType.isGame(c.getServerId()))
 				p.inventories.put(InventoryType.STORAGE, new Inventory(rs.getByte(32)));
-			else if(ServerType.isShop(c.getServerType()))
+			else if(ServerType.isShop(c.getServerId()))
 				//TODO: get real cash shop inventory size?
 				p.inventories.put(InventoryType.CASH_SHOP, new Inventory((byte) 0));
 			p.buddies = new BuddyList(rs.getShort(33));
@@ -468,11 +471,11 @@ public class Player extends MapObject {
 			ps.close();
 
 			String q = "SELECT * FROM `inventoryitems` WHERE `characterid` = ?";
-			if (ServerType.isLogin(c.getServerType()))
-				q += " AND inventorytype <= " + InventoryType.CASH.value();
-			else if (ServerType.isGame(c.getServerType()))
+			if (ServerType.isGame(c.getServerId()))
 				q += " AND inventorytype < " + InventoryType.STORAGE.value();
-			else if (ServerType.isShop(c.getServerType()))
+			else if(ServerType.isLogin(c.getServerId()))
+				q += " AND inventorytype <= " + InventoryType.CASH.value();
+			else if (ServerType.isShop(c.getServerId()))
 				q += " AND inventorytype != " + InventoryType.STORAGE.value();
 			ps = con.prepareStatement(q);
 			ps.setInt(1, id);
@@ -496,7 +499,7 @@ public class Player extends MapObject {
 						ers = eps.executeQuery();
 						if (ers.next()) {
 							((Ring) e).setPartnerCharId(ers.getInt(3));
-							((Ring) e).setPartnerRingId(ers.getInt(4));
+							((Ring) e).setPartnerRingId(ers.getLong(4));
 						}
 						ers.close();
 						eps.close();
@@ -565,14 +568,14 @@ public class Player extends MapObject {
 					}
 				}
 				item.setExpiration(rs.getLong(7));
-				item.setUniqueId(rs.getInt(8));
+				item.setUniqueId(rs.getLong(8));
 				item.setOwner(rs.getString(9));
 				p.inventories.get(inventoryType).put(position, item);
 			}
 			rs.close();
 			ps.close();
 
-			if (ServerType.isGame(c.getServerType())) {
+			if (ServerType.isGame(c.getServerId())) {
 				ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 						+ "FROM `skills` WHERE `characterid` = ?");
 				ps.setInt(1, id);
@@ -630,7 +633,7 @@ public class Player extends MapObject {
 		return client;
 	}
 
-	public byte getPrivileges() {
+	public byte getPrivilegeLevel() {
 		return gm;
 	}
 
@@ -828,6 +831,14 @@ public class Player extends MapObject {
 	public void prepareChannelChange() {
 		client.migrateHost();
 	}*/
+
+	public int getGuildId() {
+		return guild;
+	}
+
+	public Party getParty() {
+		return party;
+	}
 
 	public void close() {
 		for (ScheduledFuture<?> f : effectCancels.values())

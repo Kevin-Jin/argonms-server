@@ -341,7 +341,7 @@ public class CommonPackets {
 			lew.writeInt(ring.getPartnerCharId());
 			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
 			lew.writeLong(ring.getUniqueId());
-			lew.writeInt(ring.getPartnerRingId()); //this is definitely wrong, considering UIDs are 64-bit long
+			lew.writeInt((int) ring.getPartnerRingId()); //this is definitely wrong, considering UIDs are 64-bit long
 			if (ring.getItemId() >= 1112800 && ring.getItemId() <= 1112803 || ring.getItemId() <= 1112806 || ring.getItemId() <= 1112807 || ring.getItemId() <= 1112809) {
 				FR_last = true;
 				lew.writeInt(0);
@@ -543,7 +543,9 @@ public class CommonPackets {
 			lew.writeShort((short) pos.x);
 			lew.writeShort((short) pos.y);
 			lew.writeByte(pet.getStance());
-			lew.writeInt(pet.getFoothold());
+			lew.writeShort(pet.getFoothold());
+			lew.writeBool(false); //has name tag
+			lew.writeBool(false); //has quote item
 		}
 
 		return lew.getBytes();
@@ -661,6 +663,27 @@ public class CommonPackets {
 		lew.writeByte((byte) moves.size());
 		for (LifeMovementFragment move : moves)
 			move.serialize(lew);
+	}
+
+	public static byte[] writePrivateChatMessage(byte type, String name, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.PRIVATE_CHAT);
+		lew.writeByte(type);
+		lew.writeLengthPrefixedString(name);
+		lew.writeLengthPrefixedString(message);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeSpouseChatMessage(String name, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SPOUSE_CHAT);
+		lew.writeLengthPrefixedString(name);
+		lew.writeLengthPrefixedString(message);
+
+		return lew.getBytes();
 	}
 
 	/*public static byte[] writeEnterCs(Player p) {

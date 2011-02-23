@@ -19,7 +19,7 @@
 @echo off
 @title Game0 Server Console
 set CLASSPATH=.;dist\argonms.jar;dist\js.jar;dist\mysql-connector-java-bin.jar;dist\netty.jar
-java -Xmx600m -Dargonms.game.world=0 -Dargonms.game.config.file=game0.properties ^
+java -Xmx600m -Dargonms.game.serverid=0 -Dargonms.game.config.file=game0.properties ^
 -Djava.util.logging.config.file=logging.properties ^
 -Dargonms.db.config.file=db.properties ^
 -Dargonms.data.dir=wz\ ^

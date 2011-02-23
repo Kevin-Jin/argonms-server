@@ -41,6 +41,7 @@ public class WorldChannel {
 	private int port;
 	private MapFactory mapFactory;
 	private PlayerLog storage;
+	private InterChannelCommunication worldComm;
 
 	protected WorldChannel(byte world, byte channel, int port) {
 		this.world = world;
@@ -120,6 +121,7 @@ public class WorldChannel {
 	private void sendNewPort() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeByte(RemoteCenterOps.MODIFY_CHANNEL_PORT);
+		lew.writeByte(world);
 		lew.writeByte(channel);
 		lew.writeInt(port);
 		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
@@ -131,5 +133,13 @@ public class WorldChannel {
 
 	public MapFactory getMapFactory() {
 		return mapFactory;
+	}
+
+	public void createWorldComm(byte[] local) {
+		worldComm = new InterChannelCommunication(local, this);
+	}
+
+	public InterChannelCommunication getInterChannelInterface() {
+		return worldComm;
 	}
 }

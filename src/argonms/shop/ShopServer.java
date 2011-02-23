@@ -24,12 +24,14 @@ import argonms.character.Player;
 import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
+import argonms.login.LoginWorld;
 import argonms.net.client.ClientListener;
 import argonms.net.client.PlayerLog;
 import argonms.tools.DatabaseConnection;
-import argonms.tools.Pair;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -49,7 +51,7 @@ public class ShopServer implements LocalServer {
 	private ShopCenterInterface sci;
 	private String address;
 	private int port;
-	private Map<Byte, Pair<String, int[]>> onlineWorlds;
+	private Map<Byte, LoginWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
@@ -58,7 +60,7 @@ public class ShopServer implements LocalServer {
 	private PlayerLog storage;
 
 	private ShopServer() {
-		onlineWorlds = new HashMap<Byte, Pair<String, int[]>>();
+		onlineWorlds = new HashMap<Byte, LoginWorld>();
 	}
 
 	public void init() {
@@ -134,14 +136,29 @@ public class ShopServer implements LocalServer {
 		}
 	}
 
-	public void gameConnected(byte world, String host, int[] port) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(world), host });
-		onlineWorlds.put(Byte.valueOf(world), new Pair<String, int[]>(host, port));
+	public void gameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
+		try {
+			byte[] ip = InetAddress.getByName(host).getAddress();
+			LoginWorld w = onlineWorlds.get(Byte.valueOf(world));
+			if (w == null) {
+				w = new LoginWorld(world);
+				onlineWorlds.put(Byte.valueOf(world), w);
+			}
+			w.addGameServer(ip, ports, serverId);
+			LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(serverId), host });
+		} catch (UnknownHostException e) {
+			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(world)
+					+ " server because its address could not be resolved!", e);
+		}
 	}
 
-	public void gameDisconnected(byte world) {
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(world));
-		onlineWorlds.remove(Byte.valueOf(world));
+	public void gameDisconnected(byte serverId, byte world) {
+		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(serverId));
+		Byte oW = Byte.valueOf(world);
+		LoginWorld w = onlineWorlds.get(oW);
+		w.removeGameServer(serverId);
+		if (w.getChannelCount() == 0)
+			onlineWorlds.remove(oW);
 	}
 
 	public static ShopServer getInstance() {
@@ -152,8 +169,8 @@ public class ShopServer implements LocalServer {
 		return address;
 	}
 
-	public int[] getClientPorts() {
-		return new int[] { port };
+	public int getClientPort() {
+		return port;
 	}
 
 	public void addPlayer(Player p) {

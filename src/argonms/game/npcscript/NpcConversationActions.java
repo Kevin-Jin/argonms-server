@@ -58,6 +58,7 @@ public class NpcConversationActions {
 	private Scriptable globalScope;
 	private Object continuation;
 	private boolean endingChat;
+	private boolean terminated;
 	private PreviousMessageCache prevs;
 
 	public NpcConversationActions(int npcId, GameClient client, Context cx, Scriptable globalScope) {
@@ -66,6 +67,7 @@ public class NpcConversationActions {
 		this.cx = cx;
 		this.globalScope = globalScope;
 		this.endingChat = false;
+		this.terminated = false;
 		this.prevs = new PreviousMessageCache();
 	}
 
@@ -192,7 +194,7 @@ public class NpcConversationActions {
 	}
 
 	private void resume(Object obj) {
-		if (!cx.isSealed()) {
+		if (!terminated) {
 			try {
 				cx.resumeContinuation(continuation, globalScope, obj);
 				endConversation(false);
@@ -265,7 +267,14 @@ public class NpcConversationActions {
 				}
 				break;
 			case ASK_AVATAR:
-				System.out.println(packet);
+				switch (action) {
+					case 0: //leave store (or esc key) or cancel
+						endChatHook();
+						break;
+					case 1: //ok
+						resume(Byte.valueOf(packet.readByte()));
+						break;
+				}
 				break;
 			case ASK_ACCEPT:
 				switch (action) {
@@ -302,22 +311,16 @@ public class NpcConversationActions {
 	}
 
 	public void endConversation(boolean inProgress) {
-		client.setNpc(null);
-		if (!cx.isSealed()) {
-			//should we invoke cx.decompileScript()?
-
+		if (!terminated) {
+			terminated = true;
+			client.setNpc(null);
 			if (inProgress) {
-				try { //most elegant way I can think of doing it at the moment...
-					//if we are not waiting for a continuation at the moment
-					cx.captureContinuation(); //we will wait for a continuation
+				try {
+					cx.captureContinuation();
 				} catch (IllegalStateException e) { //"Interpreter frames not found"
-					//if we are already waiting for a continuation at this moment
-					//just seal it before we get a response
+					
 				}
 			}
-			//when cx is sealed, we don't resume our continuation in resume(Object)!
-			//(so the script is essentially finished)
-			cx.seal(null);
 		}
 	}
 

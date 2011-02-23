@@ -22,7 +22,8 @@ import argonms.character.Player;
 import argonms.character.PlayerJob;
 import argonms.login.LoginClient;
 import argonms.login.LoginServer;
-import argonms.login.World;
+import argonms.login.LoginWorld;
+import argonms.login.Message;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
@@ -30,10 +31,13 @@ import argonms.tools.DatabaseConnection;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
+
+import java.awt.Point;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
@@ -90,8 +94,8 @@ public class WorldlistHandler {
 
 		LittleEndianByteArrayWriter writer = new LittleEndianByteArrayWriter();
 		writer.writeShort(ClientSendOps.CHARLIST);
-		World w = LoginServer.getInstance().getWorlds().get(Byte.valueOf(client.getWorld()));
-		if (w == null || w.getPorts()[client.getChannel() - 1] == -1) {
+		LoginWorld w = LoginServer.getInstance().getWorld(client.getWorld());
+		if (w == null || w.getPort(client.getChannel()) == -1) {
 			writer.writeByte((byte) 8); //"The connection could not be made because of a system error."
 		} else {
 			writer.writeByte((byte) 0); //show characters
@@ -106,13 +110,11 @@ public class WorldlistHandler {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeShort(ClientSendOps.SERVERLOAD_MSG);
 
-		World w = LoginServer.getInstance().getWorlds().get(Byte.valueOf(rc.getWorld()));
-		int collectiveLoads = 0;
-		for (short s : w.getLoads())
-			collectiveLoads += s;
+		LoginWorld w = LoginServer.getInstance().getWorld(Byte.valueOf(rc.getWorld()));
+		int collectiveLoads = w.getTotalLoad();
 
 		//each channel can hold 2400
-		int max = 2400 * w.getLoads().length;
+		int max = 2400 * w.getChannelCount();
 		if (collectiveLoads >= max)
 			lew.writeShort(SERVERSTATUS_MAX);
 		else if (collectiveLoads >= 0.9 * max) // >90% full
@@ -123,11 +125,8 @@ public class WorldlistHandler {
 	}
 
 	public static void handleWorldListRequest(LittleEndianReader packet, RemoteClient rc) {
-		Set<Entry<Byte, World>> worlds = LoginServer.getInstance().getWorlds().entrySet();
-		for (Entry<Byte, World> entry : worlds) {
-			World world = entry.getValue();
-			rc.getSession().send(worldEntry(entry.getKey().byteValue(), world.getName(), world.getFlag(), world.getMessage(), world.getLoads()));
-		}
+		for (Entry<Byte, LoginWorld> entry : LoginServer.getInstance().getAllWorlds().entrySet())
+			rc.getSession().send(worldEntry(entry.getKey().byteValue(), entry.getValue()));
 		rc.getSession().send(worldListEnd());
 	}
 
@@ -143,7 +142,7 @@ public class WorldlistHandler {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Byte world = Byte.valueOf(rs.getByte(1));
-				if (LoginServer.getInstance().getWorlds().containsKey(world)) {
+				if (LoginServer.getInstance().getWorld(world) != null) {
 					worlds.add(world);
 					totalChars++;
 				}
@@ -177,14 +176,14 @@ public class WorldlistHandler {
 			c.getSession().close();
 			return;
 		}
-		World w = LoginServer.getInstance().getWorlds().get(Byte.valueOf(c.getWorld()));
+		LoginWorld w = LoginServer.getInstance().getWorld(c.getWorld());
 		//TODO: if client can't connect to the game server, then it's connected
 		//state will always be STATUS_MIGRATION. There's got to be a way to
 		//find out if the client's connection timed out and then
 		//updateState(STATUS_NOTLOGGEDIN) if it is.
 		c.migrateHost();
-		c.getSession().send(writeServerAddress(w.getHost(),
-				w.getPorts()[c.getChannel() - 1], charid));
+		c.getSession().send(writeServerAddress(w.getHost(c.getChannel()),
+				w.getPort(c.getChannel()), charid));
 	}
 
 	public static void handlePickFromAllChars(LittleEndianReader packet, RemoteClient rc) {
@@ -194,14 +193,7 @@ public class WorldlistHandler {
 		String macs = packet.readLengthPrefixedString();
 		//packet.readLengthPrefixedString(); what the hell is this?
 		client.setWorld(world);
-		World w = LoginServer.getInstance().getWorlds().get(Byte.valueOf(world));
-		short[] loads = w.getLoads();
-		int[] ports = w.getPorts();
-		byte channel = 1;
-		for (int i = 1; i < loads.length; i++)
-			if (ports[i] != -1 && loads[i] < loads[channel - 1])
-				channel = (byte) (i + 1);
-		client.setChannel(channel);
+		client.setChannel(LoginServer.getInstance().getWorld(world).getLeastPopulatedChannel());
 		sendToGameServer(client, charid, macs);
 	}
 
@@ -315,28 +307,48 @@ public class WorldlistHandler {
 		rc.getSession().send(lew.getBytes());
 	}
 
-	private static byte[] worldEntry(byte world, String name, byte flag, String message, short[] loads) {
+	private static byte[] worldEntry(byte world, LoginWorld w) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(128);
 
 		lew.writeShort(ClientSendOps.WORLD_ENTRY);
 		lew.writeByte(world);
-		lew.writeLengthPrefixedString(name);
-		lew.writeByte(flag);
-		lew.writeLengthPrefixedString(message);
+		lew.writeLengthPrefixedString(w.getName());
+		lew.writeByte(w.getFlag());
+		lew.writeLengthPrefixedString(w.getMessage());
 		lew.writeByte((byte) 100); // rate modifier
 		lew.writeByte((byte) 0); // event xp * 2.6
 		lew.writeByte((byte) 100); // rate modifier
 		lew.writeByte((byte) 0); // drop rate * 2.6
 		lew.writeByte((byte) 0);
-		lew.writeByte((byte) loads.length);
 
-		for (short i = 0; i < loads.length; i++) {
-			lew.writeLengthPrefixedString(name + '-' + (i + 1));
-			lew.writeInt(loads[i]);
+		byte max = w.getLargestNumberedChannel();
+		lew.writeByte(max);
+		for (byte b = 1; b <= max; b++) {
+			lew.writeLengthPrefixedString(w.getName() + '-' + b);
+			lew.writeInt(w.getLoad(b));
 			lew.writeByte(world);
-			lew.writeShort(i);
+			lew.writeByte(b);
+			lew.writeBool(false);
 		}
-		lew.writeShort((short) 0);
+
+		//we really gotta find a way to show empty channels -
+		//giving the user an error upon clicking a non loaded channel is not good.
+		/*lew.writeByte((byte) w.getChannelCount());
+		for (Entry<Byte, Load> entry : w.getAllLoads().entrySet()) {
+			lew.writeLengthPrefixedString(w.getName() + '-' + entry.getKey());
+			lew.writeInt(entry.getValue().value());
+			lew.writeByte(world);
+			lew.writeShort(entry.getKey().byteValue());
+		}*/
+
+		List<Message> messages = LoginServer.getInstance().getMessages();
+		lew.writeShort((short) messages.size()); //num of messages
+		for (Message msg : messages) {
+			Point pos = msg.getPosition();
+			lew.writeShort((short) pos.x); //(0, 0) = on Scania
+			lew.writeShort((short) pos.y);
+			lew.writeLengthPrefixedString(msg.getText());
+		}
 
 		return lew.getBytes();
 	}

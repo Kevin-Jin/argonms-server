@@ -33,7 +33,7 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 
 	private int id;
 	private long expire;
-	private int uid;
+	private long uid;
 	private String owner;
 	private byte flag;
 
@@ -58,11 +58,11 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 		this.expire = expire;
 	}
 
-	public int getUniqueId() {
+	public long getUniqueId() {
 		return uid;
 	}
 
-	public void setUniqueId(int id) {
+	public void setUniqueId(long id) {
 		this.uid = id;
 	}
 
