@@ -21,9 +21,12 @@ package argonms.game;
 import argonms.character.Player;
 import argonms.net.client.CommonPackets;
 import argonms.net.server.RemoteCenterOps;
+import argonms.tools.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -67,9 +70,15 @@ public class InterChannelCommunication {
 		return GameServer.getInstance().getCenterInterface();
 	}
 
-	public int getPortOfChannel(byte ch) {
+	public Pair<byte[], Integer> getChannelHost(byte ch) throws UnknownHostException {
+		for (int i = 0; i < localChannels.length; i++) {
+			if (ch == localChannels[i]) {
+				byte[] address = InetAddress.getByName(GameServer.getInstance().getExternalIp()).getAddress();
+				return new Pair<byte[], Integer>(address, Integer.valueOf(GameServer.getChannel(ch).getPort()));
+			}
+		}
 		Integer port = remoteChannelPorts.get(Byte.valueOf(ch));
-		return port != null ? port.intValue() : -1;
+		return new Pair<byte[], Integer>(remoteChannelAddresses.get(Byte.valueOf(ch)), port != null ? port : Integer.valueOf(-1));
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, Player p, String message) {

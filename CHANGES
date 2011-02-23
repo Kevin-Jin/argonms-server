@@ -209,6 +209,16 @@
 	located in argonms.net.server. Many classes have been renamed and overall
 	there has been a huge refactoring in the structure.
 
+2011-02-23  GoldenKevin  (revision 13)
+
+	* Some code cleanup after that large revision I just previously committed.
+	* Channel changing is now supported. Portals can now be entered and you will
+	be properly warped (clients still crash when they encounter mobs though, I'm
+	working on that fix right now...)
+	* Renamed argonms.game.npcscript to argonms.game.script. Added a new class
+	for Portal scripts and updated NpcScriptManager with quest script stubs in
+	order to support quests in the future.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

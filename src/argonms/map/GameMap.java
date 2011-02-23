@@ -19,6 +19,8 @@
 package argonms.map;
 
 import argonms.character.Player;
+import argonms.game.GameServer;
+import argonms.game.script.PortalScriptManager;
 import argonms.loading.map.Foothold;
 import argonms.loading.map.SpawnData;
 import argonms.loading.map.MapStats;
@@ -136,7 +138,7 @@ public class GameMap {
 		return objects.get(Integer.valueOf(oid));
 	}
 
-	public void spawnObject(MapObject obj) {
+	public final void spawnObject(MapObject obj) {
 		synchronized (objects) {
 			obj.setId(nextObjectId++);
 			if (obj.isNonRangedType())
@@ -165,12 +167,12 @@ public class GameMap {
 		}
 	}
 
-	public void spawnMonster(Mob monster) {
+	public final void spawnMonster(Mob monster) {
 		spawnObject(monster);
 		monsters.incrementAndGet();
 	}
 
-	public void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
+	public final void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
 		pos = calcPointBelow(pos);
 		pos.y -= 1;
 		if (mobTime == -1) {
@@ -250,6 +252,38 @@ public class GameMap {
 					p.getClient().getSession().send(mo.getShowObjectMessage());
 					p.addToVisibleMapObjects(mo);
 				}
+			}
+		}
+	}
+
+	public byte getPortalIdByName(String portalName) {
+		for (Entry<Byte, PortalData> portal : stats.getPortals().entrySet())
+			if (portal.getValue().getPortalName().equals(portalName))
+				return portal.getKey().byteValue();
+		return -1;
+	}
+
+	public void enterPortal(Player p, String portalName) {
+		for (PortalData portal : stats.getPortals().values())
+			if (portal.getPortalName().equals(portalName))
+				enterPortal(p, portal);
+	}
+
+	public void enterPortal(Player p, byte portalId) {
+		enterPortal(p, stats.getPortals().get(Byte.valueOf(portalId)));
+	}
+
+	private void enterPortal(Player p, PortalData portal) {
+		String scriptName = portal.getScript();
+		if (scriptName != null && scriptName.length () != 0) {
+			PortalScriptManager.runScript(scriptName, p);
+		} else {
+			int tm = portal.getTargetMapId();
+			GameMap map = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(tm);
+			if (tm != 999999999 && map != null) {
+				byte portalId = map.getPortalIdByName(portal.getTargetName());
+				if (portalId != -1)
+					p.changeMap(tm, portalId);
 			}
 		}
 	}

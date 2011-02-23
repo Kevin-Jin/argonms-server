@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.npcscript;
+package argonms.game.script;
 
 import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;

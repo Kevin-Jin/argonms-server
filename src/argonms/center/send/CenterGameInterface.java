@@ -1,26 +1,52 @@
-package argonms.center.send;
+/*
+ * ArgonMS MapleStory server emulator written in Java
+ * Copyright (C) 2011  GoldenKevin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-import java.util.Map;
-import java.util.Set;
+package argonms.center.send;
 
 import argonms.center.CenterServer;
 import argonms.center.recv.GameCenterPacketProcessor;
 import argonms.center.recv.RemoteCenterPacketProcessor;
 import argonms.center.CenterRemoteSession;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ *
+ * @author GoldenKevin
+ */
 public class CenterGameInterface extends CenterRemoteInterface {
 	private String host;
 	private byte world;
 	private Map<Byte, Integer> clientPorts;
 	private byte serverId;
+	private GameCenterPacketProcessor pp;
 
 	public CenterGameInterface(CenterRemoteSession session, byte serverId) {
 		super(session);
 		this.serverId = serverId;
 	}
 
-	public RemoteCenterPacketProcessor createPacketProcessor() {
-		return new GameCenterPacketProcessor(this);
+	public void makePacketProcessor() {
+		this.pp = new GameCenterPacketProcessor(this);
+	}
+
+	public RemoteCenterPacketProcessor getPacketProcessor() {
+		return pp;
 	}
 
 	public byte getServerId() {

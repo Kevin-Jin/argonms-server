@@ -22,8 +22,8 @@ import java.util.List;
 import argonms.character.Player;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameClient;
-import argonms.game.npcscript.NpcConversationActions;
-import argonms.game.npcscript.NpcScriptManager;
+import argonms.game.script.NpcConversationActions;
+import argonms.game.script.NpcScriptManager;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.shop.NpcShopDataLoader;
 import argonms.map.MapObject;
@@ -78,6 +78,50 @@ public class GameNpcHandler {
 		NpcConversationActions npc = ((GameClient) rc).getNpc();
 		if (npc != null)
 			npc.responseReceived(packet);
+	}
+
+	public static void handleQuestAction(LittleEndianReader packet, RemoteClient rc) {
+		byte action = packet.readByte();
+		short quest = packet.readShort();
+		GameClient client = (GameClient) rc;
+		Player player = client.getPlayer();
+		/*switch (action) {
+			case 1 : { // start quest
+				int npc = packet.readInt();
+				packet.readInt(); // dont know *o*
+				MapleQuest.getInstance(quest).start(player, npc);
+				break;
+			} case 2 : { // complete quest
+				int npc = packet.readInt();
+				packet.readInt(); // dont know *o*
+				if (packet.available() >= 4) {
+					int selection = packet.readInt();
+					MapleQuest.getInstance(quest).complete(player, npc, selection);
+				} else {
+					MapleQuest.getInstance(quest).complete(player, npc);
+				}
+				// 6 = start quest
+				// 7 = unknown error
+				// 8 = equip is full
+				// 9 = not enough mesos
+				// 11 = due to the equipment currently being worn wtf o.o
+				// 12 = you may not posess more than one of this item
+				break;
+			} case 3 : { // forfeit quest
+				MapleQuest.getInstance(quest).forfeit(player);
+				break;
+			} case 4 : { // scripted start quest
+				int npc = packet.readInt();
+				packet.readInt(); // dont know *o*
+				QuestScriptManager.getInstance().start(client, npc, quest);
+				break;
+			} case 5 : { // scripted end quests
+				int npc = packet.readInt();
+				packet.readInt(); // dont know *o*
+				QuestScriptManager.getInstance().end(client, npc, quest);
+				break;
+			}
+		}*/
 	}
 
 	private static byte[] writeMaxLevelPlayerNpc(int npc) {

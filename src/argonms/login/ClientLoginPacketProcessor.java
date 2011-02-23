@@ -95,6 +95,9 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.RELOG:
 				WorldlistHandler.backToLogin(reader, s);
 				break;
+			case ClientRecvOps.PLAYER_UPDATE:
+				//no-op
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;
