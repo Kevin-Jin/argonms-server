@@ -51,7 +51,7 @@ public class NpcScriptManager {
 			Script script = cx.compileReader(reader, Integer.toString(npcId), 1, null);
 			reader.close();
 			cx.executeScriptWithContinuations(script, globalScope);
-			convoMan.endConversation(false);
+			convoMan.endConversation();
 		} catch (ContinuationPending pending) {
 			convoMan.setContinuation(pending.getContinuation());
 		} catch (FileNotFoundException ex) {

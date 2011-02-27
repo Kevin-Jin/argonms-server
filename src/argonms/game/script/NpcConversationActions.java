@@ -58,7 +58,6 @@ public class NpcConversationActions {
 	private Scriptable globalScope;
 	private Object continuation;
 	private boolean endingChat;
-	private boolean terminated;
 	private PreviousMessageCache prevs;
 
 	public NpcConversationActions(int npcId, GameClient client, Context cx, Scriptable globalScope) {
@@ -67,7 +66,6 @@ public class NpcConversationActions {
 		this.cx = cx;
 		this.globalScope = globalScope;
 		this.endingChat = false;
-		this.terminated = false;
 		this.prevs = new PreviousMessageCache();
 	}
 
@@ -181,23 +179,23 @@ public class NpcConversationActions {
 			if (f != Scriptable.NOT_FOUND) {
 				try {
 					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
-					endConversation(false);
+					endConversation();
 				} catch (ContinuationPending pending) {
 					setContinuation(pending.getContinuation());
 				}
 			} else {
-				endConversation(false);
+				endConversation();
 			}
 		} else {
-			endConversation(false);
+			endConversation();
 		}
 	}
 
 	private void resume(Object obj) {
-		if (!terminated) {
+		if (!cx.isSealed()) {
 			try {
 				cx.resumeContinuation(continuation, globalScope, obj);
-				endConversation(false);
+				endConversation();
 			} catch (ContinuationPending pending) {
 				setContinuation(pending.getContinuation());
 			}
@@ -310,17 +308,10 @@ public class NpcConversationActions {
 		return client;
 	}
 
-	public void endConversation(boolean inProgress) {
-		if (!terminated) {
-			terminated = true;
+	public void endConversation() {
+		if (!cx.isSealed()) {
+			cx.seal(null);
 			client.setNpc(null);
-			if (inProgress) {
-				try {
-					cx.captureContinuation();
-				} catch (IllegalStateException e) { //"Interpreter frames not found"
-					
-				}
-			}
 		}
 	}
 

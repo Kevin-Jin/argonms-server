@@ -130,7 +130,7 @@ public class ItemDrop extends MapEntity {
 		return CommonPackets.writeShowItemDrop(this, (byte) 1);
 	}
 
-	public byte[] getShowObjectMessage() {
+	public byte[] getShowEntityMessage() {
 		return CommonPackets.writeShowItemDrop(this, (byte) 2);
 	}
 

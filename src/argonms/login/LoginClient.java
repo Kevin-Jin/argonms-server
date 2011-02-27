@@ -240,6 +240,8 @@ public class LoginClient extends RemoteClient {
 
 	public void disconnect() {
 		stopPingTask();
+		getSession().removeClient();
+		setSession(null);
 		if (!isMigrating() && getAccountId() != 0)
 			updateState(STATUS_NOTLOGGEDIN);
 	}

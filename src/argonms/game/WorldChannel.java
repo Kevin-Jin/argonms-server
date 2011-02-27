@@ -88,7 +88,7 @@ public class WorldChannel {
 	}
 
 	private void increaseLoad() {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);
 		lew.writeBool(true);
@@ -96,7 +96,7 @@ public class WorldChannel {
 	}
 
 	private void decreaseLoad() {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);
 		lew.writeBool(false);

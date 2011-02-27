@@ -60,7 +60,8 @@ public class GameCenterInterface extends RemoteCenterInterface {
 	}
 
 	private static byte[] auth(byte serverId, String pwd, byte world, Set<Byte> channels) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + pwd.length());
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6
+				+ pwd.length() + channels.size());
 
 		lew.writeByte(RemoteCenterOps.AUTH);
 		lew.writeByte(serverId);
@@ -76,7 +77,7 @@ public class GameCenterInterface extends RemoteCenterInterface {
 	private static byte[] serverReady(String ip, byte world, Map<Byte, Integer> ports) {
 		byte length = (byte) ports.size();
 
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4 + ip.length() + 5 * length);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + ip.length() + 5 * length);
 
 		lew.writeByte(RemoteCenterOps.ONLINE);
 		lew.writeLengthPrefixedString(ip);

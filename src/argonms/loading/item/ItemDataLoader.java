@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+//FIXME: Thread safety for concurrent read/writes (if we're not preloading)
 /**
  *
  * @author GoldenKevin

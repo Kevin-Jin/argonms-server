@@ -84,11 +84,14 @@ public class GameClient extends RemoteClient {
 	public void disconnect() {
 		stopPingTask();
 		if (npc != null)
-			npc.endConversation(true);
+			npc.endConversation();
 		if (player != null) {
 			player.close();
 			GameServer.getChannel(getChannel()).removePlayer(player);
+			player = null;
 		}
+		getSession().removeClient();
+		setSession(null);
 		if (!isMigrating())
 			updateState(STATUS_NOTLOGGEDIN);
 	}

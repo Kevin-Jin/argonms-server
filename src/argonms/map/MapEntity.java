@@ -45,7 +45,7 @@ public abstract class MapEntity {
 	public abstract boolean isVisible();
 
 	public abstract byte[] getCreationMessage();
-	public abstract byte[] getShowObjectMessage(); //for nonranged types, make this call getCreationMessage().
+	public abstract byte[] getShowEntityMessage(); //for nonranged types, make this call getCreationMessage().
 	public abstract byte[] getOutOfViewMessage(); //nonranged types can return null
 	public abstract byte[] getDestructionMessage();
 

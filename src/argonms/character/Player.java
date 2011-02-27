@@ -892,6 +892,7 @@ public class Player extends MapEntity {
 		if (map != null)
 			map.removePlayer(this);
 		saveCharacter();
+		client = null;
 	}
 
 	public boolean canSeeObject(MapEntity o) {
@@ -956,7 +957,7 @@ public class Player extends MapEntity {
 		return combined;
 	}
 
-	public byte[] getShowObjectMessage() {
+	public byte[] getShowEntityMessage() {
 		return getCreationMessage();
 	}
 

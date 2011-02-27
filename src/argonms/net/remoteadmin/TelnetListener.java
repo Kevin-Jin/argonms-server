@@ -47,8 +47,8 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
 import org.jboss.netty.handler.codec.string.StringDecoder;
 
 /**
- * TODO: Don't echo backspace when user goes behind > or Login: Also don't
- * include backspace in ascii string.
+ * FIXME: Don't echo backspace when user goes behind > or Login: Also don't
+ * include backspace in ASCII string.
  * @author GoldenKevin
  */
 public class TelnetListener {

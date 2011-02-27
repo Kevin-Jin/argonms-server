@@ -71,6 +71,13 @@ public class ShopClient extends RemoteClient {
 
 	public void disconnect() {
 		stopPingTask();
+		if (player != null) {
+			player.close();
+			ShopServer.getInstance().removePlayer(player);
+			player = null;
+		}
+		getSession().removeClient();
+		setSession(null);
 		if (!isMigrating())
 			updateState(STATUS_NOTLOGGEDIN);
 	}
