@@ -19,6 +19,7 @@
 package argonms.game.script;
 
 import argonms.character.Player;
+import argonms.game.GameClient;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -39,7 +40,7 @@ public class PortalScriptManager {
 		try {
 			FileReader reader = new FileReader("scripts/portals/" + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
-			globalScope.put("portal", globalScope, new PortalActions(p));
+			globalScope.put("portal", globalScope, new PortalActions((GameClient) p.getClient()));
 			cx.evaluateReader(globalScope, reader, scriptName, 1, null);
 			reader.close();
 		} catch (FileNotFoundException ex) {

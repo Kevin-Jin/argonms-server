@@ -66,6 +66,10 @@ public class ClientSession {
 		return client;
 	}
 
+	public void removeClient() {
+		this.client = null;
+	}
+
 	public SocketAddress getAddress() {
 		return ch.getRemoteAddress();
 	}

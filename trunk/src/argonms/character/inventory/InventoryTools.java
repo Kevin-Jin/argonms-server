@@ -177,7 +177,7 @@ public class InventoryTools {
 				}
 				break;
 			} case -10: { //shield
-				InventorySlot weapon = equipped.get((short) -10);
+				InventorySlot weapon = equipped.get((short) -11);
 				if (weapon != null && isTwoHanded(weapon.getItemId())) {
 					short slot;
 					if (existing == null) { //no shield equipped before
@@ -187,9 +187,9 @@ public class InventoryTools {
 						if (!canFitEntirely(equips, weapon.getItemId(), weapon.getQuantity()))
 							return null;
 						slot = equips.getFreeSlots(1).get(0);
-						otherChange = new short[] { -10, slot };
 					}
-					unequip(equipped, equips, (short) -10, slot);
+					unequip(equipped, equips, (short) -11, slot);
+					otherChange = new short[] { -11, slot };
 				}
 				break;
 			} case -11: { //weapon
@@ -205,8 +205,8 @@ public class InventoryTools {
 								return null;
 							slot = equips.getFreeSlots(1).get(0);
 						}
-						unequip(equipped, equips, (short) -11, slot);
-						otherChange = new short[] { -11, slot };
+						unequip(equipped, equips, (short) -10, slot);
+						otherChange = new short[] { -10, slot };
 					}
 				}
 				break;

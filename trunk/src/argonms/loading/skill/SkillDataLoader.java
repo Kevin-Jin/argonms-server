@@ -22,6 +22,7 @@ import argonms.loading.DataFileType;
 import java.util.HashMap;
 import java.util.Map;
 
+//FIXME: Thread safety for concurrent read/writes (if we're not preloading)
 /**
  *
  * @author GoldenKevin

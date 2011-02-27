@@ -254,6 +254,36 @@
 	* Only users with elevated privileges can use the /m command to change maps.
 	* Fixed the access modifier of LittleEndianReader.skip. It should be public!
 
+2011-02-27  GoldenKevin  (revision 15)
+
+	* Fixed bug with InventoryTools.equip when equipping shields or two handed
+	weapons.
+	* I realized how broken endConversation still is. I guess we can only hope
+	that there are no blocking operations in the scripts and that there we would
+	be a quick call to any one of the NpcConversationAction methods that throw
+	a ContinuationPending so that we can dispose of the script, because from
+	what I see, there is no way to interrupt an executing script.
+	* Replaced synchronized blocks in GameMap with a ReentrantReadWriteLock for
+	better performance with the read heavy Collections. Hopefully I know my
+	concurrency stuff and we won't have deadlocks arising from this update...
+	* Renamed MapEntity.getShowObjectMessage to getShowEntityMessage. Missed
+	that one when I went through the renaming sweep...
+	* Replaced PortalActions' Player instance variable with a GameClient one.
+	If the PortalActions object somehow survived and the Player would not be
+	garbage collected as a result of that one reference, it would be cheaper to
+	keep a GameClient instead of a Player object. I could have used a
+	WeakReference<Player>, but I think a GameClient instance is more useful
+	than a Player instance in the Portal's context anyway.
+	* WeakReference<Player> is now used for Mob controller references in case
+	a mob is still alive when the Player leaves the server. I'm not sure how I
+	will use highestDamageKiller, so that still is a regular Player reference.
+	* Fixed some instantiations of LittleEndianByteArrayWriter to use the
+	correct amount of bytes when using the constructor that specifies the array
+	size. Forgot to update some of them when I rewrote inter server comms.
+	* Fixed logging for RemoteServerListener and the problem with swallowing
+	exceptions. Forgot to update logging.properties when I rearranged classes
+	involving inter server communication.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

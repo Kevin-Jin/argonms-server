@@ -29,6 +29,7 @@ import argonms.loading.mob.Skill;
 import argonms.loading.skill.MobSkillEffect;
 import argonms.map.MapEntity;
 import argonms.net.client.CommonPackets;
+import java.lang.ref.WeakReference;
 
 /**
  *
@@ -40,14 +41,15 @@ public class Mob extends MapEntity {
 	private int remMp;
 	private List<MobDeathHook> hooks;
 	private Player highestDamageKiller;
-	private Player controller;
+	private WeakReference<Player> controller;
 	private boolean aggroAware, hasAggro;
 
 	public Mob(MobStats stats) {
 		this.stats = stats;
-		this.hooks = new ArrayList<MobDeathHook>();
 		this.remHp = stats.getMaxHp();
 		this.remMp = stats.getMaxMp();
+		this.hooks = new ArrayList<MobDeathHook>();
+		this.controller = new WeakReference<Player>(null);
 		setStance((byte) 5);
 	}
 
@@ -79,11 +81,11 @@ public class Mob extends MapEntity {
 	}
 
 	public Player getController() {
-		return controller;
+		return controller.get();
 	}
 
 	public void setController(Player newController) {
-		this.controller = newController;
+		this.controller = new WeakReference<Player>(newController);
 	}
 
 	public boolean isFirstAttack() {
@@ -157,7 +159,7 @@ public class Mob extends MapEntity {
 		return CommonPackets.writeShowMonster(this, true, (byte) 0);
 	}
 
-	public byte[] getShowObjectMessage() {
+	public byte[] getShowEntityMessage() {
 		return CommonPackets.writeShowMonster(this, false, (byte) 0);
 	}
 

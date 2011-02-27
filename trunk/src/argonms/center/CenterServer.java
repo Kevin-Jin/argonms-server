@@ -43,6 +43,9 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//FIXME: This class is not thread safe at all. Although very rarely would you
+//have one server connecting in the exact same millisecond as another, it is
+//still quite possible, and must handled correctly.
 /**
  *
  * @author GoldenKevin
@@ -260,7 +263,7 @@ public class CenterServer {
 
 	private static byte[] writeGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		byte size = (byte) ports.size();
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(host.length() + 5 + size * 5);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(host.length() + 6 + size * 5);
 		lew.writeByte(CenterRemoteOps.GAME_CONNECTED);
 		lew.writeByte(serverId);
 		lew.writeByte(world);

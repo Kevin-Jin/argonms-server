@@ -71,8 +71,7 @@ public abstract class RemoteClient {
 	}
 
 	public void setSession(ClientSession s) {
-		if (this.session == null) //be sure not to change it after it's been set
-			this.session = s;
+		this.session = s;
 	}
 
 	public byte getWorld() {

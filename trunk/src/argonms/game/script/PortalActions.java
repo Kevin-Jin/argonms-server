@@ -18,7 +18,7 @@
 
 package argonms.game.script;
 
-import argonms.character.Player;
+import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 
@@ -27,18 +27,18 @@ import argonms.tools.output.LittleEndianByteArrayWriter;
  * @author GoldenKevin
  */
 public class PortalActions {
-	private Player p;
+	private GameClient client;
 
-	public PortalActions(Player player) {
-		this.p = player;
+	public PortalActions(GameClient gameClient) {
+		this.client = gameClient;
 	}
 
-	public Player getPlayer() {
-		return p;
+	public GameClient getClient() {
+		return client;
 	}
 
 	public void showHint(String hint, short width, short height) {
-		p.getClient().getSession().send(writeHintBox(hint, width, height));
+		client.getSession().send(writeHintBox(hint, width, height));
 	}
 
 	private static byte[] writeHintBox(String message, short width, short height) {

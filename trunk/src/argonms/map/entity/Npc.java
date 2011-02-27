@@ -93,7 +93,7 @@ public class Npc extends MapEntity {
 		return combined;
 	}
 
-	public byte[] getShowObjectMessage() {
+	public byte[] getShowEntityMessage() {
 		return getCreationMessage();
 	}
 
