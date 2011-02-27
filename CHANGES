@@ -284,6 +284,20 @@
 	exceptions. Forgot to update logging.properties when I rearranged classes
 	involving inter server communication.
 
+2011-02-27  GoldenKevin  (revision 16)
+
+	I played around with SVN special properties a bit, and made these changes
+	(Subversion/auto-props is awesome):
+	* Bash scripts for Linux now have the property "svn:executable" set.
+	* Added "svn:eol-style" properties that make sense for each text file -
+	e.g. CHANGES, LICENSE, *.properties, *.sql, *.java, and *.js files are set
+	to native; *.bat are set to CRLF; and *.sh are set to LF. Any new text files
+	will also have these eol-styles based on their file extension/file name
+	* Added svn:mime-type to most files (except .bat and .sh files, because they
+	have mime types beginning with "application/", and that wouldn't work out
+	too well with SVN's handling of diffs). *.jar files now have a mime-type of
+	application/java-archive instead of the generic application/octet-stream.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
