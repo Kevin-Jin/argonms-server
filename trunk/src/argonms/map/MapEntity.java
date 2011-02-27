@@ -24,19 +24,24 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public abstract class MapObject {
-	public enum MapObjectType {
+public abstract class MapEntity {
+	public enum MapEntityType {
 		NPC, MONSTER, ITEM, PLAYER, DOOR, SUMMON, MIST, REACTOR, HIRED_MERCHANT,
 		PLAYER_NPC, MINI_GAME, PLAYER_SHOP, TRADE
 	}
 
-	private int objectid;
+	private int entityid;
 	private Point pos;
+	/**
+	 * 1-byte bit field, with the flags (from most significant to least significant bits):
+	 * (?)(?)(?)(?)(has owner)(can fly)(?)(facing left)
+	 */
 	private byte stance;
 	private short foothold;
 
-	public abstract MapObjectType getObjectType();
+	public abstract MapEntityType getEntityType();
 
+	public abstract boolean isAlive();
 	public abstract boolean isVisible();
 
 	public abstract byte[] getCreationMessage();
@@ -45,11 +50,11 @@ public abstract class MapObject {
 	public abstract byte[] getDestructionMessage();
 
 	public int getId() {
-		return objectid;
+		return entityid;
 	}
 
-	public void setId(int newOid) {
-		objectid = newOid;
+	public void setId(int newEid) {
+		entityid = newEid;
 	}
 
 	public Point getPosition() {

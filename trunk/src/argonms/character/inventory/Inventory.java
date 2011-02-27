@@ -112,15 +112,12 @@ public class Inventory {
 	 * @return
 	 */
 	public List<Short> getFreeSlots(int needed) {
-		Set<Short> occupied = slots.keySet();
 		//keep it in insertion order! (which should keep it sorted ascending)
 		List<Short> empty = new LinkedList<Short>();
 		for (short i = 1; i <= maxSlots && empty.size() < needed; i++) {
-			Short s = Short.valueOf(i);
-			if (!occupied.contains(s)) {
-				empty.add(s);
-				occupied.remove(s);
-			}
+			Short slot = Short.valueOf(i);
+			if (!slots.containsKey(slot))
+				empty.add(slot);
 		}
 		return empty;
 	}

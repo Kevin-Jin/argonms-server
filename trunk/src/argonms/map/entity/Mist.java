@@ -16,54 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
-import argonms.loading.reactor.ReactorStats;
-import argonms.loading.reactor.State;
-import argonms.map.MapObject;
+import argonms.map.MapEntity;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Reactor extends MapObject {
-	private ReactorStats stats;
-	private String name;
-	private int delay;
-	private byte state;
-
-	public Reactor(ReactorStats reactorStats) {
-		this.stats = reactorStats;
-		this.state = 0;
-		stats.getStates();
+public class Mist extends MapEntity {
+	public MapEntityType getEntityType() {
+		return MapEntityType.MIST;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public void setDelay(int delay) {
-		this.delay = delay;
-	}
-
-	public void setState(byte state) {
-		this.state = state;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public int getDelay() {
-		return delay;
-	}
-
-	public State getState() {
-		return stats.getStates().get(Integer.valueOf(state));
-	}
-
-	public MapObjectType getObjectType() {
-		return MapObjectType.REACTOR;
+	public boolean isAlive() {
+		return true;
 	}
 
 	public boolean isVisible() {
@@ -87,6 +54,6 @@ public class Reactor extends MapObject {
 	}
 
 	public boolean isNonRangedType() {
-		return false;
+		return true;
 	}
 }

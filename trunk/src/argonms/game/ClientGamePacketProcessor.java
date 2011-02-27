@@ -21,11 +21,13 @@ package argonms.game;
 import argonms.net.client.ClientPacketProcessor;
 import argonms.net.client.ClientRecvOps;
 import argonms.net.client.RemoteClient;
+import argonms.net.client.handler.DealDamageHandler;
 import argonms.net.client.handler.GameChatHandler;
 import argonms.net.client.handler.GameEnterHandler;
 import argonms.net.client.handler.GameGoToHandler;
 import argonms.net.client.handler.GameMovementHandler;
 import argonms.net.client.handler.GameNpcHandler;
+import argonms.net.client.handler.InventoryHandler;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -71,6 +73,15 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.MOVE_PLAYER:
 				GameMovementHandler.handleMovePlayer(reader, s);
 				break;
+			case ClientRecvOps.MELEE_ATTACK:
+				DealDamageHandler.handleMeleeAttack(reader, s);
+				break;
+			case ClientRecvOps.RANGED_ATTACK:
+				DealDamageHandler.handleRangedAttack(reader, s);
+				break;
+			case ClientRecvOps.MAGIC_ATTACK:
+				DealDamageHandler.handleMagicAttack(reader, s);
+				break;
 			case ClientRecvOps.MAP_CHAT:
 				GameChatHandler.handleMapChat(reader, s);
 				break;
@@ -80,11 +91,23 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.NPC_TALK_MORE:
 				GameNpcHandler.handleContinueConversation(reader, s);
 				break;
+			case ClientRecvOps.ITEM_MOVE:
+				InventoryHandler.handleItemMove(reader, s);
+				break;
+			case ClientRecvOps.MESO_DROP:
+				InventoryHandler.handleMesoDrop(reader, s);
+				break;
 			case ClientRecvOps.CHANGE_MAP_SPECIAL:
 				GameGoToHandler.handleEnteredSpecialPortal(reader, s);
 				break;
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, s);
+				break;
+			case ClientRecvOps.MOVE_LIFE:
+				GameMovementHandler.handleMoveLife(reader, s);
+				break;
+			case ClientRecvOps.ITEM_PICKUP:
+				InventoryHandler.handleMapItemPickUp(reader, s);
 				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				((GameClient) s).getPlayer().saveCharacter();

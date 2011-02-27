@@ -333,13 +333,15 @@ public class NpcConversationActions {
 	}
 
 	private static byte[] writeNpcSimple(int npcId, String msg, byte type) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+				+ msg.length());
 		writeCommonNpcAction(lew, npcId, type, msg);
 		return lew.getBytes();
 	}
 
 	private static byte[] writeNpcSay(int npcId, String msg, boolean prev, boolean next) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12
+				+ msg.length());
 		writeCommonNpcAction(lew, npcId, SAY, msg);
 		lew.writeBool(prev);
 		lew.writeBool(next);
@@ -347,7 +349,8 @@ public class NpcConversationActions {
 	}
 
 	private static byte[] writeNpcAskText(int npcId, String msg, String def, short min, short max) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16
+				+ msg.length() + def.length());
 		writeCommonNpcAction(lew, npcId, ASK_TEXT, msg);
 		lew.writeLengthPrefixedString(def);
 		lew.writeShort(min);
@@ -356,7 +359,8 @@ public class NpcConversationActions {
 	}
 
 	private static byte[] writeNpcAskNumber(int npcId, String msg, int def, int min, int max) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(26
+				+ msg.length());
 		writeCommonNpcAction(lew, npcId, ASK_NUMBER, msg);
 		lew.writeInt(def);
 		lew.writeInt(min);
@@ -366,7 +370,7 @@ public class NpcConversationActions {
 	}
 
 	private static byte[] writeNpcQuiz(int npcId, int type, int objectId, int correct, int questions, int time) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(29);
 		lew.writeShort(ClientSendOps.NPC_TALK);
 		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
 		lew.writeInt(npcId);
@@ -382,7 +386,8 @@ public class NpcConversationActions {
 
 	private static byte[] writeNpcQuizQuestion(int npcId, String msg, String problem, String hint,
 			int min, int max, int timeLimit) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(27
+				+ msg.length() + problem.length() + hint.length());
 		lew.writeShort(ClientSendOps.NPC_TALK);
 		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
 		lew.writeInt(npcId);
@@ -398,7 +403,8 @@ public class NpcConversationActions {
 	}
 
 	private static byte[] writeNpcAskAvatar(int npcId, String msg, int... styles) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11
+				+ 4 * styles.length);
 		writeCommonNpcAction(lew, npcId, ASK_AVATAR, msg);
 		lew.writeByte((byte) styles.length);
 		for (byte i = 0; i < styles.length; i++)

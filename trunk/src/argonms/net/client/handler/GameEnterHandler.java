@@ -89,7 +89,7 @@ public class GameEnterHandler {
 			}
 		}*/
 		client.getSession().send(writeEnterMap(player));
-		if (player.getPrivilegeLevel() >= UserPrivileges.JUNIOR_GM) //hide
+		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			player.applyEffect(SkillDataLoader.getInstance().getSkill(9101004).getLevel((byte) 1));
 		player.getMap().spawnPlayer(player);
 

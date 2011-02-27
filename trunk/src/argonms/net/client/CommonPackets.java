@@ -32,9 +32,9 @@ import argonms.character.inventory.Ring;
 import argonms.character.inventory.TamingMob;
 import argonms.character.skill.Cooldown;
 import argonms.map.movement.LifeMovementFragment;
-import argonms.map.object.ItemDrop;
-import argonms.map.object.Mob;
-import argonms.map.object.Npc;
+import argonms.map.entity.ItemDrop;
+import argonms.map.entity.Mob;
+import argonms.map.entity.Npc;
 import argonms.tools.HexTool;
 import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
@@ -363,6 +363,133 @@ public class CommonPackets {
 		lew.writeInt(0);
 	}
 
+	public static byte[] writeInventoryFull() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventorySlotUpdate(InventoryType type, short pos, InventorySlot item, boolean fromDrop, boolean add) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(fromDrop);
+		lew.writeByte((byte) 1);
+		lew.writeBool(!add);
+		lew.writeByte(type.value());
+		lew.writeByte((byte) pos);
+		if (!add) {
+			lew.writeBool(false);
+			lew.writeShort(item.getQuantity());
+		} else {
+			addItemInfo(lew, (short) 0, item);
+		}
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryDropItem(InventoryType type, short src, short quantity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte((byte) 1);
+		lew.writeByte(type.value());
+		lew.writeShort(src);
+		lew.writeShort(quantity);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItem(InventoryType type, short src, short dst, byte equipIndicator) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(equipIndicator == -1 ? 10 : 11);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte((byte) 2);
+		lew.writeByte(type.value());
+		lew.writeShort(src);
+		lew.writeShort(dst);
+		if (equipIndicator != -1)
+			lew.writeByte(equipIndicator);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryClearSlot(InventoryType type, short slot) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(slot >= 0 ? 8 : 9);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte((byte) 3);
+		lew.writeByte(type.value());
+		lew.writeShort(slot);
+		if (slot < 0)
+			lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItemShiftQuantities(InventoryType type, short src, short srcQty, short dst, short dstQty) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 2);
+		lew.writeByte((byte) 1);
+		lew.writeByte(type.value());
+		lew.writeShort(src);
+		lew.writeShort(srcQty);
+		lew.writeBool(true);
+		lew.write(type.value());
+		lew.writeShort(dst);
+		lew.writeShort(dstQty);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItemCombineQuantities(InventoryType type, short src, short dst, short total) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 2);
+		lew.writeByte((byte) 3);
+		lew.write(type.value());
+		lew.writeShort(src);
+		lew.writeBool(true);
+		lew.writeByte(type.value());
+		lew.writeShort(dst);
+		lew.writeShort(total);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeShowInventoryStatus(byte mode) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeBool(false);
+		lew.writeByte(mode);
+		lew.writeInt(0);
+		lew.writeInt(0);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowInventoryFull() {
+		return writeShowInventoryStatus((byte) 0xFF);
+	}
+
+	public static byte[] writeShowInventoryUnavailable() {
+		return writeShowInventoryStatus((byte) 0xFE);
+	}
+
 	public static byte[] writeChangeMap(int mapid, byte spawnPoint, Player p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -555,16 +682,19 @@ public class CommonPackets {
 		lew.writeInt(monster.getId());
 		lew.writeByte((byte) 5);
 		lew.writeInt(monster.getMobId());
+
+		//mob status
 		lew.writeByte((byte) 0);
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 8);
 		lew.writeInt(0);
+
 		Point pos = monster.getPosition();
 		lew.writeShort((short) pos.x);
 		lew.writeShort((short) pos.y);
 		lew.writeByte(monster.getStance());
-		lew.writeShort((byte) 0);
-		lew.writeShort((byte) monster.getFoothold());
+		lew.writeShort((short) 0);
+		lew.writeShort(monster.getFoothold());
 		if (effect > 0) {
 			lew.writeByte(effect);
 			lew.writeByte((byte) 0);
@@ -572,17 +702,6 @@ public class CommonPackets {
 		}
 		lew.writeShort((short) (newSpawn ? -2 : -1));
 		lew.writeInt(0);
-	}
-
-	public static byte[] writeMonsterControl(Mob monster, boolean aggro) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.SHOW_MONSTER_CONTROL);
-		lew.writeByte((byte) (!monster.isVisible() ? aggro ? 2 : 1 : 0));
-		if (monster.isVisible())
-			writeMonsterData(lew, monster, false, (byte) 0);
-		else
-			lew.writeInt(monster.getId());
-		return lew.getBytes();
 	}
 
 	public static byte[] writeShowMonster(Mob monster, boolean newSpawn, byte effect) {
@@ -600,11 +719,30 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeDropItemFromMapObject(ItemDrop drop) {
+	public static byte[] writeControlMonster(Mob monster, boolean aggro) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.CONTROL_MONSTER);
+		lew.writeByte((byte) (monster.isVisible() ? aggro ? 2 : 1 : 0));
+		if (monster.isVisible())
+			writeMonsterData(lew, monster, false, (byte) 0);
+		else
+			lew.writeInt(monster.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeStopControllingMonster(Mob monster) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		lew.writeShort(ClientSendOps.CONTROL_MONSTER);
+		lew.writeByte((byte) 0);
+		lew.writeInt(monster.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowItemDrop(ItemDrop drop, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
-		lew.writeShort(ClientSendOps.DROP_ITEM_FROM_MAPOBJECT);
-		lew.writeByte(drop.getMod()); // 1 = animation, 2 = none
+		lew.writeShort(ClientSendOps.SHOW_ITEM_DROP);
+		lew.writeByte(animation); // 1 = animation, 2 = none
 		lew.writeInt(drop.getId());
 		lew.writeByte(drop.getDropType());
 		lew.writeInt(drop.getItemId());
@@ -613,7 +751,7 @@ public class CommonPackets {
 		Point pos = drop.getPosition();
 		lew.writeShort((short) pos.x);
 		lew.writeShort((short) pos.y);
-		if (drop.getMod() != 2) {
+		if (animation != 2) {
 			lew.writeInt(drop.getOwner());
 			pos = drop.getSourcePos();
 			lew.writeShort((short) pos.x);
@@ -623,7 +761,7 @@ public class CommonPackets {
 		}
 
 		lew.writeByte((byte) 0);
-		if (drop.getMod() != 2) {
+		if (animation != 2) {
 			lew.writeByte((byte) 0);
 			lew.writeByte((byte) 1);
 		}
@@ -636,26 +774,51 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowNpc(Npc npc) {
+	public static byte[] writeRemoveItemDrop(ItemDrop d, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
-		lew.writeShort(ClientSendOps.SPAWN_NPC);
+		lew.writeShort(ClientSendOps.REMOVE_ITEM_DROP);
+		lew.writeByte(animation);
+		lew.writeInt(d.getId());
+		if (animation >= 2) {
+			lew.writeInt(d.getOwner());
+			if (d.getPetSlot() >= 0)
+				lew.writeByte(d.getPetSlot());
+		}
+
+		return lew.getBytes();
+	}
+
+	private static void writeNpcData(LittleEndianWriter lew, Npc npc) {
 		lew.writeInt(npc.getId());
 		lew.writeInt(npc.getNpcId());
 		lew.writeShort((short) npc.getPosition().x);
 		lew.writeShort(npc.getCy());
 		lew.writeBool(!npc.isF());
-
 		lew.writeShort(npc.getFoothold());
 		lew.writeShort(npc.getRx0());
 		lew.writeShort(npc.getRx1());
 		lew.writeBool(true);
+	}
 
+	public static byte[] writeShowNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.SHOW_NPC);
+		writeNpcData(lew, npc);
 		return lew.getBytes();
 	}
 
 	public static byte[] writeRemoveNpc(Npc npc) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(0);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeShort(ClientSendOps.REMOVE_NPC);
+		lew.writeInt(npc.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeControlNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.CONTROL_NPC);
+		writeNpcData(lew, npc);
 		return lew.getBytes();
 	}
 
@@ -666,7 +829,8 @@ public class CommonPackets {
 	}
 
 	public static byte[] writePrivateChatMessage(byte type, String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7
+				+ name.length() + message.length());
 
 		lew.writeShort(ClientSendOps.PRIVATE_CHAT);
 		lew.writeByte(type);
@@ -677,7 +841,8 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeSpouseChatMessage(String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6
+				+ name.length() + message.length());
 
 		lew.writeShort(ClientSendOps.SPOUSE_CHAT);
 		lew.writeLengthPrefixedString(name);

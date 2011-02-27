@@ -30,7 +30,7 @@ public class SkillLevel {
 		this.master = masterLevel;
 	}
 
-	public int getLevel() {
+	public byte getLevel() {
 		return level;
 	}
 
@@ -38,7 +38,7 @@ public class SkillLevel {
 		++level;
 	}
 
-	public int getMasterLevel() {
+	public byte getMasterLevel() {
 		return master;
 	}
 

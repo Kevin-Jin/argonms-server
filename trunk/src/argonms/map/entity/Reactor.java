@@ -16,76 +16,75 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
-import argonms.map.MapObject;
-import argonms.net.client.CommonPackets;
+import argonms.loading.reactor.ReactorStats;
+import argonms.loading.reactor.State;
+import argonms.map.MapEntity;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Npc extends MapObject {
-	private int npcid;
-	private short rx0, rx1;
-	private short cy;
-	private boolean f;
+public class Reactor extends MapEntity {
+	private ReactorStats stats;
+	private String name;
+	private int delay;
+	private byte state;
+	private boolean alive;
 
-	public Npc(int npcid) {
-		this.npcid = npcid;
+	public Reactor(ReactorStats reactorStats) {
+		this.stats = reactorStats;
+		this.state = 0;
+		this.alive = true;
 	}
 
-	public int getNpcId() {
-		return npcid;
+	public void setName(String name) {
+		this.name = name;
 	}
 
-	public void setRx(short rx0, short rx1) {
-		this.rx0 = rx0;
-		this.rx1 = rx1;
+	public void setDelay(int delay) {
+		this.delay = delay;
 	}
 
-	public void setCy(short cy) {
-		this.cy = cy;
+	public void setState(byte state) {
+		this.state = state;
 	}
 
-	public void setF(boolean f) {
-		this.f = f;
+	public String getName() {
+		return name;
 	}
 
-	public short getRx0() {
-		return rx0;
+	public int getDelay() {
+		return delay;
 	}
 
-	public short getRx1() {
-		return rx1;
+	public State getState() {
+		return stats.getStates().get(Integer.valueOf(state));
 	}
 
-	public boolean isF() {
-		return f;
+	public MapEntityType getEntityType() {
+		return MapEntityType.REACTOR;
 	}
 
-	public short getCy() {
-		return cy;
+	public void setAlive(boolean alive) {
+		this.alive = alive;
 	}
 
-	public byte[] getShopPacket() {
-		return null;
-	}
-
-	public MapObjectType getObjectType() {
-		return MapObjectType.NPC;
+	public boolean isAlive() {
+		return alive;
 	}
 
 	public boolean isVisible() {
-		return true;
+		return false;
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowNpc(this);
+		return null;
 	}
 
 	public byte[] getShowObjectMessage() {
-		return getCreationMessage();
+		return null;
 	}
 
 	public byte[] getOutOfViewMessage() {
@@ -93,10 +92,10 @@ public class Npc extends MapObject {
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveNpc(this);
+		return null;
 	}
 
 	public boolean isNonRangedType() {
-		return true;
+		return false;
 	}
 }

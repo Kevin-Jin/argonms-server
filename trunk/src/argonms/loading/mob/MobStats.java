@@ -289,7 +289,7 @@ public class MobStats {
 		for (Entry<Integer, Integer> entry : itemDrops.entrySet()) {
 			if (Math.random() < (entry.getValue().intValue() / 1000000.0)) {
 				int itemid = entry.getKey().intValue();
-				if (InventoryTools.getCategory(itemid).equals("Equip")) {
+				if (InventoryTools.isEquip(itemid)) {
 					items.add(InventoryTools.getCleanEquip(itemid));
 				} else if (InventoryTools.isPet(itemid)) {
 					Pet p = new Pet(itemid);

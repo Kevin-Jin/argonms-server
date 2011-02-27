@@ -363,7 +363,7 @@ public class WorldlistHandler {
 	}
 
 	private static byte[] writeServerAddress(byte[] host, int port, int charid) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(19);
 		lew.writeShort(ClientSendOps.CHANNEL_ADDRESS);
 		lew.writeShort((short) 0);
 		lew.writeBytes(host);

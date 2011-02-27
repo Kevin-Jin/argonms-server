@@ -125,7 +125,7 @@ public abstract class ItemDataLoader {
 			load(itemId);
 		Short ret = slotMax.get(oId);
 		return ret != null ? ret.shortValue() : (short)
-				(!InventoryTools.getCategory(itemId).equals("Equip") ? 100 : 1);
+				(!InventoryTools.isEquip(itemId) ? 100 : 1);
 	}
 
 	public boolean isTradeBlocked(int itemId) {
@@ -133,6 +133,25 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		return tradeBlocked.contains(oId);
+	}
+
+	public boolean isOnlyOne(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return onlyOne.contains(oId);
+	}
+
+	public boolean isQuestItem(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return questItem.contains(oId);
+	}
+
+	//TODO: is this the correct data we're using?
+	public boolean canDrop(int itemId) {
+		return !isTradeBlocked(itemId) && !isOnlyOne(itemId) && !isQuestItem(itemId);
 	}
 
 	public short getReqLevel(int itemId) {
@@ -152,6 +171,10 @@ public abstract class ItemDataLoader {
 		return ret != null ? ret.clone() : null;
 	}
 
+	private boolean isHoliday(Calendar now) {
+		return false;
+	}
+
 	public boolean isRateCardOperating(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
@@ -168,8 +191,11 @@ public abstract class ItemDataLoader {
 		return false;
 	}
 
-	private boolean isHoliday(Calendar now) {
-		return false;
+	public boolean isConsumeOnPickup(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return useOnPickup.contains(oId);
 	}
 
 	public byte getUpgradeSlots(int itemId) {

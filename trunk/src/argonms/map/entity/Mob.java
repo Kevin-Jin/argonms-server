@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,21 +25,30 @@ import java.util.List;
 import argonms.character.Player;
 import argonms.character.inventory.InventorySlot;
 import argonms.loading.mob.MobStats;
-import argonms.map.MapObject;
+import argonms.loading.mob.Skill;
+import argonms.loading.skill.MobSkillEffect;
+import argonms.map.MapEntity;
 import argonms.net.client.CommonPackets;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Mob extends MapObject {
+public class Mob extends MapEntity {
 	private MobStats stats;
+	private int remHp;
+	private int remMp;
 	private List<MobDeathHook> hooks;
 	private Player highestDamageKiller;
+	private Player controller;
+	private boolean aggroAware, hasAggro;
 
 	public Mob(MobStats stats) {
 		this.stats = stats;
 		this.hooks = new ArrayList<MobDeathHook>();
+		this.remHp = stats.getMaxHp();
+		this.remMp = stats.getMaxMp();
+		setStance((byte) 5);
 	}
 
 	public int getMobId() {
@@ -56,6 +65,10 @@ public class Mob extends MapObject {
 		return combined;
 	}
 
+	public boolean isMobile() {
+		return stats.getDelays().containsKey("move") || stats.getDelays().containsKey("fly");
+	}
+
 	public void addDeathHook(MobDeathHook hook) {
 		hooks.add(hook);
 	}
@@ -65,8 +78,75 @@ public class Mob extends MapObject {
 			hook.monsterKilled(highestDamageKiller);
 	}
 
-	public MapObjectType getObjectType() {
-		return MapObjectType.MONSTER;
+	public Player getController() {
+		return controller;
+	}
+
+	public void setController(Player newController) {
+		this.controller = newController;
+	}
+
+	public boolean isFirstAttack() {
+		return stats.isFirstAttack();
+	}
+
+	public int getHp() {
+		return remHp;
+	}
+
+	public int getMp() {
+		return remMp;
+	}
+
+	public List<Skill> getSkills() {
+		return stats.getSkills();
+	}
+
+	public boolean canUseSkill(MobSkillEffect effect) {
+		if (effect.getHp() < (remHp / stats.getMaxHp() * 100))
+			return false;
+		return true;
+	}
+
+	public boolean hasSkill(short skillId, byte skillLevel) {
+		for (Skill s : stats.getSkills())
+			if (s.getSkill() == skillId && s.getLevel() == skillLevel)
+				return true;
+		return false;
+	}
+
+	//TODO: implement
+	public void applyEffect(MobSkillEffect playerSkillEffect, Player player, boolean b) {
+		
+	}
+
+	//TODO: implement
+	public boolean wasAttackedBy(Player player) {
+		return false;
+	}
+
+	public boolean controllerHasAggro() {
+		return hasAggro;
+	}
+
+	public void setControllerHasAggro(boolean controllerHasAggro) {
+		this.hasAggro = controllerHasAggro;
+	}
+
+	public boolean controllerKnowsAboutAggro() {
+		return aggroAware;
+	}
+
+	public void setControllerKnowsAboutAggro(boolean aware) {
+		this.aggroAware = aware;
+	}
+
+	public MapEntityType getEntityType() {
+		return MapEntityType.MONSTER;
+	}
+
+	public boolean isAlive() {
+		return remHp > 0;
 	}
 
 	public boolean isVisible() {

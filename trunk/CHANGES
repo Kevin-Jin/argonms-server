@@ -219,6 +219,41 @@
 	for Portal scripts and updated NpcScriptManager with quest script stubs in
 	order to support quests in the future.
 
+2011-02-27  GoldenKevin  (revision 14)
+
+	* KvjCompiler has been updated to r16, which fixes Skill.wz compiling.
+	* Renamed MapObject (and related classes) to MapEntity to disambiguate any
+	confusion with Java objects. In a language where pretty much everything is
+	an object, Entity suggests something more real and existential.
+	* Fixed an oversight in Inventory.getFreeSlots. Added a canFitEntirely in
+	InventoryTools in case we want to check if an item fits completely before
+	calling InventoryTools.addToInventory (whose behavior is to fit as many as
+	possible). Changed the return type of addToInventory to accommodate another
+	usage for it. Fixed InventoryTools.equip, overloaded unequip to support
+	cases where we want to fetch the next available slot, added isEquip(int) to
+	replace usages of getCategory(int).equals("Equip"), added isTwoHanded and
+	getWeaponType for future updates, and getCategory now returns an
+	InventoryType (original method has been renamed to getCategoryName).
+	* Mobs don't crash the game anymore, and are animated. Other players still
+	cannot see when you attack them (or if you just swing your weapon), and you
+	still cannot hurt them. Attack parsing/processing is very complicated and
+	will take some time to be completed.
+	* Skill levels of players are now saved to the database.
+	SkillLevel accessor methods now return byte values.
+	* Fixed Player.isVisible() returning the opposite value.
+	* Items and mesos can now be dropped and picked up by players, and will
+	expire properly. Fixed some visual glitches in ItemDrop. It should work with
+	mob drops as well, but I still can't attack them so I can't test it (player
+	inventories don't show change in meso values unless they relog because I
+	still haven't coded stat updates, but they are modified internally).
+	* Got the real packet send opcode for removing NPCs from a map using a
+	little bit of educated guessing (I'm surprised that Vana and the more
+	popular flavors of OdinMS haven't figured this one out yet). Also, NPCs now
+	send their control packet to every player that joins the map (why do we have
+	to do that?)
+	* Only users with elevated privileges can use the /m command to change maps.
+	* Fixed the access modifier of LittleEndianReader.skip. It should be public!
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
