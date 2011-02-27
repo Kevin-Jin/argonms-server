@@ -16,19 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
 import java.awt.Point;
 
 import argonms.character.inventory.InventorySlot;
-import argonms.map.MapObject;
+import argonms.map.MapEntity;
 import argonms.net.client.CommonPackets;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ItemDrop extends MapObject {
+public class ItemDrop extends MapEntity {
 	public static final byte
 		ITEM = 0,
 		MESOS = 1
@@ -37,10 +37,12 @@ public class ItemDrop extends MapObject {
 	private byte mod;
 	private byte dropType;
 	private int id;
-	private int charid;
+	private int owner;
 	private Point dropFrom;
 	private int dropper;
 	private InventorySlot item;
+	private boolean gone;
+	private byte petLooter;
 
 	public ItemDrop(InventorySlot item) {
 		this.dropType = ITEM;
@@ -53,16 +55,15 @@ public class ItemDrop extends MapObject {
 		this.id = amt;
 	}
 
-	public void init(byte mod, int killer, Point dropTo, Point dropFrom, int dropperOid) {
-		this.mod = mod;
-		this.charid = killer;
+	public void init(int owner, Point dropTo, Point dropFrom, int dropperEid) {
+		this.owner = owner;
 		this.setPosition(dropTo);
 		this.dropFrom = dropFrom;
-		this.dropper = dropperOid;
+		this.dropper = dropperEid;
 	}
 
-	public byte getMod() {
-		return mod;
+	public byte getPetSlot() {
+		return petLooter;
 	}
 
 	public byte getDropType() {
@@ -73,8 +74,12 @@ public class ItemDrop extends MapObject {
 		return id;
 	}
 
+	public int getMesoValue() {
+		return id;
+	}
+
 	public int getOwner() {
-		return charid;
+		return owner;
 	}
 
 	public Point getSourcePos() {
@@ -89,28 +94,56 @@ public class ItemDrop extends MapObject {
 		return item.getExpiration();
 	}
 
-	public MapObjectType getObjectType() {
-		return MapObjectType.ITEM;
+	public MapEntityType getEntityType() {
+		return MapEntityType.ITEM;
+	}
+
+	public InventorySlot getItem() {
+		return item;
+	}
+
+	public void pickUp(int looter) {
+		this.owner = looter;
+		this.gone = true;
+		this.mod = 2;
+	}
+
+	public void pickUp(int looter, byte pet) {
+		this.petLooter = pet;
+		pickUp(looter);
+	}
+
+	public void expire() {
+		this.gone = true;
+		this.mod = 0;
+	}
+
+	public boolean isAlive() {
+		return !gone;
 	}
 
 	public boolean isVisible() {
-		return true;
+		return !gone;
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeDropItemFromMapObject(this);
+		return CommonPackets.writeShowItemDrop(this, (byte) 1);
 	}
 
 	public byte[] getShowObjectMessage() {
-		return null;
+		return CommonPackets.writeShowItemDrop(this, (byte) 2);
+	}
+
+	public byte[] getDisappearMessage() {
+		return CommonPackets.writeShowItemDrop(this, (byte) 3);
 	}
 
 	public byte[] getOutOfViewMessage() {
-		return null;
+		return CommonPackets.writeRemoveItemDrop(this, (byte) 1);
 	}
 
 	public byte[] getDestructionMessage() {
-		return null;
+		return CommonPackets.writeRemoveItemDrop(this, mod);
 	}
 
 	public boolean isNonRangedType() {

@@ -26,11 +26,11 @@ import argonms.game.script.NpcConversationActions;
 import argonms.game.script.NpcScriptManager;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.shop.NpcShopDataLoader;
-import argonms.map.MapObject;
-import argonms.map.object.Npc;
-import argonms.map.object.NpcShop;
-import argonms.map.object.NpcShop.ShopItem;
-import argonms.map.object.PlayerNpc;
+import argonms.map.MapEntity;
+import argonms.map.entity.Npc;
+import argonms.map.entity.NpcShop;
+import argonms.map.entity.NpcShop.ShopItem;
+import argonms.map.entity.PlayerNpc;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.RemoteClient;
 import argonms.tools.BitTools;
@@ -46,19 +46,19 @@ public class GameNpcHandler {
 		GameClient client = (GameClient) rc;
 		int oid = packet.readInt();
 		packet.readInt();
-		MapObject obj = client.getPlayer().getMap().getObjectById(oid);
+		MapEntity ent = client.getPlayer().getMap().getEntityById(oid);
 
 		Npc npc = null;
-		switch (obj.getObjectType()) {
+		switch (ent.getEntityType()) {
 			case NPC: {
-				npc = (Npc) obj;
+				npc = (Npc) ent;
 				if (NpcShopDataLoader.getInstance().canLoad(npc.getNpcId())) {
 					client.getSession().send(npc.getShopPacket());
 					return;
 				}
 				break;
 			} case PLAYER_NPC: {
-				npc = (PlayerNpc) obj;
+				npc = (PlayerNpc) ent;
 				switch (client.getPlayer().getMapId()) {
 					case 100000201: //Bowman Instructional School
 					case 101000003: //Magic Library
@@ -81,11 +81,11 @@ public class GameNpcHandler {
 	}
 
 	public static void handleQuestAction(LittleEndianReader packet, RemoteClient rc) {
-		byte action = packet.readByte();
+		/*byte action = packet.readByte();
 		short quest = packet.readShort();
 		GameClient client = (GameClient) rc;
 		Player player = client.getPlayer();
-		/*switch (action) {
+		switch (action) {
 			case 1 : { // start quest
 				int npc = packet.readInt();
 				packet.readInt(); // dont know *o*

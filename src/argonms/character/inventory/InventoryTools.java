@@ -19,9 +19,12 @@
 package argonms.character.inventory;
 
 import argonms.character.Player;
+import argonms.character.inventory.Equip.WeaponType;
+import argonms.character.inventory.Inventory.InventoryType;
 import argonms.loading.StatEffects;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
+import argonms.tools.Pair;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -39,28 +42,46 @@ public class InventoryTools {
 		equipCache = new HashMap<Integer, Equip>();
 	}
 
+	public static boolean canFitEntirely(Inventory inv, int itemid, short remQty) {
+		if (remQty > 0) {
+			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
+			for (Short s : inv.getItemSlots(itemid)) {
+				InventorySlot slot = inv.get(s.shortValue());
+				if (slot.getQuantity() < slotMax)
+					remQty -= (slotMax - slot.getQuantity());
+			}
+			if (remQty > 0) {
+				int slotsNeeded = ((remQty - 1) / slotMax) + 1; //ceiling
+				if (inv.freeSlots() < slotsNeeded)
+					return false;
+			}
+		}
+		return true;
+	}
+
 	/**
 	 * Distributes the given amount of a particular kind of item in the given
 	 * inventory. Each slot that is used will conform to the correct amount of
 	 * maximum items per slot of the particular item and the minimum amount of
 	 * slots will be used. Either slots that have the same item id will have
 	 * their quantity increased or free slots will be populated when all other
-	 * slots with the same item id are full.
+	 * slots with the same item id are full. If the inventory cannot
+	 * accommodate the given quantity of the given item, then as many items will
+	 * be placed in the inventory until it is full.
 	 * @param inv
 	 * @param itemid
 	 * @param quantity
-	 * @return a list of slots that have been modified (either the items have
-	 * been placed in or the existing item's quantity has changed). If the
-	 * inventory cannot accommodate the given quantity of the given item, then
-	 * as many items will be placed in the inventory until it is full.
+	 * @return a Pair, with the left being a list of pre-existing slots that
+	 * had their quantities changed, and the right being a list of slots that
+	 * were added.
 	 */
-	public static List<Short> addToInventory(Inventory inv, int itemid, short quantity) {
+	public static Pair<List<Short>, List<Short>> addToInventory(Inventory inv, int itemid, short quantity) {
 		List<Short> modifiedSlots = new ArrayList<Short>();
+		List<Short> insertedSlots = new ArrayList<Short>();
 
 		if (quantity > 0) {
-			String cat = getCategory(itemid);
-			boolean equip = cat.equals("Equip");
-			boolean pet = cat.equals("Pet");
+			boolean equip = isEquip(itemid);
+			boolean pet = isPet(itemid);
 
 			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
 			if (!equip && !pet) {
@@ -76,7 +97,7 @@ public class InventoryTools {
 			}
 
 			if (quantity > 0) {
-				int slotsNeeded = ((quantity - 1) / slotMax) + 1;
+				int slotsNeeded = ((quantity - 1) / slotMax) + 1; //ceiling
 				List<Short> freeSlots = inv.getFreeSlots(slotsNeeded);
 				InventorySlot item;
 				if (equip) {
@@ -93,12 +114,12 @@ public class InventoryTools {
 					if (!equip && !pet)
 						item.setQuantity(slotAmt);
 					inv.put(s.shortValue(), item);
-					modifiedSlots.add(s.shortValue());
+					insertedSlots.add(s.shortValue());
 					item = item.clone();
 				}
 			}
 		}
-		return modifiedSlots;
+		return new Pair<List<Short>, List<Short>>(modifiedSlots, insertedSlots);
 	}
 
 	/**
@@ -107,15 +128,96 @@ public class InventoryTools {
 	 * @param equipped the equipped equipment inventory
 	 * @param src the slot of the piece of equipment in the equipment inventory
 	 * @param dest the slot of where to equip the piece of equipment
+	 * @return any inventory items from the equipped inventory that have been
+	 * moved to the equips inventory, or null if there was not enough room in
+	 * the equips inventory to unequip the addition inventory items (and so no
+	 * changes could be made to the inventories). If no items were moved, the
+	 * returned short array with have length 0. Otherwise, it'll have length 2,
+	 * with index 0 holding the item's old position in the equipped inventory
+	 * and index 1 holding the item's new position in the equips inventory.
 	 */
-	public static void equip(Inventory equips, Inventory equipped, short src, short dest) {
-		if (equipped.get(dest) != null) {
-			InventorySlot temp = equipped.remove(dest);
-			equipped.put(dest, equips.remove(src));
-			equips.put(src, temp);
-		} else {
-			equipped.put(dest, equips.remove(src));
+	public static short[] equip(Inventory equips, Inventory equipped, short src, short dest) {
+		Equip toEquip = (Equip) equips.get(src);
+		InventorySlot existing = equipped.get(dest);
+		short[] otherChange = new short[0];
+		boolean removeOld = true;
+		switch (dest) {
+			case -5: { //top/overall slot
+				if (isOverall(toEquip.getItemId())) {
+					InventorySlot bottom = equipped.get((short) -6);
+					if (bottom != null) {
+						short slot;
+						if (existing == null) { //no top/overall equipped before
+							slot = src; //overwrite our overall with the pants
+							removeOld = false;
+						} else { //we have top and pants equipped already
+							if (!canFitEntirely(equips, bottom.getItemId(), bottom.getQuantity()))
+								return null;
+							slot = equips.getFreeSlots(1).get(0);
+						}
+						unequip(equipped, equips, (short) -6, slot);
+						otherChange = new short[] { -6, slot };
+					}
+				}
+				break;
+			} case -6: { //pants
+				InventorySlot top = equipped.get((short) -5);
+				if (top != null && isOverall(top.getItemId())) {
+					short slot;
+					if (existing == null) { //no pants equipped before
+						slot = src; //overwrite our pants with the overall
+						removeOld = false;
+					} else { //we have overall and pants equipped already (impossible! O.O)
+						if (!canFitEntirely(equips, top.getItemId(), top.getQuantity()))
+							return null;
+						slot = equips.getFreeSlots(1).get(0);
+					}
+					unequip(equipped, equips, (short) -5, slot);
+					otherChange = new short[] { -5, slot };
+				}
+				break;
+			} case -10: { //shield
+				InventorySlot weapon = equipped.get((short) -10);
+				if (weapon != null && isTwoHanded(weapon.getItemId())) {
+					short slot;
+					if (existing == null) { //no shield equipped before
+						slot = src; //overwrite our shield with two handed weapon
+						removeOld = false;
+					} else { //we have shield and two handed weapon equipped already (impossible! O.O)
+						if (!canFitEntirely(equips, weapon.getItemId(), weapon.getQuantity()))
+							return null;
+						slot = equips.getFreeSlots(1).get(0);
+						otherChange = new short[] { -10, slot };
+					}
+					unequip(equipped, equips, (short) -10, slot);
+				}
+				break;
+			} case -11: { //weapon
+				if (isTwoHanded(toEquip.getItemId())) {
+					InventorySlot shield = equipped.get((short) -10);
+					if (shield != null) {
+						short slot;
+						if (existing == null) { //no weapon equipped before
+							slot = src; //overwrite our weapon with the shield
+							removeOld = false;
+						} else { //we have weapon and shield equipped already
+							if (!canFitEntirely(equips, shield.getItemId(), shield.getQuantity()))
+								return null;
+							slot = equips.getFreeSlots(1).get(0);
+						}
+						unequip(equipped, equips, (short) -11, slot);
+						otherChange = new short[] { -11, slot };
+					}
+				}
+				break;
+			}
 		}
+		if (existing != null)
+			equips.put(src, existing);
+		else if (removeOld)
+			equips.remove(src);
+		equipped.put(dest, toEquip);
+		return otherChange;
 	}
 
 	/**
@@ -126,14 +228,16 @@ public class InventoryTools {
 	 * @param equips the inventory to move the piece of equipment to
 	 * @param src the slot of the piece of equipment in the equipped inventory
 	 * @param dest the slot of where to unequip the piece of equipment
-	 * @return true if successful, false if there was not enough room.
 	 */
-	public static boolean unequip(Inventory equipped, Inventory equips, short src, short dest) {
-		//trust the client into knowing best. don't check for inventory full
-		//List<Short> freeSlots = equips.getFreeSlots(1);
-		//if (freeSlots.isEmpty())
-			//return false;
+	public static void unequip(Inventory equipped, Inventory equips, short src, short dest) {
 		equips.put(dest, equipped.remove(src));
+	}
+
+	public static boolean unequip(Inventory equipped, Inventory equips, short src) {
+		List<Short> freeSlots = equips.getFreeSlots(1);
+		if (freeSlots.isEmpty())
+			return false;
+		unequip(equipped, equips, src, freeSlots.get(0));
 		return true;
 	}
 
@@ -175,6 +279,77 @@ public class InventoryTools {
 		return ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 	}
 
+	public static WeaponType getWeaponType(int itemId) {
+		int cat = (itemId / 10000) % 100;
+		switch (cat) {
+			case 30:
+				return WeaponType.SWORD1H;
+			case 31:
+				return WeaponType.AXE1H;
+			case 32:
+				return WeaponType.BLUNT1H;
+			case 33:
+				return WeaponType.DAGGER;
+			case 37:
+				return WeaponType.WAND;
+			case 38:
+				return WeaponType.STAFF;
+			case 40:
+				return WeaponType.SWORD2H;
+			case 41:
+				return WeaponType.AXE2H;
+			case 42:
+				return WeaponType.BLUNT2H;
+			case 43:
+				return WeaponType.SPEAR;
+			case 44:
+				return WeaponType.POLE_ARM;
+			case 45:
+				return WeaponType.BOW;
+			case 46:
+				return WeaponType.CROSSBOW;
+			case 47:
+				return WeaponType.CLAW;
+			case 48:
+				return WeaponType.KNUCKLE;
+			case 49:
+				return WeaponType.GUN;
+
+		}
+		return WeaponType.NOT_A_WEAPON;
+	}
+
+	public static boolean isEquip(int itemId) {
+		return (itemId >= 1000000 && itemId < 2000000);
+	}
+
+	public static boolean isTwoHanded(int itemId) {
+		switch (getWeaponType(itemId)) {
+			case AXE2H:
+				return true;
+			case BLUNT2H:
+				return true;
+			case BOW:
+				return true;
+			case CLAW:
+				return true;
+			case CROSSBOW:
+				return true;
+			case POLE_ARM:
+				return true;
+			case SPEAR:
+				return true;
+			case SWORD2H:
+				return true;
+			case KNUCKLE:
+				return true;
+			case GUN:
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public static boolean isThrowingStar(int itemId) {
 		return (itemId >= 2070000 && itemId < 2080000);
 	}
@@ -213,7 +388,23 @@ public class InventoryTools {
 		return itemId >= 2060000 && itemId < 2061000;
 	}
 
-	public static String getCategory(int itemid) {
+	public static InventoryType getCategory(int itemid) {
+		switch (itemid / 1000000) {
+			case 1:
+				return InventoryType.EQUIP;
+			case 2:
+				return InventoryType.USE;
+			case 3:
+				return InventoryType.SETUP;
+			case 4:
+				return InventoryType.ETC;
+			case 5:
+				return InventoryType.CASH;
+		}
+		return null;
+	}
+
+	public static String getCategoryName(int itemid) {
 		switch (itemid / 1000000) {
 			case 1:
 				return "Equip";

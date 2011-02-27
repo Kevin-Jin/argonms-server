@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
 /**
  *
@@ -27,7 +27,7 @@ public class HiredMerchant extends Npc {
 		super(npcid);
 	}
 
-	public MapObjectType getObjectType() {
-		return MapObjectType.HIRED_MERCHANT;
+	public MapEntityType getEntityType() {
+		return MapEntityType.HIRED_MERCHANT;
 	}
 }

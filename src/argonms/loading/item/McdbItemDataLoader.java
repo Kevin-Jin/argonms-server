@@ -44,9 +44,8 @@ public class McdbItemDataLoader extends ItemDataLoader {
 
 	protected void load(int itemid) {
 		Connection con = DatabaseConnection.getWzConnection();
-		String cat = InventoryTools.getCategory(itemid);
 		String query;
-		if (cat.equals("Equip"))
+		if (InventoryTools.isEquip(itemid))
 			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
 		else
 			query = "SELECT * FROM `itemdata` WHERE `itemid` = ?";
@@ -103,9 +102,8 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
-		String cat = InventoryTools.getCategory(itemid);
 		String query;
-		if (cat.equals("Equip"))
+		if (InventoryTools.isEquip(itemid))
 			query = "SELECT * FROM `equipdata` WHERE `equipid` = ?";
 		else
 			query = "SELECT * FROM `itemdata` WHERE `itemid` = ?";
@@ -125,7 +123,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 
 	private void doWork(int itemid, ResultSet rs) throws SQLException {
 		Connection con = DatabaseConnection.getWzConnection();
-		String cat = InventoryTools.getCategory(itemid);
+		String cat = InventoryTools.getCategoryName(itemid);
 		Integer oId = itemid;
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));
 		short[] incStats = new short[16];

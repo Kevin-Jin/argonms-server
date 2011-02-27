@@ -144,7 +144,8 @@ public class InterChannelCommunication {
 	}
 
 	private static byte[] writePrivateChatMessage(byte world, byte channel, byte type, int[] recipients, String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+				+ 4 * recipients.length + name.length() + message.length());
 		writeHeader(lew, world, channel);
 		lew.writeByte(MULTI_CHAT);
 		lew.writeByte(type);
@@ -157,7 +158,8 @@ public class InterChannelCommunication {
 	}
 
 	private static byte[] writeSpouseChatMessage(byte world, byte channel, int recipient, String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12
+				+ name.length() + message.length());
 		writeHeader(lew, world, channel);
 		lew.writeByte(SPOUSE_CHAT);
 		lew.writeInt(recipient);

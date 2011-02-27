@@ -16,40 +16,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
-import argonms.map.MapObject;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Mist extends MapObject {
-	public MapObjectType getObjectType() {
-		return MapObjectType.MIST;
+public class NpcShop {
+	private List<ShopItem> stock;
+
+	public int getId() {
+		return 0;
 	}
 
-	public boolean isVisible() {
-		return false;
+	public List<ShopItem> getStock() {
+		return Collections.unmodifiableList(stock);
 	}
 
-	public byte[] getCreationMessage() {
-		return null;
-	}
+	public class ShopItem {
+		private int itemid;
+		private int price;
+		private short remaining;
 
-	public byte[] getShowObjectMessage() {
-		return null;
-	}
+		public int getItemId() {
+			return itemid;
+		}
 
-	public byte[] getOutOfViewMessage() {
-		return null;
-	}
+		public int getPrice() {
+			return price;
+		}
 
-	public byte[] getDestructionMessage() {
-		return null;
-	}
-
-	public boolean isNonRangedType() {
-		return true;
+		public short getBuyable() {
+			return remaining;
+		}
 	}
 }

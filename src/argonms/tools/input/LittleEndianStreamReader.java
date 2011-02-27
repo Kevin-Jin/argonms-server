@@ -58,7 +58,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		return ret;
 	}
 
-	protected void skip(int amount) {
+	public void skip(int amount) {
 		try {
 			is.skip(amount);
 		} catch (IOException ex) {

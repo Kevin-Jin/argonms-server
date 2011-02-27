@@ -58,11 +58,12 @@ public class GameChatHandler {
 	}
 
 	private static byte[] writeMapChat(Player p, String message, byte show) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+				+ message.length());
 
 		lew.writeShort(ClientSendOps.MAP_CHAT);
 		lew.writeInt(p.getId());
-		lew.writeBool(p.getPrivilegeLevel() >= UserPrivileges.JUNIOR_GM);
+		lew.writeBool(p.getPrivilegeLevel() > UserPrivileges.USER);
 		lew.writeLengthPrefixedString(message);
 		lew.writeByte(show);
 

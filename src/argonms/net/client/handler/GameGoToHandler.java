@@ -18,6 +18,7 @@
 
 package argonms.net.client.handler;
 
+import argonms.UserPrivileges;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
@@ -56,13 +57,14 @@ public class GameGoToHandler {
 	}
 
 	public static void handleMapChange(LittleEndianReader packet, RemoteClient rc) {
-		byte reason = packet.readByte(); // 1 = died, 2 = entered portal
-		int dest = packet.readInt(); // FF FF FF FF
+		/*byte reason = */packet.readByte(); // 1 = died, 2 = entered portal
+		int dest = packet.readInt();
 		String portalName = packet.readLengthPrefixedString();
 		Player p = ((GameClient) rc).getPlayer();
-		if (dest != -1) { //change map
-			p.changeMap(dest);
-		} else { //warp to portal
+		if (dest != -1) { //map client command - only let GMs use them.
+			if (p.getPrivilegeLevel() > UserPrivileges.USER)
+				p.changeMap(dest);
+		} else {
 			p.getMap().enterPortal(p, portalName);
 		}
 	}

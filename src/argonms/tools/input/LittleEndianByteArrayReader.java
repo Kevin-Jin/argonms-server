@@ -75,7 +75,7 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 		return ret;
 	}
 
-	protected void skip(int amount) {
+	public void skip(int amount) {
 		index += amount;
 	}
 

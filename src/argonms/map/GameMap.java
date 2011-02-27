@@ -19,8 +19,13 @@
 package argonms.map;
 
 import argonms.character.Player;
+import argonms.character.inventory.Inventory;
+import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventoryTools;
 import argonms.game.GameServer;
 import argonms.game.script.PortalScriptManager;
+import argonms.loading.item.ItemDataLoader;
 import argonms.loading.map.Foothold;
 import argonms.loading.map.SpawnData;
 import argonms.loading.map.MapStats;
@@ -29,16 +34,18 @@ import argonms.loading.map.ReactorData;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.mob.MobStats;
 import argonms.loading.reactor.ReactorDataLoader;
+import argonms.map.MapEntity.MapEntityType;
 import argonms.map.movement.LifeMovementFragment;
-import argonms.map.object.ItemDrop;
-import argonms.map.object.Mob;
-import argonms.map.object.Mob.MobDeathHook;
-import argonms.map.object.Npc;
-import argonms.map.object.Reactor;
+import argonms.map.entity.ItemDrop;
+import argonms.map.entity.Mob;
+import argonms.map.entity.Mob.MobDeathHook;
+import argonms.map.entity.Npc;
+import argonms.map.entity.Reactor;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
+import argonms.tools.Pair;
+import argonms.tools.Timer;
 import argonms.tools.output.LittleEndianByteArrayWriter;
-
 import java.awt.Point;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -59,16 +66,20 @@ public class GameMap {
 	 * The maximum distance that any character could see.
 	 */
 	private static final double MAX_VIEW_RANGE_SQ = 850 * 850;
+	/**
+	 * Amount of time in milliseconds that a dropped item will remain on the map
+	 */
+	private static final int DROP_EXPIRE = 60000;
 	private final MapStats stats;
-	private final Map<Integer, MapObject> objects;
+	private final Map<Integer, MapEntity> entities;
 	private final Set<Player> players;
 	private final AtomicInteger monsters;
 	private final List<MonsterSpawn> monsterSpawns;
-	private int nextObjectId;
+	private int nextEntityId;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
-		this.objects = new LinkedHashMap<Integer, MapObject>();
+		this.entities = new LinkedHashMap<Integer, MapEntity>();
 		this.players = new LinkedHashSet<Player>();
 		this.monsters = new AtomicInteger(0);
 		this.monsterSpawns = new LinkedList<MonsterSpawn>();
@@ -88,7 +99,7 @@ public class GameMap {
 					n.setCy(spawnData.getCy());
 					n.setRx(spawnData.getRx0(), spawnData.getRx1());
 					n.setF(spawnData.isF());
-					spawnObject(n);
+					spawnEntity(n);
 					break;
 				}
 			}
@@ -98,6 +109,7 @@ public class GameMap {
 			reactor.setPosition(new Point(r.getX(), r.getY()));
 			reactor.setName(r.getName());
 			reactor.setDelay(r.getReactorTime());
+			spawnEntity(reactor);
 		}
 	}
 
@@ -134,42 +146,97 @@ public class GameMap {
 		return null;
 	}
 
-	public MapObject getObjectById(int oid) {
-		return objects.get(Integer.valueOf(oid));
+	public MapEntity getEntityById(int eId) {
+		return entities.get(Integer.valueOf(eId));
 	}
 
-	public final void spawnObject(MapObject obj) {
-		synchronized (objects) {
-			obj.setId(nextObjectId++);
-			if (obj.isNonRangedType())
-				sendToAll(obj.getCreationMessage(), obj.getPosition(), null);
+	private void updateMonsterController(Mob monster) {
+		if (!monster.isAlive())
+			return;
+		if (monster.getController() != null)
+			if (monster.getController().getMap() == this)
+				return;
+		int minControlled = Integer.MAX_VALUE;
+		Player newController = null;
+		synchronized (players) {
+			for (Player p : players) {
+				int count = p.getControlledMobs().size();
+				if (p.isVisible() && count < minControlled) {
+					minControlled = count;
+					newController = p;
+					break;
+				}
+			}
+		}
+		if (newController != null) {
+			monster.setController(newController);
+			newController.controlMonster(monster);
+			boolean aggro = monster.isFirstAttack();
+			if (aggro) {
+				monster.setControllerHasAggro(true);
+				monster.setControllerKnowsAboutAggro(true);
+			}
+			newController.getClient().getSession().send(CommonPackets.writeControlMonster(monster, aggro));
+		}
+	}
+
+	public final void spawnEntity(MapEntity ent) {
+		synchronized (entities) {
+			ent.setId(nextEntityId++);
+			if (ent.isNonRangedType())
+				sendToAll(ent.getCreationMessage(), ent.getPosition(), null);
 			else
-				sendToAll(obj.getCreationMessage());
-			objects.put(Integer.valueOf(obj.getId()), obj);
+				sendToAll(ent.getCreationMessage());
+			entities.put(Integer.valueOf(ent.getId()), ent);
 		}
 	}
 
 	public void spawnPlayer(Player p) {
-		synchronized (objects) {
+		synchronized (entities) {
 			sendToAll(p.getCreationMessage());
 			synchronized (players) {
 				players.add(p);
 			}
-			for (MapObject mo : objects.values()) {
-				if (mo.isNonRangedType()) {
-					p.getClient().getSession().send(mo.getCreationMessage());
-				} else if (objectVisible(mo, p) && !p.canSeeObject(mo)) {
-					p.getClient().getSession().send(mo.getShowObjectMessage());
-					p.addToVisibleMapObjects(mo);
+			for (MapEntity ent : entities.values()) {
+				if (ent.isNonRangedType()) {
+					p.getClient().getSession().send(ent.getShowObjectMessage());
+				} else {
+					if (ent.getEntityType() == MapEntityType.MONSTER)
+						updateMonsterController((Mob) ent);
+					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
+						p.getClient().getSession().send(ent.getShowObjectMessage());
+						p.addToVisibleMapObjects(ent);
+					}
 				}
 			}
-			objects.put(Integer.valueOf(p.getId()), p);
+			entities.put(Integer.valueOf(p.getId()), p);
 		}
 	}
 
 	public final void spawnMonster(Mob monster) {
-		spawnObject(monster);
+		spawnEntity(monster);
+		updateMonsterController(monster);
 		monsters.incrementAndGet();
+	}
+
+	/**
+	 * Spawns an item drop entity on this map.
+	 * Make sure you call ItemDrop.init with the correct data on the passed
+	 * ItemDrop object before calling this method.
+	 * @param d the ItemDrop entity to spawn.
+	 */
+	public void drop(ItemDrop d) {
+		spawnEntity(d);
+		final Integer eid = Integer.valueOf(d.getId());
+		Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				ItemDrop d = (ItemDrop) entities.get(eid);
+				if (d.isAlive()) {
+					d.expire();
+					destroyEntity(d);
+				}
+			}
+		}, DROP_EXPIRE); //expire after 1 minute
 	}
 
 	public final void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
@@ -188,18 +255,18 @@ public class GameMap {
 		}
 	}
 
-	public void destroyObject(MapObject obj) {
-		synchronized (objects) {
-			if (!obj.isNonRangedType()) {
+	public void destroyEntity(MapEntity ent) {
+		synchronized (entities) {
+			if (!ent.isNonRangedType()) {
 				synchronized (players) {
 					for (Player p : players)
-						p.removeVisibleMapObject(obj);
+						p.removeVisibleMapObject(ent);
 				}
-				sendToAll(obj.getDestructionMessage(), obj.getPosition(), null);
+				sendToAll(ent.getDestructionMessage(), ent.getPosition(), null);
 			} else {
-				sendToAll(obj.getDestructionMessage());
+				sendToAll(ent.getDestructionMessage());
 			}
-			objects.remove(Integer.valueOf(obj.getId()));
+			entities.remove(Integer.valueOf(ent.getId()));
 		}
 	}
 
@@ -207,13 +274,73 @@ public class GameMap {
 		synchronized (players) {
 			players.remove(p);
 		}
-		destroyObject(p);
+		for (Mob m : p.getControlledMobs()) {
+			m.setController(null);
+			m.setControllerHasAggro(false);
+			m.setControllerKnowsAboutAggro(false);
+			updateMonsterController(m);
+		}
+		destroyEntity(p);
 	}
 
 	public void killMonster(Mob monster, int killer) {
 		monster.died();
-		destroyObject(monster);
+		destroyEntity(monster);
 		monsterDrop(monster, killer);
+	}
+
+	public void destroyReactor(final Reactor r) {
+		r.setAlive(false);
+		destroyEntity(r);
+		if (r.getDelay() > 0) {
+			Timer.getInstance().runAfterDelay(new Runnable() {
+				public void run() {
+					respawnReactor(r);
+				}
+			}, r.getDelay());
+		}
+	}
+
+	public void pickUpDrop(ItemDrop d, Player p) {
+		if (d.getDropType() == ItemDrop.MESOS) {
+			p.gainMesos(d.getMesoValue());
+			d.pickUp(p.getId());
+			destroyEntity(d);
+		} else {
+			InventorySlot pickedUp = d.getItem();
+			int itemid = pickedUp.getItemId();
+			short qty = pickedUp.getQuantity();
+			InventoryType type = InventoryTools.getCategory(d.getItem().getItemId());
+			Inventory inv = p.getInventory(type);
+			if (InventoryTools.canFitEntirely(inv, itemid, qty)) {
+				d.pickUp(p.getId());
+				destroyEntity(d);
+				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
+					Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemid, qty);
+					short pos;
+					for (Short s : changedSlots.getLeft()) { //modified
+						pos = s.shortValue();
+						qty = inv.get(pos).getQuantity();
+						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos), true, false));
+					}
+					for (Short s : changedSlots.getRight()) { //added
+						pos = s.shortValue();
+						qty = inv.get(pos).getQuantity();
+						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos), true, true));
+					}
+				} else {
+					//TODO: apply item effect
+				}
+			} else {
+				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
+			}
+		}
+	}
+
+	public void respawnReactor(Reactor r) {
+		r.setState((byte) 0);
+		r.setAlive(true);
+		spawnEntity(r);
 	}
 
 	public void respawn() {
@@ -235,24 +362,32 @@ public class GameMap {
 		}
 	}
 
-	public void playerMoved(Player p, List<LifeMovementFragment> moves) {
-		synchronized (objects) {
-			sendToAll(writePlayerMovement(p, moves), p);
+	public void playerMoved(Player p, List<LifeMovementFragment> moves, Point startPos) {
+		synchronized (entities) {
+			sendToAll(writePlayerMovement(p, moves, startPos), p);
 
-			Iterator<MapObject> iter = p.getVisibleMapObjects().iterator();
+			Iterator<MapEntity> iter = p.getVisibleMapObjects().iterator();
 			while (iter.hasNext()) {
-				MapObject mo = iter.next();
-				if (!objectVisible(mo, p)) {
-					p.getClient().getSession().send(mo.getOutOfViewMessage());
+				MapEntity ent = iter.next();
+				if (!entityVisible(ent, p)) {
+					p.getClient().getSession().send(ent.getOutOfViewMessage());
 					iter.remove();
 				}
 			}
-			for (MapObject mo : objects.values()) {
-				if (!mo.isNonRangedType() && objectVisible(mo, p) && !p.canSeeObject(mo)) {
-					p.getClient().getSession().send(mo.getShowObjectMessage());
-					p.addToVisibleMapObjects(mo);
+			for (MapEntity ent : entities.values()) {
+				if (!ent.isNonRangedType()) {
+					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
+						p.getClient().getSession().send(ent.getShowObjectMessage());
+						p.addToVisibleMapObjects(ent);
+					}
 				}
 			}
+		}
+	}
+
+	public void monsterMoved(Player p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
+		synchronized (entities) {
+			sendToAll(writeMonsterMovement(useSkill, skill, skillId, s2, s3, s4, m.getId(), startPos, moves), m.getPosition(), MAX_VIEW_RANGE_SQ, p);
 		}
 	}
 
@@ -322,9 +457,9 @@ public class GameMap {
 				pos.x = (int) (mobX + (dropNum % 2 == 0 ? (40 * (dropNum + 1) / 2) : -(40 * (dropNum / 2))));
 			else
 				pos.x = (int) (mobX + (dropNum % 2 == 0 ? (25 * (dropNum + 1) / 2) : -(25 * (dropNum / 2))));
-			drop.init((byte) 1, killer, calcDropPos(pos, monster.getPosition()), monster.getPosition(), monster.getId());
+			drop.init(killer, calcDropPos(pos, monster.getPosition()), monster.getPosition(), monster.getId());
 
-			spawnObject(drop);
+			drop(drop);
 			dropNum++;
 		}
 	}
@@ -387,8 +522,8 @@ public class GameMap {
 		sendToAll(message, center, MAX_VIEW_RANGE_SQ, source);
 	}
 
-	public static boolean objectVisible(MapObject mapobj, Player p) {
-		return (p.getPosition().distanceSq(mapobj.getPosition()) <= MAX_VIEW_RANGE_SQ);
+	private static boolean entityVisible(MapEntity ent, Player p) {
+		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
 	}
 
 	private class MonsterSpawn {
@@ -442,11 +577,28 @@ public class GameMap {
 		}
 	}
 
-	private static byte[] writePlayerMovement(Player p, List<LifeMovementFragment> moves) {
+	private static byte[] writePlayerMovement(Player p, List<LifeMovementFragment> moves, Point startPos) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MOVE_PLAYER);
 		lew.writeInt(p.getId());
-		lew.writeInt(0);
+		lew.writeShort((short) startPos.x);
+		lew.writeShort((short) startPos.y);
+		CommonPackets.writeSerializedMovements(lew, moves);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeMonsterMovement(boolean useSkill, byte skill, short skillId, byte skillLevel, byte s3, byte s4, int eid, Point startPos, List<LifeMovementFragment> moves) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MOVE_MONSTER);
+		lew.writeInt(eid);
+		lew.writeBool(useSkill);
+		lew.writeByte(skill);
+		lew.writeByte((byte) skillId);
+		lew.writeByte(skillLevel);
+		lew.writeByte(s3);
+		lew.writeByte(s4); //or is this just 0?
+		lew.writeShort((short) startPos.x);
+		lew.writeShort((short) startPos.y);
 		CommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}

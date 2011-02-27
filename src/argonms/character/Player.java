@@ -34,9 +34,9 @@ import argonms.character.skill.Cooldown;
 import argonms.game.GameServer;
 import argonms.loading.StatEffects;
 import argonms.login.LoginClient;
-import argonms.map.MapObject;
+import argonms.map.MapEntity;
 import argonms.map.GameMap;
-import argonms.map.movement.LifeMovementFragment;
+import argonms.map.entity.Mob;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
@@ -62,7 +62,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class Player extends MapObject {
+public class Player extends MapEntity {
 	private static final Logger LOG = Logger.getLogger(Player.class.getName());
 
 	private RemoteClient client;
@@ -96,7 +96,8 @@ public class Player extends MapObject {
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<StatEffects, ScheduledFuture<?>> effectCancels;
 
-	private List<MapObject> visibleObjects;
+	private List<MapEntity> visibleObjects;
+	private List<Mob> controllingMobs;
 
 	private int guild;
 	private Party party;
@@ -109,7 +110,8 @@ public class Player extends MapObject {
 		skills = new HashMap<Integer, SkillLevel>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		effectCancels = new HashMap<StatEffects, ScheduledFuture<?>>();
-		visibleObjects = new ArrayList<MapObject>();
+		visibleObjects = new ArrayList<MapEntity>();
+		controllingMobs = new ArrayList<Mob>();
 	}
 
 	public void saveCharacter() {
@@ -124,7 +126,7 @@ public class Player extends MapObject {
 			updateDbStats(con);
 			updateDbInventory(con);
 			if (ServerType.isGame(client.getServerId())) {
-				//updateDbSkills(con);
+				updateDbSkills(con);
 				updateDbBindings(con);
 			}
 			con.commit();
@@ -340,11 +342,36 @@ public class Player extends MapObject {
 		eps.close();
 	}
 
+	public void updateDbSkills(Connection con) {
+		try {
+			PreparedStatement ps = con.prepareStatement("DELETE FROM `skills` "
+					+ "WHERE `characterid` = ?");
+			ps.setInt(1, getId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `skills` (`skillid`," +
+					"`level`,`mastery`) VALUES (?,?,?)");
+			for (Entry<Integer, SkillLevel> skill : skills.entrySet()) {
+				SkillLevel level = skill.getValue();
+				ps.setInt(1, skill.getKey().intValue());
+				ps.setByte(2, level.getLevel());
+				ps.setByte(3, level.getMasterLevel());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+			ps.close();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not save skill levels of "
+					+ "character " + name, ex);
+		}
+	}
+
 	public void updateDbBindings(Connection con) {
 		try {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM `keymaps` "
 					+ "WHERE `characterid` = ?");
-			ps.setInt(1,  getId());
+			ps.setInt(1, getId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -365,7 +392,7 @@ public class Player extends MapObject {
 
 			ps = con.prepareStatement("DELETE FROM `skillmacros` WHERE "
 					+ "`characterid` = ?");
-			ps.setInt(1,  getId());
+			ps.setInt(1, getId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -728,6 +755,13 @@ public class Player extends MapObject {
 		return mesos;
 	}
 
+	//TODO: notify client of value change
+	public void gainMesos(int gain) {
+		this.mesos += gain;
+		//updateSingleStat(MapleStat.MESO);
+		//getClient().getSession().send(CommonPackets.writeShowMesoGain(mesoGain, false));
+	}
+
 	public short getFame() {
 		return fame;
 	}
@@ -762,6 +796,10 @@ public class Player extends MapObject {
 		return buddies;
 	}
 
+	//TODO: implement!
+	public void updateEquips() {
+	}
+
 	public Pet[] getPets() {
 		return equippedPets;
 	}
@@ -783,6 +821,11 @@ public class Player extends MapObject {
 
 	public Collection<Cooldown> getCooldowns() {
 		return cooldowns.values();
+	}
+
+	public byte getSkillLevel(int skill) {
+		SkillLevel level = skills.get(Integer.valueOf(skill));
+		return level != null ? level.getLevel() : 0;
 	}
 
 	public void applyEffect(final StatEffects e) {
@@ -851,32 +894,44 @@ public class Player extends MapObject {
 		saveCharacter();
 	}
 
-	public void move(List<LifeMovementFragment> moves) {
-		map.playerMoved(this, moves);
-	}
-
-	public boolean canSeeObject(MapObject o) {
+	public boolean canSeeObject(MapEntity o) {
 		return visibleObjects.contains(o);
 	}
 
-	public void addToVisibleMapObjects(MapObject o) {
+	public void addToVisibleMapObjects(MapEntity o) {
 		visibleObjects.add(o);
 	}
 
-	public List<MapObject> getVisibleMapObjects() {
+	public List<MapEntity> getVisibleMapObjects() {
 		return visibleObjects;
 	}
 
-	public void removeVisibleMapObject(MapObject o) {
+	public void removeVisibleMapObject(MapEntity o) {
 		visibleObjects.remove(o);
 	}
 
-	public MapObjectType getObjectType() {
-		return MapObjectType.PLAYER;
+	public List<Mob> getControlledMobs() {
+		return Collections.unmodifiableList(controllingMobs);
+	}
+
+	public void controlMonster(Mob m) {
+		controllingMobs.add(m);
+	}
+
+	public void uncontrolMonster(Mob m) {
+		controllingMobs.remove(m);
+	}
+
+	public MapEntityType getEntityType() {
+		return MapEntityType.PLAYER;
+	}
+
+	public boolean isAlive() {
+		return remHp > 0;
 	}
 
 	public boolean isVisible() {
-		return skills.containsKey(Integer.valueOf(Skills.HIDE));
+		return !skills.containsKey(Integer.valueOf(Skills.HIDE));
 	}
 
 	public byte[] getCreationMessage() {
@@ -950,16 +1005,16 @@ public class Player extends MapObject {
 		Inventory etc = p.inventories.get(InventoryType.ETC);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, top, (short) 1)
-				.get(0).shortValue(), (short) -5);
+				.getRight().get(0).shortValue(), (short) -5);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, bottom, (short) 1)
-				.get(0).shortValue(), (short) -6);
+				.getRight().get(0).shortValue(), (short) -6);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, shoes, (short) 1)
-				.get(0).shortValue(), (short) -7);
+				.getRight().get(0).shortValue(), (short) -7);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools .addToInventory(equipment, weapon, (short) 1)
-				.get(0).shortValue(), (short) -11);
+				.getRight().get(0).shortValue(), (short) -11);
 		InventoryTools.addToInventory(etc, 4161001, (short) 1);
 
 		p.bindings.put(Byte.valueOf((byte) 2), new KeyBinding((byte) 4, 10));

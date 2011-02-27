@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.object;
+package argonms.map.entity;
 
 /**
  *
@@ -27,7 +27,7 @@ public class PlayerNpc extends Npc {
 		super(npcid);
 	}
 
-	public MapObjectType getObjectType() {
-		return MapObjectType.PLAYER_NPC;
+	public MapEntityType getEntityType() {
+		return MapEntityType.PLAYER_NPC;
 	}
 }

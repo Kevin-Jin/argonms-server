@@ -25,7 +25,7 @@ package argonms.tools.input;
 public abstract class LittleEndianReader {
 	protected abstract int read();
 	protected abstract byte[] read(int amount);
-	protected abstract void skip(int amount);
+	public abstract void skip(int amount);
 	public abstract int available();
 	public abstract void dispose();
 	

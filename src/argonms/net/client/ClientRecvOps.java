@@ -54,7 +54,7 @@ public final class ClientRecvOps {
 		MOVE_PLAYER = 0x26,
 		CANCEL_CHAIR = 0x27,
 		USE_CHAIR = 0x28,
-		CLOSE_RANGE_ATTACK = 0x29,
+		MELEE_ATTACK = 0x29,
 		RANGED_ATTACK = 0x2A,
 		MAGIC_ATTACK = 0x2B,
 		PASSIVE_ENERGY = 0x2C,

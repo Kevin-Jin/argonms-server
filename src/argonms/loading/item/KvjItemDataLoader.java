@@ -130,7 +130,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 	private File getFile(int iid) {
 		File f;
 		String id = String.format("%08d", iid);
-		String cat = InventoryTools.getCategory(iid);
+		String cat = InventoryTools.getCategoryName(iid);
 		if (cat.equals("Pet"))
 			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(String.format("%07d", iid)).append(".img.kvj").toString());
 		else if (cat.equals("Equip"))
