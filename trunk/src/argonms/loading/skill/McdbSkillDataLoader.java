@@ -149,7 +149,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 	}
 
 	private int doWork(ResultSet rs, SkillStats stats) throws SQLException {
-		int skillid = rs.getInt(2);
+		int skillid = rs.getInt(1);
 		if (isBuff(skillid))
 			stats.setBuff();
 		switch (skillid) {
@@ -162,7 +162,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 				break;
 		}
 		do {
-			SkillEffect effect = new SkillEffect();
+			byte level = rs.getByte(2);
+			SkillEffectsData effect = new SkillEffectsData(skillid, level);
 			effect.setMpConsume(rs.getShort(6));
 			effect.setHpConsume(rs.getShort(7));
 			effect.setDuration(rs.getInt(5));
@@ -194,7 +195,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setItemConsumeCount(rs.getByte(10));
 			effect.setMoneyConsume(rs.getShort(12));
 			effect.setMorph(rs.getInt(26));
-			stats.addLevel(rs.getByte(2), effect);
+			stats.addLevel(level, effect);
 		} while (rs.next() && rs.getInt(2) == skillid);
 		return skillid;
 	}

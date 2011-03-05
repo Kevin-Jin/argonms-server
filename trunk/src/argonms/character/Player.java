@@ -18,9 +18,11 @@
 
 package argonms.character;
 
-import argonms.character.skill.SkillLevel;
-import argonms.character.skill.Skills;
+import argonms.character.skill.SkillEntry;
 import argonms.ServerType;
+import argonms.character.skill.BuffState;
+import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.Cooldown;
 import argonms.character.inventory.Equip;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.Inventory;
@@ -30,9 +32,8 @@ import argonms.character.inventory.Item;
 import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
-import argonms.character.skill.Cooldown;
 import argonms.game.GameServer;
-import argonms.loading.StatEffects;
+import argonms.loading.StatEffectsData;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
@@ -41,12 +42,12 @@ import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Timer;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -92,9 +93,11 @@ public class Player extends MapEntity {
 	private final Pet[] equippedPets;
 	private TamingMob equippedMount;
 
-	private final Map<Integer, SkillLevel> skills;
+	private final Map<Integer, SkillEntry> skillEntries;
 	private final Map<Integer, Cooldown> cooldowns;
-	private final Map<StatEffects, ScheduledFuture<?>> effectCancels;
+	private final Map<BuffKey, BuffState> activeBuffs;
+	private final Map<Integer, ScheduledFuture<?>> skillCancels;
+	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
 
 	private List<MapEntity> visibleObjects;
 	private List<Mob> controllingMobs;
@@ -107,9 +110,11 @@ public class Player extends MapEntity {
 		skillMacros = new ArrayList<SkillMacro>(5);
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		equippedPets = new Pet[3];
-		skills = new HashMap<Integer, SkillLevel>();
+		skillEntries = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
-		effectCancels = new HashMap<StatEffects, ScheduledFuture<?>>();
+		activeBuffs = new EnumMap<BuffKey, BuffState>(BuffKey.class);
+		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
+		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		visibleObjects = new ArrayList<MapEntity>();
 		controllingMobs = new ArrayList<Mob>();
 	}
@@ -127,6 +132,7 @@ public class Player extends MapEntity {
 			updateDbInventory(con);
 			if (ServerType.isGame(client.getServerId())) {
 				updateDbSkills(con);
+				updateDbCooldowns(con);
 				updateDbBindings(con);
 			}
 			con.commit();
@@ -350,19 +356,44 @@ public class Player extends MapEntity {
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `skills` (`skillid`," +
-					"`level`,`mastery`) VALUES (?,?,?)");
-			for (Entry<Integer, SkillLevel> skill : skills.entrySet()) {
-				SkillLevel level = skill.getValue();
-				ps.setInt(1, skill.getKey().intValue());
-				ps.setByte(2, level.getLevel());
-				ps.setByte(3, level.getMasterLevel());
+			ps = con.prepareStatement("INSERT INTO `skills` (`characterid`," +
+					"`skillid`,`level`,`mastery`) VALUES (?,?,?,?)");
+			ps.setInt(1, getId());
+			for (Entry<Integer, SkillEntry> skill : skillEntries.entrySet()) {
+				SkillEntry skillLevel = skill.getValue();
+				ps.setInt(2, skill.getKey().intValue());
+				ps.setByte(3, skillLevel.getLevel());
+				ps.setByte(4, skillLevel.getMasterLevel());
 				ps.addBatch();
 			}
 			ps.executeBatch();
 			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not save skill levels of "
+					+ "character " + name, ex);
+		}
+	}
+
+	public void updateDbCooldowns(Connection con) {
+		try {
+			PreparedStatement ps = con.prepareStatement("DELETE FROM `cooldowns` "
+					+ "WHERE `characterid` = ?");
+			ps.setInt(1, getId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `cooldowns`" +
+					"(`characterid`,`skill`,`remaining`) VALUES (?,?,?)");
+			ps.setInt(1, getId());
+			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
+				ps.setInt(1, cooling.getKey().intValue());
+				ps.setShort(2, cooling.getValue().getSecondsRemaining());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+			ps.close();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not save cooldowns of "
 					+ "character " + name, ex);
 		}
 	}
@@ -608,8 +639,17 @@ public class Player extends MapEntity {
 				ps.setInt(1, id);
 				rs = ps.executeQuery();
 				while (rs.next())
-					p.skills.put(Integer.valueOf(rs.getInt(1)),
-							new SkillLevel(rs.getByte(2), rs.getByte(3)));
+					p.skillEntries.put(Integer.valueOf(rs.getInt(1)),
+							new SkillEntry(rs.getByte(2), rs.getByte(3)));
+				rs.close();
+				ps.close();
+
+				ps = con.prepareStatement("SELECT `skillid`,`remaining` "
+						+ "FROM `cooldowns` WHERE `characterid` = ?");
+				ps.setInt(1, id);
+				rs = ps.executeQuery();
+				while (rs.next())
+					p.addCooldown(rs.getInt(1), rs.getShort(2));
 				rs.close();
 				ps.close();
 
@@ -755,11 +795,15 @@ public class Player extends MapEntity {
 		return mesos;
 	}
 
-	//TODO: notify client of value change
 	public void gainMesos(int gain) {
 		this.mesos += gain;
-		//updateSingleStat(MapleStat.MESO);
-		//getClient().getSession().send(CommonPackets.writeShowMesoGain(mesoGain, false));
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), false));
+		getClient().getSession().send(CommonPackets.writeShowMesoGain(gain, false));
+	}
+
+	public void gainHp(int gain) {
+		this.remHp += gain;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
 	}
 
 	public short getFame() {
@@ -815,35 +859,89 @@ public class Player extends MapEntity {
 		return equippedMount;
 	}
 
-	public Map<Integer, SkillLevel> getSkills() {
-		return Collections.unmodifiableMap(skills);
+	public Map<Integer, SkillEntry> getSkillEntries() {
+		return Collections.unmodifiableMap(skillEntries);
 	}
 
-	public Collection<Cooldown> getCooldowns() {
-		return cooldowns.values();
+	public void addCooldown(final int skill, short time) {
+		cooldowns.put(Integer.valueOf(skill), new Cooldown(time * 1000, new Runnable() {
+			public void run() {
+				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
+				removeCooldown(skill);
+			}
+		}));
+	}
+
+	public void removeCooldown(int skill) {
+		cooldowns.remove(Integer.valueOf(skill)).cancel();
+	}
+
+	public Map<Integer, Cooldown> getCooldowns() {
+		return cooldowns;
 	}
 
 	public byte getSkillLevel(int skill) {
-		SkillLevel level = skills.get(Integer.valueOf(skill));
-		return level != null ? level.getLevel() : 0;
+		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
+		return skillLevel != null ? skillLevel.getLevel() : 0;
 	}
 
-	public void applyEffect(final StatEffects e) {
-		final Player p = this;
-		ScheduledFuture<?> f = Timer.getInstance().runAfterDelay(new Runnable() {
+	public void applyEffect(final StatEffectsData e) {
+		synchronized (activeBuffs) {
+			for (BuffKey buff : e.getEffects())
+				activeBuffs.put(buff, new BuffState(e.getDataId(), e.getLevel()));
+		}
+		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				p.dispelEffect(e);
+				dispelEffect(e);
 			}
 		}, e.getDuration());
-		synchronized(effectCancels) {
-			effectCancels.put(e, f);
+		if (e.isSkill()) {
+			synchronized (skillCancels) {
+				skillCancels.put(e.getDataId(), cancelTask);
+			}
+		} else {
+			synchronized (itemEffectCancels) {
+				itemEffectCancels.put(e.getDataId(), cancelTask);
+			}
 		}
 	}
 
-	public void dispelEffect(StatEffects e) {
-		synchronized(effectCancels) {
-			effectCancels.remove(e).cancel(true);
+	public BuffState getBuff(BuffKey buff) {
+		return activeBuffs.get(buff);
+	}
+
+	//TODO: implement!
+	private void dispelBuff(BuffKey buff, BuffState state) {
+		
+	}
+
+	public void dispelEffect(StatEffectsData e) {
+		synchronized (activeBuffs) {
+			for (BuffKey buff : e.getEffects()) {
+				dispelBuff(buff, activeBuffs.remove(buff));
+			}
 		}
+		if (e.isSkill()) {
+			synchronized (skillCancels) {
+				skillCancels.remove(e.getDataId()).cancel(true);
+			}
+		} else {
+			synchronized (itemEffectCancels) {
+				itemEffectCancels.remove(e.getDataId()).cancel(true);
+			}
+		}
+	}
+
+	public boolean isBuffActive(BuffKey buff) {
+		return activeBuffs.containsKey(buff);
+	}
+
+	public boolean isSkillActive(int skillid) {
+		return skillCancels.containsKey(Integer.valueOf(skillid));
+	}
+
+	public boolean isItemEffectActive(int itemid) {
+		return itemEffectCancels.containsKey(Integer.valueOf(itemid));
 	}
 
 	public int getItemEffect() {
@@ -887,11 +985,15 @@ public class Player extends MapEntity {
 	}
 
 	public void close() {
-		for (ScheduledFuture<?> f : effectCancels.values())
-			f.cancel(true);
+		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+			cancelTask.cancel(true);
+		for (ScheduledFuture<?> cancelTask : itemEffectCancels.values())
+			cancelTask.cancel(true);
 		if (map != null)
 			map.removePlayer(this);
 		saveCharacter();
+		for (Cooldown cooling : cooldowns.values())
+			cooling.cancel();
 		client = null;
 	}
 
@@ -923,6 +1025,25 @@ public class Player extends MapEntity {
 		controllingMobs.remove(m);
 	}
 
+	public void checkMonsterAggro(Mob monster) {
+		if (!monster.controllerHasAggro()) {
+			Player controller = monster.getController();
+			if (controller == this) {
+				monster.setControllerHasAggro(true);
+			} else {
+				if (controller != null) {
+					controller.uncontrolMonster(monster);
+					controller.getClient().getSession().send(CommonPackets.writeStopControllingMonster(monster));
+				}
+				monster.setController(this);
+				controlMonster(monster);
+				getClient().getSession().send(CommonPackets.writeControlMonster(monster, true));
+				monster.setControllerHasAggro(true);
+				monster.setControllerKnowsAboutAggro(false);
+			}
+		}
+	}
+
 	public MapEntityType getEntityType() {
 		return MapEntityType.PLAYER;
 	}
@@ -932,33 +1053,20 @@ public class Player extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return !skills.containsKey(Integer.valueOf(Skills.HIDE));
+		return !isBuffActive(BuffKey.HIDE);
 	}
 
-	public byte[] getCreationMessage() {
-		int size;
-		byte[] charState = CommonPackets.writeShowPlayer(this);
-		size = charState.length;
-		List<byte[]> petStates = new ArrayList<byte[]>();
-		for (byte i = 0; i < 3; i++) {
-			if (equippedPets[i] != null) {
-				byte[] petData = CommonPackets.writeShowPet(this, i, equippedPets[i], true, false);
-				petStates.add(petData);
-				size += petData.length;
-			}
-		}
-		byte[] combined = new byte[size];
-		System.arraycopy(charState, 0, combined, 0, charState.length);
-		size = charState.length;
-		for (byte[] b : petStates) {
-			System.arraycopy(b, 0, combined, size, b.length);
-			size += b.length;
-		}
-		return combined;
+	public byte[][] getCreationMessages() {
+		List<byte[]> messages = new ArrayList<byte[]>(4);
+		messages.add(CommonPackets.writeShowPlayer(this));
+		for (byte i = 0; i < 3; i++)
+			if (equippedPets[i] != null)
+				messages.add(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));
+		return messages.toArray(new byte[messages.size()][]);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
+	public byte[][] getShowEntityMessages() {
+		return getCreationMessages();
 	}
 
 	public byte[] getOutOfViewMessage() {

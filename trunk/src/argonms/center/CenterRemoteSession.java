@@ -74,10 +74,12 @@ public class CenterRemoteSession {
 							List<CenterGameInterface> servers = CenterServer.getInstance().getAllServersOfWorld(world, serverId);
 							List<Byte> conflicts = new ArrayList<Byte>();
 							for (CenterGameInterface server : servers) {
-								for (int i = 0; i < channels.length; i++) {
-									Byte ch = Byte.valueOf(channels[i]);
-									if (server.getChannels().contains(ch))
-										conflicts.add(ch);
+								if (!server.isDisconnected()) {
+									for (int i = 0; i < channels.length; i++) {
+										Byte ch = Byte.valueOf(channels[i]);
+										if (server.getChannels().contains(ch))
+											conflicts.add(ch);
+									}
 								}
 							}
 							if (!conflicts.isEmpty()) {
@@ -120,14 +122,12 @@ public class CenterRemoteSession {
 	}
 
 	/**
-	 * Notify the CenterServer that we are going to disconnect from the remote
-	 * server.
 	 * DO NOT USE THIS METHOD TO FORCE CLOSE THE CONNECTION. USE close()
 	 * INSTEAD.
 	 */
-	public void disconnect() {
+	public void disconnected() {
 		if (cri != null)
-			cri.disconnect();
+			cri.disconnected();
 	}
 
 	public void close() {

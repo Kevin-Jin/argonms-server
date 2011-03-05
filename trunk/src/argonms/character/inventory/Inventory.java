@@ -42,7 +42,7 @@ public class Inventory {
 		STORAGE(6),
 		CASH_SHOP(7);
 
-		byte value;
+		private final byte value;
 
 		InventoryType(int value) {
 			this.value = (byte) value;

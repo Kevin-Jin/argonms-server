@@ -298,6 +298,49 @@
 	too well with SVN's handling of diffs). *.jar files now have a mime-type of
 	application/java-archive instead of the generic application/octet-stream.
 
+2011-03-04  GoldenKevin  (revision 17)
+
+	* Fixed Player pets not showing to rest of map, and NPC control packets not
+	being sent to players. Packets had to be sent separately and could not be
+	combined, so now MapEntity.getShowEntityMessage() and getCreationMessage()
+	return an array of byte arrays (and their method names are now plural!) It
+	may have a performance penalty for any entity that didn't send multiple
+	packets when spawned, but it should increase performance of Player and NPC
+	spawns (no more copying arrays). NPCs are now animated.
+	* Fixed non-ranged entities not sending their creation packet to everyone in
+	the map, and ranged entities sending their creation packet to everyone in
+	the map (yep, I had them swapped).
+	* Added a convenience method for writing a 4-byte Point to a stream and for
+	reading such a Point from a stream. Refactored code accordingly.
+	* PlayerLog now uses two ConcurrentHashMaps instead of monitor synchronized
+	vanilla HashMaps to reduce complexity and hopefully improve performance.
+	* Updated GameMap to use a separate ReadWriteLock for each Collection to
+	improve performance (also fixes a deadlock when respawning monsters).
+	* Somewhat solved the Center server concurrency issues by only allowing
+	one server to connect at a time so that when servers that need to notify
+	each other connect at the exact same time, they will not potentially miss a
+	message. Also, added a disconnected variable in CenterRemoteInterface in
+	case a server disconnects while there is a read going on (and we have to
+	wait for a write lock before we are able to remove/null the server).
+	* Channels now send their actual load instead of just an increment/decrement
+	notification. This is in case a login server disconnects and reconnects and
+	they don't know the previous loads. Will decrease performance somewhat
+	because we have to call size() on a ConcurrentHashMap in PlayerLog instead
+	of being able to send a constant true or false...
+	* Renamed disconnect methods to disconnected to avoid possible confusion.
+	* Fixed error in Kvj Skill.wz loading caused by prop being read an int
+	instead of a short.
+	* Monsters can now die from regular melee attacks. Skills, magic attacks,
+	and arrow/star/bullet attacks still are still not handled yet. Respawning
+	seems to be bugged, so I'll have to fix that up. Players still do not take
+	damage from mobs, so I'll be working on that as well.
+	* Inventory mesos count is now updated when you drop/pick up mesos.
+	* Renamed argonms.loading.StatEffects to StatEffectsData and moved all of
+	its constants to the class argonms.StatEffect. Likewise renamed ItemEffect
+	and SkillEffect to ItemEffectsData and SkillEffectsData respectively.
+	* Cooldowns should be handled properly once implemented. Execute the updated
+	SQL so that you won't get database exceptions when loading/saving characters
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

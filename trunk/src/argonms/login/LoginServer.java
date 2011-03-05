@@ -159,11 +159,8 @@ public class LoginServer implements LocalServer {
 			onlineWorlds.remove(oW);
 	}
 
-	public void changePopulation(byte world, byte channel, boolean increase) {
-		if (increase)
-			onlineWorlds.get(Byte.valueOf(world)).incrementLoad(channel);
-		else
-			onlineWorlds.get(Byte.valueOf(world)).decrementLoad(channel);
+	public void changePopulation(byte world, byte channel, short now) {
+		onlineWorlds.get(Byte.valueOf(world)).setPopulation(channel, now);
 	}
 
 	public boolean usePin() {

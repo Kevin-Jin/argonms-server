@@ -16,33 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.skill;
+package argonms;
 
 /**
  *
  * @author GoldenKevin
  */
-public class SkillLevel {
-	private byte level, master;
+public final class StatEffect {
+	public static final byte //indicies for a stats array (bonus or req)
+		STR = 0,
+		DEX = 1,
+		INT = 2,
+		LUK = 3,
+		PAD = 4,
+		PDD = 5,
+		MAD = 6,
+		MDD = 7,
+		ACC = 8,
+		EVA = 9,
+		MHP = 10,
+		MMP = 11,
+		Speed = 12,
+		Jump = 13,
+		Level = 14,
+		MaxLevel = 15
+	;
 
-	public SkillLevel(byte currentLevel, byte masterLevel) {
-		this.level = currentLevel;
-		this.master = masterLevel;
-	}
-
-	public byte getLevel() {
-		return level;
-	}
-
-	public void incrementCurrentLevel() {
-		++level;
-	}
-
-	public byte getMasterLevel() {
-		return master;
-	}
-
-	public void changeMasterLevel(byte newLevel) {
-		this.master = newLevel;
+	private StatEffect() {
+		//uninstantiable...
 	}
 }

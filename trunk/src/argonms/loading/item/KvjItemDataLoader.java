@@ -73,14 +73,13 @@ public class KvjItemDataLoader extends ItemDataLoader {
 
 	protected void load(int itemid) {
 		File f = getFile(itemid);
-		Integer oId = Integer.valueOf(itemid);
 		try {
 			if (f.exists())
-				doWork(oId, new LittleEndianByteArrayReader(f));
+				doWork(itemid, new LittleEndianByteArrayReader(f));
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for item " + itemid, e);
 		}
-		loaded.add(oId);
+		loaded.add(Integer.valueOf(itemid));
 	}
 
 	public boolean loadAll() {
@@ -140,7 +139,8 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		return f;
 	}
 
-	private void doWork(Integer oId, LittleEndianReader reader) {
+	private void doWork(int itemid, LittleEndianReader reader) {
+		Integer oId = Integer.valueOf(itemid);
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case WHOLE_PRICE:
@@ -202,7 +202,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 					scrollReqs.put(oId, processScrollReqs(reader));
 					break;
 				case ITEM_EFFECT:
-					statEffects.put(oId, processEffect(reader));
+					statEffects.put(oId, processEffect(itemid, reader));
 					break;
 				case TRIGGER_ITEM:
 					triggerItem.put(oId, Integer.valueOf(reader.readInt()));
@@ -277,8 +277,8 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		return new int[] { itemId, prob };
 	}
 
-	private ItemEffect processEffect(LittleEndianReader reader) {
-		ItemEffect effect = new ItemEffect();
+	private ItemEffectsData processEffect(int itemid, LittleEndianReader reader) {
+		ItemEffectsData effect = new ItemEffectsData(itemid);
 		loop:
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {

@@ -81,7 +81,8 @@ public class CenterGameInterface extends CenterRemoteInterface {
 		return clientPorts;
 	}
 
-	public void disconnect() {
+	public void disconnected() {
+		disconnected = true;
 		CenterServer.getInstance().gameDisconnected(this);
 	}
 }

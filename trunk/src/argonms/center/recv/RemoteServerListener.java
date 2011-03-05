@@ -106,7 +106,7 @@ public class RemoteServerListener {
 
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Remote server from {0} disconnected", e.getChannel().getRemoteAddress());
-			sessions.get(e.getChannel()).disconnect();
+			sessions.get(e.getChannel()).disconnected();
 		}
 
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {

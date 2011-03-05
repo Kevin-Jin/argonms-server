@@ -19,10 +19,9 @@
 package argonms.net.client;
 
 import argonms.character.Player;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-//Is thread-safety really a problem in this class?
 /**
  *
  * @author GoldenKevin
@@ -30,39 +29,36 @@ import java.util.Map;
 public class PlayerLog {
 	private final Map<String, Player> nameToPlayerMapping;
 	private final Map<Integer, Player> idToPlayerMapping;
+	//private short connected;
 
 	public PlayerLog() {
-		this.nameToPlayerMapping = new HashMap<String, Player>();
-		this.idToPlayerMapping = new HashMap<Integer, Player>();
+		this.nameToPlayerMapping = new ConcurrentHashMap<String, Player>();
+		this.idToPlayerMapping = new ConcurrentHashMap<Integer, Player>();
+		//this.connected = 0;
 	}
 
 	public void addPlayer(Player p) {
-		synchronized(nameToPlayerMapping) {
-			nameToPlayerMapping.put(p.getName(), p);
-		}
-		synchronized(idToPlayerMapping) {
-			idToPlayerMapping.put(Integer.valueOf(p.getId()), p);
-		}
+		nameToPlayerMapping.put(p.getName(), p);
+		idToPlayerMapping.put(Integer.valueOf(p.getId()), p);
+		//connected++;
 	}
 
 	public void deletePlayer(Player p) {
-		synchronized(nameToPlayerMapping) {
-			nameToPlayerMapping.remove(p.getName());
-		}
-		synchronized(idToPlayerMapping) {
-			idToPlayerMapping.remove(Integer.valueOf(p.getId()));
-		}
+		nameToPlayerMapping.remove(p.getName());
+		idToPlayerMapping.remove(Integer.valueOf(p.getId()));
+		//connected--;
 	}
 
 	public Player getPlayer(int id) {
-		synchronized(idToPlayerMapping) {
-			return idToPlayerMapping.get(Integer.valueOf(id));
-		}
+		return idToPlayerMapping.get(Integer.valueOf(id));
 	}
 
 	public Player getPlayer(String name) {
-		synchronized(nameToPlayerMapping) {
-			return nameToPlayerMapping.get(name);
-		}
+		return nameToPlayerMapping.get(name);
+	}
+
+	public short getConnectedCount() {
+		//return connected;
+		return (short) nameToPlayerMapping.size();
 	}
 }

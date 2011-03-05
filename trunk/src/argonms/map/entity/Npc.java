@@ -84,17 +84,16 @@ public class Npc extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
-		byte[] show = CommonPackets.writeShowNpc(this);
-		byte[] control = CommonPackets.writeControlNpc(this);
-		byte[] combined = new byte[show.length + control.length];
-		System.arraycopy(show, 0, combined, 0, show.length);
-		System.arraycopy(control, 0, combined, show.length, control.length);
-		return combined;
+	public byte[][] getCreationMessages() {
+		return new byte[][] { CommonPackets.writeShowNpc(this),
+			//let every client animate their own NPCs.
+			//controlling mobs is complicated enough as it is, we
+			//don't need to keep track of more than necessary things
+				CommonPackets.writeControlNpc(this) };
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
+	public byte[][] getShowEntityMessages() {
+		return getCreationMessages();
 	}
 
 	public byte[] getOutOfViewMessage() {

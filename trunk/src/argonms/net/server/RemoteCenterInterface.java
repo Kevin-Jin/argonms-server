@@ -112,12 +112,10 @@ public abstract class RemoteCenterInterface {
 	}
 
 	/**
-	 * Notify the LocalServer that we are going to disconnect from the center
-	 * server.
 	 * DO NOT USE THIS METHOD TO FORCE CLOSE THE CONNECTION. USE close()
 	 * INSTEAD.
 	 */
-	public void disconnect() {
+	public void disconnected() {
 		getLocalServer().centerDisconnected();
 	}
 
@@ -140,7 +138,7 @@ public abstract class RemoteCenterInterface {
 
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Center server from {0} disconnected", e.getChannel().getRemoteAddress());
-			disconnect();
+			disconnected();
 		}
 
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {

@@ -18,21 +18,21 @@
 
 package argonms.character.skill;
 
+import java.util.concurrent.ScheduledFuture;
+
+import argonms.tools.Timer;
+
 /**
  *
  * @author GoldenKevin
  */
 public class Cooldown {
-	private int skillId;
 	private long endTime;
+	private ScheduledFuture<?> expiration;
 
-	public Cooldown(int skillId, long startTime, int length) {
-		this.skillId = skillId;
-		this.endTime = startTime + length;
-	}
-
-	public int getParentSkill() {
-		return skillId;
+	public Cooldown(int remaining, Runnable expireTask) {
+		this.endTime = System.currentTimeMillis() + remaining;
+		this.expiration = Timer.getInstance().runAfterDelay(expireTask, remaining);
 	}
 
 	public int getMillisecondsRemaining() {
@@ -41,5 +41,9 @@ public class Cooldown {
 
 	public short getSecondsRemaining() {
 		return (short) ((endTime - System.currentTimeMillis()) / 1000);
+	}
+
+	public void cancel() {
+		expiration.cancel(true);
 	}
 }

@@ -18,9 +18,9 @@
 
 package argonms.loading.item;
 
+import argonms.StatEffect;
 import argonms.character.inventory.InventoryTools;
 import argonms.loading.DataFileType;
-import argonms.loading.StatEffects;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, Double> unitPrice;
 	protected Map<Integer, short[]> reqStats;
 	protected Map<Integer, List<Integer>> scrollReqs;
-	protected Map<Integer, ItemEffect> statEffects;
+	protected Map<Integer, ItemEffectsData> statEffects;
 	protected Map<Integer, Integer> triggerItem;
 	protected Map<Integer, Byte> tuc;
 	protected Map<Integer, Integer> mesoValue;
@@ -82,7 +82,7 @@ public abstract class ItemDataLoader {
 		unitPrice = new HashMap<Integer, Double>();
 		reqStats = new HashMap<Integer, short[]>();
 		scrollReqs = new HashMap<Integer, List<Integer>>();
-		statEffects = new HashMap<Integer, ItemEffect>();
+		statEffects = new HashMap<Integer, ItemEffectsData>();
 		triggerItem = new HashMap<Integer, Integer>();
 		tuc = new HashMap<Integer, Byte>();
 		mesoValue = new HashMap<Integer, Integer>();
@@ -160,7 +160,7 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		short[] ret = reqStats.get(oId);
-		return ret != null ? ret[StatEffects.Level] : 0;
+		return ret != null ? ret[StatEffect.Level] : 0;
 	}
 
 	public short[] getBonusStats(int itemId) {

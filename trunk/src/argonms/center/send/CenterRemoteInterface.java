@@ -28,6 +28,7 @@ import argonms.center.CenterRemoteSession;
  */
 public abstract class CenterRemoteInterface {
 	private CenterRemoteSession session;
+	protected boolean disconnected;
 
 	public CenterRemoteInterface(CenterRemoteSession session) {
 		this.session = session;
@@ -37,11 +38,15 @@ public abstract class CenterRemoteInterface {
 		return session;
 	}
 
+	public boolean isDisconnected() {
+		return disconnected;
+	}
+
 	public abstract void makePacketProcessor();
 
 	public abstract RemoteCenterPacketProcessor getPacketProcessor();
 
-	public abstract void disconnect();
+	public abstract void disconnected();
 
 	public static CenterRemoteInterface makeByServerId(byte serverId, CenterRemoteSession session) {
 		if (ServerType.isGame(serverId))

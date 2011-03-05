@@ -40,7 +40,7 @@ public class Mob extends MapEntity {
 	private int remHp;
 	private int remMp;
 	private List<MobDeathHook> hooks;
-	private Player highestDamageKiller;
+	private WeakReference<Player> highestDamageKiller;
 	private WeakReference<Player> controller;
 	private boolean aggroAware, hasAggro;
 
@@ -49,6 +49,7 @@ public class Mob extends MapEntity {
 		this.remHp = stats.getMaxHp();
 		this.remMp = stats.getMaxMp();
 		this.hooks = new ArrayList<MobDeathHook>();
+		this.highestDamageKiller = new WeakReference<Player>(null);
 		this.controller = new WeakReference<Player>(null);
 		setStance((byte) 5);
 	}
@@ -62,7 +63,9 @@ public class Mob extends MapEntity {
 		List<ItemDrop> combined = new ArrayList<ItemDrop>(items.size() + 1);
 		for (InventorySlot item : items)
 			combined.add(new ItemDrop(item));
-		combined.add(new ItemDrop(stats.getMesosToDrop()));
+		int dropMesos = stats.getMesosToDrop();
+		if (dropMesos != 0)
+			combined.add(new ItemDrop(dropMesos));
 		Collections.shuffle(combined);
 		return combined;
 	}
@@ -77,7 +80,14 @@ public class Mob extends MapEntity {
 
 	public void died() {
 		for (MobDeathHook hook : hooks)
-			hook.monsterKilled(highestDamageKiller);
+			hook.monsterKilled(highestDamageKiller.get());
+		if (stats.getBuffToGive() > 0) {
+			//TODO, give buff and show message to map
+		}
+	}
+
+	public int getHighestDamageAttacker() {
+		return highestDamageKiller.get() != null ? highestDamageKiller.get().getId() : 0;
 	}
 
 	public Player getController() {
@@ -96,8 +106,22 @@ public class Mob extends MapEntity {
 		return remHp;
 	}
 
+	public int getMaxHp() {
+		return stats.getMaxHp();
+	}
+
 	public int getMp() {
 		return remMp;
+	}
+
+	public int getMaxMp() {
+		return stats.getMaxMp();
+	}
+
+	public void hurt(Player p, int damage) {
+		this.remHp -= damage;
+		//TODO: calculate highest damage attacker
+		this.highestDamageKiller = new WeakReference<Player>(p);
 	}
 
 	public List<Skill> getSkills() {
@@ -143,6 +167,11 @@ public class Mob extends MapEntity {
 		this.aggroAware = aware;
 	}
 
+	public int getAnimationTime(String name) {
+		Integer time = stats.getDelays().get(name);
+		return time != null ? time.intValue() : 0;
+	}
+
 	public MapEntityType getEntityType() {
 		return MapEntityType.MONSTER;
 	}
@@ -155,12 +184,12 @@ public class Mob extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowMonster(this, true, (byte) 0);
+	public byte[][] getCreationMessages() {
+		return new byte[][] { CommonPackets.writeShowMonster(this, true, (byte) 0) };
 	}
 
-	public byte[] getShowEntityMessage() {
-		return CommonPackets.writeShowMonster(this, false, (byte) 0);
+	public byte[][] getShowEntityMessages() {
+		return new byte[][] { CommonPackets.writeShowMonster(this, false, (byte) 0) };
 	}
 
 	public byte[] getOutOfViewMessage() {

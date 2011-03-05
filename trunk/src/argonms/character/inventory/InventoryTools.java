@@ -18,10 +18,10 @@
 
 package argonms.character.inventory;
 
+import argonms.StatEffect;
 import argonms.character.Player;
 import argonms.character.inventory.Equip.WeaponType;
 import argonms.character.inventory.Inventory.InventoryType;
-import argonms.loading.StatEffects;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
 import argonms.tools.Pair;
@@ -253,20 +253,20 @@ public class InventoryTools {
 			else
 				e = new Equip(itemId);
 			short[] statUps = ItemDataLoader.getInstance().getBonusStats(itemId);
-			e.setStr(statUps[StatEffects.STR]);
-			e.setDex(statUps[StatEffects.DEX]);
-			e.setInt(statUps[StatEffects.INT]);
-			e.setLuk(statUps[StatEffects.LUK]);
-			e.setHp(statUps[StatEffects.MHP]);
-			e.setMp(statUps[StatEffects.MMP]);
-			e.setWatk(statUps[StatEffects.PAD]);
-			e.setMatk(statUps[StatEffects.MAD]);
-			e.setWdef(statUps[StatEffects.PDD]);
-			e.setMdef(statUps[StatEffects.MDD]);
-			e.setAcc(statUps[StatEffects.ACC]);
-			e.setAvoid(statUps[StatEffects.EVA]);
-			e.setSpeed(statUps[StatEffects.Speed]);
-			e.setJump(statUps[StatEffects.Jump]);
+			e.setStr(statUps[StatEffect.STR]);
+			e.setDex(statUps[StatEffect.DEX]);
+			e.setInt(statUps[StatEffect.INT]);
+			e.setLuk(statUps[StatEffect.LUK]);
+			e.setHp(statUps[StatEffect.MHP]);
+			e.setMp(statUps[StatEffect.MMP]);
+			e.setWatk(statUps[StatEffect.PAD]);
+			e.setMatk(statUps[StatEffect.MAD]);
+			e.setWdef(statUps[StatEffect.PDD]);
+			e.setMdef(statUps[StatEffect.MDD]);
+			e.setAcc(statUps[StatEffect.ACC]);
+			e.setAvoid(statUps[StatEffect.EVA]);
+			e.setSpeed(statUps[StatEffect.Speed]);
+			e.setJump(statUps[StatEffect.Jump]);
 			e.setUpgradeSlots(ItemDataLoader.getInstance().getUpgradeSlots(itemId));
 			equipCache.put(oId, e);
 		}

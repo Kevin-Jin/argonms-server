@@ -55,7 +55,7 @@ public class WorldChannel {
 		Timer.getInstance().runRepeatedly(new Runnable() {
 			public void run() {
 				for (GameMap map : mapFactory.getMaps().values())
-					map.respawn();
+					map.respawnMobs();
 			}
 		}, 0, 10000);
 		handler = new ClientListener(world, channel, useNio);
@@ -67,12 +67,12 @@ public class WorldChannel {
 
 	public void addPlayer(Player p) {
 		storage.addPlayer(p);
-		increaseLoad();
+		sendNewLoad(storage.getConnectedCount());
 	}
 
 	public void removePlayer(Player p) {
 		storage.deletePlayer(p);
-		decreaseLoad();
+		sendNewLoad(storage.getConnectedCount());
 	}
 
 	public Player getPlayerById(int characterid) {
@@ -87,19 +87,11 @@ public class WorldChannel {
 		return storage.getPlayer(characterid) != null;
 	}
 
-	private void increaseLoad() {
+	private void sendNewLoad(short now) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);
-		lew.writeBool(true);
-		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
-	}
-
-	private void decreaseLoad() {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
-		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
-		lew.writeByte(channel);
-		lew.writeBool(false);
+		lew.writeShort(now);
 		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
 	}
 
