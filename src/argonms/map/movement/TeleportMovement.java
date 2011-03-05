@@ -33,10 +33,8 @@ public class TeleportMovement extends AbsoluteLifeMovement {
 	@Override
 	public void serialize(LittleEndianWriter lew) {
 		lew.writeByte(getType());
-		lew.writeShort((short) getPosition().x);
-		lew.writeShort((short) getPosition().y);
-		lew.writeShort((short) getPixelsPerSecond().x);
-		lew.writeShort((short) getPixelsPerSecond().y);
+		lew.writePos(getPosition());
+		lew.writePos(getPixelsPerSecond());
 		lew.writeByte(getNewstate());
 	}
 }

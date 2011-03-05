@@ -16,41 +16,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.entity;
-
-import java.util.Collections;
-import java.util.List;
+package argonms.character;
 
 /**
  *
  * @author GoldenKevin
  */
-public class NpcShop {
-	private List<ShopItem> stock;
+public enum ClientUpdateKey {
+	SKIN		(0x000001),
+	FACE		(0x000002),
+	HAIR		(0x000004),
+	LEVEL		(0x000010),
+	JOB			(0x000020),
+	STR			(0x000040),
+	DEX			(0x000080),
+	INT			(0x000100),
+	LUK			(0x000200),
+	HP			(0x000400),
+	MAXHP		(0x000800),
+	MP			(0x001000),
+	MAXMP		(0x002000),
+	AVAILABLEAP	(0x004000),
+	AVAILABLESP	(0x008000),
+	EXP			(0x010000),
+	FAME		(0x020000),
+	MESO		(0x040000),
+	PET			(0x180008);
 
-	public int getId() {
-		return 0;
+	private final int mask;
+
+	private ClientUpdateKey(int mask) {
+		this.mask = mask;
 	}
 
-	public List<ShopItem> getStock() {
-		return Collections.unmodifiableList(stock);
-	}
-
-	public class ShopItem {
-		private int itemid;
-		private int price;
-		private short remaining;
-
-		public int getItemId() {
-			return itemid;
-		}
-
-		public int getPrice() {
-			return price;
-		}
-
-		public short getBuyable() {
-			return remaining;
-		}
+	public int getMask() {
+		return mask;
 	}
 }

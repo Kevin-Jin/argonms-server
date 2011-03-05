@@ -72,27 +72,23 @@ public class LoginWorld {
 		gameToChannelMapping.remove(oSi);
 	}
 
-	public void incrementLoad(byte channel) {
-		loads.get(Byte.valueOf(channel)).inc();
-	}
-
-	public void decrementLoad(byte channel) {
-		loads.get(Byte.valueOf(channel)).dec();
+	public void setPopulation(byte channel, short now) {
+		loads.get(Byte.valueOf(channel)).set(now);
 	}
 
 	public int getTotalLoad() {
 		int sum = 0;
 		for (Load l : loads.values())
-			sum += l.value();
+			sum += l.get();
 		return sum;
 	}
 
 	public byte getLeastPopulatedChannel() {
 		byte ch = loads.firstKey().byteValue();
-		short least = loads.get(Byte.valueOf(ch)).value();
+		short least = loads.get(Byte.valueOf(ch)).get();
 		for (Entry<Byte, Load> entry : loads.entrySet()) {
 			byte curCh = entry.getKey().byteValue();
-			short curLoad = entry.getValue().value();
+			short curLoad = entry.getValue().get();
 			if (getPort(curCh) != -1 && curLoad < least) {
 				ch = curCh;
 				least = curLoad;
@@ -141,25 +137,21 @@ public class LoginWorld {
 
 	public short getLoad(byte channel) {
 		Load l = loads.get(Byte.valueOf(channel));
-		return l != null ? l.value() : -1;
+		return l != null ? l.get() : -1;
 	}
 
-	public static class Load {
+	private static class Load {
 		private short value;
 
 		public Load() {
 			this.value = 0;
 		}
 
-		public void inc() {
-			this.value++;
+		public void set(short now) {
+			this.value = now;
 		}
 
-		public void dec() {
-			this.value--;
-		}
-
-		public short value() {
+		public short get() {
 			return value;
 		}
 	}

@@ -60,7 +60,8 @@ public class CenterShopInterface extends CenterRemoteInterface {
 		return port;
 	}
 
-	public void disconnect() {
+	public void disconnected() {
+		disconnected = true;
 		CenterServer.getInstance().shopDisconnected();
 	}
 }

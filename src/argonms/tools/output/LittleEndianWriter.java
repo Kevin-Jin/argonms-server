@@ -18,6 +18,7 @@
 
 package argonms.tools.output;
 
+import java.awt.Point;
 import java.nio.charset.Charset;
 
 /**
@@ -111,6 +112,19 @@ public abstract class LittleEndianWriter {
 		//for (int i = 0; i < b.length; i++)
 			//writeByte(b[i]);
 		write(b);
+		return this;
+	}
+
+	/**
+	 * Writes a 4-byte long Point to the stream (2-bytes for x, 2-bytes for y)
+	 * @param p the Point that contains the x and y coordinates to write. If the
+	 * x or y values are out of the range of the short data type, they will be
+	 * cut off.
+	 * @return
+	 */
+	public LittleEndianWriter writePos(Point p) {
+		writeShort((short) p.x);
+		writeShort((short) p.y);
 		return this;
 	}
 }

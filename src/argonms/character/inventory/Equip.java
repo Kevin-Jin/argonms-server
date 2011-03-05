@@ -42,7 +42,7 @@ public class Equip extends InventorySlot implements Cloneable {
 		KNUCKLE(4.8),
 		GUN(3.715);
 
-		private double damageMultiplier;
+		private final double damageMultiplier;
 
 		private WeaponType(double maxDamageMultiplier) {
 			this.damageMultiplier = maxDamageMultiplier;

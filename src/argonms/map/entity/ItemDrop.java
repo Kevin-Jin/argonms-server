@@ -113,6 +113,11 @@ public class ItemDrop extends MapEntity {
 		pickUp(looter);
 	}
 
+	public void explode() {
+		this.gone = true;
+		this.mod = 4;
+	}
+
 	public void expire() {
 		this.gone = true;
 		this.mod = 0;
@@ -126,12 +131,12 @@ public class ItemDrop extends MapEntity {
 		return !gone;
 	}
 
-	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowItemDrop(this, (byte) 1);
+	public byte[][] getCreationMessages() {
+		return new byte[][] { CommonPackets.writeShowItemDrop(this, (byte) 1) };
 	}
 
-	public byte[] getShowEntityMessage() {
-		return CommonPackets.writeShowItemDrop(this, (byte) 2);
+	public byte[][] getShowEntityMessages() {
+		return new byte[][] { CommonPackets.writeShowItemDrop(this, (byte) 2) };
 	}
 
 	public byte[] getDisappearMessage() {

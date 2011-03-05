@@ -164,7 +164,7 @@ public class ClientListener {
 
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Client from {0} disconnected", e.getChannel().getRemoteAddress());
-			sessions.get(e.getChannel()).getClient().disconnect();
+			sessions.get(e.getChannel()).getClient().disconnected();
 		}
 
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {

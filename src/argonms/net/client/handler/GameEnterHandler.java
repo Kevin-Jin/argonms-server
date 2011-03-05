@@ -22,6 +22,7 @@ import argonms.UserPrivileges;
 import argonms.character.KeyBinding;
 import argonms.character.Player;
 import argonms.character.SkillMacro;
+import argonms.character.skill.Skills;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.WorldChannel;
@@ -90,7 +91,7 @@ public class GameEnterHandler {
 		}*/
 		client.getSession().send(writeEnterMap(player));
 		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
-			player.applyEffect(SkillDataLoader.getInstance().getSkill(9101004).getLevel((byte) 1));
+			player.applyEffect(SkillDataLoader.getInstance().getSkill(Skills.HIDE).getLevel((byte) 1));
 		player.getMap().spawnPlayer(player);
 
 		/*try {

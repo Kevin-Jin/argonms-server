@@ -37,11 +37,11 @@ public class Mist extends MapEntity {
 		return false;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[][] getCreationMessages() {
 		return null;
 	}
 
-	public byte[] getShowEntityMessage() {
+	public byte[][] getShowEntityMessages() {
 		return null;
 	}
 

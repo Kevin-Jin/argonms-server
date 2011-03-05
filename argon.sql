@@ -75,6 +75,17 @@ CREATE TABLE `characters` (
   CONSTRAINT `characters_ibfk_1` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=30000 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS `cooldowns`;
+CREATE TABLE `cooldowns` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `skillid` int(11) NOT NULL,
+  `remaining` smallint(5) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `cooldowns_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `inventoryitems`;
 CREATE TABLE `inventoryitems` (
   `inventoryitemid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,

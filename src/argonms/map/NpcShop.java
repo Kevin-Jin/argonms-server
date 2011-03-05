@@ -16,37 +16,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.movement;
+package argonms.map;
 
-import argonms.tools.output.LittleEndianWriter;
-import java.awt.Point;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ChairMovement extends AbstractLifeMovement {
-	private short unk;
+public class NpcShop {
+	private List<ShopItem> stock;
 
-	public ChairMovement(byte type, Point position, short duration, byte newstate) {
-		super(type, position, duration, newstate);
+	public int getId() {
+		return 0;
 	}
 
-	public short getUnk() {
-		return unk;
+	public List<ShopItem> getStock() {
+		return Collections.unmodifiableList(stock);
 	}
 
-	public void setUnk(short unk) {
-		this.unk = unk;
-	}
+	public class ShopItem {
+		private int itemid;
+		private int price;
+		private short remaining;
 
-	@Override
-	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
-		lew.writeShort(unk);
-		lew.writeByte(getNewstate());
-		lew.writeShort(getDuration());
+		public int getItemId() {
+			return itemid;
+		}
+
+		public int getPrice() {
+			return price;
+		}
+
+		public short getBuyable() {
+			return remaining;
+		}
 	}
 }
-

@@ -18,6 +18,8 @@
 
 package argonms.tools.input;
 
+import java.awt.Point;
+
 /**
  *
  * @author GoldenKevin
@@ -113,5 +115,13 @@ public abstract class LittleEndianReader {
 		for (int i = 0; i < size; i++)
 			bArray[i] = readByte();
 		return bArray;
+	}
+
+	/**
+	 * Read a 4-byte long Point from the stream (2-bytes for x, 2-bytes for y)
+	 * @return
+	 */
+	public Point readPos() {
+		return new Point(readShort(), readShort());
 	}
 }

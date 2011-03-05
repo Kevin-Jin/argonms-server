@@ -40,12 +40,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-//FIXME: This class is not thread safe at all. Although very rarely would you
-//have one server connecting in the exact same millisecond as another, it is
-//still quite possible, and must handled correctly.
 /**
  *
  * @author GoldenKevin
@@ -58,10 +57,15 @@ public class CenterServer {
 	private RemoteServerListener listener;
 	private CenterLoginInterface loginServer;
 	private CenterShopInterface shopServer;
-	private Map<Byte, CenterGameInterface> gameServers;
+	private final Map<Byte, CenterGameInterface> gameServers;
+	private final Lock readLock;
+	private final Lock writeLock;
 
 	private CenterServer() {
 		gameServers = new HashMap<Byte, CenterGameInterface>();
+		ReentrantReadWriteLock locks = new ReentrantReadWriteLock();
+		readLock = locks.readLock();
+		writeLock = locks.writeLock();
 	}
 
 	public void init() {
@@ -108,55 +112,97 @@ public class CenterServer {
 		}
 	}
 
+	/**
+	 * All calls to this method must check for themselves if each
+	 * CenterGameInterface in the list is disconnected before sending a message.
+	 */
 	public List<CenterGameInterface> getAllServersOfWorld(byte world, byte exclusion) {
-		List<CenterGameInterface> servers = new ArrayList<CenterGameInterface>();
-		for (Entry<Byte, CenterGameInterface> entry : gameServers.entrySet()) {
-			byte serverId = entry.getKey().byteValue();
-			CenterGameInterface server = entry.getValue();
-			if (serverId != exclusion && server.getWorld() == world)
-				servers.add(server);
+		readLock.lock();
+		try {
+			List<CenterGameInterface> servers = new ArrayList<CenterGameInterface>();
+			for (Entry<Byte, CenterGameInterface> entry : gameServers.entrySet()) {
+				byte serverId = entry.getKey().byteValue();
+				CenterGameInterface server = entry.getValue();
+				if (serverId != exclusion && server.getWorld() == world)
+					servers.add(server);
+			}
+			return servers;
+		} finally {
+			readLock.unlock();
 		}
-		return servers;
 	}
 
 	public void loginConnected(CenterLoginInterface remote) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(ServerType.LOGIN), remote.getSession().getAddress() });
-		loginServer = remote;
-		sendConnectedGames(remote);
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
+			ServerType.getName(ServerType.LOGIN), remote.getSession().getAddress() });
+		writeLock.lock();
+		try {
+			loginServer = remote;
+			sendConnectedGames(remote);
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void gameConnected(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(serverId), remote.getSession().getAddress() });
-		gameServers.put(Byte.valueOf(serverId), remote);
-		notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
-		sendConnectedShop(remote);
-		sendConnectedGamesOfWorld(remote);
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
+			ServerType.getName(serverId), remote.getSession().getAddress() });
+		writeLock.lock();
+		try {
+			gameServers.put(Byte.valueOf(serverId), remote);
+			notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
+			sendConnectedShop(remote);
+			sendConnectedGamesOfWorld(remote);
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void shopConnected(CenterShopInterface remote) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(ServerType.SHOP), remote.getSession().getAddress() });
-		shopServer = remote;
-		notifyShopConnected(remote.getHost(), remote.getClientPort());
-		sendConnectedGames(remote);
+		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
+			ServerType.getName(ServerType.SHOP), remote.getSession().getAddress() });
+		writeLock.lock();
+		try {
+			shopServer = remote;
+			notifyShopConnected(remote.getHost(), remote.getClientPort());
+			sendConnectedGames(remote);
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void loginDisconnected() {
 		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.LOGIN));
-		loginServer = null;
+		writeLock.lock();
+		try {
+			loginServer = null;
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void gameDisconnected(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
 		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(remote.getServerId()));
-		notifyGameDisconnected(remote.getWorld(), serverId);
-		gameServers.remove(Byte.valueOf(serverId));
+		writeLock.lock();
+		try {
+			notifyGameDisconnected(remote.getWorld(), serverId);
+			gameServers.remove(Byte.valueOf(serverId));
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void shopDisconnected() {
 		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.SHOP));
-		notifyShopDisconnected();
-		shopServer = null;
+		writeLock.lock();
+		try {
+			notifyShopDisconnected();
+			shopServer = null;
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void channelPortChanged(byte world, byte serverId, byte channel, int newPort) {
@@ -168,25 +214,38 @@ public class CenterServer {
 		lew.writeInt(newPort);
 		byte[] bytes = lew.getBytes();
 
-		if (loginServer != null)
-			loginServer.getSession().send(bytes);
-		if (shopServer != null)
-			shopServer.getSession().send(bytes);
-		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-			gameServer.getSession().send(bytes);
+		readLock.lock();
+		try {
+			if (loginServer != null && !loginServer.isDisconnected())
+				loginServer.getSession().send(bytes);
+			if (shopServer != null && !shopServer.isDisconnected())
+				shopServer.getSession().send(bytes);
+			for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
+				if (!gameServer.isDisconnected())
+					gameServer.getSession().send(bytes);
+		} finally {
+			readLock.unlock();
+		}
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void notifyGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		byte[] bytes = writeGameConnected(serverId, world, host, ports);
 
-		if (loginServer != null)
+		if (loginServer != null && !loginServer.isDisconnected())
 			loginServer.getSession().send(bytes);
-		if (shopServer != null)
+		if (shopServer != null && !shopServer.isDisconnected())
 			shopServer.getSession().send(bytes);
 		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-			gameServer.getSession().send(bytes);
+			if (!gameServer.isDisconnected())
+				gameServer.getSession().send(bytes);
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void notifyGameDisconnected(byte world, byte serverId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(2);
 		lew.writeByte(CenterRemoteOps.GAME_DISCONNECTED);
@@ -194,71 +253,115 @@ public class CenterServer {
 		lew.writeByte(world);
 		byte[] bytes = lew.getBytes();
 
-		if (loginServer != null)
+		if (loginServer != null && !loginServer.isDisconnected())
 			loginServer.getSession().send(bytes);
-		if (shopServer != null)
+		if (shopServer != null && !shopServer.isDisconnected())
 			shopServer.getSession().send(bytes);
 		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-			gameServer.getSession().send(bytes);
+			if (!gameServer.isDisconnected())
+				gameServer.getSession().send(bytes);
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void notifyShopConnected(String host, int port) {
 		byte[] bytes = writeShopConnected(host, port);
 
 		for (CenterGameInterface gameServer : gameServers.values())
-			gameServer.getSession().send(bytes);
+			if (!gameServer.isDisconnected())
+				gameServer.getSession().send(bytes);
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void notifyShopDisconnected() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
 		lew.writeByte(CenterRemoteOps.SHOP_DISCONNECTED);
 		byte[] bytes = lew.getBytes();
 
 		for (CenterGameInterface gameServer : gameServers.values())
-			gameServer.getSession().send(bytes);
+			if (!gameServer.isDisconnected())
+				gameServer.getSession().send(bytes);
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void sendConnectedShop(CenterGameInterface game) {
-		if (shopServer != null)
+		if (shopServer != null && !shopServer.isDisconnected())
 			game.getSession().send(writeShopConnected(shopServer.getHost(),
 					shopServer.getClientPort()));
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void sendConnectedGames(CenterRemoteInterface connected) {
 		for (CenterGameInterface game : gameServers.values())
-			connected.getSession().send(writeGameConnected(game.getServerId(),
-					game.getWorld(), game.getHost(), game.getClientPorts()));
+			if (!game.isDisconnected())
+				connected.getSession().send(writeGameConnected(game.getServerId(),
+						game.getWorld(), game.getHost(), game.getClientPorts()));
 	}
 
+	/**
+	 * All calls of this method must have acquired either a read or write lock.
+	 */
 	private void sendConnectedGamesOfWorld(CenterGameInterface connected) {
 		byte ourServerId = connected.getServerId();
 		byte ourWorld = connected.getWorld();
 		for (CenterGameInterface game : gameServers.values())
-			if (game.getServerId() != ourServerId && game.getWorld() == ourWorld)
+			if (!game.isDisconnected() && game.getServerId() != ourServerId && game.getWorld() == ourWorld)
 				connected.getSession().send(writeGameConnected(game.getServerId(),
 						game.getWorld(), game.getHost(), game.getClientPorts()));
 	}
 
 	public boolean isServerConnected(byte serverId) {
-		if (ServerType.isGame(serverId))
-			return gameServers.containsKey(Byte.valueOf(serverId));
-		if (ServerType.isLogin(serverId))
-			return loginServer != null;
-		if (ServerType.isShop(serverId))
-			return shopServer != null;
-		return false;
+		readLock.lock();
+		try {
+			CenterRemoteInterface server = null;
+			if (ServerType.isGame(serverId))
+				server = gameServers.get(Byte.valueOf(serverId));
+			if (ServerType.isLogin(serverId))
+				server = loginServer;
+			if (ServerType.isShop(serverId))
+				server = shopServer;
+			return (server != null && !server.isDisconnected());
+		} finally {
+			readLock.unlock();
+		}
 	}
 
-	public CenterShopInterface getShopServer() {
-		return shopServer;
+	public void sendToLogin(byte[] message) {
+		readLock.lock();
+		try {
+			if (loginServer != null && !loginServer.isDisconnected())
+				loginServer.getSession().send(message);
+		} finally {
+			readLock.unlock();
+		}
 	}
 
-	public CenterLoginInterface getLoginServer() {
-		return loginServer;
+	public void sendToGame(byte serverId, byte[] message) {
+		readLock.lock();
+		try {
+			CenterGameInterface gameServer = gameServers.get(Byte.valueOf(serverId));
+			if (gameServer != null && !gameServer.isDisconnected())
+				gameServer.getSession().send(message);
+		} finally {
+			readLock.unlock();
+		}
 	}
 
-	public CenterGameInterface getGameServer(byte serverId) {
-		return gameServers.get(Byte.valueOf(serverId));
+	public void sendToShop(byte[] message) {
+		readLock.lock();
+		try {
+			if (shopServer != null && !shopServer.isDisconnected())
+				shopServer.getSession().send(message);
+		} finally {
+			readLock.unlock();
+		}
 	}
 
 	private static byte[] writeGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {

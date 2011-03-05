@@ -56,9 +56,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 /**
  *
@@ -75,24 +74,23 @@ public class GameMap {
 	private static final int DROP_EXPIRE = 60000;
 	private final MapStats stats;
 	private final Map<Integer, MapEntity> entities;
+	private final ReadWriteLock entitiesLock;
 	private final Set<Player> players;
+	private final ReadWriteLock playersLock;
 	private final List<MonsterSpawn> monsterSpawns;
-	//TODO: use a separate readLock and writeLock for entities, players, and
-	//monsterSpawns so we don't have to wait for writes to entities when getting
-	//something from monsterSpawns, etc?
-	private final ReadLock readLock;
-	private final WriteLock writeLock;
+	private final ReadWriteLock monsterSpawnsLock;
 	private final AtomicInteger monsters;
+	//no need to be Atomic because it always is locked by entitiesLock...
 	private int nextEntityId;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
 		this.entities = new LinkedHashMap<Integer, MapEntity>();
+		this.entitiesLock = new ReentrantReadWriteLock();
 		this.players = new LinkedHashSet<Player>();
+		this.playersLock = new ReentrantReadWriteLock();
 		this.monsterSpawns = new LinkedList<MonsterSpawn>();
-		ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-		this.readLock = lock.readLock();
-		this.writeLock = lock.writeLock();
+		this.monsterSpawnsLock = new ReentrantReadWriteLock();
 		this.monsters = new AtomicInteger(0);
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
@@ -157,12 +155,21 @@ public class GameMap {
 		return null;
 	}
 
+	/**
+	 * Retrieve the entity on this map with the given entity id.
+	 *
+	 * Make sure to synchronize the returned map entity if necessary (i.e. if
+	 * you modify state data inside it)!
+	 * @param eId the entity id
+	 * @return the map entity with the given id, or null if there is no such
+	 * entity.
+	 */
 	public MapEntity getEntityById(int eId) {
-		readLock.lock();
+		entitiesLock.readLock().lock();
 		try {
 			return entities.get(Integer.valueOf(eId));
 		} finally {
-			readLock.unlock();
+			entitiesLock.readLock().unlock();
 		}
 	}
 
@@ -176,7 +183,7 @@ public class GameMap {
 			else
 				controller = null;
 		int minControlled = Integer.MAX_VALUE;
-		readLock.lock();
+		playersLock.readLock().lock();
 		try {
 			for (Player p : players) {
 				int count = p.getControlledMobs().size();
@@ -187,7 +194,7 @@ public class GameMap {
 				}
 			}
 		} finally {
-			readLock.unlock();
+			playersLock.readLock().unlock();
 		}
 		if (controller != null) {
 			monster.setController(controller);
@@ -202,49 +209,49 @@ public class GameMap {
 	}
 
 	public final void spawnEntity(MapEntity ent) {
-		writeLock.lock();
+		entitiesLock.writeLock().lock();
 		try {
 			ent.setId(nextEntityId++);
 			entities.put(Integer.valueOf(ent.getId()), ent);
 		} finally {
-			writeLock.unlock();
+			entitiesLock.writeLock().unlock();
 		}
 		if (ent.isNonRangedType())
-			sendToAll(ent.getCreationMessage(), ent.getPosition(), null);
+			for (byte[] message : ent.getCreationMessages())
+				sendToAll(message);
 		else
-			sendToAll(ent.getCreationMessage());
+			for (byte[] message : ent.getCreationMessages())
+				sendToAll(message, ent.getPosition(), null);
 	}
 
 	public void spawnPlayer(Player p) {
-		writeLock.lock();
-		try {
-			players.add(p);
-			entities.put(Integer.valueOf(p.getId()), p);
-		} finally {
-			writeLock.unlock();
-		}
-		sendToAll(p.getCreationMessage(), p);
-		readLock.lock();
-		try {
+		entitiesLock.writeLock().lock();
+		try { //write lock allows us to read in mutex, so no need for a readLock
+			for (byte[] message : p.getCreationMessages())
+				sendToAll(message);
+			playersLock.writeLock().lock();
+			try {
+				players.add(p);
+			} finally {
+				playersLock.writeLock().unlock();
+			}
 			for (MapEntity ent : entities.values()) {
 				if (ent.isNonRangedType()) {
-					if (ent != p) //damn, I had to do this, along with the sendToAll
-						//no repeat to source thing because of the refactoring needed
-						//for the ReentrantReadWriteLock (where I had to add the
-						//player before sending packets). Waste of resources, but
-						//saves bandwidth.
-						p.getClient().getSession().send(ent.getShowEntityMessage());
+					for (byte[] message : ent.getShowEntityMessages())
+						p.getClient().getSession().send(message);
 				} else {
 					if (ent.getEntityType() == MapEntityType.MONSTER)
 						updateMonsterController((Mob) ent);
 					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
-						p.getClient().getSession().send(ent.getShowEntityMessage());
+						for (byte[] message : ent.getShowEntityMessages())
+							p.getClient().getSession().send(message);
 						p.addToVisibleMapObjects(ent);
 					}
 				}
 			}
+			entities.put(Integer.valueOf(p.getId()), p);
 		} finally {
-			readLock.unlock();
+			entitiesLock.writeLock().unlock();
 		}
 	}
 
@@ -265,16 +272,17 @@ public class GameMap {
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				readLock.lock();
-				ItemDrop d = null;
+				entitiesLock.readLock().lock();
 				try {
-					d = (ItemDrop) entities.get(eid);
+					ItemDrop d = (ItemDrop) entities.get(eid);
+					if (d != null) {
+						synchronized (d) {
+							d.expire();
+							destroyEntity(d);
+						}
+					}
 				} finally {
-					readLock.unlock();
-				}
-				if (d.isAlive()) {
-					d.expire();
-					destroyEntity(d);
+					entitiesLock.readLock().unlock();
 				}
 			}
 		}, DROP_EXPIRE); //expire after 1 minute
@@ -290,19 +298,19 @@ public class GameMap {
 			spawnMonster(mob);
 		} else {
 			MonsterSpawn sp = new MonsterSpawn(stats, pos, fh, mobTime);
-			writeLock.lock();
+			monsterSpawnsLock.writeLock().lock();
 			try {
 				monsterSpawns.add(sp);
 			} finally {
-				writeLock.unlock();
+				monsterSpawnsLock.writeLock().unlock();
 			}
 			if (sp.shouldSpawn())
-				sp.spawnMonster();
+				spawnMonster(sp.getNewSpawn());
 		}
 	}
 
 	public void destroyEntity(MapEntity ent) {
-		readLock.lock();
+		playersLock.readLock().lock();
 		try {
 			if (!ent.isNonRangedType()) {
 				for (Player p : players)
@@ -312,22 +320,22 @@ public class GameMap {
 				sendToAll(ent.getDestructionMessage());
 			}
 		} finally {
-			readLock.unlock();
+			playersLock.readLock().unlock();
 		}
-		writeLock.lock();
+		entitiesLock.writeLock().lock();
 		try {
 			entities.remove(Integer.valueOf(ent.getId()));
 		} finally {
-			writeLock.unlock();
+			entitiesLock.writeLock().unlock();
 		}
 	}
 
 	public void removePlayer(Player p) {
-		writeLock.lock();
+		playersLock.writeLock().lock();
 		try {
 			players.remove(p);
 		} finally {
-			writeLock.unlock();
+			playersLock.writeLock().unlock();
 		}
 		for (Mob m : p.getControlledMobs()) {
 			m.setController(null);
@@ -340,8 +348,9 @@ public class GameMap {
 
 	public void killMonster(Mob monster, int killer) {
 		monster.died();
+		monsterDrop(monster, monster.getHighestDamageAttacker());
 		destroyEntity(monster);
-		monsterDrop(monster, killer);
+		monsters.decrementAndGet();
 	}
 
 	public void destroyReactor(final Reactor r) {
@@ -386,9 +395,18 @@ public class GameMap {
 				} else {
 					//TODO: apply item effect
 				}
+				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, pickedUp.getQuantity(), false));
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
 			}
+		}
+	}
+
+	public void mesoExplosion(ItemDrop d, Player p) {
+		if (d.getDropType() == ItemDrop.MESOS) {
+			p.gainMesos(d.getMesoValue());
+			d.explode();
+			destroyEntity(d);
 		}
 	}
 
@@ -398,17 +416,23 @@ public class GameMap {
 		spawnEntity(r);
 	}
 
-	public void respawn() {
-		readLock.lock();
+	//FIXME: I think all mobs spawn only on the top spawnpoint. o.O
+	public void respawnMobs() {
+		playersLock.readLock().lock();
 		try {
 			if (players.isEmpty())
 				return;
+		} finally {
+			playersLock.readLock().unlock();
+		}
+		monsterSpawnsLock.readLock().lock();
+		try {
 			int numShouldSpawn = (monsterSpawns.size() - monsters.get()) * Math.round(stats.getMobRate());
 			if (numShouldSpawn > 0) {
 				int spawned = 0;
 				for (MonsterSpawn spawnPoint : monsterSpawns) {
 					if (spawnPoint.shouldSpawn()) {
-						spawnPoint.spawnMonster();
+						spawnMonster(spawnPoint.getNewSpawn());
 						spawned++;
 					}
 					if (spawned >= numShouldSpawn)
@@ -416,7 +440,7 @@ public class GameMap {
 				}
 			}
 		} finally {
-			readLock.unlock();
+			monsterSpawnsLock.readLock().unlock();
 		}
 	}
 
@@ -431,23 +455,30 @@ public class GameMap {
 				iter.remove();
 			}
 		}
-		readLock.lock();
+		entitiesLock.readLock().lock();
 		try {
 			for (MapEntity ent : entities.values()) {
 				if (!ent.isNonRangedType()) {
 					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
-						p.getClient().getSession().send(ent.getShowEntityMessage());
+						for (byte[] message : ent.getShowEntityMessages())
+							p.getClient().getSession().send(message);
 						p.addToVisibleMapObjects(ent);
 					}
 				}
 			}
 		} finally {
-			readLock.unlock();
+			entitiesLock.readLock().unlock();
 		}
 	}
 
 	public void monsterMoved(Player p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
 		sendToAll(writeMonsterMovement(useSkill, skill, skillId, s2, s3, s4, m.getId(), startPos, moves), m.getPosition(), MAX_VIEW_RANGE_SQ, p);
+	}
+
+	public void damageMonster(Player p, Mob m, int damage) {
+		m.hurt(p, damage);
+		if (!m.isAlive())
+			killMonster(m, p.getId());
 	}
 
 	public byte getPortalIdByName(String portalName) {
@@ -507,20 +538,26 @@ public class GameMap {
 		return ret != null ? ret : fallback;
 	}
 
-	private void monsterDrop(Mob monster, int killer) {
-		Point pos = monster.getPosition();
-		int mobX = pos.x;
-		int dropNum = 1;
-		for (ItemDrop drop : monster.getDrops()) {
-			if (drop.getDropType() == 3)
-				pos.x = (int) (mobX + (dropNum % 2 == 0 ? (40 * (dropNum + 1) / 2) : -(40 * (dropNum / 2))));
-			else
-				pos.x = (int) (mobX + (dropNum % 2 == 0 ? (25 * (dropNum + 1) / 2) : -(25 * (dropNum / 2))));
-			drop.init(killer, calcDropPos(pos, monster.getPosition()), monster.getPosition(), monster.getId());
+	//FIXME: drop positions are off. formula for meso drops when not using mcdb
+	//is way off (almost every mob drops mesos, most are usually only +1)
+	private void monsterDrop(final Mob monster, final int owner) {
+		Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				Point pos = monster.getPosition();
+				int mobX = pos.x;
+				int dropNum = 1;
+				for (ItemDrop drop : monster.getDrops()) {
+					if (drop.getDropType() == 3)
+						pos.x = (int) (mobX + (dropNum % 2 == 0 ? (40 * (dropNum + 1) / 2) : -(40 * (dropNum / 2))));
+					else
+						pos.x = (int) (mobX + (dropNum % 2 == 0 ? (25 * (dropNum + 1) / 2) : -(25 * (dropNum / 2))));
+					drop.init(owner, calcDropPos(pos, monster.getPosition()), monster.getPosition(), monster.getId());
 
-			drop(drop);
-			dropNum++;
-		}
+					drop(drop);
+					dropNum++;
+				}
+			}
+		}, monster.getAnimationTime("die1")); //artificial drop lag...
 	}
 
 	/**
@@ -529,12 +566,12 @@ public class GameMap {
 	 * @param message the packet to send to all players
 	 */
 	public void sendToAll(byte[] message) {
-		readLock.lock();
+		playersLock.readLock().lock();
 		try {
 			for (Player p : players)
 				p.getClient().getSession().send(message);
 		} finally {
-			readLock.unlock();
+			playersLock.readLock().unlock();
 		}
 	}
 
@@ -546,13 +583,13 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Player source) {
-		readLock.lock();
+		playersLock.readLock().lock();
 		try {
 			for (Player p : players)
 				if (!p.equals(source))
 					p.getClient().getSession().send(message);
 		} finally {
-			readLock.unlock();
+			playersLock.readLock().unlock();
 		}
 	}
 
@@ -567,14 +604,14 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Point center, double range, Player source) {
-		readLock.lock();
+		playersLock.readLock().lock();
 		try {
 			for (Player p : players)
 				if (!p.equals(source))
 					if (center.distanceSq(p.getPosition()) <= range)
 						p.getClient().getSession().send(message);
 		} finally {
-			readLock.unlock();
+			playersLock.readLock().unlock();
 		}
 	}
 
@@ -623,7 +660,7 @@ public class GameMap {
 			return nextPossibleSpawn <= now;
 		}
 
-		public Mob spawnMonster() {
+		public Mob getNewSpawn() {
 			Mob mob = new Mob(mobStats);
 			mob.setFoothold(foothold);
 			mob.setPosition(new Point(pos));
@@ -638,7 +675,6 @@ public class GameMap {
 					spawnedMonsters.decrementAndGet();
 				}
 			});
-			GameMap.this.spawnMonster(mob);
 			if (mobTime == 0)
 				nextPossibleSpawn = System.currentTimeMillis() + 5000;
 			return mob;
@@ -649,8 +685,7 @@ public class GameMap {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MOVE_PLAYER);
 		lew.writeInt(p.getId());
-		lew.writeShort((short) startPos.x);
-		lew.writeShort((short) startPos.y);
+		lew.writePos(startPos);
 		CommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}
@@ -665,8 +700,7 @@ public class GameMap {
 		lew.writeByte(skillLevel);
 		lew.writeByte(s3);
 		lew.writeByte(s4); //or is this just 0?
-		lew.writeShort((short) startPos.x);
-		lew.writeShort((short) startPos.y);
+		lew.writePos(startPos);
 		CommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}

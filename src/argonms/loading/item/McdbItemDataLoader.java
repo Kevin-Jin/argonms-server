@@ -19,7 +19,7 @@
 package argonms.loading.item;
 
 import argonms.character.inventory.InventoryTools;
-import argonms.loading.StatEffects;
+import argonms.StatEffect;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -128,20 +128,20 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));
 		short[] incStats = new short[16];
 		if (cat.equals("Equip")) {
-			incStats[StatEffects.STR] = rs.getShort("str");
-			incStats[StatEffects.DEX] = rs.getShort("dex");
-			incStats[StatEffects.INT] = rs.getShort("int");
-			incStats[StatEffects.LUK] = rs.getShort("luk");
-			incStats[StatEffects.PAD] = rs.getShort("watk");
-			incStats[StatEffects.PDD] = rs.getShort("wdef");
-			incStats[StatEffects.MAD] = rs.getShort("matk");
-			incStats[StatEffects.MDD] = rs.getShort("mdef");
-			incStats[StatEffects.ACC] = rs.getShort("acc");
-			incStats[StatEffects.EVA] = rs.getShort("avo");
-			incStats[StatEffects.MHP] = rs.getShort("hp");
-			incStats[StatEffects.MMP] = rs.getShort("mp");
-			incStats[StatEffects.Speed] = rs.getShort("speed");
-			incStats[StatEffects.Jump] = rs.getShort("jump");
+			incStats[StatEffect.STR] = rs.getShort("str");
+			incStats[StatEffect.DEX] = rs.getShort("dex");
+			incStats[StatEffect.INT] = rs.getShort("int");
+			incStats[StatEffect.LUK] = rs.getShort("luk");
+			incStats[StatEffect.PAD] = rs.getShort("watk");
+			incStats[StatEffect.PDD] = rs.getShort("wdef");
+			incStats[StatEffect.MAD] = rs.getShort("matk");
+			incStats[StatEffect.MDD] = rs.getShort("mdef");
+			incStats[StatEffect.ACC] = rs.getShort("acc");
+			incStats[StatEffect.EVA] = rs.getShort("avo");
+			incStats[StatEffect.MHP] = rs.getShort("hp");
+			incStats[StatEffect.MMP] = rs.getShort("mp");
+			incStats[StatEffect.Speed] = rs.getShort("speed");
+			incStats[StatEffect.Jump] = rs.getShort("jump");
 
 			if (rs.getInt("cash") != 0)
 				cash.add(oId);
@@ -210,20 +210,20 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				if (!hours.isEmpty())
 					operatingHours.put(oId, hours);
 			} else if (cat.equals("Consume")) {
-				incStats[StatEffects.STR] = rs.getShort("istr");
-				incStats[StatEffects.DEX] = rs.getShort("idex");
-				incStats[StatEffects.INT] = rs.getShort("iint");
-				incStats[StatEffects.LUK] = rs.getShort("iluk");
-				incStats[StatEffects.PAD] = rs.getShort("iwatk");
-				incStats[StatEffects.PDD] = rs.getShort("iwdef");
-				incStats[StatEffects.MAD] = rs.getShort("imatk");
-				incStats[StatEffects.MDD] = rs.getShort("imdef");
-				incStats[StatEffects.ACC] = rs.getShort("iacc");
-				incStats[StatEffects.EVA] = rs.getShort("iavo");
-				incStats[StatEffects.MHP] = rs.getShort("ihp");
-				incStats[StatEffects.MMP] = rs.getShort("imp");
-				incStats[StatEffects.Speed] = rs.getShort("ispeed");
-				incStats[StatEffects.Jump] = rs.getShort("ijump");
+				incStats[StatEffect.STR] = rs.getShort("istr");
+				incStats[StatEffect.DEX] = rs.getShort("idex");
+				incStats[StatEffect.INT] = rs.getShort("iint");
+				incStats[StatEffect.LUK] = rs.getShort("iluk");
+				incStats[StatEffect.PAD] = rs.getShort("iwatk");
+				incStats[StatEffect.PDD] = rs.getShort("iwdef");
+				incStats[StatEffect.MAD] = rs.getShort("imatk");
+				incStats[StatEffect.MDD] = rs.getShort("imdef");
+				incStats[StatEffect.ACC] = rs.getShort("iacc");
+				incStats[StatEffect.EVA] = rs.getShort("iavo");
+				incStats[StatEffect.MHP] = rs.getShort("ihp");
+				incStats[StatEffect.MMP] = rs.getShort("imp");
+				incStats[StatEffect.Speed] = rs.getShort("ispeed");
+				incStats[StatEffect.Jump] = rs.getShort("ijump");
 
 				ArrayList<int[]> mobsToSpawn = new ArrayList<int[]>();
 				try {
@@ -289,7 +289,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 					scrollReqs.put(oId, intList);
 
 				//it would be a waste of memory if all these values were 0, hm...
-				ItemEffect effect = new ItemEffect();
+				ItemEffectsData effect = new ItemEffectsData(itemid);
 				effect.setDuration(rs.getInt("time") * 1000);
 				effect.setHp(rs.getShort("hp"));
 				effect.setMp(rs.getShort("mp"));

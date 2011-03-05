@@ -81,7 +81,7 @@ public class GameClient extends RemoteClient {
 		return GameServer.getInstance().getServerId();
 	}
 
-	public void disconnect() {
+	public void disconnected() {
 		stopPingTask();
 		if (npc != null)
 			npc.endConversation();

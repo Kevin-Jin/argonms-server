@@ -32,7 +32,6 @@ import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
 
-import java.awt.Point;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -344,9 +343,7 @@ public class WorldlistHandler {
 		List<Message> messages = LoginServer.getInstance().getMessages();
 		lew.writeShort((short) messages.size()); //num of messages
 		for (Message msg : messages) {
-			Point pos = msg.getPosition();
-			lew.writeShort((short) pos.x); //(0, 0) = on Scania
-			lew.writeShort((short) pos.y);
+			lew.writePos(msg.getPosition()); //(0, 0) = on Scania
 			lew.writeLengthPrefixedString(msg.getText());
 		}
 

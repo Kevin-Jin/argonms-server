@@ -53,11 +53,10 @@ import java.util.logging.Logger;
 public class GameMovementHandler {
 	private static final Logger LOG = Logger.getLogger(GameMovementHandler.class.getName());
 
+	 //TODO: fix ranged map objects not appearing fast enough when jumping down
 	public static void handleMovePlayer(LittleEndianReader packet, RemoteClient rc) {
 		packet.readByte();
-		short startX = packet.readShort();
-		short startY = packet.readShort();
-		Point startPos = new Point(startX, startY);
+		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
 		if (packet.available() != 18) {
 			LOG.log(Level.WARNING, "Received unusual player movement packet w/ {0} bytes remaining: {1}",
@@ -69,11 +68,13 @@ public class GameMovementHandler {
 		updatePosition (res, player, 0);
 	}
 
-	public static void handleMoveLife(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMoveMob(LittleEndianReader packet, RemoteClient rc) {
 		int objectid = packet.readInt();
 		short moveid = packet.readShort();
 
 		Player player = ((GameClient) rc).getPlayer();
+		//TODO: Synchronize on the mob (for the canUseSkill, which gets Hp, and
+		//the aggro things)
 		MapEntity ent = player.getMap().getEntityById(objectid);
 		if (ent == null || ent.getEntityType() != MapEntityType.MONSTER)
 			return;
@@ -110,9 +111,7 @@ public class GameMovementHandler {
 
 		packet.readByte();
 		packet.readInt();
-		short startX = packet.readShort();
-		short startY = packet.readShort();
-		Point startPos = new Point(startX, startY);
+		Point startPos = packet.readPos();
 
 		res = parseMovement(packet);
 
@@ -154,6 +153,25 @@ public class GameMovementHandler {
 		updatePosition (res, monster, -1);
 	}
 
+	public static void handleMoveNpc(LittleEndianReader packet, RemoteClient rc) {
+		//too complicated to add one NPC animator per map (mobs were bad enough)
+		//so we'll just let all clients animate their own NPCs and echo back
+		//what they send to us.
+		LittleEndianByteArrayWriter lew;
+		int remaining = packet.available();
+		if (remaining == 6) { //speech bubble
+			lew = new LittleEndianByteArrayWriter(8);
+			lew.writeShort(ClientSendOps.MOVE_NPC);
+			//int - entityid, short - messageid
+			lew.writeBytes(packet.readBytes(remaining));
+		} else { //actual movement
+			lew = new LittleEndianByteArrayWriter(remaining - 7);
+			lew.writeShort(ClientSendOps.MOVE_NPC);
+			lew.writeBytes(packet.readBytes(remaining - 9));
+		}
+		rc.getSession().send(lew.getBytes());
+	}
+
 	private static List<LifeMovementFragment> parseMovement(LittleEndianReader packet) {
 		List<LifeMovementFragment> res = new ArrayList<LifeMovementFragment>();
 		int numCommands = packet.readByte();
@@ -163,16 +181,14 @@ public class GameMovementHandler {
 				case 0: // normal move
 				case 5:
 				case 17: { //float
-					short xpos = packet.readShort();
-					short ypos = packet.readShort();
-					short xwobble = packet.readShort();
-					short ywobble = packet.readShort();
+					Point pos = packet.readPos();
+					Point wobble = packet.readPos();
 					short unk = packet.readShort();
 					byte newstate = packet.readByte();
 					short duration = packet.readShort();
-					AbsoluteLifeMovement alm = new AbsoluteLifeMovement(command, new Point(xpos, ypos), duration, newstate);
+					AbsoluteLifeMovement alm = new AbsoluteLifeMovement(command, pos, duration, newstate);
 					alm.setUnk(unk);
-					alm.setPixelsPerSecond(new Point(xwobble, ywobble));
+					alm.setPixelsPerSecond(wobble);
 					res.add(alm);
 					break;
 				} case 1:
@@ -181,11 +197,10 @@ public class GameMovementHandler {
 				case 12:
 				case 13: // Shot-jump-back thing
 				case 16: { //float
-					short xmod = packet.readShort();
-					short ymod = packet.readShort();
+					Point mod = packet.readPos();
 					byte newstate = packet.readByte();
 					short duration = packet.readShort();
-					RelativeLifeMovement rlm = new RelativeLifeMovement(command, new Point(xmod, ymod), duration, newstate);
+					RelativeLifeMovement rlm = new RelativeLifeMovement(command, mod, duration, newstate);
 					res.add(rlm);
 					break;
 				} case 3:
@@ -194,40 +209,35 @@ public class GameMovementHandler {
 				case 8: // assassinate
 				case 9: // rush
 				case 14: {
-					short xpos = packet.readShort();
-					short ypos = packet.readShort();
-					short xwobble = packet.readShort();
-					short ywobble = packet.readShort();
+					Point pos = packet.readPos();
+					Point wobble = packet.readPos();
 					byte newstate = packet.readByte();
-					TeleportMovement tm = new TeleportMovement(command, new Point(xpos, ypos), newstate);
-					tm.setPixelsPerSecond(new Point(xwobble, ywobble));
+					TeleportMovement tm = new TeleportMovement(command, pos, newstate);
+					tm.setPixelsPerSecond(wobble);
 					res.add(tm);
 					break;
 				} case 10: { //change equip???
 					res.add(new ChangeEquipSpecialAwesome(packet.readByte()));
 					break;
 				} case 11: { //chair
-					short xpos = packet.readShort();
-					short ypos = packet.readShort();
+					Point pos = packet.readPos();
 					short unk = packet.readShort();
 					byte newstate = packet.readByte();
 					short duration = packet.readShort();
-					ChairMovement cm = new ChairMovement(command, new Point(xpos, ypos), duration, newstate);
+					ChairMovement cm = new ChairMovement(command, pos, duration, newstate);
 					cm.setUnk(unk);
 					res.add(cm);
 					break;
 				} case 15: {
-					short xpos = packet.readShort();
-					short ypos = packet.readShort();
-					short xwobble = packet.readShort();
-					short ywobble = packet.readShort();
+					Point pos = packet.readPos();
+					Point wobble = packet.readPos();
 					short unk = packet.readShort();
 					short fh = packet.readShort();
 					byte newstate = packet.readByte();
 					short duration = packet.readShort();
-					JumpDownMovement jdm = new JumpDownMovement(command, new Point(xpos, ypos), duration, newstate);
+					JumpDownMovement jdm = new JumpDownMovement(command, pos, duration, newstate);
 					jdm.setUnk(unk);
-					jdm.setPixelsPerSecond(new Point(xwobble, ywobble));
+					jdm.setPixelsPerSecond(wobble);
 					jdm.setFH(fh);
 					res.add(jdm);
 					break;

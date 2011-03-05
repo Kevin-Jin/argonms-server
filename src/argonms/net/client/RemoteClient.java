@@ -137,12 +137,10 @@ public abstract class RemoteClient {
 	public abstract byte getServerId();
 
 	/**
-	 * Notify the other players on the server that this player is logging off
-	 * and save the player's stats to the database.
 	 * DO NOT USE THIS METHOD TO FORCE THE CLIENT TO CLOSE ITSELF. USE
 	 * getSession().close() INSTEAD.
 	 */
-	public abstract void disconnect();
+	public abstract void disconnected();
 
 	private static byte[] pingMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(2);

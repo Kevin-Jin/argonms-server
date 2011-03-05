@@ -33,8 +33,7 @@ public class RelativeLifeMovement extends AbstractLifeMovement {
 	@Override
 	public void serialize(LittleEndianWriter lew) {
 		lew.writeByte(getType());
-		lew.writeShort((short) getPosition().x);
-		lew.writeShort((short) getPosition().y);
+		lew.writePos(getPosition());
 		lew.writeByte(getNewstate());
 		lew.writeShort(getDuration());
 	}

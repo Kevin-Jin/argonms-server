@@ -115,11 +115,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	private void doWork(LittleEndianReader reader) {
 		SkillStats stats = null;
 		byte level;
+		int skillid = -1;
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case NEXT_SKILL:
 					stats = new SkillStats();
-					skillStats.put(Integer.valueOf(reader.readInt()), stats);
+					skillid = reader.readInt();
+					skillStats.put(Integer.valueOf(skillid), stats);
 					break;
 				case ELEM_ATTR:
 					stats.setElemAttr(reader.readNullTerminatedString());
@@ -135,14 +137,14 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					break;
 				case NEXT_LEVEL:
 					level = reader.readByte();
-					stats.addLevel(level, processEffect(reader));
+					stats.addLevel(level, processEffect(skillid, level, reader));
 					break;
 			}
 		}
 	}
 
-	private SkillEffect processEffect(LittleEndianReader reader) {
-		SkillEffect effect = new SkillEffect();
+	private SkillEffectsData processEffect(int skillid, byte level, LittleEndianReader reader) {
+		SkillEffectsData effect = new SkillEffectsData(skillid, level);
 		loop:
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
@@ -177,7 +179,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setMobCount(reader.readByte());
 					break;
 				case KvjEffects.PROP:
-					effect.setProp(reader.readInt() / 100.0);
+					effect.setProp(reader.readShort() / 100.0);
 					break;
 				case KvjEffects.MASTERY:
 					effect.setMastery(reader.readByte());

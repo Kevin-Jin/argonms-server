@@ -238,7 +238,7 @@ public class LoginClient extends RemoteClient {
 		return ServerType.LOGIN;
 	}
 
-	public void disconnect() {
+	public void disconnected() {
 		stopPingTask();
 		getSession().removeClient();
 		setSession(null);

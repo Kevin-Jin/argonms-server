@@ -18,32 +18,16 @@
 
 package argonms.loading;
 
+import java.util.EnumSet;
+import java.util.Set;
+
+import argonms.character.skill.BuffState.BuffKey;
+
 /**
  *
  * @author GoldenKevin
  */
-public abstract class StatEffects {
-	public enum Effect { ITEM, SKILL }
-
-	public static final byte //indicies for a stats array (bonus or req)
-		STR = 0,
-		DEX = 1,
-		INT = 2,
-		LUK = 3,
-		PAD = 4,
-		PDD = 5,
-		MAD = 6,
-		MDD = 7,
-		ACC = 8,
-		EVA = 9,
-		MHP = 10,
-		MMP = 11,
-		Speed = 12,
-		Jump = 13,
-		Level = 14,
-		MaxLevel = 15
-	;
-
+public abstract class StatEffectsData {
 	private int duration;
 	private short watk;
 	private short wdef;
@@ -56,54 +40,70 @@ public abstract class StatEffects {
 	private short speed;
 	private short jump;
 	private int morph;
+	private int sourceid;
+	protected Set<BuffKey> effects;
 
-	public abstract Effect getType();
+	public StatEffectsData(int sourceid) {
+		this.sourceid = sourceid;
+		this.effects = EnumSet.noneOf(BuffKey.class);
+	}
 
 	public void setDuration(int time) {
 		this.duration = time;
 	}
 
 	public void setWatk(short pad) {
+		effects.add(BuffKey.WATK);
 		this.watk = pad;
 	}
 
 	public void setWdef(short pdd) {
+		effects.add(BuffKey.WDEF);
 		this.wdef = pdd;
 	}
 
 	public void setMatk(short mad) {
+		effects.add(BuffKey.MATK);
 		this.matk = mad;
 	}
 
 	public void setMdef(short mdd) {
+		effects.add(BuffKey.MDEF);
 		this.mdef = mdd;
 	}
 
 	public void setAcc(short acc) {
+		effects.add(BuffKey.ACC);
 		this.acc = acc;
 	}
 
 	public void setAvoid(short eva) {
+		effects.add(BuffKey.AVOID);
 		this.avoid = eva;
 	}
 
 	public void setHp(short hp) {
+		effects.add(BuffKey.MAXHP);
 		this.hp = hp;
 	}
 
 	public void setMp(short mp) {
+		effects.add(BuffKey.MAXMP);
 		this.mp = mp;
 	}
 
 	public void setSpeed(short speed) {
+		effects.add(BuffKey.SPEED);
 		this.speed = speed;
 	}
 
 	public void setJump(short jump) {
+		effects.add(BuffKey.JUMP);
 		this.jump = jump;
 	}
 
 	public void setMorph(int id) {
+		effects.add(BuffKey.MORPH);
 		this.morph = id;
 	}
 
@@ -154,4 +154,16 @@ public abstract class StatEffects {
 	public int getMorph() {
 		return morph;
 	}
+
+	public int getDataId() {
+		return sourceid;
+	}
+
+	public Set<BuffKey> getEffects() {
+		return effects;
+	}
+
+	public abstract boolean isSkill();
+	public abstract int hashCode();
+	public abstract byte getLevel();
 }

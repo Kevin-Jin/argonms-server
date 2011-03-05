@@ -103,8 +103,11 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, s);
 				break;
-			case ClientRecvOps.MOVE_LIFE:
-				GameMovementHandler.handleMoveLife(reader, s);
+			case ClientRecvOps.MOVE_MOB:
+				GameMovementHandler.handleMoveMob(reader, s);
+				break;
+			case ClientRecvOps.MOVE_NPC:
+				GameMovementHandler.handleMoveNpc(reader, s);
 				break;
 			case ClientRecvOps.ITEM_PICKUP:
 				InventoryHandler.handleMapItemPickUp(reader, s);

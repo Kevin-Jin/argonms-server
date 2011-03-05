@@ -126,21 +126,15 @@ public class InventoryHandler {
 		/*short y = */packet.readShort();
 		int eid = packet.readInt();
 		Player p = ((GameClient) rc).getPlayer();
-		MapEntity ent = p.getMap().getEntityById(eid);
-		if (ent == null) {
+		//TODO: Synchronize on the item (!d.isAlive and GameMap.pickUpDrop are
+		//not thread safe if two players try picking it up at the exact same time).
+		ItemDrop d = (ItemDrop) p.getMap().getEntityById(eid);
+		if (d == null || !d.isAlive()) {
 			rc.getSession().send(CommonPackets.writeInventoryFull());
 			rc.getSession().send(CommonPackets.writeShowInventoryFull());
 			return;
 		}
-		if (ent.getEntityType() == MapEntityType.ITEM) {
-			ItemDrop d = (ItemDrop) ent;
-			if (!d.isAlive()) {
-				rc.getSession().send(CommonPackets.writeInventoryFull());
-				rc.getSession().send(CommonPackets.writeShowInventoryFull());
-				return;
-			}
-			p.getMap().pickUpDrop(d, p);
-		}
+		p.getMap().pickUpDrop(d, p);
 	}
 
 	private static boolean notStackable(InventorySlot src, InventorySlot dst, short slotMax) {

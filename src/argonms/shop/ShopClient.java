@@ -69,7 +69,7 @@ public class ShopClient extends RemoteClient {
 		return ServerType.SHOP;
 	}
 
-	public void disconnect() {
+	public void disconnected() {
 		stopPingTask();
 		if (player != null) {
 			player.close();

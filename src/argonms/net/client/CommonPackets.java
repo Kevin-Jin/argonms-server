@@ -18,9 +18,12 @@
 
 package argonms.net.client;
 
+import argonms.character.ClientUpdateKey;
 import argonms.character.Player;
-import argonms.character.skill.SkillLevel;
+import argonms.character.skill.SkillEntry;
 import argonms.character.skill.SkillTools;
+import argonms.character.skill.Cooldown;
+import argonms.character.skill.BuffState.BuffKey;
 import argonms.character.inventory.Equip;
 import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
@@ -30,7 +33,6 @@ import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.character.inventory.TamingMob;
-import argonms.character.skill.Cooldown;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mob;
@@ -42,6 +44,7 @@ import argonms.tools.output.LittleEndianWriter;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +68,8 @@ public class CommonPackets {
 		999999999, 999999999, 999999999, 999999999, 999999999,
 		999999999, 999999999, 999999999, 999999999, 999999999
 	};
+
+	private static final Map<ClientUpdateKey, Number> EMPTY_STATUPDATE = Collections.emptyMap();
 
 	/**
 	 * Append item expiration time info to an existing LittleEndianWriter.
@@ -299,21 +304,21 @@ public class CommonPackets {
 		}
 		lew.writeByte((byte) 0); //end of cash inventory
 
-		Map<Integer, SkillLevel> skills = p.getSkills();
+		Map<Integer, SkillEntry> skills = p.getSkillEntries();
 		lew.writeShort((short) skills.size());
-		for (Entry<Integer, SkillLevel> entry : skills.entrySet()) {
+		for (Entry<Integer, SkillEntry> entry : skills.entrySet()) {
 			int skillid = entry.getKey().intValue();
-			SkillLevel skill = entry.getValue();
+			SkillEntry skill = entry.getValue();
 			lew.writeInt(skillid);
 			lew.writeInt(skill.getLevel());
 			if (SkillTools.isFourthJob(skillid))
 				lew.writeInt(skill.getMasterLevel());
 		}
-		Collection<Cooldown> cooldowns = p.getCooldowns();
+		Map<Integer, Cooldown> cooldowns = p.getCooldowns();
 		lew.writeShort((short) cooldowns.size());
-		for (Cooldown cooling : cooldowns) {
-			lew.writeInt(cooling.getParentSkill());
-			lew.writeShort(cooling.getSecondsRemaining());
+		for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
+			lew.writeInt(cooling.getKey().intValue());
+			lew.writeShort(cooling.getValue().getSecondsRemaining());
 		}
 
 		lew.writeShort((short) 0); //ah whatever, implement quests later...
@@ -361,6 +366,92 @@ public class CommonPackets {
 		for (int i = 0; i < 10; i++)
 			lew.writeInt(VIP_MAPS[i]);
 		lew.writeInt(0);
+	}
+
+	/**
+	 * 
+	 * @param stats THIS MAP MUST BE SORTED! Preferably pass an EnumMap.
+	 * @param itemReaction
+	 * @return
+	 */
+	public static byte[] writeUpdatePlayerStats(Map<ClientUpdateKey, ? extends Number> stats, boolean itemReaction) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.PLAYER_STAT_UPDATE);
+		lew.writeBool(itemReaction);
+		int updateMask = 0;
+		for (ClientUpdateKey key : stats.keySet())
+			updateMask |= key.getMask();
+		lew.writeInt(updateMask);
+		for (Entry<ClientUpdateKey, ? extends Number> statupdate : stats.entrySet()) {
+			switch (statupdate.getKey()) {
+				case LEVEL: //unsigned
+					lew.writeByte((byte) statupdate.getValue().shortValue());
+					break;
+				case JOB:
+				case STR:
+				case DEX:
+				case INT:
+				case LUK:
+				case HP:
+				case MAXHP:
+				case MP:
+				case MAXMP:
+				case AVAILABLEAP:
+				case AVAILABLESP:
+					lew.writeShort(statupdate.getValue().shortValue());
+					break;
+				case FACE:
+				case HAIR:
+				case EXP:
+				case FAME:
+				case MESO:
+				case PET:
+					lew.writeInt(statupdate.getValue().intValue());
+					break;
+			}
+		}
+		return lew.getBytes();
+	}
+
+	public static byte[] writeEnableActions() {
+		return writeUpdatePlayerStats(EMPTY_STATUPDATE, true);
+	}
+
+	public static byte[] writeShowMesoGain(int gain, boolean inChat) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(inChat ? 9 : 10);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		if (!inChat) {
+			lew.writeByte((byte) 0);
+			lew.writeByte((byte) 1);
+		} else {
+			lew.writeByte((byte) 5);
+		}
+		lew.writeInt(gain);
+		lew.writeShort((short) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowItemGain(int itemid, int quantity, boolean inChat) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(inChat ? 9 : 20);
+
+		if (!inChat) {
+			lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+			lew.writeShort((short) 0);
+			lew.writeInt(itemid);
+			lew.writeInt(quantity);
+			lew.writeInt(0);
+			lew.writeInt(0);
+		} else {
+			lew.writeShort(ClientSendOps.SHOW_ITEM_GAIN_IN_CHAT);
+			lew.writeByte((byte) 3);
+			lew.writeByte((byte) 1);
+			lew.writeInt(itemid);
+			lew.writeInt(quantity);
+		}
+
+		return lew.getBytes();
 	}
 
 	public static byte[] writeInventoryFull() {
@@ -490,6 +581,14 @@ public class CommonPackets {
 		return writeShowInventoryStatus((byte) 0xFE);
 	}
 
+	public static byte[] writeCooldown(int skill, short seconds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+		lew.writeShort(ClientSendOps.COOLDOWN);
+		lew.writeInt(skill);
+		lew.writeShort(seconds);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeChangeMap(int mapid, byte spawnPoint, Player p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -560,22 +659,24 @@ public class CommonPackets {
 		lew.writeLong(0);
 		lew.writeInt(CHAR_MAGIC_SPAWN);
 		lew.writeShort((short) 0);
-		/*if (p.getBuffedValue(MapleBuffStat.MONSTER_RIDING) != null) {
-			TamingMob mount = p.getEquippedMount();
+		//TODO: should we only check if a player has an equipped
+		//mount, and not if they have monster riding on?
+		if (p.isBuffActive(BuffKey.MONSTER_RIDING)) {
+			/*TamingMob mount = p.getEquippedMount();
 			if (mount != null) {
 				lew.writeInt(mount.getItemId());
 				lew.writeInt(mount.getSkillId());
 				lew.writeInt(CHAR_MAGIC_SPAWN);
-			} else {
+			} else {*/
 				lew.writeInt(1932000);
 				lew.writeInt(5221006);
 				lew.writeInt(CHAR_MAGIC_SPAWN);
-			}
-		} else {*/
+			//}
+		} else {
 			lew.writeInt(0);
 			lew.writeInt(0);
 			lew.writeInt(CHAR_MAGIC_SPAWN);
-		//}
+		}
 
 		lew.writeLong(0);
 		lew.writeInt(CHAR_MAGIC_SPAWN);
@@ -589,9 +690,7 @@ public class CommonPackets {
 		lew.writeInt(0);
 		lew.writeInt(p.getItemEffect());
 		lew.writeInt(p.getChair());
-		Point pos = p.getPosition();
-		lew.writeShort((short) pos.x);
-		lew.writeShort((short) pos.y);
+		lew.writePos(p.getPosition());
 		lew.writeByte((byte) p.getStance());
 		lew.writeShort(p.getFoothold());
 		lew.writeByte((byte) 0);
@@ -601,9 +700,7 @@ public class CommonPackets {
 				lew.writeInt(pet.getItemId());
 				lew.writeLengthPrefixedString(pet.getName());
 				lew.writeLong(pet.getUniqueId());
-				pos = pet.getPosition();
-				lew.writeShort((short) pos.x);
-				lew.writeShort((short) pos.y);
+				lew.writePos(pet.getPosition());
 				lew.writeByte(pet.getStance());
 				lew.writeInt(pet.getFoothold());
 			}
@@ -666,9 +763,7 @@ public class CommonPackets {
 			lew.writeInt(pet.getItemId());
 			lew.writeLengthPrefixedString(pet.getName());
 			lew.writeLong(pet.getUniqueId());
-			Point pos = pet.getPosition();
-			lew.writeShort((short) pos.x);
-			lew.writeShort((short) pos.y);
+			lew.writePos(pet.getPosition());
 			lew.writeByte(pet.getStance());
 			lew.writeShort(pet.getFoothold());
 			lew.writeBool(false); //has name tag
@@ -689,9 +784,7 @@ public class CommonPackets {
 		lew.writeByte((byte) 8);
 		lew.writeInt(0);
 
-		Point pos = monster.getPosition();
-		lew.writeShort((short) pos.x);
-		lew.writeShort((short) pos.y);
+		lew.writePos(monster.getPosition());
 		lew.writeByte(monster.getStance());
 		lew.writeShort((short) 0);
 		lew.writeShort(monster.getFoothold());
@@ -748,14 +841,10 @@ public class CommonPackets {
 		lew.writeInt(drop.getItemId());
 		lew.writeInt(drop.getOwner());
 		lew.writeByte((byte) 0);
-		Point pos = drop.getPosition();
-		lew.writeShort((short) pos.x);
-		lew.writeShort((short) pos.y);
+		lew.writePos(drop.getPosition());
 		if (animation != 2) {
-			lew.writeInt(drop.getOwner());
-			pos = drop.getSourcePos();
-			lew.writeShort((short) pos.x);
-			lew.writeShort((short) pos.y);
+			lew.writeInt(drop.getSourceObjectId());
+			lew.writePos(drop.getSourcePos());
 		} else {
 			lew.writeInt(drop.getSourceObjectId());
 		}
@@ -818,6 +907,7 @@ public class CommonPackets {
 	public static byte[] writeControlNpc(Npc npc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
 		lew.writeShort(ClientSendOps.CONTROL_NPC);
+		lew.writeBool(true);
 		writeNpcData(lew, npc);
 		return lew.getBytes();
 	}

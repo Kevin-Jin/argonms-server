@@ -85,8 +85,8 @@ public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 	private void processPopulationChange(LittleEndianReader packet) {
 		byte world = packet.readByte();
 		byte channel = packet.readByte();
-		boolean increase = packet.readBool();
-		local.changePopulation(world, channel, increase);
+		short now = packet.readShort();
+		local.changePopulation(world, channel, now);
 	}
 
 	private void processChannelPortChange(LittleEndianReader packet) {

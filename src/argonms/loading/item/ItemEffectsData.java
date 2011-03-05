@@ -18,7 +18,7 @@
 
 package argonms.loading.item;
 
-import argonms.loading.StatEffects;
+import argonms.loading.StatEffectsData;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,19 +26,25 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class ItemEffect extends StatEffects {
-	private boolean poison, seal, darkness, weakness, curse;
-	private boolean consumeOnPickup;
+public class ItemEffectsData extends StatEffectsData {
+	private static final byte
+		POISON = (1 << 0),
+		SEAL = (1 << 1),
+		DARKNESS = (1 << 2),
+		WEAKNESS = (1 << 3),
+		CURSE = (1 << 4),
+		CONSUME_ON_PICKUP = (1 << 5)
+	;
+
+	//use a bitfield on boolean fields to save memory...
+	private byte flags;
 	private short hpR, mpR;
 	private int moveTo;
 	private List<Integer> petConsumableBy;
 
-	protected ItemEffect() {
+	protected ItemEffectsData(int itemid) {
+		super(itemid);
 		petConsumableBy = new ArrayList<Integer>();
-	}
-
-	public Effect getType() {
-		return Effect.ITEM;
 	}
 
 	protected void setMoveTo(int map) {
@@ -46,27 +52,27 @@ public class ItemEffect extends StatEffects {
 	}
 
 	protected void setPoison() {
-		this.poison = true;
+		flags |= POISON;
 	}
 
 	protected void setSeal() {
-		this.seal = true;
+		flags |= SEAL;
 	}
 
 	protected void setDarkness() {
-		this.darkness = true;
+		flags |= DARKNESS;
 	}
 
 	protected void setWeakness() {
-		this.weakness = true;
+		flags |= WEAKNESS;
 	}
 
 	protected void setCurse() {
-		this.curse = true;
+		flags |= CURSE;
 	}
 
 	protected void setConsumeOnPickup() {
-		this.consumeOnPickup = true;
+		flags |= CONSUME_ON_PICKUP;
 	}
 
 	protected void addPetConsumableBy(int petid) {
@@ -85,32 +91,32 @@ public class ItemEffect extends StatEffects {
 		return moveTo;
 	}
 
-	public boolean isPoison() {
-		return poison;
+	public boolean curesPoison() {
+		return (flags & POISON) != 0;
 	}
 
-	public boolean isSeal() {
-		return seal;
+	public boolean curesSeal() {
+		return (flags & SEAL) != 0;
 	}
 
-	public boolean isDarkness() {
-		return darkness;
+	public boolean curesDarkness() {
+		return (flags & DARKNESS) != 0;
 	}
 
-	public boolean isWeakness() {
-		return weakness;
+	public boolean curesWeakness() {
+		return (flags & WEAKNESS) != 0;
 	}
 
-	public boolean isCurse() {
-		return curse;
+	public boolean curesCurse() {
+		return (flags & CURSE) != 0;
 	}
 
-	public boolean isConsumeOnPickup() {
-		return consumeOnPickup;
+	public boolean consumeOnPickup() {
+		return (flags & CONSUME_ON_PICKUP) != 0;
 	}
 
-	public boolean petCanConsume(int petId) {
-		return petConsumableBy.contains(Integer.valueOf(petId));
+	public List<Integer> getPetsConsumable() {
+		return petConsumableBy;
 	}
 
 	public short getHpR() {
@@ -119,5 +125,17 @@ public class ItemEffect extends StatEffects {
 
 	public short getMpR() {
 		return mpR;
+	}
+
+	public boolean isSkill() {
+		return false;
+	}
+
+	public int hashCode() {
+		return getDataId();
+	}
+
+	public byte getLevel() {
+		return -1;
 	}
 }

@@ -16,37 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.map.movement;
-
-import argonms.tools.output.LittleEndianWriter;
-import java.awt.Point;
+package argonms.character.skill;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ChairMovement extends AbstractLifeMovement {
-	private short unk;
+public class SkillEntry {
+	private byte level, master;
 
-	public ChairMovement(byte type, Point position, short duration, byte newstate) {
-		super(type, position, duration, newstate);
+	public SkillEntry(byte currentLevel, byte masterLevel) {
+		this.level = currentLevel;
+		this.master = masterLevel;
 	}
 
-	public short getUnk() {
-		return unk;
+	public byte getLevel() {
+		return level;
 	}
 
-	public void setUnk(short unk) {
-		this.unk = unk;
+	public void incrementCurrentLevel() {
+		++level;
 	}
 
-	@Override
-	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
-		lew.writeShort(unk);
-		lew.writeByte(getNewstate());
-		lew.writeShort(getDuration());
+	public byte getMasterLevel() {
+		return master;
+	}
+
+	public void changeMasterLevel(byte newLevel) {
+		this.master = newLevel;
 	}
 }
-

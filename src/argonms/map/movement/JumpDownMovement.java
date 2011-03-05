@@ -61,10 +61,8 @@ public class JumpDownMovement extends AbstractLifeMovement {
 	@Override
 	public void serialize(LittleEndianWriter lew) {
 		lew.writeByte(getType());
-		lew.writeShort((short) getPosition().x);
-		lew.writeShort((short) getPosition().y);
-		lew.writeShort((short) pixelsPerSecond.x);
-		lew.writeShort((short) pixelsPerSecond.y);
+		lew.writePos(getPosition());
+		lew.writePos(pixelsPerSecond);
 		lew.writeShort((short) unk);
 		lew.writeShort((short) fh);
 		lew.writeByte(getNewstate());
