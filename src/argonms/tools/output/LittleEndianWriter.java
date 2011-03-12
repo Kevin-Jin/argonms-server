@@ -22,39 +22,48 @@ import java.awt.Point;
 import java.nio.charset.Charset;
 
 /**
- *
+ * Write data to a stream using little endian byte ordering for
+ * multiple-byte integer types.
+ * Characters (and character strings) are encoded in ASCII.
  * @author GoldenKevin
+ * @version 1.1
  */
 public abstract class LittleEndianWriter {
 	private static final Charset asciiEncoder = Charset.forName("US-ASCII");
 
 	protected abstract void write(byte b);
-	protected abstract void write(byte[] bytes);
+	protected abstract void write(byte... bytes);
 	public abstract void dispose();
 
 	public LittleEndianWriter writeLong(long l) {
-		write((byte) (l & 0xFF));
-		write((byte) ((l >>> 8) & 0xFF));
-		write((byte) ((l >>> 16) & 0xFF));
-		write((byte) ((l >>> 24) & 0xFF));
-		write((byte) ((l >>> 32) & 0xFF));
-		write((byte) ((l >>> 40) & 0xFF));
-		write((byte) ((l >>> 48) & 0xFF));
-		write((byte) ((l >>> 56) & 0xFF));
+		write(
+				(byte) ((l & 0xFF)),
+				(byte) ((l >>> 8) & 0xFF),
+				(byte) ((l >>> 16) & 0xFF),
+				(byte) ((l >>> 24) & 0xFF),
+				(byte) ((l >>> 32) & 0xFF),
+				(byte) ((l >>> 40) & 0xFF),
+				(byte) ((l >>> 48) & 0xFF),
+				(byte) ((l >>> 56) & 0xFF)
+		);
 		return this;
 	}
 
 	public LittleEndianWriter writeInt(int i) {
-		write((byte) (i & 0xFF));
-		write((byte) ((i >>> 8) & 0xFF));
-		write((byte) ((i >>> 16) & 0xFF));
-		write((byte) ((i >>> 24) & 0xFF));
+		write(
+				(byte) ((i & 0xFF)),
+				(byte) ((i >>> 8) & 0xFF),
+				(byte) ((i >>> 16) & 0xFF),
+				(byte) ((i >>> 24) & 0xFF)
+		);
 		return this;
 	}
 
 	public LittleEndianWriter writeShort(short s) {
-		write((byte) (s & 0xFF));
-		write((byte) ((s >>> 8) & 0xFF));
+		write(
+				(byte) ((s & 0xFF)),
+				(byte) ((s >>> 8) & 0xFF)
+		);
 		return this;
 	}
 
@@ -75,16 +84,16 @@ public abstract class LittleEndianWriter {
 
 	public LittleEndianWriter writeNullTerminatedString(String str) {
 		writeBytes(str.getBytes(asciiEncoder));
-		writeByte((byte) 0);
+		writeChar('\0');
 		return this;
 	}
 
 	public LittleEndianWriter writePaddedAsciiString(String str, int n) {
 		int length = Math.min(str.length(), n);
-		for (int x = 0; x < length; x++)
-			writeChar(str.charAt(x));
-		for (int i = n - length; i > 0; i--)
-			writeByte((byte) 0);
+		byte[] space = new byte[n];
+		byte[] ascii = str.getBytes(asciiEncoder);
+		System.arraycopy(ascii, 0, space, 0, length);
+		write(space);
 		return this;
 	}
 
@@ -99,7 +108,7 @@ public abstract class LittleEndianWriter {
 	}
 
 	public LittleEndianWriter writeChar(char c) {
-		writeByte((byte) c);
+		writeByte((byte) c); //just cast since we're using 1-byte ascii chars
 		return this;
 	}
 
@@ -108,9 +117,7 @@ public abstract class LittleEndianWriter {
 		return this;
 	}
 
-	public LittleEndianWriter writeBytes(byte[] b) {
-		//for (int i = 0; i < b.length; i++)
-			//writeByte(b[i]);
+	public LittleEndianWriter writeBytes(byte... b) {
 		write(b);
 		return this;
 	}

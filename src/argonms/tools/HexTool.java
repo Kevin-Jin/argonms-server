@@ -18,24 +18,30 @@
 
 package argonms.tools;
 
-import java.io.ByteArrayOutputStream;
-
 /**
  * Provides a class for manipulating hexadecimal numbers.
  * 
- * Taken from an OdinMS-derived source with a few modifications.
+ * Taken from an OdinMS-derived source. Optimized and modified by GoldenKevin.
  *
  * @author Frz, GoldenKevin
  * @since Revision 206
- * @version 1.1
+ * @version 1.2
  */
 public class HexTool {
-	static private char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 	/**
 	 * Static class dummy constructor.
 	 */
 	private HexTool() {
+	}
+
+	private static char[] toCharArray(byte byteValue) {
+		return new char[] { HEX[(byteValue & 0xF0) >>> 4], HEX[byteValue & 0x0F] };
+	}
+
+	private static char[] toCharArrayWithSpace(byte byteValue) {
+		return new char[] { HEX[(byteValue & 0xF0) >>> 4], HEX[byteValue & 0x0F], ' ' };
 	}
 
 	/**
@@ -45,9 +51,7 @@ public class HexTool {
 	 * @return The hexadecimal representation of <code>byteValue</code>
 	 */
 	public static String toString(byte byteValue) {
-		int tmp = byteValue << 8;
-		char[] retstr = new char[] { HEX[(tmp >> 12) & 0x0F], HEX[(tmp >> 8) & 0x0F] };
-		return String.valueOf(retstr);
+		return String.valueOf(toCharArray(byteValue));
 	}
 
 	/**
@@ -61,18 +65,33 @@ public class HexTool {
 	}
 
 	/**
-	 * Turns an array of bytes into a hexadecimal string.
+	 * Turns an array of bytes into a hexadecimal string with no delimiters.
+	 *
+	 * @param bytes The bytes to convert.
+	 * @return The hexadecimal representation of <code>bytes</code>
+	 */
+	public static String toStringNoSpaces(byte[] bytes) {
+		char[] array = new char[bytes.length * 2];
+		for (int i = 0; i < bytes.length; i++)
+			System.arraycopy(toCharArray(bytes[i]), 0, array, i * 2, 2);
+		return String.valueOf(array);
+	}
+
+	/**
+	 * Turns an array of bytes into a hexadecimal string with each byte
+	 * delimited by a space.
 	 * 
 	 * @param bytes The bytes to convert.
 	 * @return The hexadecimal representation of <code>bytes</code>
 	 */
 	public static String toString(byte[] bytes) {
-		StringBuilder hexed = new StringBuilder();
-		for (int i = 0; i < bytes.length; i++) {
-			hexed.append(toString(bytes[i]));
-			hexed.append(' ');
-		}
-		return hexed.substring(0, hexed.length() - 1);
+		char[] array = new char[bytes.length * 3];
+		for (int i = 0; i < bytes.length; i++)
+			System.arraycopy(toCharArrayWithSpace(bytes[i]), 0, array, i * 3, 3);
+		//somehow faster than StringBuilder.substring...
+		char[] trimmed = new char[array.length - 1];
+		System.arraycopy(array, 0, trimmed, 0, trimmed.length);
+		return String.valueOf(trimmed);
 	}
 
 	/**
@@ -85,64 +104,40 @@ public class HexTool {
 	public static String toStringFromAscii(byte[] bytes) {
 		char[] ret = new char[bytes.length];
 		for (int x = 0; x < bytes.length; x++) {
-			if (bytes[x] < 32 && bytes[x] >= 0) {
-				ret[x] = '.';
-			} else {
-				int chr = ((short) bytes[x]) & 0xFF;
-				ret[x] = (char) chr;
-			}
+			byte b = bytes[x];
+			ret[x] = ((b >= 0x20 && b <= 0x7E) ? ((char) (((short) b) & 0xFF)) : '.');
 		}
 		return String.valueOf(ret);
 	}
-	
-	public static String toPaddedStringFromAscii(byte[] bytes) {
-		String str = toStringFromAscii(bytes);
-		StringBuilder ret = new StringBuilder(str.length() * 3);
-		for (int i = 0; i < str.length(); i++) {
-			ret.append(str.charAt(i));
-			ret.append("  ");
+
+	private static byte[] getByteArrayFromHexString(String hex, boolean delimited) {
+		int len = hex.length();
+		if (delimited) {
+			byte[] data = new byte[len / 3 + 1];
+			for (int i = 0; i < len; i += 3)
+				data[i / 3] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+									 + Character.digit(hex.charAt(i + 1), 16));
+			return data;
+		} else {
+			byte[] data = new byte[len / 2];
+			for (int i = 0; i < len; i += 2)
+				data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+									 + Character.digit(hex.charAt(i + 1), 16));
+			return data;
 		}
-		return ret.toString();
 	}
 
 	/**
 	 * Turns an hexadecimal string into a byte array.
-	 * 
+	 *
+	 * Try not to use this method when writing to a packet.
+	 *
 	 * @param hex The string to convert.
 	 * @return The byte array representation of <code>hex</code>
 	 */
 	public static byte[] getByteArrayFromHexString(String hex) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		int nexti = 0;
-		int nextb = 0;
-		boolean highoc = true;
-		outer: for (;;) {
-			int number = -1;
-			while (number == -1) {
-				if (nexti == hex.length()) {
-					break outer;
-				}
-				char chr = hex.charAt(nexti);
-				if (chr >= '0' && chr <= '9') {
-					number = chr - '0';
-				} else if (chr >= 'a' && chr <= 'f') {
-					number = chr - 'a' + 10;
-				} else if (chr >= 'A' && chr <= 'F') {
-					number = chr - 'A' + 10;
-				} else {
-					number = -1;
-				}
-				nexti++;
-			}
-			if (highoc) {
-				nextb = number << 4;
-				highoc = false;
-			} else {
-				nextb |= number;
-				highoc = true;
-				baos.write(nextb);
-			}
-		}
-		return baos.toByteArray();
+		//return getByteArrayFromHexString(hex, hex.contains(" "));
+		//just perform the same behavior as before...
+		return getByteArrayFromHexString(hex, true);
 	}
 }

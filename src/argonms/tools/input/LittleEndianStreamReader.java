@@ -41,7 +41,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 
 	protected int read() {
 		try {
-			return is.read() & 0xFF;
+			return is.read();
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Could not read one byte from InputStream.", ex);
 			return -1;

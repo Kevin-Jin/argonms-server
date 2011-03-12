@@ -47,6 +47,7 @@ import argonms.tools.Pair;
 import argonms.tools.Timer;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -227,8 +228,9 @@ public class GameMap {
 	public void spawnPlayer(Player p) {
 		entitiesLock.writeLock().lock();
 		try { //write lock allows us to read in mutex, so no need for a readLock
-			for (byte[] message : p.getCreationMessages())
-				sendToAll(message);
+			if (p.isVisible()) //send to other clients if we are not hidden
+				for (byte[] message : p.getCreationMessages())
+					sendToAll(message);
 			playersLock.writeLock().lock();
 			try {
 				players.add(p);
@@ -237,8 +239,9 @@ public class GameMap {
 			}
 			for (MapEntity ent : entities.values()) {
 				if (ent.isNonRangedType()) {
-					for (byte[] message : ent.getShowEntityMessages())
-						p.getClient().getSession().send(message);
+					if (ent.isVisible())
+						for (byte[] message : ent.getShowEntityMessages())
+							p.getClient().getSession().send(message);
 				} else {
 					if (ent.getEntityType() == MapEntityType.MONSTER)
 						updateMonsterController((Mob) ent);
@@ -427,6 +430,9 @@ public class GameMap {
 		}
 		monsterSpawnsLock.readLock().lock();
 		try {
+			if (monsterSpawns.isEmpty())
+				return;
+			Collections.sort(monsterSpawns);
 			int numShouldSpawn = (monsterSpawns.size() - monsters.get()) * Math.round(stats.getMobRate());
 			if (numShouldSpawn > 0) {
 				int spawned = 0;
@@ -631,14 +637,14 @@ public class GameMap {
 		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
 	}
 
-	private class MonsterSpawn {
-		private MobStats mobStats;
-		private Point pos;
-		private short foothold;
+	private class MonsterSpawn implements Comparable<MonsterSpawn> {
+		private final MobStats mobStats;
+		private final Point pos;
+		private final short foothold;
 		private long nextPossibleSpawn;
-		private int mobTime;
-		private AtomicInteger spawnedMonsters;
-		private boolean immobile;
+		private final int mobTime;
+		private final AtomicInteger spawnedMonsters;
+		private final boolean immobile;
 		
 		public MonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
 			this.mobStats = stats;
@@ -647,17 +653,13 @@ public class GameMap {
 			this.mobTime = mobTime;
 			this.immobile = !stats.getDelays().containsKey("move") && !stats.getDelays().containsKey("fly");
 			this.nextPossibleSpawn = System.currentTimeMillis();
-			spawnedMonsters = new AtomicInteger(0);
+			this.spawnedMonsters = new AtomicInteger(0);
 		}
 
 		public boolean shouldSpawn() {
-			return shouldSpawn(System.currentTimeMillis());
-		}
-
-		private boolean shouldSpawn(long now) {
 			if (mobTime < 0 || ((mobTime != 0 || immobile) && spawnedMonsters.get() > 0) || spawnedMonsters.get() > 2)
 				return false;
-			return nextPossibleSpawn <= now;
+			return nextPossibleSpawn <= System.currentTimeMillis();
 		}
 
 		public Mob getNewSpawn() {
@@ -667,17 +669,25 @@ public class GameMap {
 			spawnedMonsters.incrementAndGet();
 			mob.addDeathHook(new MobDeathHook() {
 				public void monsterKilled(Player highestDamageChar) {
-					nextPossibleSpawn = System.currentTimeMillis();
+					//this has to be atomic, so I had to do away with assigning
+					//nextPossibleSpawn more than once.
 					if (mobTime > 0)
-						nextPossibleSpawn += mobTime * 1000;
+						nextPossibleSpawn = System.currentTimeMillis() + mobTime * 1000;
 					else
-						nextPossibleSpawn += mobStats.getDelays().get("die1").intValue();
+						nextPossibleSpawn = System.currentTimeMillis() + mobStats.getDelays().get("die1").intValue();
 					spawnedMonsters.decrementAndGet();
 				}
 			});
 			if (mobTime == 0)
 				nextPossibleSpawn = System.currentTimeMillis() + 5000;
 			return mob;
+		}
+
+		public int compareTo(MonsterSpawn m) {
+			int aliveDelta = spawnedMonsters.get() - m.spawnedMonsters.get();
+			if (aliveDelta == 0)
+				return (int) (nextPossibleSpawn - m.nextPossibleSpawn);
+			return aliveDelta;
 		}
 	}
 

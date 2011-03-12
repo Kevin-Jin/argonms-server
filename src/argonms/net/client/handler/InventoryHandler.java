@@ -26,8 +26,6 @@ import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameClient;
 import argonms.loading.item.ItemDataLoader;
-import argonms.map.MapEntity;
-import argonms.map.MapEntity.MapEntityType;
 import argonms.map.entity.ItemDrop;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
@@ -72,8 +70,9 @@ public class InventoryHandler {
 				toDrop = item;
 				rc.getSession().send(CommonPackets.writeInventoryClearSlot(type, src));
 			} else {
+				item.setQuantity(newQty);
 				toDrop = item.clone();
-				toDrop.setQuantity(newQty);
+				toDrop.setQuantity(qty);
 				rc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);

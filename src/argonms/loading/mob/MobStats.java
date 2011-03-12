@@ -20,9 +20,6 @@ package argonms.loading.mob;
 
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
-import argonms.character.inventory.Item;
-import argonms.character.inventory.Pet;
-import argonms.loading.string.StringDataLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -286,20 +283,9 @@ public class MobStats {
 
 	public List<InventorySlot> getItemsToDrop() {
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
-		for (Entry<Integer, Integer> entry : itemDrops.entrySet()) {
-			if (Math.random() < (entry.getValue().intValue() / 1000000.0)) {
-				int itemid = entry.getKey().intValue();
-				if (InventoryTools.isEquip(itemid)) {
-					items.add(InventoryTools.getCleanEquip(itemid));
-				} else if (InventoryTools.isPet(itemid)) {
-					Pet p = new Pet(itemid);
-					p.setName(StringDataLoader.getInstance().getItemNameFromId(itemid));
-					items.add(p);
-				} else {
-					items.add(new Item(itemid));
-				}
-			}
-		}
+		for (Entry<Integer, Integer> entry : itemDrops.entrySet())
+			if (Math.random() < (entry.getValue().intValue() / 1000000.0))
+				items.add(InventoryTools.makeItemWithId(entry.getKey().intValue()));
 		return items;
 	}
 

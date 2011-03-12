@@ -47,7 +47,7 @@ public class LittleEndianStreamWriter extends LittleEndianWriter {
 		}
 	}
 
-	protected void write(byte[] bytes) {
+	protected void write(byte... bytes) {
 		try {
 			os.write(bytes);
 		} catch (IOException ex) {

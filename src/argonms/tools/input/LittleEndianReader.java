@@ -19,102 +19,95 @@
 package argonms.tools.input;
 
 import java.awt.Point;
+import java.nio.charset.Charset;
 
 /**
- *
+ * Reads a stream that uses little endian byte ordering for multiple-byte
+ * integer types. Characters (and strings) are assumed to be encoded in ASCII.
  * @author GoldenKevin
+ * @version 1.1
  */
 public abstract class LittleEndianReader {
+	private static final Charset asciiEncoder = Charset.forName("US-ASCII");
+
 	protected abstract int read();
 	protected abstract byte[] read(int amount);
 	public abstract void skip(int amount);
 	public abstract int available();
 	public abstract void dispose();
-	
+
 	public long readLong() {
-		long b1, b2, b3, b4, b5, b6, b7, b8;
-		
-		b1 = read();
-		b2 = read();
-		b3 = read();
-		b4 = read();
-		b5 = read();
-		b6 = read();
-		b7 = read();
-		b8 = read();
-		
-		return (b8 << 56) + (b7 << 48) + (b6 << 40) + (b5 << 32) + (b4 << 24) + (b3 << 16) + (b2 << 8) + b1;
+		byte[] bytes = read(8);
+		return (
+				((bytes[0] & 0xFF)) +
+				((bytes[1] & 0xFF) << 8) +
+				((bytes[2] & 0xFF) << 16) +
+				((bytes[3] & 0xFF) << 24) +
+				((long) (bytes[4] & 0xFF) << 32) +
+				((long) (bytes[5] & 0xFF) << 40) +
+				((long) (bytes[6] & 0xFF) << 48) +
+				((long) (bytes[7] & 0xFF) << 56)
+		);
 	}
-	
+
 	public int readInt() {
-		int b1, b2, b3, b4;
-		
-		b1 = read();
-		b2 = read();
-		b3 = read();
-		b4 = read();
-		
-		return (b4 << 24) + (b3 << 16) + (b2 << 8) + b1;
+		byte[] bytes = read(4);
+		return (
+				((bytes[0] & 0xFF)) +
+				((bytes[1] & 0xFF) << 8) +
+				((bytes[2] & 0xFF) << 16) +
+				((bytes[3] & 0xFF) << 24)
+		);
 	}
-	
+
 	public short readShort() {
-		int b1, b2;
-		
-		b1 = read();
-		b2 = read();
-		
-		return (short) ((b2 << 8) + b1);
+		byte[] bytes = read(2);
+		return (short) (
+				((bytes[0] & 0xFF)) +
+				((bytes[1] & 0xFF) << 8)
+		);
 	}
-	
+
 	public byte readByte() {
 		return (byte) read();
 	}
-	
+
 	public float readFloat() {
 		return Float.intBitsToFloat(readInt());
 	}
-	
+
 	public double readDouble() {
 		return Double.longBitsToDouble(readLong());
 	}
-	
+
 	public String readNullTerminatedString() {
 		StringBuilder builder = new StringBuilder();
-		
-		for (byte current = readByte(); current != 0; current = readByte())
-			builder.append((char) current);
-		
+
+		for (char current = readChar(); current != '\0'; current = readChar())
+			builder.append(current);
+
 		return builder.toString();
 	}
-	
+
 	public String readPaddedAsciiString(int n) {
-		char ret[] = new char[n];
-		for (int x = 0; x < n; x++)
-			ret[x] = readChar();
-		return String.valueOf(ret);
+		return new String(read(n), asciiEncoder);
 	}
-	
+
 	public String readLengthPrefixedString() {
 		short length = readShort();
-		char ret[] = new char[length];
-		for (int x = 0; x < length; x++)
-			ret[x] = readChar();
-		return String.valueOf(ret);
+		return new String(read(length), asciiEncoder);
 	}
-	
+
 	public char readChar() {
-		return (char) readByte();
+		return (char) readByte(); //just cast since we're using 1-byte ascii chars
 	}
-	
+
 	public boolean readBool() {
 		return (readByte() > 0);
 	}
-	
+
 	public byte[] readBytes(int size) {
-		byte[] bArray = new byte[size];
-		for (int i = 0; i < size; i++)
-			bArray[i] = readByte();
-		return bArray;
+		return read(size);
 	}
 
 	/**

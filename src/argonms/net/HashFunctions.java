@@ -29,13 +29,13 @@ import java.util.Random;
  * @author Frz
  */
 public class HashFunctions {
-	private static Random rand = new Random();
+	private static final Random rand = new Random();
 
 	private HashFunctions() {
 	}
 
 	private static String toSimpleHexString(byte[] bytes) {
-		return HexTool.toString(bytes).replace(" ", "").toLowerCase();
+		return HexTool.toStringNoSpaces(bytes).toLowerCase();
 	}
 
 	private static String hashWithDigest(String in, String digest) {

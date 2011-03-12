@@ -23,6 +23,7 @@ import argonms.tools.HexTool;
 /**
  *
  * @author GoldenKevin
+ * @version 1.1
  */
 public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 	private byte[] data;
@@ -37,25 +38,23 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		this(32);
 	}
 
-	private void grow() {
-		int newSize = data.length + data.length / 2;
-		while (newSize <= data.length)
-			newSize++;
-		byte[] copy = new byte[newSize];
-		System.arraycopy(data, 0, copy, 0, data.length);
+	private void grow(int min) {
+		int increase = Math.max(data.length / 2, min);
+		byte[] copy = new byte[data.length + increase];
+		System.arraycopy(data, 0, copy, 0, index);
 		data = copy;
 	}
 
 	public void write(byte b) {
 		if (index == data.length)
-			grow();
+			grow(1);
 
 		data[index++] = b;
 	}
 
-	public void write(byte[] bytes) {
-		while (index + bytes.length >= data.length + 1)
-			grow();
+	public void write(byte... bytes) {
+		if (index + bytes.length >= data.length + 1)
+			grow(bytes.length);
 
 		System.arraycopy(bytes, 0, data, index, bytes.length);
 		index += bytes.length;
