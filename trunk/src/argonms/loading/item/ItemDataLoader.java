@@ -126,7 +126,8 @@ public abstract class ItemDataLoader {
 			load(itemId);
 		Short ret = slotMax.get(oId);
 		return ret != null ? ret.shortValue() : (short)
-				(!InventoryTools.isEquip(itemId) ? 100 : 1);
+				(InventoryTools.isEquip(itemId) ||
+				InventoryTools.isPet(itemId) ? 1 : 100);
 	}
 
 	public boolean isTradeBlocked(int itemId) {
@@ -172,6 +173,13 @@ public abstract class ItemDataLoader {
 		return ret != null ? ret.clone() : null;
 	}
 
+	public boolean isCashEquip(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return cash.contains(oId);
+	}
+
 	private boolean isHoliday(Calendar now) {
 		return false;
 	}
@@ -184,10 +192,8 @@ public abstract class ItemDataLoader {
 		int today = nowInLa.get(Calendar.DAY_OF_WEEK);
 		int thisHour = nowInLa.get(Calendar.HOUR_OF_DAY);
 		for (byte[] t : operatingHours.get(oId))
-			if (t[0] == 8) {
-				if (isHoliday(nowInLa) && thisHour >= t[1] && thisHour <= t[2])
-					return true;
-			} else if (t[0] == today && thisHour >= t[1] && thisHour <= t[2])
+			if ((t[0] == today || t[0] == 8 && isHoliday(nowInLa))
+					&& thisHour >= t[1] && thisHour <= t[2])
 				return true;
 		return false;
 	}

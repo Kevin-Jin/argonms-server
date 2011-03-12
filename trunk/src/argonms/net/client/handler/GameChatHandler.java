@@ -20,6 +20,7 @@ package argonms.net.client.handler;
 
 import argonms.UserPrivileges;
 import argonms.character.Player;
+import argonms.game.CommandProcessor;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.net.client.ClientSendOps;
@@ -36,7 +37,8 @@ public class GameChatHandler {
 		String message = packet.readLengthPrefixedString();
 		byte show = packet.readByte();
 		Player p = ((GameClient) rc).getPlayer();
-		p.getMap().sendToAll(writeMapChat(p, message, show));
+		if (!commandProcessed(p, message))
+			p.getMap().sendToAll(writeMapChat(p, message, show));
 	}
 
 	public static void handlePrivateChat(LittleEndianReader packet, RemoteClient rc) {
@@ -47,14 +49,16 @@ public class GameChatHandler {
 			recipients[i] = packet.readInt();
 		String message = packet.readLengthPrefixedString();
 		Player p = ((GameClient) rc).getPlayer();
-		GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
+		if (!commandProcessed(p, message))
+			GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
 	}
 
 	public static void handleSpouseChat(LittleEndianReader packet, RemoteClient rc) {
 		String recipient = packet.readLengthPrefixedString();
-		String msg = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
 		Player p = ((GameClient) rc).getPlayer();
-		GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, msg);
+		if (!commandProcessed(p, message))
+			GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, message);
 	}
 
 	private static byte[] writeMapChat(Player p, String message, byte show) {
@@ -68,5 +72,13 @@ public class GameChatHandler {
 		lew.writeByte(show);
 
 		return lew.getBytes();
+	}
+
+	private static boolean commandProcessed(Player p, String chat) {
+		char first = chat.charAt(0);
+		if (first != '!' && first != '@')
+			return false;
+		CommandProcessor.getInstance().process(p, chat);
+		return true;
 	}
 }

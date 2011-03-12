@@ -28,6 +28,7 @@ import argonms.tools.Pair;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,69 @@ public class InventoryTools {
 		return true;
 	}
 
+	public static InventorySlot makeItemWithId(int itemid) {
+		InventorySlot item;
+		if (isEquip(itemid)) {
+			item = getCleanEquip(itemid);
+		} else if (isPet(itemid)) {
+			item = new Pet(itemid);
+			((Pet) item).setName(StringDataLoader.getInstance().getItemNameFromId(itemid));
+		} else {
+			item = new Item(itemid);
+		}
+		if (isCashItem(itemid)) //TODO: get next unique id
+			item.setUniqueId((long) (Math.random() * Long.MAX_VALUE));
+		return item;
+	}
+
+	public static Pair<List<Short>, List<Short>> addToInventory(Inventory inv, InventorySlot item, short quantity) {
+		List<Short> modifiedSlots = new ArrayList<Short>();
+		List<Short> insertedSlots = new ArrayList<Short>();
+
+		if (quantity > 0) {
+			int itemid = item.getItemId();
+			boolean equip = isEquip(itemid);
+			boolean pet = isPet(itemid);
+
+			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
+			if (!equip && !pet) {
+				for (Short s : inv.getItemSlots(itemid)) {
+					InventorySlot slot = inv.get(s.shortValue());
+					if (slot.getQuantity() < slotMax) {
+						int delta = Math.min(slotMax - slot.getQuantity(), quantity);
+						quantity -= delta;
+						slot.setQuantity((short) (slot.getQuantity() + delta));
+						modifiedSlots.add(s);
+						if (quantity == 0)
+							break;
+					}
+				}
+			}
+
+			if (quantity > 0) {
+				boolean updateUid = isCashItem(itemid);
+				int slotsNeeded = ((quantity - 1) / slotMax) + 1; //ceiling
+				List<Short> freeSlots = inv.getFreeSlots(slotsNeeded);
+				Iterator<Short> i = freeSlots.iterator();
+				while (i.hasNext()) {
+					short s = i.next().shortValue();
+					short slotAmt = (short) Math.min(slotMax, quantity);
+					quantity -= slotAmt;
+					if (!equip && !pet)
+						item.setQuantity(slotAmt);
+					inv.put(s, item);
+					insertedSlots.add(s);
+					if (i.hasNext()) {
+						item = item.clone();
+						if (updateUid) //TODO: get next unique id
+							item.setUniqueId((long) (Math.random() * Long.MAX_VALUE));
+					}
+				}
+			}
+		}
+		return new Pair<List<Short>, List<Short>>(modifiedSlots, insertedSlots);
+	}
+
 	/**
 	 * Distributes the given amount of a particular kind of item in the given
 	 * inventory. Each slot that is used will conform to the correct amount of
@@ -76,50 +140,7 @@ public class InventoryTools {
 	 * were added.
 	 */
 	public static Pair<List<Short>, List<Short>> addToInventory(Inventory inv, int itemid, short quantity) {
-		List<Short> modifiedSlots = new ArrayList<Short>();
-		List<Short> insertedSlots = new ArrayList<Short>();
-
-		if (quantity > 0) {
-			boolean equip = isEquip(itemid);
-			boolean pet = isPet(itemid);
-
-			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
-			if (!equip && !pet) {
-				for (Short s : inv.getItemSlots(itemid)) {
-					InventorySlot slot = inv.get(s.shortValue());
-					if (slot.getQuantity() < slotMax) {
-						int delta = Math.min(slotMax - slot.getQuantity(), quantity);
-						quantity -= delta;
-						slot.setQuantity((short) (slot.getQuantity() + delta));
-						modifiedSlots.add(s);
-					}
-				}
-			}
-
-			if (quantity > 0) {
-				int slotsNeeded = ((quantity - 1) / slotMax) + 1; //ceiling
-				List<Short> freeSlots = inv.getFreeSlots(slotsNeeded);
-				InventorySlot item;
-				if (equip) {
-					item = getCleanEquip(itemid);
-				} else if (pet) {
-					item = new Pet(itemid);
-					((Pet) item).setName(StringDataLoader.getInstance().getItemNameFromId(itemid));
-				} else {
-					item = new Item(itemid);
-				}
-				for (Short s : freeSlots) {
-					short slotAmt = (short) Math.min(slotMax, quantity);
-					quantity -= slotAmt;
-					if (!equip && !pet)
-						item.setQuantity(slotAmt);
-					inv.put(s.shortValue(), item);
-					insertedSlots.add(s.shortValue());
-					item = item.clone();
-				}
-			}
-		}
-		return new Pair<List<Short>, List<Short>>(modifiedSlots, insertedSlots);
+		return addToInventory(inv, makeItemWithId(itemid), quantity);
 	}
 
 	/**
@@ -273,8 +294,7 @@ public class InventoryTools {
 		return equipCache.get(oId).clone();
 	}
 
-	//in the future, this should take into account a player's
-	//skills and stats (i.e. claw mastery for stars)
+	//TODO: take into account a player's skills and stats (i.e. claw mastery for stars)
 	public static short getPersonalSlotMax(Player p, int itemid) {
 		return ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 	}
@@ -317,6 +337,12 @@ public class InventoryTools {
 
 		}
 		return WeaponType.NOT_A_WEAPON;
+	}
+
+	public static boolean isCashItem(int itemId) {
+		if (isEquip(itemId))
+			return ItemDataLoader.getInstance().isCashEquip(itemId);
+		return (itemId >= 5000000 && itemId < 6000000);
 	}
 
 	public static boolean isEquip(int itemId) {

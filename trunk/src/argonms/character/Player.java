@@ -283,8 +283,8 @@ public class Player extends MapEntity {
 							PreparedStatement pps = con.prepareStatement(
 									"INSERT INTO `inventorypets` ("
 									+ "`inventoryitemid`,`position`,`name`,"
-									+ "`level`,`closeness`,`fullness`,`expired` "
-									+ "VALUES (?,?,?,?,?,?,?");
+									+ "`level`,`closeness`,`fullness`,`expired`) "
+									+ "VALUES (?,?,?,?,?,?,?)");
 							pps.setInt(1, inventoryKey);
 							pps.setByte(2, getPetPosition(pet));
 							pps.setString(3, pet.getName());
@@ -607,19 +607,25 @@ public class Player extends MapEntity {
 					item = e;
 				} else {
 					if (InventoryTools.isPet(itemid)) {
+						Pet pet = new Pet(itemid);
 						PreparedStatement pps = con.prepareStatement("SELECT * "
 								+ "FROM `inventorypets` WHERE "
 								+ "`inventoryitemid` = ?");
 						pps.setInt(1, inventoryKey);
 						ResultSet prs = pps.executeQuery();
-						item = new Pet(itemid, prs.getString(4), prs.getByte(5),
-								prs.getShort(6), prs.getByte(7),
-								prs.getBoolean(8));
-						byte pos = prs.getByte(3);
-						if (pos >= 0 && pos < 3)
-							p.equippedPets[pos] = (Pet) item;
+						if (prs.next()) {
+							pet.setName(prs.getString(4));
+							pet.setLevel(prs.getByte(5));
+							pet.setCloseness(prs.getShort(6));
+							pet.setFullness(prs.getByte(7));
+							pet.setExpired(prs.getBoolean(8));
+							byte pos = prs.getByte(3);
+							if (pos >= 0 && pos < 3)
+								p.equippedPets[pos] = pet;
+						}
 						prs.close();
 						pps.close();
+						item = pet;
 					} else {
 						item = new Item(itemid);
 						item.setQuantity(rs.getShort(10));
@@ -1059,6 +1065,9 @@ public class Player extends MapEntity {
 	public byte[][] getCreationMessages() {
 		List<byte[]> messages = new ArrayList<byte[]>(4);
 		messages.add(CommonPackets.writeShowPlayer(this));
+		//TODO: do we not need pet info if we send it in writeShowPlayer?
+		//if so, then we can refactor some of the NPC stuff and make
+		//getCreationMessage return one byte[] instead of byte[][]
 		for (byte i = 0; i < 3; i++)
 			if (equippedPets[i] != null)
 				messages.add(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));

@@ -228,7 +228,7 @@ public class CommonPackets {
 					if (!masking)
 						lew.writeLong(0);
 				} else {
-					lew.writeBytes(HexTool.getByteArrayFromHexString("40 E0 FD 3B 37 4F 01"));
+					lew.writeBytes(new byte[] { 0x40, (byte) 0xE0, (byte) 0xFD, 0x3B, 0x37, 0x4F, 0x01 });
 					lew.writeInt(-1);
 				}
 			}
@@ -539,7 +539,7 @@ public class CommonPackets {
 		lew.writeShort(src);
 		lew.writeShort(srcQty);
 		lew.writeBool(true);
-		lew.write(type.value());
+		lew.writeByte(type.value());
 		lew.writeShort(dst);
 		lew.writeShort(dstQty);
 
@@ -553,7 +553,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte((byte) 2);
 		lew.writeByte((byte) 3);
-		lew.write(type.value());
+		lew.writeByte(type.value());
 		lew.writeShort(src);
 		lew.writeBool(true);
 		lew.writeByte(type.value());
@@ -638,6 +638,8 @@ public class CommonPackets {
 		//}
 		lew.writeInt(0);
 		lew.writeInt(1);
+
+		//TODO: show current buffs to other map players
 		lew.writeByte((byte) 0);
 		lew.writeByte((byte) 0);
 		lew.writeByte((byte) 0);
@@ -647,6 +649,7 @@ public class CommonPackets {
 		lew.writeByte((byte) 0);
 		lew.writeByte((byte) 0);
 		lew.writeInt(0);
+
 		lew.writeByte((byte) 0);
 		lew.writeByte((byte) 0);
 		lew.writeInt(0);
