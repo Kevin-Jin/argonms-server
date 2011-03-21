@@ -18,13 +18,89 @@
 
 package argonms.map.entity;
 
+import java.awt.Rectangle;
+
+import argonms.character.Player;
+import argonms.character.skill.Skills;
+import argonms.loading.skill.MobSkillEffectsData;
 import argonms.map.MapEntity;
+import argonms.net.client.CommonPackets;
 
 /**
  *
  * @author GoldenKevin
  */
 public class Mist extends MapEntity {
+	public static final int
+		MOB_MIST = 0,
+		POISON_MIST = 1,
+		SMOKE_SCREEN = 2
+	;
+
+	private int mistType;
+	private int ownerEid;
+	private int skillId;
+	private byte skillLevel;
+	private short skillDelay;
+	private Rectangle box;
+	private double prop;
+
+	public Mist(Rectangle mistPosition, Mob mob, MobSkillEffectsData skill) {
+		this.mistType = MOB_MIST;
+		this.ownerEid = mob.getId();
+		this.skillId = skill.getDataId();
+		this.skillLevel = skill.getLevel();
+		this.skillDelay = 0;
+		this.box = mistPosition;
+		this.prop = skill.getProp();
+	}
+
+	public Mist(Rectangle mistPosition, Player p, MobSkillEffectsData skill) {
+		this.ownerEid = p.getId();
+		this.skillId = skill.getDataId();
+		this.skillLevel = skill.getLevel();
+		this.box = mistPosition;
+		this.prop = skill.getProp();
+		switch (skillId) {
+			case Skills.SMOKESCREEN:
+				skillDelay = 8;
+				mistType = SMOKE_SCREEN;
+				break;
+			case Skills.POISON_MIST: // FP mist
+				skillDelay = 8;
+				mistType = POISON_MIST;
+				break;
+		}
+	}
+
+	public int getMistType() {
+		return mistType;
+	}
+
+	public int getOwner() {
+		return ownerEid;
+	}
+
+	public int getSkillId() {
+		return skillId;
+	}
+
+	public byte getSkillLevel() {
+		return skillLevel;
+	}
+
+	public short getSkillDelay() {
+		return skillDelay;
+	}
+
+	public Rectangle getBox() {
+		return box;
+	}
+
+	public boolean shouldHurt() {
+		return Math.random() < prop;
+	}
+
 	public MapEntityType getEntityType() {
 		return MapEntityType.MIST;
 	}
@@ -37,12 +113,12 @@ public class Mist extends MapEntity {
 		return false;
 	}
 
-	public byte[][] getCreationMessages() {
-		return null;
+	public byte[] getCreationMessage() {
+		return CommonPackets.writeShowMist(this);
 	}
 
-	public byte[][] getShowEntityMessages() {
-		return null;
+	public byte[] getShowEntityMessage() {
+		return getCreationMessage();
 	}
 
 	public byte[] getOutOfViewMessage() {
@@ -50,7 +126,7 @@ public class Mist extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return null;
+		return CommonPackets.writeRemoveMist(this);
 	}
 
 	public boolean isNonRangedType() {

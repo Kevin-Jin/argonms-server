@@ -46,7 +46,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				stats = new MobStats(mobid);
-				doWork(rs, mobid, stats);
+				doWork(rs, mobid, stats, con);
 			}
 			rs.close();
 			ps.close();
@@ -66,7 +66,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 			while (rs.next()) {
 				int mobid = rs.getInt(1);
 				MobStats stats = new MobStats(mobid);
-				doWork(rs, mobid, stats);
+				doWork(rs, mobid, stats, con);
 				mobStats.put(Integer.valueOf(mobid), stats);
 			}
 			return true;
@@ -104,8 +104,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 		return exists;
 	}
 
-	private void doWork(ResultSet rs, int mobid, MobStats stats) throws SQLException {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void doWork(ResultSet rs, int mobid, MobStats stats, Connection con) throws SQLException {
 		stats.setLevel(rs.getShort(2));
 		stats.setMaxHp(rs.getInt(3));
 		stats.setMaxMp(rs.getInt(4));
@@ -143,9 +142,23 @@ public class McdbMobDataLoader extends MobDataLoader {
 		rs2 = ps.executeQuery();
 		while (rs2.next())
 			if (rs2.getBoolean(1))
-				stats.setMesoDrop(rs.getInt(5), rs.getInt(3), rs.getInt(4));
+				stats.setMesoDrop(rs2.getInt(5), rs2.getInt(3), rs2.getInt(4));
 			else
-				stats.addItemDrop(rs.getInt(2), rs.getInt(5));
+				stats.addItemDrop(rs2.getInt(2), rs2.getInt(5));
+		rs2.close();
+		ps.close();
+		ps = con.prepareStatement("SELECT `attackid`,`mpconsume`,`mpburn`,`disease`,`level`,`deadly` FROM `mobattackdata` WHERE `mobid` = ?");
+		ps.setInt(1, mobid);
+		rs2 = ps.executeQuery();
+		while (rs2.next()) {
+			Attack a = new Attack();
+			a.setMpConsume(rs2.getInt(2));
+			a.setMpBurn((short) Math.min(Short.MAX_VALUE, rs2.getInt(3)));
+			a.setDiseaseSkill(rs2.getByte(4));
+			a.setDiseaseLevel(rs2.getByte(5));
+			a.setDeadlyAttack(rs2.getBoolean(6));
+			stats.addAttack(rs2.getByte(1), a);
+		}
 		rs2.close();
 		ps.close();
 	}

@@ -27,6 +27,7 @@ import java.io.InputStream;
 /**
  *
  * @author GoldenKevin
+ * @version 1.1
  */
 public class LittleEndianByteArrayReader extends LittleEndianReader {
 	private byte[] bytes;
@@ -70,7 +71,7 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 
 	protected byte[] read(int amount) {
 		byte[] ret = new byte[amount];
-		System.arraycopy(bytes, index, ret, 0, (index + amount > bytes.length) ? available() : amount);
+		System.arraycopy(bytes, index, ret, 0, Math.min(available(), amount));
 		index += amount;
 		return ret;
 	}
@@ -85,6 +86,14 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 
 	public void dispose() {
 		bytes = null;
+	}
+
+	public int readInt() {
+		return (read() + (read() << 8) + (read() << 16) + (read() << 24));
+	}
+
+	public short readShort() {
+		return (short) (read() + (read() << 8));
 	}
 
 	/**

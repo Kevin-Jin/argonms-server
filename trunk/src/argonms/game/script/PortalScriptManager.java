@@ -35,6 +35,9 @@ import org.mozilla.javascript.Scriptable;
 public class PortalScriptManager {
 	private static final Logger LOG = Logger.getLogger(PortalScriptManager.class.getName());
 
+	//TODO: maybe we should just return a boolean value instead of calling
+	//PortalActions.abortWarp? We would have to call a function though instead
+	//of entering on the first line in the global scope...
 	public static void runScript(String scriptName, Player p) {
 		Context cx = Context.enter();
 		try {

@@ -34,6 +34,7 @@ import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.game.GameServer;
 import argonms.loading.StatEffectsData;
+import argonms.loading.skill.MobSkillEffectsData;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
@@ -50,10 +51,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -96,8 +99,10 @@ public class Player extends MapEntity {
 	private final Map<Integer, SkillEntry> skillEntries;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<BuffKey, BuffState> activeBuffs;
+	private final Set<Disease> activeDiseases;
 	private final Map<Integer, ScheduledFuture<?>> skillCancels;
 	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
+	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
 
 	private List<MapEntity> visibleObjects;
 	private List<Mob> controllingMobs;
@@ -113,8 +118,10 @@ public class Player extends MapEntity {
 		skillEntries = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		activeBuffs = new EnumMap<BuffKey, BuffState>(BuffKey.class);
+		activeDiseases = EnumSet.noneOf(Disease.class);
 		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
+		diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		visibleObjects = new ArrayList<MapEntity>();
 		controllingMobs = new ArrayList<Mob>();
 	}
@@ -773,12 +780,32 @@ public class Player extends MapEntity {
 		return maxHp;
 	}
 
+	public void setHp(short newHp) {
+		this.remHp = newHp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+	}
+
+	public void gainHp(int gain) {
+		this.remHp += gain;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+	}
+
 	public short getMp() {
 		return remMp;
 	}
 
 	public short getMaxMp() {
 		return maxMp;
+	}
+
+	public void setMp(short newMp) {
+		this.remMp = newMp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
+	}
+
+	public void gainMp(int gain) {
+		this.remMp += gain;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
 	}
 
 	public short getAp() {
@@ -793,6 +820,11 @@ public class Player extends MapEntity {
 		return exp;
 	}
 
+	public void gainExp(int gain) {
+		this.exp += gain;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
+	}
+
 	public Inventory getInventory(InventoryType type) {
 		return inventories.get(type);
 	}
@@ -805,11 +837,6 @@ public class Player extends MapEntity {
 		this.mesos += gain;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), false));
 		getClient().getSession().send(CommonPackets.writeShowMesoGain(gain, false));
-	}
-
-	public void gainHp(int gain) {
-		this.remHp += gain;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
 	}
 
 	public short getFame() {
@@ -894,21 +921,24 @@ public class Player extends MapEntity {
 	public void applyEffect(final StatEffectsData e) {
 		synchronized (activeBuffs) {
 			for (BuffKey buff : e.getEffects())
-				activeBuffs.put(buff, new BuffState(e.getDataId(), e.getLevel()));
+				activeBuffs.put(buff, new BuffState(e));
 		}
 		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				dispelEffect(e);
 			}
 		}, e.getDuration());
-		if (e.isSkill()) {
-			synchronized (skillCancels) {
-				skillCancels.put(e.getDataId(), cancelTask);
-			}
-		} else {
-			synchronized (itemEffectCancels) {
-				itemEffectCancels.put(e.getDataId(), cancelTask);
-			}
+		switch (e.getSourceType()) {
+			case SKILL:
+				synchronized (skillCancels) {
+					skillCancels.put(e.getDataId(), cancelTask);
+				}
+				break;
+			case ITEM:
+				synchronized (itemEffectCancels) {
+					itemEffectCancels.put(e.getDataId(), cancelTask);
+				}
+				break;
 		}
 	}
 
@@ -927,14 +957,17 @@ public class Player extends MapEntity {
 				dispelBuff(buff, activeBuffs.remove(buff));
 			}
 		}
-		if (e.isSkill()) {
-			synchronized (skillCancels) {
-				skillCancels.remove(e.getDataId()).cancel(true);
-			}
-		} else {
-			synchronized (itemEffectCancels) {
-				itemEffectCancels.remove(e.getDataId()).cancel(true);
-			}
+		switch (e.getSourceType()) {
+			case SKILL:
+				synchronized (skillCancels) {
+					skillCancels.remove(e.getDataId()).cancel(true);
+				}
+				break;
+			case ITEM:
+				synchronized (itemEffectCancels) {
+					itemEffectCancels.remove(e.getDataId()).cancel(true);
+				}
+				break;
 		}
 	}
 
@@ -952,6 +985,28 @@ public class Player extends MapEntity {
 
 	public int getItemEffect() {
 		return 0;
+	}
+
+	public void applyDisease(final MobSkillEffectsData s) {
+		synchronized (activeDiseases) {
+			activeDiseases.add(s.getDisease());
+		}
+		synchronized (diseaseCancels) {
+			diseaseCancels.put(s.getDataId(), Timer.getInstance().runAfterDelay(new Runnable() {
+				public void run() {
+					dispelDisease(s);
+				}
+			}, s.getDuration()));
+		}
+	}
+
+	public void dispelDisease(MobSkillEffectsData s) {
+		synchronized (activeDiseases) {
+			activeDiseases.remove(s.getDisease());
+		}
+		synchronized (diseaseCancels) {
+			diseaseCancels.remove(s.getDataId()).cancel(true);
+		}
 	}
 
 	public int getChair() {
@@ -1062,20 +1117,12 @@ public class Player extends MapEntity {
 		return !isBuffActive(BuffKey.HIDE);
 	}
 
-	public byte[][] getCreationMessages() {
-		List<byte[]> messages = new ArrayList<byte[]>(4);
-		messages.add(CommonPackets.writeShowPlayer(this));
-		//TODO: do we not need pet info if we send it in writeShowPlayer?
-		//if so, then we can refactor some of the NPC stuff and make
-		//getCreationMessage return one byte[] instead of byte[][]
-		for (byte i = 0; i < 3; i++)
-			if (equippedPets[i] != null)
-				messages.add(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));
-		return messages.toArray(new byte[messages.size()][]);
+	public byte[] getCreationMessage() {
+		return CommonPackets.writeShowPlayer(this);
 	}
 
-	public byte[][] getShowEntityMessages() {
-		return getCreationMessages();
+	public byte[] getShowEntityMessage() {
+		return getCreationMessage();
 	}
 
 	public byte[] getOutOfViewMessage() {

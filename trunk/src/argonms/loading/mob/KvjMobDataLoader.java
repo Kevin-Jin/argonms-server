@@ -191,12 +191,12 @@ public class KvjMobDataLoader extends MobDataLoader {
 	}
 
 	private void processAttack(LittleEndianReader reader, MobStats stats) {
-		int attackid = reader.readInt();
+		byte attackid = reader.readByte();
 		Attack a = new Attack();
 		a.setDeadlyAttack(reader.readBool());
-		a.setMpBurn(reader.readInt());
-		a.setDiseaseSkill(reader.readInt());
-		a.setDiseaseLevel(reader.readInt());
+		a.setMpBurn(reader.readShort());
+		a.setDiseaseSkill(reader.readByte());
+		a.setDiseaseLevel(reader.readByte());
 		a.setMpConsume(reader.readInt());
 		stats.addAttack(attackid, a);
 	}

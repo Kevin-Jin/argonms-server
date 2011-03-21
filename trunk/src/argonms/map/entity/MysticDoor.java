@@ -25,71 +25,35 @@ import argonms.net.client.CommonPackets;
  *
  * @author GoldenKevin
  */
-public class Npc extends MapEntity {
-	private int npcid;
-	private short rx0, rx1;
-	private short cy;
-	private boolean f;
+public class MysticDoor extends MapEntity {
+	private boolean townDoor;
 
-	public Npc(int npcid) {
-		this.npcid = npcid;
-	}
-
-	public int getNpcId() {
-		return npcid;
-	}
-
-	public void setRx(short rx0, short rx1) {
-		this.rx0 = rx0;
-		this.rx1 = rx1;
-	}
-
-	public void setCy(short cy) {
-		this.cy = cy;
-	}
-
-	public void setF(boolean f) {
-		this.f = f;
-	}
-
-	public short getRx0() {
-		return rx0;
-	}
-
-	public short getRx1() {
-		return rx1;
-	}
-
-	public boolean isF() {
-		return f;
-	}
-
-	public short getCy() {
-		return cy;
-	}
-
-	public byte[] getShopPacket() {
-		return null;
+	public MysticDoor(boolean town) {
+		this.townDoor = town;
 	}
 
 	public MapEntityType getEntityType() {
-		return MapEntityType.NPC;
+		return MapEntityType.DOOR;
+	}
+
+	public boolean isInTown() {
+		return townDoor;
 	}
 
 	public boolean isAlive() {
-		return true;
+		return false;
 	}
 
 	public boolean isVisible() {
-		return true;
+		return false;
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowNpc(this);
+		return CommonPackets.writeShowMysticDoor(this);
 	}
 
 	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
+		return null; //TODO: return something... it is ranged after all
 	}
 
 	public byte[] getOutOfViewMessage() {
@@ -97,10 +61,10 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveNpc(this);
+		return CommonPackets.writeRemoveMysticDoor(this);
 	}
 
 	public boolean isNonRangedType() {
-		return true;
+		return false;
 	}
 }

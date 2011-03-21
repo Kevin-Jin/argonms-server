@@ -21,7 +21,7 @@ package argonms.net.client.handler;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.loading.mob.Skill;
-import argonms.loading.skill.MobSkillEffect;
+import argonms.loading.skill.MobSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.map.MapEntity;
 import argonms.map.MapEntity.MapEntityType;
@@ -89,7 +89,7 @@ public class GameMovementHandler {
 		byte skill4 = packet.readByte();
 
 		Skill skillToUse = null;
-		MobSkillEffect skillToUseEffect = null;
+		MobSkillEffectsData skillToUseEffect = null;
 		Random rand = new Random();
 
 		List<Skill> skills = monster.getSkills();
@@ -101,10 +101,11 @@ public class GameMovementHandler {
 				skillToUse = null;
 				skillToUseEffect = null;
 			}
+			//TODO: apply mob skill
 		}
 
 		if ((skillId >= 100 && skillId <= 200) && monster.hasSkill(skillId, skillLevel)) {
-			MobSkillEffect playerSkillEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
+			MobSkillEffectsData playerSkillEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
 			if (playerSkillEffect != null && monster.canUseSkill(playerSkillEffect))
 				monster.applyEffect(playerSkillEffect, player, true);
 		}

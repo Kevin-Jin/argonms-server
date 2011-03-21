@@ -1,14 +1,11 @@
 /*
- * This file is part of the OdinMS Maple Story Server
- * Copyright (C) 2008 Patrick Huy <patrick.huy@frz.cc>
- *                    Matthias Butz <matze@odinms.de>
- *                    Jan Christian Meyer <vimes@odinms.de>
+ * ArgonMS MapleStory server emulator written in Java
+ * Copyright (C) 2011  GoldenKevin
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License version 3
- * as published by the Free Software Foundation. You may not use, modify
- * or distribute this program under any other version of the
- * GNU Affero General Public License.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,8 +17,13 @@
  */
 
 /**
+ * advice07
+ * Maple Road: A Split Road (Map 50000)
+ * 
+ * Gives an hint to new players on how to open the world map.
  *
  * @author GoldenKevin
  */
 
 portal.showHint("You can view the World Map by pressing the #e#b[W]#k#nkey.", 350, 5);
+portal.abortWarp();

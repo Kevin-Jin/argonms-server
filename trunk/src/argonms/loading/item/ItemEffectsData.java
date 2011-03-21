@@ -47,6 +47,10 @@ public class ItemEffectsData extends StatEffectsData {
 		petConsumableBy = new ArrayList<Integer>();
 	}
 
+	public EffectSource getSourceType() {
+		return EffectSource.ITEM;
+	}
+
 	protected void setMoveTo(int map) {
 		this.moveTo = map;
 	}
@@ -125,10 +129,6 @@ public class ItemEffectsData extends StatEffectsData {
 
 	public short getMpR() {
 		return mpR;
-	}
-
-	public boolean isSkill() {
-		return false;
 	}
 
 	public int hashCode() {

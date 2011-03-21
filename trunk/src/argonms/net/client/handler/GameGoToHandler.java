@@ -23,6 +23,7 @@ import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.net.client.ClientSendOps;
+import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.Pair;
 import argonms.tools.input.LittleEndianReader;
@@ -64,8 +65,8 @@ public class GameGoToHandler {
 		if (dest != -1) { //map client command - only let GMs use them.
 			if (p.getPrivilegeLevel() > UserPrivileges.USER)
 				p.changeMap(dest);
-		} else {
-			p.getMap().enterPortal(p, portalName);
+		} else if (!p.getMap().enterPortal(p, portalName)) {
+			rc.getSession().send(CommonPackets.writeEnableActions());
 		}
 	}
 

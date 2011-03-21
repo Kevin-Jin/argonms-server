@@ -27,7 +27,9 @@ import argonms.net.client.handler.GameEnterHandler;
 import argonms.net.client.handler.GameGoToHandler;
 import argonms.net.client.handler.GameMovementHandler;
 import argonms.net.client.handler.GameNpcHandler;
+import argonms.net.client.handler.GamePlayerHandler;
 import argonms.net.client.handler.InventoryHandler;
+import argonms.net.client.handler.TakeDamageHandler;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -82,8 +84,14 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.MAGIC_ATTACK:
 				DealDamageHandler.handleMagicAttack(reader, s);
 				break;
+			case ClientRecvOps.TAKE_DAMAGE:
+				TakeDamageHandler.handleTakeDamage(reader, s);
+				break;
 			case ClientRecvOps.MAP_CHAT:
 				GameChatHandler.handleMapChat(reader, s);
+				break;
+			case ClientRecvOps.FACIAL_EXPRESSION:
+				GamePlayerHandler.handleEmote(reader, s);
 				break;
 			case ClientRecvOps.NPC_TALK:
 				GameNpcHandler.handleStartConversation(reader, s);
@@ -93,6 +101,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				break;
 			case ClientRecvOps.ITEM_MOVE:
 				InventoryHandler.handleItemMove(reader, s);
+				break;
+			case ClientRecvOps.HEAL_OVER_TIME:
+				GamePlayerHandler.handleReplenishHpMp(reader, s);
 				break;
 			case ClientRecvOps.MESO_DROP:
 				InventoryHandler.handleMesoDrop(reader, s);

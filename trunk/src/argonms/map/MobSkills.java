@@ -22,37 +22,19 @@ package argonms.map;
  *
  * @author GoldenKevin
  */
-public enum MonsterStatus {
-	WATK				(0x00000001),
-	WDEF				(0x00000002),
-	MATK				(0x00000004),
-	MDEF				(0x00000008),
-	ACC					(0x00000010),
-	AVOID				(0x00000020),
-	SPEED				(0x00000040),
-	STUN				(0x00000080),
-	FREEZE				(0x00000100),
-	POISON				(0x00000200),
-	SEAL				(0x00000400),
-	TAUNT				(0x00000800),
-	WEAPON_ATTACK_UP	(0x00001000),
-	WEAPON_DEFENSE_UP	(0x00002000),
-	MAGIC_ATTACK_UP		(0x00004000),
-	MAGIC_DEFENSE_UP	(0x00008000),
-	DOOM				(0x00010000),
-	SHADOW_WEB			(0x00020000),
-	WEAPON_IMMUNITY		(0x00040000),
-	MAGIC_IMMUNITY		(0x00080000),
-	NINJA_AMBUSH		(0x00400000),
-	INERTMOB			(0x10000000);
+public final class MobSkills {
+	public static final int
+		HEAL = 114,
+		DISPEL = 127,
+		SEDUCE = 128,
+		BANISH = 129,
+		MIST = 131,
+		PHYSICAL_IMMUNITY = 140,
+		MAGIC_IMMUNITY = 141,
+		SUMMON = 200
+	;
 
-	private final int mask;
-
-	private MonsterStatus(int mask) {
-		this.mask = mask;
-	}
-
-	public int getMask() {
-		return mask;
+	private MobSkills() {
+		//uninstantiable...
 	}
 }

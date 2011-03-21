@@ -28,6 +28,8 @@ import argonms.character.skill.BuffState.BuffKey;
  * @author GoldenKevin
  */
 public abstract class StatEffectsData {
+	public enum EffectSource { ITEM, SKILL }
+
 	private int duration;
 	private short watk;
 	private short wdef;
@@ -47,6 +49,8 @@ public abstract class StatEffectsData {
 		this.sourceid = sourceid;
 		this.effects = EnumSet.noneOf(BuffKey.class);
 	}
+
+	public abstract EffectSource getSourceType();
 
 	public void setDuration(int time) {
 		this.duration = time;
@@ -163,7 +167,6 @@ public abstract class StatEffectsData {
 		return effects;
 	}
 
-	public abstract boolean isSkill();
 	public abstract int hashCode();
 	public abstract byte getLevel();
 }

@@ -18,7 +18,8 @@
 
 /**
  * Sera (NPC 2100)
- * Entrance - Mushroom Town Training Camp (Map 0/3, Map 1)
+ * Maple Road: Entrance - Mushroom Town Training Camp (Map 0),
+ *   Maple Road: Upper level of the Training Camp (Map 1)
  *
  * Greets newly created players at the entrance of the Mushroom Town Training
  * Camp, and gives a player some help in Upper Level of the Training Camp.

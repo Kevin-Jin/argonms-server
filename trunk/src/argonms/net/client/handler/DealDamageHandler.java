@@ -29,7 +29,6 @@ import argonms.loading.skill.SkillStats;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
 import argonms.map.MapEntity.MapEntityType;
-import argonms.map.MonsterStatus;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mob;
 import argonms.net.client.ClientSendOps;

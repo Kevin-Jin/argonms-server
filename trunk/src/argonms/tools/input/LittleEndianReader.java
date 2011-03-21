@@ -19,7 +19,6 @@
 package argonms.tools.input;
 
 import java.awt.Point;
-import java.nio.charset.Charset;
 
 /**
  * Reads a stream that uses little endian byte ordering for multiple-byte
@@ -28,8 +27,6 @@ import java.nio.charset.Charset;
  * @version 1.1
  */
 public abstract class LittleEndianReader {
-	private static final Charset asciiEncoder = Charset.forName("US-ASCII");
-
 	protected abstract int read();
 	protected abstract byte[] read(int amount);
 	public abstract void skip(int amount);
@@ -89,15 +86,30 @@ public abstract class LittleEndianReader {
 		return builder.toString();
 	}
 
+	//this way, we don't have to call the public method readPaddedAsciiString
+	//in readLengthPrefixedString... improves performance somewhat (inlining)
+	//and if somebody overrides readPaddedAsciiString, it won't screw it up.
+	private String readKnownLengthAsciiString(int n) {
+		//uses O(2n) memory, but takes half as long than alternatives
+		byte[] bytes = read(n);
+		char[] ret = new char[n];
+		for (int x = 0; x < n; x++)
+			ret[x] = (char) bytes[x];
+		return String.valueOf(ret);
+	}
+
 	public String readPaddedAsciiString(int n) {
-		return new String(read(n), asciiEncoder);
+		return readKnownLengthAsciiString(n);
 	}
 
 	public String readLengthPrefixedString() {
-		short length = readShort();
-		return new String(read(length), asciiEncoder);
+		return readKnownLengthAsciiString(readShort());
 	}
 
+	/**
+	 * Read a one-byte large character that is encoded in ASCII.
+	 * @return
+	 */
 	public char readChar() {
 		return (char) readByte(); //just cast since we're using 1-byte ascii chars
 	}

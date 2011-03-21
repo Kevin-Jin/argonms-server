@@ -51,7 +51,7 @@ public class MobStats {
 	private boolean invincible;
 	private List<Integer> summons;
 	private boolean firstAttack;
-	private Map<Integer, Attack> attacks;
+	private Map<Byte, Attack> attacks;
 	private List<Skill> skills;
 	private int buff;
 	private Map<String, Integer> delays;
@@ -62,7 +62,7 @@ public class MobStats {
 		this.mobid = mobid;
 		this.loseItems = new ArrayList<Integer>();
 		this.summons = new ArrayList<Integer>();
-		this.attacks = new HashMap<Integer, Attack>();
+		this.attacks = new HashMap<Byte, Attack>();
 		this.skills = new ArrayList<Skill>();
 		this.delays = new HashMap<String, Integer>();
 		this.itemDrops = new HashMap<Integer, Integer>();
@@ -140,8 +140,8 @@ public class MobStats {
 		this.firstAttack = true;
 	}
 
-	protected void addAttack(int attackid, Attack attack) {
-		this.attacks.put(Integer.valueOf(attackid), attack);
+	protected void addAttack(byte attackid, Attack attack) {
+		this.attacks.put(Byte.valueOf(attackid), attack);
 	}
 
 	protected void addSkill(Skill skill) {
@@ -240,7 +240,7 @@ public class MobStats {
 		return firstAttack;
 	}
 
-	public Map<Integer, Attack> getAttacks() {
+	public Map<Byte, Attack> getAttacks() {
 		return attacks;
 	}
 

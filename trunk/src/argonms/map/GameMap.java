@@ -18,6 +18,7 @@
 
 package argonms.map;
 
+import argonms.GlobalConstants;
 import argonms.character.Player;
 import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
@@ -37,6 +38,7 @@ import argonms.loading.reactor.ReactorDataLoader;
 import argonms.map.MapEntity.MapEntityType;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
+import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
 import argonms.map.entity.Mob.MobDeathHook;
 import argonms.map.entity.Npc;
@@ -47,6 +49,7 @@ import argonms.tools.Pair;
 import argonms.tools.Timer;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -56,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -96,11 +100,7 @@ public class GameMap {
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
 				case 'm': {
-					Mob m = new Mob(MobDataLoader.getInstance().getMobStats(spawnData.getDataId()));
-					m.setFoothold(spawnData.getFoothold());
-					m.setPosition(new Point(spawnData.getX(), spawnData.getY()));
 					addMonsterSpawn(MobDataLoader.getInstance().getMobStats(spawnData.getDataId()), new Point(spawnData.getX(), spawnData.getY()), spawnData.getFoothold(), spawnData.getMobTime());
-					spawnMonster(m);
 					break;
 				} case 'n': {
 					Npc n = new Npc(spawnData.getDataId());
@@ -109,7 +109,7 @@ public class GameMap {
 					n.setCy(spawnData.getCy());
 					n.setRx(spawnData.getRx0(), spawnData.getRx1());
 					n.setF(spawnData.isF());
-					spawnEntity(n);
+					spawnNpc(n);
 					break;
 				}
 			}
@@ -174,6 +174,15 @@ public class GameMap {
 		}
 	}
 
+	public int getPlayerCount() {
+		playersLock.readLock().lock();
+		try {
+			return players.size();
+		} finally {
+			playersLock.readLock().unlock();
+		}
+	}
+
 	private void updateMonsterController(Mob monster) {
 		if (!monster.isAlive())
 			return;
@@ -218,40 +227,57 @@ public class GameMap {
 			entitiesLock.writeLock().unlock();
 		}
 		if (ent.isNonRangedType())
-			for (byte[] message : ent.getCreationMessages())
-				sendToAll(message);
+			sendToAll(ent.getCreationMessage());
 		else
-			for (byte[] message : ent.getCreationMessages())
-				sendToAll(message, ent.getPosition(), null);
+			sendToAll(ent.getCreationMessage(), ent.getPosition(), null);
+	}
+
+	private void sendEntityData(MapEntity ent, Player p) {
+		if (ent.isNonRangedType()) {
+			if (ent.isVisible()) {
+				p.getClient().getSession().send(ent.getShowEntityMessage());
+				switch (ent.getEntityType()) { //maybe it's just NPC?
+					case NPC:
+					case HIRED_MERCHANT:
+					case PLAYER_NPC:
+						p.getClient().getSession().send(CommonPackets.writeControlNpc((Npc) ent));
+						break;
+					/*case PLAYER:
+						Pet[] equippedPets = ((Player) ent).getPets();
+						for (byte i = 0; i < 3; i++) {
+							if (equippedPets[i] != null)
+								p.getClient().getSession().send(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));
+						break;*/
+				}
+			}
+		} else {
+			if (ent.getEntityType() == MapEntityType.MONSTER)
+				updateMonsterController((Mob) ent);
+			if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
+				p.getClient().getSession().send(ent.getShowEntityMessage());
+				p.addToVisibleMapObjects(ent);
+			}
+		}
 	}
 
 	public void spawnPlayer(Player p) {
 		entitiesLock.writeLock().lock();
 		try { //write lock allows us to read in mutex, so no need for a readLock
-			if (p.isVisible()) //send to other clients if we are not hidden
-				for (byte[] message : p.getCreationMessages())
-					sendToAll(message);
+			if (p.isVisible()) { //show ourself to other clients if we are not hidden
+				sendToAll(p.getCreationMessage());
+				/*Pet[] equippedPets = p.getPets();
+					for (byte i = 0; i < 3; i++) {
+						if (equippedPets[i] != null)
+							p.getClient().getSession().send(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));*/
+			}
 			playersLock.writeLock().lock();
 			try {
 				players.add(p);
 			} finally {
 				playersLock.writeLock().unlock();
 			}
-			for (MapEntity ent : entities.values()) {
-				if (ent.isNonRangedType()) {
-					if (ent.isVisible())
-						for (byte[] message : ent.getShowEntityMessages())
-							p.getClient().getSession().send(message);
-				} else {
-					if (ent.getEntityType() == MapEntityType.MONSTER)
-						updateMonsterController((Mob) ent);
-					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
-						for (byte[] message : ent.getShowEntityMessages())
-							p.getClient().getSession().send(message);
-						p.addToVisibleMapObjects(ent);
-					}
-				}
-			}
+			for (MapEntity ent : entities.values())
+				sendEntityData(ent, p);
 			entities.put(Integer.valueOf(p.getId()), p);
 		} finally {
 			entitiesLock.writeLock().unlock();
@@ -309,6 +335,52 @@ public class GameMap {
 			}
 			if (sp.shouldSpawn())
 				spawnMonster(sp.getNewSpawn());
+		}
+	}
+
+	public void spawnMist(final Mist mist, final int duration) {
+		spawnEntity(mist);
+		Timer tMan = Timer.getInstance();
+		final ScheduledFuture<?> poisonSchedule;
+		if (mist.getMistType() == Mist.POISON_MIST) {
+			Runnable poisonTask = new Runnable() {
+				public void run() {
+					List<MapEntity> affectedMonsters = getMapObjectsInRect(mist.getBox());
+					for (MapEntity mo : affectedMonsters) {
+						if (mo.getEntityType() == MapEntityType.MONSTER && mist.shouldHurt()) {
+							Mob monster = (Mob) mo;
+							//TODO: implement poison mist
+							//MonsterStatusEffect poisonEffect = new MonsterStatusEffect(Collections.singletonMap(MonsterStatus.POISON, 1), mist.getSourceSkill(), false);
+							//((MapleMonster) mo).applyStatus(mist.getOwner(), poisonEffect, true, duration, false);
+						}
+					}
+				}
+			};
+			poisonSchedule = tMan.runRepeatedly(poisonTask, 2000, 2500);
+		} else {
+			poisonSchedule = null;
+		}
+		tMan.runAfterDelay(new Runnable() {
+			@Override
+			public void run() {
+				destroyEntity(mist);
+				if (poisonSchedule != null)
+					poisonSchedule.cancel(false);
+			}
+		}, duration);
+	}
+
+	public final void spawnNpc(Npc n) {
+		spawnEntity(n);
+		//let every client animate their own NPCs.
+		//controlling mobs is complicated enough as it is, we
+		//don't need to keep track of more than necessary things
+		playersLock.readLock().lock();
+		try {
+			for (Player p : players)
+				p.getClient().getSession().send(CommonPackets.writeControlNpc(n));
+		} finally {
+			playersLock.readLock().unlock();
 		}
 	}
 
@@ -466,8 +538,7 @@ public class GameMap {
 			for (MapEntity ent : entities.values()) {
 				if (!ent.isNonRangedType()) {
 					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
-						for (byte[] message : ent.getShowEntityMessages())
-							p.getClient().getSession().send(message);
+						p.getClient().getSession().send(ent.getShowEntityMessage());
 						p.addToVisibleMapObjects(ent);
 					}
 				}
@@ -494,29 +565,33 @@ public class GameMap {
 		return -1;
 	}
 
-	public void enterPortal(Player p, String portalName) {
+	public boolean enterPortal(Player p, String portalName) {
 		for (PortalData portal : stats.getPortals().values())
 			if (portal.getPortalName().equals(portalName))
 				enterPortal(p, portal);
+		return false;
 	}
 
-	public void enterPortal(Player p, byte portalId) {
-		enterPortal(p, stats.getPortals().get(Byte.valueOf(portalId)));
+	public boolean enterPortal(Player p, byte portalId) {
+		PortalData portal = stats.getPortals().get(Byte.valueOf(portalId));
+		return (portal != null ? enterPortal(p, portal) : false);
 	}
 
-	private void enterPortal(Player p, PortalData portal) {
+	private boolean enterPortal(Player p, PortalData portal) {
 		String scriptName = portal.getScript();
 		if (scriptName != null && scriptName.length () != 0) {
 			PortalScriptManager.runScript(scriptName, p);
+			return true;
 		} else {
 			int tm = portal.getTargetMapId();
-			GameMap map = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(tm);
-			if (tm != 999999999 && map != null) {
-				byte portalId = map.getPortalIdByName(portal.getTargetName());
+			GameMap toMap = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(tm);
+			if (tm != GlobalConstants.NULL_MAP && toMap != null) {
+				byte portalId = toMap.getPortalIdByName(portal.getTargetName());
 				if (portalId != -1)
-					p.changeMap(tm, portalId);
+					return p.changeMap(tm, portalId);
 			}
 		}
+		return false;
 	}
 
 	private Point calcPointBelow(Point initial) {
@@ -635,6 +710,19 @@ public class GameMap {
 
 	private static boolean entityVisible(MapEntity ent, Player p) {
 		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
+	}
+
+	private List<MapEntity> getMapObjectsInRect(Rectangle box) {
+		List<MapEntity> ret = new LinkedList<MapEntity>();
+		entitiesLock.readLock().lock();
+		try {
+			for (MapEntity ent : entities.values())
+				if (box.contains(ent.getPosition()))
+					ret.add(ent);
+		} finally {
+			entitiesLock.readLock().unlock();
+		}
+		return ret;
 	}
 
 	private class MonsterSpawn implements Comparable<MonsterSpawn> {

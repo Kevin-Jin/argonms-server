@@ -60,6 +60,24 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		index += bytes.length;
 	}
 
+	public void dispose() {
+		data = null;
+	}
+
+	public LittleEndianWriter writeInt(int i) {
+		write((byte) (i & 0xFF));
+		write((byte) ((i >>> 8) & 0xFF));
+		write((byte) ((i >>> 16) & 0xFF));
+		write((byte) ((i >>> 24) & 0xFF));
+		return this;
+	}
+
+	public LittleEndianWriter writeShort(short s) {
+		write((byte) (s & 0xFF));
+		write((byte) ((s >>> 8) & 0xFF));
+		return this;
+	}
+
 	public byte[] getBytes() {
 		if (index == data.length)
 			return data;
@@ -67,10 +85,6 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		byte[] trimmed = new byte[index];
 		System.arraycopy(data, 0, trimmed, 0, index);
 		return trimmed;
-	}
-
-	public void dispose() {
-		data = null;
 	}
 
 	public String toString() {

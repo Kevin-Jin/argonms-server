@@ -79,11 +79,11 @@ public class Reactor extends MapEntity {
 		return false;
 	}
 
-	public byte[][] getCreationMessages() {
+	public byte[] getCreationMessage() {
 		return null;
 	}
 
-	public byte[][] getShowEntityMessages() {
+	public byte[] getShowEntityMessage() {
 		return null;
 	}
 

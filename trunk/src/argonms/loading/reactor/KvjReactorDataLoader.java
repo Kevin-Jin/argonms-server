@@ -103,18 +103,18 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 	}
 	
 	private State processHitEvent(LittleEndianReader reader, ReactorStats stats) {
-		int stateid = reader.readInt();
+		byte stateid = reader.readByte();
 		State s = new State();
-		s.setType(reader.readInt());
-		s.setNextState(reader.readInt());
+		s.setType(reader.readByte());
+		s.setNextState(reader.readByte());
 		stats.addState(stateid, s);
 		return s;
 	}
 
 	private void processItemEvent(LittleEndianReader reader, ReactorStats stats) {
 		State s = processHitEvent(reader, stats);
-		s.setItem(reader.readInt(), reader.readInt());
-		s.setLt(reader.readInt(), reader.readInt());
-		s.setRb(reader.readInt(), reader.readInt());
+		s.setItem(reader.readInt(), reader.readShort());
+		s.setLt(reader.readShort(), reader.readShort());
+		s.setRb(reader.readShort(), reader.readShort());
 	}
 }

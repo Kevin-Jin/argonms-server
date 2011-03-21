@@ -122,6 +122,18 @@ public class Inventory {
 		return empty;
 	}
 
+	public boolean hasItem(int itemid, short minQty) {
+		short remaining = minQty;
+		for (InventorySlot i : slots.values()) {
+			if (i.getItemId() == itemid) {
+				remaining -= i.getQuantity();
+				if (remaining <= 0)
+					return true;
+			}
+		}
+		return false;
+	}
+
 	public short getMaxSlots() {
 		return maxSlots;
 	}
