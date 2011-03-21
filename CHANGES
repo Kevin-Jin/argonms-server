@@ -359,6 +359,40 @@
 	exclamation point (!) or an at sign (@) will not be broadcast, and will be
 	sent to CommandProcessor.process(), which does nothing at the moment.
 
+2011-03-21  GoldenKevin  (revision 19)
+
+	* Fixed some bottlenecks in LittleEndianReader and LittleEndianWriter that
+	resulted from the last update. When reading strings, we assume it is ASCII,
+	so we can just assume a char is only one byte, avoiding the overhead of
+	CharSet for encoding. Reading and writing 16-bit and 32-bit integers by
+	copying an array is faster for Stream I/O, but the old methods worked faster
+	for byte arrays. Therefore, I overloaded the read/write int and
+	read/write short methods in the byte array reader/writer classes.
+	* Fixed issue where you couldn't do anything after you visited a scripted
+	portal that doesn't warp you anywhere (added PortalActions.abortWarp).
+	* Portals point to a null map if they do not have a tm property (previously,
+	they pointed to map 0, which is a perfectly valid map, but is probably
+	unintended).
+	* Added NPCs that will warp you from the Mushroom Town Training Camp to the
+	outside world.
+	* Updated KvjBin to r17. Major changes include the inclusion of mob summons
+	data needed for a mob skill, the lowering of the word size of several
+	integer properties, and custom mob drops. MCDB should also be able to load
+	mob summons data. KvjCompiler has been tweaked as well, and all crashes and
+	freezes should be fixed (I performed a full compile with no errors).
+	* Fixed loading of mobs. When I fixed player skill's prop reading, I forgot
+	about making the same change in mob skills.
+	* Preparing for the inclusion of mob player-diseases and mob self-buffs.
+	* Added preliminary take damage handler. All physical mob attacks should be
+	handled correctly. No mob skills should be handled correctly at all. Healing
+	through standing still now changes your hp/mp accordingly.
+	* Facial expressions should now broadcast to the map.
+	* MCDB now loads mob attacks. Also fixed several bugs in MCDB (mob) loading.
+	* Refactored MapEntity.getShowEntityMessage/getCreationMessage. Now only a
+	byte array is returned, and we send the extra data in the GameMap methods
+	in order to speed up sending data for map entities that do not have extra
+	packets that need to be sent.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

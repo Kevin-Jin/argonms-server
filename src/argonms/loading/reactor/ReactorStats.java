@@ -27,25 +27,25 @@ import java.util.Map;
  */
 public class ReactorStats {
 	private int link;
-	private Map<Integer, State> states;
+	private Map<Byte, State> states;
 
 	protected ReactorStats() {
-		states = new HashMap<Integer, State>();
+		states = new HashMap<Byte, State>();
 	}
 
 	protected void setLink(int reactorid) {
 		this.link = reactorid;
 	}
 
-	protected void addState(int stateid, State s) {
-		states.put(Integer.valueOf(stateid), s);
+	protected void addState(byte stateid, State s) {
+		states.put(Byte.valueOf(stateid), s);
 	}
 
 	protected int getLink() {
 		return link;
 	}
 
-	public Map<Integer, State> getStates() {
+	public Map<Byte, State> getStates() {
 		return states;
 	}
 }

@@ -25,6 +25,8 @@ import java.nio.charset.Charset;
  * Write data to a stream using little endian byte ordering for
  * multiple-byte integer types.
  * Characters (and character strings) are encoded in ASCII.
+ * Each method returns the instance of LittleEndianWriter it was called on to
+ * allow method chaining (in turn, implementing a fluent interface).
  * @author GoldenKevin
  * @version 1.1
  */
@@ -107,6 +109,11 @@ public abstract class LittleEndianWriter {
 		return this;
 	}
 
+	/**
+	 * Writes the given character as a single byte.
+	 * @param c the character to write
+	 * @return the current LittleEndianWriter
+	 */
 	public LittleEndianWriter writeChar(char c) {
 		writeByte((byte) c); //just cast since we're using 1-byte ascii chars
 		return this;

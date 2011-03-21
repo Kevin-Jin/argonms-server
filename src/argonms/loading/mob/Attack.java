@@ -24,9 +24,9 @@ package argonms.loading.mob;
  */
 public class Attack {
 	private boolean deadlyAttack;
-	private int mpBurn;
-	private int diseaseSkill;
-	private int diseaseLevel;
+	private short mpBurn;
+	private byte diseaseSkill;
+	private byte diseaseLevel;
 	private int conMp;
 
 	protected Attack() {
@@ -37,15 +37,15 @@ public class Attack {
 		this.deadlyAttack = value;
 	}
 
-	protected void setMpBurn(int burn) {
+	protected void setMpBurn(short burn) {
 		this.mpBurn = burn;
 	}
 
-	protected void setDiseaseSkill(int skill) {
+	protected void setDiseaseSkill(byte skill) {
 		this.diseaseSkill = skill;
 	}
 
-	protected void setDiseaseLevel(int level) {
+	protected void setDiseaseLevel(byte level) {
 		this.diseaseLevel = level;
 	}
 
@@ -57,15 +57,15 @@ public class Attack {
 		return deadlyAttack;
 	}
 
-	public int getMpBurn() {
+	public short getMpBurn() {
 		return mpBurn;
 	}
 
-	public int getDiseaseSkill() {
+	public byte getDiseaseSkill() {
 		return diseaseSkill;
 	}
 
-	public int getDiseaseLevel() {
+	public byte getDiseaseLevel() {
 		return diseaseLevel;
 	}
 

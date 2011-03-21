@@ -1,14 +1,11 @@
 /*
- * This file is part of the OdinMS Maple Story Server
- * Copyright (C) 2008 Patrick Huy <patrick.huy@frz.cc>
- *                    Matthias Butz <matze@odinms.de>
- *                    Jan Christian Meyer <vimes@odinms.de>
+ * ArgonMS MapleStory server emulator written in Java
+ * Copyright (C) 2011  GoldenKevin
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License version 3
- * as published by the Free Software Foundation. You may not use, modify
- * or distribute this program under any other version of the
- * GNU Affero General Public License.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,8 +17,13 @@
  */
 
 /**
+ * advice04
+ * Maple Road: Entrance - Mushroom Town Training Camp (Map 0)
+ * 
+ * Gives an hint to new players on advancing to the next map.
  *
  * @author GoldenKevin
  */
 
 portal.showHint("Click \r\\#b<Sera>", 100, 5);
+portal.abortWarp();

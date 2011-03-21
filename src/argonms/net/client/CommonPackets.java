@@ -18,6 +18,7 @@
 
 package argonms.net.client;
 
+import argonms.GlobalConstants;
 import argonms.character.ClientUpdateKey;
 import argonms.character.Player;
 import argonms.character.skill.SkillEntry;
@@ -35,15 +36,17 @@ import argonms.character.inventory.Ring;
 import argonms.character.inventory.TamingMob;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
+import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
+import argonms.map.entity.MysticDoor;
 import argonms.map.entity.Npc;
 import argonms.tools.HexTool;
 import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
-import java.awt.Point;
+
+import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,14 +62,21 @@ import java.util.TreeMap;
 public class CommonPackets {
 	public static final Random RNG = new Random();
 
-	private static final int[] ROCK_MAPS = {
-		999999999, 999999999, 999999999, 999999999, 999999999
+	private static final int[] ROCK_MAPS = { //there has to be exactly 5!
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP
 	};
 
-	private static final int[] VIP_MAPS = {
-		999999999, 999999999, 999999999, 999999999, 999999999,
-		999999999, 999999999, 999999999, 999999999, 999999999,
-		999999999, 999999999, 999999999, 999999999, 999999999
+	private static final int[] VIP_MAPS = { //there has to be exactly 15!
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
+		GlobalConstants.NULL_MAP
 	};
 
 	private static final Map<ClientUpdateKey, Number> EMPTY_STATUPDATE = Collections.emptyMap();
@@ -834,6 +844,42 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	private static void writeNpcData(LittleEndianWriter lew, Npc npc) {
+		lew.writeInt(npc.getId());
+		lew.writeInt(npc.getNpcId());
+		lew.writeShort((short) npc.getPosition().x);
+		lew.writeShort(npc.getCy());
+		lew.writeBool(!npc.isF());
+		lew.writeShort(npc.getFoothold());
+		lew.writeShort(npc.getRx0());
+		lew.writeShort(npc.getRx1());
+		lew.writeBool(true);
+	}
+
+	public static byte[] writeShowNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.SHOW_NPC);
+		writeNpcData(lew, npc);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeShort(ClientSendOps.REMOVE_NPC);
+		lew.writeInt(npc.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeControlNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.CONTROL_NPC);
+		lew.writeBool(true);
+		writeNpcData(lew, npc);
+		return lew.getBytes();
+	}
+
+	//TODO: gotta fix the problem where nobody else can pick up an item
+	//that a player dropped (something with owner and source object id...)
 	public static byte[] writeShowItemDrop(ItemDrop drop, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -881,37 +927,60 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	private static void writeNpcData(LittleEndianWriter lew, Npc npc) {
-		lew.writeInt(npc.getId());
-		lew.writeInt(npc.getNpcId());
-		lew.writeShort((short) npc.getPosition().x);
-		lew.writeShort(npc.getCy());
-		lew.writeBool(!npc.isF());
-		lew.writeShort(npc.getFoothold());
-		lew.writeShort(npc.getRx0());
-		lew.writeShort(npc.getRx1());
-		lew.writeBool(true);
-	}
+	public static byte[] writeShowMist(Mist mist) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(41);
 
-	public static byte[] writeShowNpc(Npc npc) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
-		lew.writeShort(ClientSendOps.SHOW_NPC);
-		writeNpcData(lew, npc);
+		lew.writeShort(ClientSendOps.SHOW_MIST);
+		lew.writeInt(mist.getId());
+		lew.writeInt(mist.getMistType());
+		lew.writeInt(mist.getOwner());
+		lew.writeInt(mist.getSkillId());
+		lew.writeByte(mist.getSkillLevel());
+		lew.writeShort(mist.getSkillDelay());
+		Rectangle box = mist.getBox();
+		lew.writeInt(box.x);
+		lew.writeInt(box.y);
+		lew.writeInt(box.x + box.width);
+		lew.writeInt(box.y + box.height);
+		lew.writeInt(0);
+
 		return lew.getBytes();
 	}
 
-	public static byte[] writeRemoveNpc(Npc npc) {
+	public static byte[] writeRemoveMist(Mist mist) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
-		lew.writeShort(ClientSendOps.REMOVE_NPC);
-		lew.writeInt(npc.getId());
+
+		lew.writeShort(ClientSendOps.REMOVE_MIST);
+		lew.writeInt(mist.getId());
+
 		return lew.getBytes();
 	}
 
-	public static byte[] writeControlNpc(Npc npc) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
-		lew.writeShort(ClientSendOps.CONTROL_NPC);
-		lew.writeBool(true);
-		writeNpcData(lew, npc);
+	public static byte[] writeShowMysticDoor(MysticDoor d) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+
+		lew.writeShort(ClientSendOps.SHOW_DOOR);
+		lew.writeBool(d.isInTown());
+		lew.writeInt(d.getId());
+		lew.writePos(d.getPosition());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveMysticDoor(MysticDoor d) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(d.isInTown() ? 10 : 7);
+
+		//what.
+		if (d.isInTown()) {
+			lew.writeShort(ClientSendOps.SPAWN_PORTAL);
+			lew.writeInt(999999999);
+			lew.writeInt(999999999);
+		} else {
+			lew.writeShort(ClientSendOps.REMOVE_DOOR);
+			lew.writeBool(false);
+			lew.writeInt(d.getId());
+		}
+
 		return lew.getBytes();
 	}
 

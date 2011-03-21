@@ -17,13 +17,16 @@
  */
 
 /**
- * advice00
- * Maple Road: Entrance - Mushroom Town Training Camp (Map 0)
- * 
- * Gives an hint to new players on movement.
+ * Peter (NPC 9101001)
+ * Maple Road: Entrance - Mushroom Town Training Camp (Map 3)
+ *
+ * Teleports players from the Training Camp exit to the road to
+ * Mushroom Town.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("You can move by using the arrow keys.", 250, 5);
-portal.abortWarp();
+npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
+npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
+npc.getClient().getPlayer().changeMap(40000);
+npc.getClient().getPlayer().gainExp(3);

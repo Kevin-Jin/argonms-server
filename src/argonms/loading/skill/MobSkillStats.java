@@ -26,16 +26,15 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class MobSkillStats {
-	private Map<Byte, MobSkillEffect> levels;
+	private Map<Byte, MobSkillEffectsData> levels;
 	private String elemAttr;
-	private boolean isBuff, isCharged;
 	private int animationTime;
 
 	protected MobSkillStats() {
-		levels = new HashMap<Byte, MobSkillEffect>();
+		levels = new HashMap<Byte, MobSkillEffectsData>();
 	}
 
-	protected void addLevel(byte level, MobSkillEffect effect) {
+	protected void addLevel(byte level, MobSkillEffectsData effect) {
 		levels.put(Byte.valueOf(level), effect);
 	}
 
@@ -43,32 +42,16 @@ public class MobSkillStats {
 		elemAttr = attr;
 	}
 
-	protected void setBuff() {
-		isBuff = true;
-	}
-
-	protected void setChargedSkill() {
-		isCharged = true;
-	}
-
 	protected void setDelay(int delay) {
 		animationTime = delay;
 	}
 
-	public MobSkillEffect getLevel(byte level) {
+	public MobSkillEffectsData getLevel(byte level) {
 		return levels.get(Byte.valueOf(level));
 	}
 
 	public String getElemAttr() {
 		return elemAttr;
-	}
-
-	public boolean isBuff() {
-		return isBuff;
-	}
-
-	public boolean isChargedSkill() {
-		return isCharged;
 	}
 
 	public int getDelay() {

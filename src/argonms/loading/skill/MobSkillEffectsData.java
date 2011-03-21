@@ -18,13 +18,19 @@
 
 package argonms.loading.skill;
 
+import argonms.character.Disease;
+import argonms.map.MonsterStatusEffect;
 import java.awt.Point;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  *
  * @author GoldenKevin
  */
-public class MobSkillEffect {
+public class MobSkillEffectsData {
+	private int skillid;
+	private byte level;
 	private short mpCon;
 	private int duration;
 	private int x;
@@ -34,9 +40,56 @@ public class MobSkillEffect {
 	private double prop;
 	private short cooltime;
 	private short hp;
+	private MonsterStatusEffect buff;
+	private Disease disease;
+	private short summonLimit;
+	private byte summonEffect;
+	private final Map<Byte, Integer> summons;
 
-	protected MobSkillEffect() {
+	protected MobSkillEffectsData(int skillid, byte level) {
+		this.summons = new TreeMap<Byte, Integer>();
+		this.skillid = skillid;
+		this.level = level;
+		switch (skillid) {
+			case 100:
+			case 110:
+				buff = MonsterStatusEffect.WEAPON_ATTACK_UP;
+				break;
+			case 101:
+			case 111:
+				buff = MonsterStatusEffect.MAGIC_ATTACK_UP;
+				break;
+			case 102:
+			case 112:
+				buff = MonsterStatusEffect.WEAPON_DEFENSE_UP;
+				break;
+			case 103:
+			case 113:
+				buff = MonsterStatusEffect.MAGIC_DEFENSE_UP;
+				break;
 
+			case 120:
+				disease = Disease.SEAL;
+				break;
+			case 121:
+				disease = Disease.DARKNESS;
+				break;
+			case 122:
+				disease = Disease.WEAKEN;
+				break;
+			case 123:
+				disease = Disease.STUN;
+				break;
+			case 124:
+				disease = Disease.CURSE;
+				break;
+			case 125:
+				disease = Disease.POISON;
+				break;
+			case 126:
+				disease = Disease.SLOW;
+				break;
+		}
 	}
 
 	protected void setMpConsume(short mpCon) {
@@ -75,6 +128,18 @@ public class MobSkillEffect {
 		this.hp = hp;
 	}
 
+	protected void setLimit(short limit) {
+		this.summonLimit = limit;
+	}
+
+	protected void setSummonEffect(byte effect) {
+		this.summonEffect = effect;
+	}
+
+	protected void addSummon(byte index, int mobid) {
+		summons.put(Byte.valueOf(index), Integer.valueOf(mobid));
+	}
+
 	public short getMpConsume() {
 		return mpCon;
 	}
@@ -103,11 +168,43 @@ public class MobSkillEffect {
 		return prop;
 	}
 
+	public boolean shouldPerform() {
+		return Math.random() < prop;
+	}
+
 	public short getCooltime() {
 		return cooltime;
 	}
 
 	public short getHp() {
 		return hp;
+	}
+
+	public short getSummonLimit() {
+		return summonLimit;
+	}
+
+	public byte getSummonEffect() {
+		return summonEffect;
+	}
+
+	public Map<Byte, Integer> getSummons() {
+		return summons;
+	}
+
+	public int getDataId() {
+		return skillid;
+	}
+
+	public byte getLevel() {
+		return level;
+	}
+
+	public MonsterStatusEffect getBuff() {
+		return buff;
+	}
+
+	public Disease getDisease() {
+		return disease;
 	}
 }

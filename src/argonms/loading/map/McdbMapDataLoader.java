@@ -18,6 +18,7 @@
 
 package argonms.loading.map;
 
+import argonms.GlobalConstants;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,7 +47,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				stats = new MapStats(mapid);
-				doWork(rs, mapid, stats);
+				doWork(rs, mapid, stats, con);
 			}
 			rs.close();
 			ps.close();
@@ -66,7 +67,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 			while (rs.next()) {
 				int mapid = rs.getInt(1);
 				MapStats stats = new MapStats(mapid);
-				doWork(rs, mapid, stats);
+				doWork(rs, mapid, stats, con);
 				mapStats.put(Integer.valueOf(mapid), stats);
 			}
 			return true;
@@ -104,7 +105,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		return exists;
 	}
 
-	private void doWork(ResultSet rs, int mapid, MapStats stats) throws SQLException {
+	private void doWork(ResultSet rs, int mapid, MapStats stats, Connection con) throws SQLException {
 		stats.setReturnMap(rs.getInt(6));
 		stats.setForcedReturn(rs.getInt(7));
 		stats.setDecHp(rs.getInt(10));
@@ -116,15 +117,14 @@ public class McdbMapDataLoader extends MapDataLoader {
 			stats.setClock();
 		if (rs.getInt(19) != 0)
 			stats.setShip();
-		loadLife(mapid, stats);
-		loadReactors(mapid, stats);
-		loadFootholds(mapid, stats);
-		loadPortals(mapid, stats);
+		loadLife(mapid, stats, con);
+		loadReactors(mapid, stats, con);
+		loadFootholds(mapid, stats, con);
+		loadPortals(mapid, stats, con);
 		stats.finished();
 	}
 
-	private void loadLife(int mapid, MapStats stats) {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void loadLife(int mapid, MapStats stats, Connection con) {
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `maplifedata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -150,8 +150,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		}
 	}
 
-	private void loadReactors(int mapid, MapStats stats) {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void loadReactors(int mapid, MapStats stats, Connection con) {
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapreactordata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -173,8 +172,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		}
 	}
 
-	private void loadFootholds(int mapid, MapStats stats) {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void loadFootholds(int mapid, MapStats stats, Connection con) {
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapfootholddata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -196,8 +194,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		}
 	}
 
-	private void loadPortals(int mapid, MapStats stats) {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void loadPortals(int mapid, MapStats stats, Connection con) {
 		try {
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM `mapportaldata` where `mapid` = ?");
 			ps.setInt(1, mapid);
@@ -211,7 +208,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 				int to = rs.getInt(6);
 				byte type = 0;
 				String script = rs.getString(8);
-				if (to != 999999999) //warp portal
+				if (to != GlobalConstants.NULL_MAP) //warp portal
 					type = 2; //1 or 2?
 				else if (name.equals("sp")) //spawnpoint
 					type = 0;

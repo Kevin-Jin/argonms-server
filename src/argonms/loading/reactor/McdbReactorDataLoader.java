@@ -106,12 +106,12 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 		int reactorid = rs.getInt(2);
 		do {
 			State s = new State();
-			s.setType(rs.getInt(4));
-			s.setItem(rs.getInt(5), 1);
-			s.setLt(rs.getInt(6), rs.getInt(7));
-			s.setRb(rs.getInt(8), rs.getInt(9));
-			s.setNextState(rs.getInt(10));
-			stats.addState(rs.getInt(3), s);
+			s.setType(rs.getByte(4));
+			s.setItem(rs.getInt(5), (short) 1);
+			s.setLt(rs.getShort(6), rs.getShort(7));
+			s.setRb(rs.getShort(8), rs.getShort(9));
+			s.setNextState(rs.getByte(10));
+			stats.addState(rs.getByte(3), s);
 		} while (rs.next() && rs.getInt(2) == reactorid);
 		return reactorid;
 	}

@@ -26,6 +26,8 @@ public final class GlobalConstants {
 	public static final byte MAPLE_VERSION = 62;
 	public static final boolean TEST_SERVER = false;
 
+	public static final int NULL_MAP = 999999999;
+
 	private GlobalConstants() {
 		//uninstantiable...
 	}

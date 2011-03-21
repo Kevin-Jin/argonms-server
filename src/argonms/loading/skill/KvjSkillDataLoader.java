@@ -241,6 +241,14 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 				case KvjEffects.MORPH:
 					effect.setMorph(reader.readInt());
 					break;
+				case KvjEffects.SUMMON:
+					//shout level 4 is glitched, they put the value for prop in the key
+					//and the value is 38??? Because the key is an integer, we consider it a summon...
+					//assert (skillid == Skills.SHOUT && level == 4);
+					//first byte is mobIndex, which was just Byte.parseByte(key) in KvjCompiler
+					effect.setProp(reader.readByte() / 100.0);
+					/*assert (*/reader.readInt()/* == 38)*/;
+					break;
 				case KvjEffects.END_EFFECT:
 					break loop;
 			}
@@ -251,34 +259,36 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	private void doMobWork(LittleEndianReader reader) {
 		MobSkillStats stats = null;
 		byte level;
+		int skillid = -1;
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case NEXT_SKILL:
 					stats = new MobSkillStats();
-					mobSkillStats.put(Integer.valueOf(reader.readInt()), stats);
+					skillid = reader.readInt();
+					mobSkillStats.put(Integer.valueOf(skillid), stats);
 					break;
 				case ELEM_ATTR:
 					stats.setElemAttr(reader.readNullTerminatedString());
 					break;
 				case IS_BUFF:
-					stats.setBuff();
+					//wtf? IMPOSSIBLE!
 					break;
 				case DELAY:
 					stats.setDelay(reader.readInt());
 					break;
 				case IS_CHARGE:
-					stats.setChargedSkill();
+					//wtf? IMPOSSIBLE!
 					break;
 				case NEXT_LEVEL:
 					level = reader.readByte();
-					stats.addLevel(level, processMobEffect(reader));
+					stats.addLevel(level, processMobEffect(skillid, level, reader));
 					break;
 			}
 		}
 	}
 
-	private MobSkillEffect processMobEffect(LittleEndianReader reader) {
-		MobSkillEffect effect = new MobSkillEffect();
+	private MobSkillEffectsData processMobEffect(int skillid, byte level, LittleEndianReader reader) {
+		MobSkillEffectsData effect = new MobSkillEffectsData(skillid, level);
 		loop:
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
@@ -301,13 +311,22 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setRb(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.PROP:
-					effect.setProp(reader.readInt() / 100.0);
+					effect.setProp(reader.readShort() / 100.0);
 					break;
 				case KvjEffects.COOLTIME:
 					effect.setCooltime(reader.readShort());
 					break;
 				case KvjEffects.HP_BONUS:
 					effect.setHp(reader.readShort());
+					break;
+				case KvjEffects.SUMMON_EFFECT:
+					effect.setSummonEffect(reader.readByte());
+					break;
+				case KvjEffects.LIMIT:
+					effect.setLimit(reader.readShort());
+					break;
+				case KvjEffects.SUMMON:
+					effect.addSummon(reader.readByte(), reader.readInt());
 					break;
 				case KvjEffects.END_EFFECT:
 					break loop;

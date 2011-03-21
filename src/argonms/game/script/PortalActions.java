@@ -20,6 +20,7 @@ package argonms.game.script;
 
 import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;
+import argonms.net.client.CommonPackets;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 
 /**
@@ -39,6 +40,10 @@ public class PortalActions {
 
 	public void showHint(String hint, short width, short height) {
 		client.getSession().send(writeHintBox(hint, width, height));
+	}
+
+	public void abortWarp() {
+		client.getSession().send(CommonPackets.writeEnableActions());
 	}
 
 	private static byte[] writeHintBox(String message, short width, short height) {

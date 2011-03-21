@@ -54,7 +54,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			ps.setInt(1, itemid);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
-				doWork(itemid, rs);
+				doWork(itemid, rs, con);
 			rs.close();
 			ps.close();
 		} catch (SQLException e) {
@@ -71,14 +71,14 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			ps = con.prepareStatement("SELECT * FROM `itemdata`");
 			rs = ps.executeQuery();
 			while (rs.next())
-				doWork(rs.getInt("itemid"), rs);
+				doWork(rs.getInt("itemid"), rs, con);
 			ps.close();
 			rs.close();
 
 			ps = con.prepareStatement("SELECT * FROM `equipdata`");
 			rs = ps.executeQuery();
 			while (rs.next())
-				doWork(rs.getInt("equipid"), rs);
+				doWork(rs.getInt("equipid"), rs, con);
 			ps.close();
 			rs.close();
 			return true;
@@ -121,8 +121,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		return exists;
 	}
 
-	private void doWork(int itemid, ResultSet rs) throws SQLException {
-		Connection con = DatabaseConnection.getWzConnection();
+	private void doWork(int itemid, ResultSet rs, Connection con) throws SQLException {
 		String cat = InventoryTools.getCategoryName(itemid);
 		Integer oId = itemid;
 		wholePrice.put(oId, Integer.valueOf(rs.getInt("price")));

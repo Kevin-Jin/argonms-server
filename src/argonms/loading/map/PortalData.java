@@ -18,6 +18,7 @@
 
 package argonms.loading.map;
 
+import argonms.GlobalConstants;
 import java.awt.Point;
 
 /**
@@ -33,7 +34,7 @@ public class PortalData {
 	private String script;
 
 	protected PortalData() {
-
+		this.tm = GlobalConstants.NULL_MAP;
 	}
 
 	protected void setPortalName(String pn) {

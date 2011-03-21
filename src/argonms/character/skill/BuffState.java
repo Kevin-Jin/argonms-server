@@ -18,6 +18,8 @@
 
 package argonms.character.skill;
 
+import argonms.loading.StatEffectsData;
+
 /**
  *
  * @author GoldenKevin
@@ -111,9 +113,9 @@ public class BuffState {
 	private int dataid;
 	private byte skillLevel;
 
-	public BuffState(int sourceid, byte level) {
-		this.dataid = sourceid;
-		this.skillLevel = level;
+	public BuffState(StatEffectsData e) {
+		this.dataid = e.getDataId();
+		this.skillLevel = e.getLevel();
 	}
 
 	public int getSource() {

@@ -18,6 +18,7 @@
 
 package argonms.loading.skill;
 
+import argonms.map.MobSkills;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -65,7 +66,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
 				stats = new MobSkillStats();
-				doMobWork(rs, stats);
+				doMobWork(rs, stats, con);
 			}
 			rs.close();
 			ps.close();
@@ -92,7 +93,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				MobSkillStats stats = new MobSkillStats();
-				mobSkillStats.put(doMobWork(rs, stats), stats);
+				mobSkillStats.put(doMobWork(rs, stats, con), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
@@ -200,22 +201,12 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		return skillid;
 	}
 
-	private int doMobWork(ResultSet rs, MobSkillStats stats) throws SQLException {
+	private int doMobWork(ResultSet rs, MobSkillStats stats, Connection con) throws SQLException {
 		int skillid = rs.getInt(2);
 		//there's probably another set of buffs and charged for mob skills...
-		if (isBuff(skillid))
-			stats.setBuff();
-		switch (skillid) {
-			case 2121001:
-			case 2221001:
-			case 2321001:
-			case 5101004:
-			case 5201002:
-				stats.setChargedSkill();
-				break;
-		}
 		do {
-			MobSkillEffect effect = new MobSkillEffect();
+			byte level = rs.getByte(2);
+			MobSkillEffectsData effect = new MobSkillEffectsData(skillid, level);
 			effect.setMpConsume(rs.getShort(4));
 			effect.setDuration(rs.getInt(3));
 			effect.setX(rs.getInt(5));
@@ -225,7 +216,18 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setProp(rs.getInt(7) / 100.0);
 			effect.setCooltime(rs.getShort(9));
 			effect.setHp(rs.getShort(14));
-			stats.addLevel(rs.getByte(2), effect);
+			if (skillid == MobSkills.SUMMON) {
+				PreparedStatement summonsPs = con.prepareStatement("SELECT `mobindex`,`mobid` FROM `mobskillsummons` WHERE `level` = ? ORDER BY `mobindex`");
+				summonsPs.setInt(1, level);
+				ResultSet summons = summonsPs.executeQuery();
+				while (summons.next())
+					effect.addSummon(summons.getByte(1), summons.getInt(2));
+				summons.close();
+				summonsPs.close();
+			}
+			effect.setLimit(rs.getShort(15));
+			effect.setSummonEffect(rs.getByte(16));
+			stats.addLevel(level, effect);
 		} while (rs.next() && rs.getInt(2) == skillid);
 		return skillid;
 	}

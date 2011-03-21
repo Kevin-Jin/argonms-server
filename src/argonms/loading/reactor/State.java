@@ -25,11 +25,12 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class State {
-	private int type;
-	private int nextState;
+	private byte type;
+	private byte nextState;
 
 	//item event only
-	private int itemid, quantity;
+	private int itemid;
+	private short quantity;
 	private Point lt;
 	private Point rb;
 
@@ -37,24 +38,24 @@ public class State {
 		
 	}
 
-	protected void setType(int type) {
+	protected void setType(byte type) {
 		this.type = type;
 	}
 
-	protected void setNextState(int state) {
+	protected void setNextState(byte state) {
 		this.nextState = state;
 	}
 
-	protected void setItem(int id, int quantity) {
+	protected void setItem(int id, short quantity) {
 		this.itemid = id;
 		this.quantity = quantity;
 	}
 
-	protected void setLt(int x, int y) {
+	protected void setLt(short x, short y) {
 		this.lt = new Point(x, y);
 	}
 
-	protected void setRb(int x, int y) {
+	protected void setRb(short x, short y) {
 		this.rb = new Point(x, y);
 	}
 

@@ -107,7 +107,7 @@ public class InventoryHandler {
 	}
 
 	public static void handleMesoDrop(LittleEndianReader packet, RemoteClient rc) {
-		packet.readInt();
+		/*int time = */packet.readInt();
 		int amount = packet.readInt();
 		Player p = ((GameClient) rc).getPlayer();
 		if (amount <= p.getMesos()) {

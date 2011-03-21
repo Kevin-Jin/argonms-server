@@ -17,13 +17,18 @@
  */
 
 /**
- * advice00
- * Maple Road: Entrance - Mushroom Town Training Camp (Map 0)
- * 
- * Gives an hint to new players on movement.
+ * Heena (NPC 2101)
+ * Maple Road: Lower level of the Training Camp (Map 2)
+ *
+ * Teleports players from inside the Mushroom Town Training Camp to the exit.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("You can move by using the arrow keys.", 250, 5);
-portal.abortWarp();
+var result = npc.askYesNo("Are you done with your training? If you wish, I will send you out from this training camp.");
+if (result == 1) {
+	npc.sayNext("Then, I will send you out from here. Good job.");
+	npc.getClient().getPlayer().changeMap(3);
+} else {
+	npc.say("Haven't you finish the training program yet? If you want to leave this place, please do not hesitate to tell me.");
+}
