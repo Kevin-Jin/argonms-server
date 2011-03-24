@@ -61,7 +61,10 @@ public class CenterLoginInterface extends CenterRemoteInterface {
 	}
 
 	public void disconnected() {
-		disconnected = true;
-		CenterServer.getInstance().loginDisconnected();
+		if (online) {
+			online = false;
+			disconnecting = true;
+			CenterServer.getInstance().loginDisconnected();
+		}
 	}
 }

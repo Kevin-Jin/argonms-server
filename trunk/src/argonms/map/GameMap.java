@@ -47,6 +47,9 @@ import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.tools.Pair;
 import argonms.tools.Timer;
+import argonms.tools.collections.LockableList;
+import argonms.tools.collections.LockableMap;
+import argonms.tools.collections.LockableSet;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -56,13 +59,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -78,24 +77,18 @@ public class GameMap {
 	 */
 	private static final int DROP_EXPIRE = 60000;
 	private final MapStats stats;
-	private final Map<Integer, MapEntity> entities;
-	private final ReadWriteLock entitiesLock;
-	private final Set<Player> players;
-	private final ReadWriteLock playersLock;
-	private final List<MonsterSpawn> monsterSpawns;
-	private final ReadWriteLock monsterSpawnsLock;
+	private final LockableMap<Integer, MapEntity> entities;
+	private final LockableSet<Player> players;
+	private final LockableList<MonsterSpawn> monsterSpawns;
 	private final AtomicInteger monsters;
-	//no need to be Atomic because it always is locked by entitiesLock...
+	//no need to be Atomic because it always is locked by entities...
 	private int nextEntityId;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
-		this.entities = new LinkedHashMap<Integer, MapEntity>();
-		this.entitiesLock = new ReentrantReadWriteLock();
-		this.players = new LinkedHashSet<Player>();
-		this.playersLock = new ReentrantReadWriteLock();
-		this.monsterSpawns = new LinkedList<MonsterSpawn>();
-		this.monsterSpawnsLock = new ReentrantReadWriteLock();
+		this.entities = new LockableMap<Integer, MapEntity>(new LinkedHashMap<Integer, MapEntity>());
+		this.players = new LockableSet<Player>(new LinkedHashSet<Player>());
+		this.monsterSpawns = new LockableList<MonsterSpawn>(new LinkedList<MonsterSpawn>());
 		this.monsters = new AtomicInteger(0);
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
@@ -166,21 +159,16 @@ public class GameMap {
 	 * entity.
 	 */
 	public MapEntity getEntityById(int eId) {
-		entitiesLock.readLock().lock();
+		entities.lockRead();
 		try {
 			return entities.get(Integer.valueOf(eId));
 		} finally {
-			entitiesLock.readLock().unlock();
+			entities.unlockRead();
 		}
 	}
 
 	public int getPlayerCount() {
-		playersLock.readLock().lock();
-		try {
-			return players.size();
-		} finally {
-			playersLock.readLock().unlock();
-		}
+		return players.getSizeWhenSafe();
 	}
 
 	private void updateMonsterController(Mob monster) {
@@ -193,7 +181,7 @@ public class GameMap {
 			else
 				controller = null;
 		int minControlled = Integer.MAX_VALUE;
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			for (Player p : players) {
 				int count = p.getControlledMobs().size();
@@ -204,7 +192,7 @@ public class GameMap {
 				}
 			}
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
 		if (controller != null) {
 			monster.setController(controller);
@@ -219,12 +207,12 @@ public class GameMap {
 	}
 
 	public final void spawnEntity(MapEntity ent) {
-		entitiesLock.writeLock().lock();
+		entities.lockWrite();
 		try {
 			ent.setId(nextEntityId++);
 			entities.put(Integer.valueOf(ent.getId()), ent);
 		} finally {
-			entitiesLock.writeLock().unlock();
+			entities.unlockWrite();
 		}
 		if (ent.isNonRangedType())
 			sendToAll(ent.getCreationMessage());
@@ -261,7 +249,7 @@ public class GameMap {
 	}
 
 	public void spawnPlayer(Player p) {
-		entitiesLock.writeLock().lock();
+		entities.lockWrite();
 		try { //write lock allows us to read in mutex, so no need for a readLock
 			if (p.isVisible()) { //show ourself to other clients if we are not hidden
 				sendToAll(p.getCreationMessage());
@@ -270,17 +258,12 @@ public class GameMap {
 						if (equippedPets[i] != null)
 							p.getClient().getSession().send(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));*/
 			}
-			playersLock.writeLock().lock();
-			try {
-				players.add(p);
-			} finally {
-				playersLock.writeLock().unlock();
-			}
+			players.addWhenSafe(p);
 			for (MapEntity ent : entities.values())
 				sendEntityData(ent, p);
 			entities.put(Integer.valueOf(p.getId()), p);
 		} finally {
-			entitiesLock.writeLock().unlock();
+			entities.unlockWrite();
 		}
 	}
 
@@ -301,7 +284,7 @@ public class GameMap {
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				entitiesLock.readLock().lock();
+				entities.lockRead();
 				try {
 					ItemDrop d = (ItemDrop) entities.get(eid);
 					if (d != null) {
@@ -311,7 +294,7 @@ public class GameMap {
 						}
 					}
 				} finally {
-					entitiesLock.readLock().unlock();
+					entities.unlockRead();
 				}
 			}
 		}, DROP_EXPIRE); //expire after 1 minute
@@ -327,12 +310,7 @@ public class GameMap {
 			spawnMonster(mob);
 		} else {
 			MonsterSpawn sp = new MonsterSpawn(stats, pos, fh, mobTime);
-			monsterSpawnsLock.writeLock().lock();
-			try {
-				monsterSpawns.add(sp);
-			} finally {
-				monsterSpawnsLock.writeLock().unlock();
-			}
+			monsterSpawns.addWhenSafe(sp);
 			if (sp.shouldSpawn())
 				spawnMonster(sp.getNewSpawn());
 		}
@@ -375,17 +353,17 @@ public class GameMap {
 		//let every client animate their own NPCs.
 		//controlling mobs is complicated enough as it is, we
 		//don't need to keep track of more than necessary things
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			for (Player p : players)
 				p.getClient().getSession().send(CommonPackets.writeControlNpc(n));
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
 	}
 
 	public void destroyEntity(MapEntity ent) {
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			if (!ent.isNonRangedType()) {
 				for (Player p : players)
@@ -395,23 +373,18 @@ public class GameMap {
 				sendToAll(ent.getDestructionMessage());
 			}
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
-		entitiesLock.writeLock().lock();
+		entities.lockWrite();
 		try {
 			entities.remove(Integer.valueOf(ent.getId()));
 		} finally {
-			entitiesLock.writeLock().unlock();
+			entities.unlockWrite();
 		}
 	}
 
 	public void removePlayer(Player p) {
-		playersLock.writeLock().lock();
-		try {
-			players.remove(p);
-		} finally {
-			playersLock.writeLock().unlock();
-		}
+		players.removeWhenSafe(p);
 		for (Mob m : p.getControlledMobs()) {
 			m.setController(null);
 			m.setControllerHasAggro(false);
@@ -493,14 +466,9 @@ public class GameMap {
 
 	//FIXME: I think all mobs spawn only on the top spawnpoint. o.O
 	public void respawnMobs() {
-		playersLock.readLock().lock();
-		try {
-			if (players.isEmpty())
-				return;
-		} finally {
-			playersLock.readLock().unlock();
-		}
-		monsterSpawnsLock.readLock().lock();
+		if (players.getSizeWhenSafe() == 0)
+			return;
+		monsterSpawns.lockRead();
 		try {
 			if (monsterSpawns.isEmpty())
 				return;
@@ -518,7 +486,7 @@ public class GameMap {
 				}
 			}
 		} finally {
-			monsterSpawnsLock.readLock().unlock();
+			monsterSpawns.unlockRead();
 		}
 	}
 
@@ -533,7 +501,7 @@ public class GameMap {
 				iter.remove();
 			}
 		}
-		entitiesLock.readLock().lock();
+		entities.lockRead();
 		try {
 			for (MapEntity ent : entities.values()) {
 				if (!ent.isNonRangedType()) {
@@ -544,7 +512,7 @@ public class GameMap {
 				}
 			}
 		} finally {
-			entitiesLock.readLock().unlock();
+			entities.unlockRead();
 		}
 	}
 
@@ -647,12 +615,12 @@ public class GameMap {
 	 * @param message the packet to send to all players
 	 */
 	public void sendToAll(byte[] message) {
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			for (Player p : players)
 				p.getClient().getSession().send(message);
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
 	}
 
@@ -664,13 +632,13 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Player source) {
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			for (Player p : players)
 				if (!p.equals(source))
 					p.getClient().getSession().send(message);
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
 	}
 
@@ -685,14 +653,14 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Point center, double range, Player source) {
-		playersLock.readLock().lock();
+		players.lockRead();
 		try {
 			for (Player p : players)
 				if (!p.equals(source))
 					if (center.distanceSq(p.getPosition()) <= range)
 						p.getClient().getSession().send(message);
 		} finally {
-			playersLock.readLock().unlock();
+			players.unlockRead();
 		}
 	}
 
@@ -714,13 +682,13 @@ public class GameMap {
 
 	private List<MapEntity> getMapObjectsInRect(Rectangle box) {
 		List<MapEntity> ret = new LinkedList<MapEntity>();
-		entitiesLock.readLock().lock();
+		entities.lockRead();
 		try {
 			for (MapEntity ent : entities.values())
 				if (box.contains(ent.getPosition()))
 					ret.add(ent);
 		} finally {
-			entitiesLock.readLock().unlock();
+			entities.unlockRead();
 		}
 		return ret;
 	}

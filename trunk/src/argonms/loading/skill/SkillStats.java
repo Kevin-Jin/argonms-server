@@ -26,16 +26,16 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class SkillStats {
-	private Map<Byte, SkillEffectsData> levels;
+	private Map<Byte, PlayerSkillEffectsData> levels;
 	private String elemAttr;
 	private boolean isBuff, isCharged;
 	private int animationTime;
 
 	protected SkillStats() {
-		levels = new HashMap<Byte, SkillEffectsData>();
+		levels = new HashMap<Byte, PlayerSkillEffectsData>();
 	}
 
-	protected void addLevel(byte level, SkillEffectsData effect) {
+	protected void addLevel(byte level, PlayerSkillEffectsData effect) {
 		levels.put(Byte.valueOf(level), effect);
 	}
 
@@ -55,7 +55,7 @@ public class SkillStats {
 		animationTime = delay;
 	}
 
-	public SkillEffectsData getLevel(byte level) {
+	public PlayerSkillEffectsData getLevel(byte level) {
 		return levels.get(Byte.valueOf(level));
 	}
 

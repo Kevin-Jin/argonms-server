@@ -82,7 +82,10 @@ public class CenterGameInterface extends CenterRemoteInterface {
 	}
 
 	public void disconnected() {
-		disconnected = true;
-		CenterServer.getInstance().gameDisconnected(this);
+		if (online) {
+			online = false;
+			disconnecting = true;
+			CenterServer.getInstance().gameDisconnected(this);
+		}
 	}
 }

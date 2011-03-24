@@ -18,18 +18,15 @@
 
 package argonms.loading;
 
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import java.util.EnumSet;
 import java.util.Set;
-
-import argonms.character.skill.BuffState.BuffKey;
 
 /**
  *
  * @author GoldenKevin
  */
-public abstract class StatEffectsData {
-	public enum EffectSource { ITEM, SKILL }
-
+public abstract class BuffsData implements StatusEffectsData {
 	private int duration;
 	private short watk;
 	private short wdef;
@@ -43,71 +40,69 @@ public abstract class StatEffectsData {
 	private short jump;
 	private int morph;
 	private int sourceid;
-	protected Set<BuffKey> effects;
+	protected Set<PlayerStatusEffect> effects;
 
-	public StatEffectsData(int sourceid) {
+	public BuffsData(int sourceid) {
 		this.sourceid = sourceid;
-		this.effects = EnumSet.noneOf(BuffKey.class);
+		this.effects = EnumSet.noneOf(PlayerStatusEffect.class);
 	}
-
-	public abstract EffectSource getSourceType();
 
 	public void setDuration(int time) {
 		this.duration = time;
 	}
 
 	public void setWatk(short pad) {
-		effects.add(BuffKey.WATK);
+		effects.add(PlayerStatusEffect.WATK);
 		this.watk = pad;
 	}
 
 	public void setWdef(short pdd) {
-		effects.add(BuffKey.WDEF);
+		effects.add(PlayerStatusEffect.WDEF);
 		this.wdef = pdd;
 	}
 
 	public void setMatk(short mad) {
-		effects.add(BuffKey.MATK);
+		effects.add(PlayerStatusEffect.MATK);
 		this.matk = mad;
 	}
 
 	public void setMdef(short mdd) {
-		effects.add(BuffKey.MDEF);
+		effects.add(PlayerStatusEffect.MDEF);
 		this.mdef = mdd;
 	}
 
 	public void setAcc(short acc) {
-		effects.add(BuffKey.ACC);
+		effects.add(PlayerStatusEffect.ACC);
 		this.acc = acc;
 	}
 
 	public void setAvoid(short eva) {
-		effects.add(BuffKey.AVOID);
+		effects.add(PlayerStatusEffect.AVOID);
 		this.avoid = eva;
 	}
 
 	public void setHp(short hp) {
-		effects.add(BuffKey.MAXHP);
+		effects.add(PlayerStatusEffect.MAXHP);
 		this.hp = hp;
 	}
 
 	public void setMp(short mp) {
-		effects.add(BuffKey.MAXMP);
+		effects.add(PlayerStatusEffect.MAXMP);
 		this.mp = mp;
 	}
 
 	public void setSpeed(short speed) {
-		effects.add(BuffKey.SPEED);
+		effects.add(PlayerStatusEffect.SPEED);
 		this.speed = speed;
 	}
 
 	public void setJump(short jump) {
-		effects.add(BuffKey.JUMP);
+		effects.add(PlayerStatusEffect.JUMP);
 		this.jump = jump;
 	}
 
 	public void setMorph(int id) {
-		effects.add(BuffKey.MORPH);
+		effects.add(PlayerStatusEffect.MORPH);
 		this.morph = id;
 	}
 
@@ -163,10 +158,7 @@ public abstract class StatEffectsData {
 		return sourceid;
 	}
 
-	public Set<BuffKey> getEffects() {
+	public Set<PlayerStatusEffect> getEffects() {
 		return effects;
 	}
-
-	public abstract int hashCode();
-	public abstract byte getLevel();
 }

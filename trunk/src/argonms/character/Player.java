@@ -20,8 +20,8 @@ package argonms.character;
 
 import argonms.character.skill.SkillEntry;
 import argonms.ServerType;
-import argonms.character.skill.BuffState;
-import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.PlayerStatusEffectValues;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.Cooldown;
 import argonms.character.inventory.Equip;
 import argonms.character.inventory.InventorySlot;
@@ -33,8 +33,7 @@ import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.game.GameServer;
-import argonms.loading.StatEffectsData;
-import argonms.loading.skill.MobSkillEffectsData;
+import argonms.loading.StatusEffectsData;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
@@ -51,12 +50,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -98,8 +95,7 @@ public class Player extends MapEntity {
 
 	private final Map<Integer, SkillEntry> skillEntries;
 	private final Map<Integer, Cooldown> cooldowns;
-	private final Map<BuffKey, BuffState> activeBuffs;
-	private final Set<Disease> activeDiseases;
+	private final Map<PlayerStatusEffect, PlayerStatusEffectValues> activeEffects;
 	private final Map<Integer, ScheduledFuture<?>> skillCancels;
 	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
 	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
@@ -117,8 +113,7 @@ public class Player extends MapEntity {
 		equippedPets = new Pet[3];
 		skillEntries = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
-		activeBuffs = new EnumMap<BuffKey, BuffState>(BuffKey.class);
-		activeDiseases = EnumSet.noneOf(Disease.class);
+		activeEffects = new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class);
 		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
@@ -918,10 +913,10 @@ public class Player extends MapEntity {
 		return skillLevel != null ? skillLevel.getLevel() : 0;
 	}
 
-	public void applyEffect(final StatEffectsData e) {
-		synchronized (activeBuffs) {
-			for (BuffKey buff : e.getEffects())
-				activeBuffs.put(buff, new BuffState(e));
+	public void applyEffect(final StatusEffectsData e) {
+		synchronized (activeEffects) {
+			for (PlayerStatusEffect buff : e.getEffects())
+				activeEffects.put(buff, new PlayerStatusEffectValues(e));
 		}
 		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
@@ -929,50 +924,63 @@ public class Player extends MapEntity {
 			}
 		}, e.getDuration());
 		switch (e.getSourceType()) {
-			case SKILL:
-				synchronized (skillCancels) {
-					skillCancels.put(e.getDataId(), cancelTask);
-				}
-				break;
 			case ITEM:
 				synchronized (itemEffectCancels) {
 					itemEffectCancels.put(e.getDataId(), cancelTask);
 				}
 				break;
+			case PLAYER_SKILL:
+				synchronized (skillCancels) {
+					skillCancels.put(e.getDataId(), cancelTask);
+				}
+				break;
+			case MOB_SKILL:
+				synchronized (diseaseCancels) {
+					diseaseCancels.put(e.getDataId(), cancelTask);
+				}
+				break;
 		}
 	}
 
-	public BuffState getBuff(BuffKey buff) {
-		return activeBuffs.get(buff);
+	public Map<PlayerStatusEffect, PlayerStatusEffectValues> getAllEffects() {
+		return activeEffects;
+	}
+
+	public PlayerStatusEffectValues getEffectValue(PlayerStatusEffect buff) {
+		return activeEffects.get(buff);
 	}
 
 	//TODO: implement!
-	private void dispelBuff(BuffKey buff, BuffState state) {
+	private void dispelBuff(PlayerStatusEffect buff, PlayerStatusEffectValues state) {
 		
 	}
 
-	public void dispelEffect(StatEffectsData e) {
-		synchronized (activeBuffs) {
-			for (BuffKey buff : e.getEffects()) {
-				dispelBuff(buff, activeBuffs.remove(buff));
-			}
+	public void dispelEffect(StatusEffectsData e) {
+		synchronized (activeEffects) {
+			for (PlayerStatusEffect buff : e.getEffects())
+				dispelBuff(buff, activeEffects.remove(buff));
 		}
 		switch (e.getSourceType()) {
-			case SKILL:
-				synchronized (skillCancels) {
-					skillCancels.remove(e.getDataId()).cancel(true);
-				}
-				break;
 			case ITEM:
 				synchronized (itemEffectCancels) {
 					itemEffectCancels.remove(e.getDataId()).cancel(true);
 				}
 				break;
+			case PLAYER_SKILL:
+				synchronized (skillCancels) {
+					skillCancels.remove(e.getDataId()).cancel(true);
+				}
+				break;
+			case MOB_SKILL:
+				synchronized (diseaseCancels) {
+					diseaseCancels.remove(e.getDataId()).cancel(true);
+				}
+				break;
 		}
 	}
 
-	public boolean isBuffActive(BuffKey buff) {
-		return activeBuffs.containsKey(buff);
+	public boolean isEffectActive(PlayerStatusEffect buff) {
+		return activeEffects.containsKey(buff);
 	}
 
 	public boolean isSkillActive(int skillid) {
@@ -985,28 +993,6 @@ public class Player extends MapEntity {
 
 	public int getItemEffect() {
 		return 0;
-	}
-
-	public void applyDisease(final MobSkillEffectsData s) {
-		synchronized (activeDiseases) {
-			activeDiseases.add(s.getDisease());
-		}
-		synchronized (diseaseCancels) {
-			diseaseCancels.put(s.getDataId(), Timer.getInstance().runAfterDelay(new Runnable() {
-				public void run() {
-					dispelDisease(s);
-				}
-			}, s.getDuration()));
-		}
-	}
-
-	public void dispelDisease(MobSkillEffectsData s) {
-		synchronized (activeDiseases) {
-			activeDiseases.remove(s.getDisease());
-		}
-		synchronized (diseaseCancels) {
-			diseaseCancels.remove(s.getDataId()).cancel(true);
-		}
 	}
 
 	public int getChair() {
@@ -1114,7 +1100,7 @@ public class Player extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return !isBuffActive(BuffKey.HIDE);
+		return !isEffectActive(PlayerStatusEffect.HIDE);
 	}
 
 	public byte[] getCreationMessage() {

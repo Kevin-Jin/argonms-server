@@ -19,18 +19,16 @@
 package argonms.net;
 
 import argonms.tools.HexTool;
+import argonms.tools.Rng;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Random;
 
 /**
  * Taken from an OdinMS-derived source, originally named LoginCrypto.
  * @author Frz
  */
 public class HashFunctions {
-	private static final Random rand = new Random();
-
 	private HashFunctions() {
 	}
 
@@ -49,7 +47,6 @@ public class HashFunctions {
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException("Encoding the string failed", e);
 		}
-
 	}
 
 	public static String hexSha1(String in) {
@@ -74,7 +71,7 @@ public class HashFunctions {
 
 	public static String makeSalt() {
 		byte[] salt = new byte[16];
-		rand.nextBytes(salt);
+		Rng.getGenerator().nextBytes(salt);
 		return toSimpleHexString(salt);
 	}
 }

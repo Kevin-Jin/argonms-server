@@ -20,12 +20,14 @@ package argonms.loading.mob;
 
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.tools.Rng;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 
 /**
  *
@@ -263,6 +265,7 @@ public class MobStats {
 	 * should not drop any mesos, 0 will be returned.
 	 */
 	public int getMesosToDrop() {
+		Random generator = Rng.getGenerator();
 		if (mesoDrop == null) {
 			//taken from OdinMS (simplified a bit). It works surprisingly well.
 			double factor = Math.pow(0.93, getExp() / 300.0);
@@ -270,21 +273,22 @@ public class MobStats {
 				factor = 1.0;
 			else if (factor < 0.001)
 				factor = 0.005;
-			return Math.min(30000, (int) (factor * getExp() * Math.random() * 2.1));
+			return Math.min(30000, (int) (factor * getExp() * generator.nextDouble() * 2.1));
 		} else {
-			if (Math.random() < mesoDrop.getDropChance()) {
+			if (generator.nextDouble() < mesoDrop.getDropChance()) {
 				int min = mesoDrop.getMinMesoDrop();
 				int max = mesoDrop.getMaxMesoDrop();
-				return (int) (Math.random() * (max - min + 1)) + min;
+				return (generator.nextInt(max - min + 1) + min);
 			}
 			return 0;
 		}
 	}
 
 	public List<InventorySlot> getItemsToDrop() {
+		Random generator = Rng.getGenerator();
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
 		for (Entry<Integer, Integer> entry : itemDrops.entrySet())
-			if (Math.random() < (entry.getValue().intValue() / 1000000.0))
+			if (generator.nextDouble() < (entry.getValue().intValue() / 1000000.0))
 				items.add(InventoryTools.makeItemWithId(entry.getKey().intValue()));
 		return items;
 	}

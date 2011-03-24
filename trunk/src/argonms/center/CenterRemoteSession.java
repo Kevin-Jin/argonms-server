@@ -74,7 +74,7 @@ public class CenterRemoteSession {
 							List<CenterGameInterface> servers = CenterServer.getInstance().getAllServersOfWorld(world, serverId);
 							List<Byte> conflicts = new ArrayList<Byte>();
 							for (CenterGameInterface server : servers) {
-								if (!server.isDisconnected()) {
+								if (!server.isShuttingDown()) {
 									for (int i = 0; i < channels.length; i++) {
 										Byte ch = Byte.valueOf(channels[i]);
 										if (server.getChannels().contains(ch))

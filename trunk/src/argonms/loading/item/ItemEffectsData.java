@@ -18,7 +18,7 @@
 
 package argonms.loading.item;
 
-import argonms.loading.StatEffectsData;
+import argonms.loading.BuffsData;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +26,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class ItemEffectsData extends StatEffectsData {
+public class ItemEffectsData extends BuffsData {
 	private static final byte
 		POISON = (1 << 0),
 		SEAL = (1 << 1),

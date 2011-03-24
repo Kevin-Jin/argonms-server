@@ -28,7 +28,8 @@ import argonms.center.CenterRemoteSession;
  */
 public abstract class CenterRemoteInterface {
 	private CenterRemoteSession session;
-	protected boolean disconnected;
+	protected boolean online;
+	protected boolean disconnecting;
 
 	public CenterRemoteInterface(CenterRemoteSession session) {
 		this.session = session;
@@ -38,13 +39,25 @@ public abstract class CenterRemoteInterface {
 		return session;
 	}
 
-	public boolean isDisconnected() {
-		return disconnected;
+	public boolean isStartingUp() {
+		return !online && !disconnecting;
+	}
+
+	public boolean isOnline() {
+		return online;
+	}
+
+	public boolean isShuttingDown() {
+		return disconnecting;
 	}
 
 	public abstract void makePacketProcessor();
 
 	public abstract RemoteCenterPacketProcessor getPacketProcessor();
+
+	public void serverOnline() {
+		online = true;
+	}
 
 	public abstract void disconnected();
 

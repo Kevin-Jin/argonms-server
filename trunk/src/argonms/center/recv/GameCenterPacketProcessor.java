@@ -99,7 +99,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		lew.writeBytes(packet.readBytes(packet.available()));
 		byte[] message = lew.getBytes();
 		for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(world, ServerType.UNDEFINED))
-			if (!cgi.isDisconnected() && cgi.getChannels().contains(Byte.valueOf(channel)))
+			if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(channel)))
 				cgi.getSession().send(message);
 	}
 
@@ -110,7 +110,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		lew.writeBytes(packet.readBytes(packet.available()));
 		byte[] message = lew.getBytes();
 		for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), r.getServerId()))
-			if (!cgi.isDisconnected())
+			if (cgi.isOnline())
 				cgi.getSession().send(message);
 	}
 }
