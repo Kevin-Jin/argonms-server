@@ -25,6 +25,7 @@ import argonms.character.skill.Skills;
 import argonms.loading.skill.MobSkillEffectsData;
 import argonms.map.MapEntity;
 import argonms.net.client.CommonPackets;
+import argonms.tools.Rng;
 
 /**
  *
@@ -98,7 +99,7 @@ public class Mist extends MapEntity {
 	}
 
 	public boolean shouldHurt() {
-		return Math.random() < prop;
+		return Rng.getGenerator().nextDouble() < prop;
 	}
 
 	public MapEntityType getEntityType() {

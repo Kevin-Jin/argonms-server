@@ -24,7 +24,7 @@ import argonms.character.Player;
 import argonms.character.skill.SkillEntry;
 import argonms.character.skill.SkillTools;
 import argonms.character.skill.Cooldown;
-import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.inventory.Equip;
 import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
@@ -41,6 +41,7 @@ import argonms.map.entity.Mob;
 import argonms.map.entity.MysticDoor;
 import argonms.map.entity.Npc;
 import argonms.tools.HexTool;
+import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
@@ -52,7 +53,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.TreeMap;
 
 /**
@@ -60,8 +60,6 @@ import java.util.TreeMap;
  * @author GoldenKevin
  */
 public class CommonPackets {
-	public static final Random RNG = new Random();
-
 	private static final int[] ROCK_MAPS = { //there has to be exactly 5!
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
@@ -663,7 +661,7 @@ public class CommonPackets {
 		lew.writeByte((byte) 0);
 		lew.writeByte((byte) 0);
 		lew.writeInt(0);
-		int CHAR_MAGIC_SPAWN = RNG.nextInt();
+		int CHAR_MAGIC_SPAWN = Rng.getGenerator().nextInt();
 		lew.writeInt(CHAR_MAGIC_SPAWN);
 		lew.writeShort((short) 0);
 		lew.writeLong(0);
@@ -674,7 +672,7 @@ public class CommonPackets {
 		lew.writeShort((short) 0);
 		//TODO: should we only check if a player has an equipped
 		//mount, and not if they have monster riding on?
-		if (p.isBuffActive(BuffKey.MONSTER_RIDING)) {
+		if (p.isEffectActive(PlayerStatusEffect.MONSTER_RIDING)) {
 			/*TamingMob mount = p.getEquippedMount();
 			if (mount != null) {
 				lew.writeInt(mount.getItemId());

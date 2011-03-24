@@ -37,12 +37,12 @@ import argonms.map.entity.Mob;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
+import argonms.tools.Rng;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,12 +90,11 @@ public class GameMovementHandler {
 
 		Skill skillToUse = null;
 		MobSkillEffectsData skillToUseEffect = null;
-		Random rand = new Random();
 
 		List<Skill> skills = monster.getSkills();
 		int skillsCount = skills.size();
 		if (useSkill && skillsCount > 0) {
-			skillToUse = skills.get(rand.nextInt(skillsCount));
+			skillToUse = skills.get(Rng.getGenerator().nextInt(skillsCount));
 			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillToUse.getSkill()).getLevel(skillToUse.getLevel());
 			if (!monster.canUseSkill(skillToUseEffect)) {
 				skillToUse = null;

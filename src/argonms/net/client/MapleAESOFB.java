@@ -46,7 +46,7 @@ public class MapleAESOFB {
 	private byte iv[];
 	private Cipher cipher;
 	private short mapleVersion;
-	private static final byte[] funnyBytes = new byte[] { (byte) 0xEC, 0x3F, 0x77, (byte) 0xA4, 0x45, (byte) 0xD0,
+	private static final byte[] funnyBytes = { (byte) 0xEC, 0x3F, 0x77, (byte) 0xA4, 0x45, (byte) 0xD0,
 		0x71, (byte) 0xBF, (byte) 0xB7, (byte) 0x98, 0x20, (byte) 0xFC, 0x4B, (byte) 0xE9, (byte) 0xB3, (byte) 0xE1,
 		0x5C, 0x22, (byte) 0xF7, 0x0C, 0x44, 0x1B, (byte) 0x81, (byte) 0xBD, 0x63, (byte) 0x8D, (byte) 0xD4,
 		(byte) 0xC3, (byte) 0xF2, 0x10, 0x19, (byte) 0xE0, (byte) 0xFB, (byte) 0xA1, 0x6E, 0x66, (byte) 0xEA,
@@ -84,7 +84,7 @@ public class MapleAESOFB {
 	 * 
 	 * @param iv The 4-byte IV to use.
 	 */
-	public MapleAESOFB(byte iv[], short mapleVersion) {
+	public MapleAESOFB(byte[] iv, short mapleVersion) {
 		SecretKeySpec skeySpec = new SecretKeySpec(key, "AES");
 
 		try {
@@ -134,21 +134,20 @@ public class MapleAESOFB {
 		int start = 0;
 		while (remaining > 0) {
 			byte[] myIv = BitTools.multiplyBytes(this.iv, 4, 4);
-			if (remaining < llength) {
+			if (remaining < llength)
 				llength = remaining;
-			}
-			for (int x = start; x < (start + llength); x++) {
-				if ((x - start) % myIv.length == 0) {
+			for (int x = 0; x < llength; x++) {
+				int myIvIndex = x % myIv.length;
+				if (myIvIndex == 0) {
 					try {
-						byte[] newIv = cipher.doFinal(myIv);
-						System.arraycopy(newIv, 0, myIv, 0, myIv.length);
+						System.arraycopy(cipher.doFinal(myIv), 0, myIv, 0, myIv.length);
 					} catch (IllegalBlockSizeException e) {
 						LOG.log(Level.WARNING, "Could not finish encryption.", e);
 					} catch (BadPaddingException e) {
 						LOG.log(Level.WARNING, "Could not finish encryption.", e);
 					}
 				}
-				data[x] ^= myIv[(x - start) % myIv.length];
+				data[x + start] ^= myIv[myIvIndex];
 			}
 			start += llength;
 			remaining -= llength;
@@ -173,19 +172,13 @@ public class MapleAESOFB {
 	 * @return The header.
 	 */
 	public byte[] getPacketHeader(int length) {
-		int iiv = (iv[3]) & 0xFF;
-		iiv |= (iv[2] << 8) & 0xFF00;
+		int iiv = (iv[2] << 8 & 0xFF00 | iv[3] & 0xFF) ^ mapleVersion;
+		int xoredIv = (length << 8 & 0xFF00 | length >>> 8) ^ iiv;
 
-		iiv ^= mapleVersion;
-		int mlength = ((length << 8) & 0xFF00) | (length >>> 8);
-		int xoredIv = iiv ^ mlength;
-
-		byte[] ret = new byte[4];
-		ret[0] = (byte) ((iiv >>> 8) & 0xFF);
-		ret[1] = (byte) (iiv & 0xFF);
-		ret[2] = (byte) ((xoredIv >>> 8) & 0xFF);
-		ret[3] = (byte) (xoredIv & 0xFF);
-		return ret;
+		return new byte[] {
+			(byte) ((iiv >>> 8) & 0xFF), (byte) (iiv & 0xFF),
+			(byte) ((xoredIv >>> 8) & 0xFF), (byte) (xoredIv & 0xFF)
+		};
 	}
 
 	/**
@@ -209,7 +202,8 @@ public class MapleAESOFB {
 	 *         <code>false</code> otherwise.
 	 */
 	public boolean checkPacket(byte[] packetHeader) {
-		return ((((packetHeader[0] ^ iv[2]) & 0xFF) == ((mapleVersion >> 8) & 0xFF)) && (((packetHeader[1] ^ iv[3]) & 0xFF) == (mapleVersion & 0xFF)));
+		return ((((packetHeader[0] ^ iv[2]) & 0xFF) == ((mapleVersion >> 8) & 0xFF)) &&
+				(((packetHeader[1] ^ iv[3]) & 0xFF) == (mapleVersion & 0xFF)));
 	}
 
 	/**
@@ -218,12 +212,41 @@ public class MapleAESOFB {
 	 * @param oldIv The old IV to get a new IV from.
 	 * @return The new IV.
 	 */
-	public static byte[] getNewIv(byte oldIv[]) {
-		byte[] in = { (byte) 0xf2, 0x53, (byte) 0x50, (byte) 0xc6 }; // magic
-		// ;)
+	private static byte[] getNewIv(byte[] oldIv) {
+		byte[] in = { (byte) 0xF2, 0x53, (byte) 0x50, (byte) 0xC6 };
 		for (int x = 0; x < 4; x++) {
-			funnyShit(oldIv[x], in);
-			// System.out.println(HexTool.toString(in));
+			byte elina = in[1];
+			byte anna = oldIv[x];
+			byte moritz = funnyBytes[(int) elina & 0xFF];
+			moritz -= oldIv[x];
+			in[0] += moritz;
+			moritz = in[2];
+			moritz ^= funnyBytes[(int) anna & 0xFF];
+			elina -= (int) moritz & 0xFF;
+			in[1] = elina;
+			elina = in[3];
+			moritz = elina;
+			elina -= (int) in[0] & 0xFF;
+			moritz = funnyBytes[(int) moritz & 0xFF];
+			moritz += oldIv[x];
+			moritz ^= in[2];
+			in[2] = moritz;
+			elina += (int) funnyBytes[(int) anna & 0xFF] & 0xFF;
+			in[3] = elina;
+
+			int merry = ((int) in[0]) & 0xFF;
+			merry |= (in[1] << 8) & 0xFF00;
+			merry |= (in[2] << 16) & 0xFF0000;
+			merry |= (in[3] << 24) & 0xFF000000;
+			int ret_value = merry;
+			ret_value = ret_value >>> 0x1D;
+			merry = merry << 3;
+			ret_value = ret_value | merry;
+
+			in[0] = (byte) (ret_value & 0xFF);
+			in[1] = (byte) ((ret_value >> 8) & 0xFF);
+			in[2] = (byte) ((ret_value >> 16) & 0xFF);
+			in[3] = (byte) ((ret_value >> 24) & 0xFF);
 		}
 		return in;
 	}
@@ -236,52 +259,6 @@ public class MapleAESOFB {
 		return "IV: " + HexTool.toString(this.iv);
 	}
 
-	/**
-	 * Does funny stuff. <code>this.OldIV</code> must not equal
-	 * <code>in</code> Modifies <code>in</code> and returns it for
-	 * convenience.
-	 * 
-	 * @param inputByte The byte to apply the funny stuff to.
-	 * @param in Something needed for all this to occur.
-	 * @return The modified version of <code>in</code>.
-	 */
-	public static byte[] funnyShit(byte inputByte, byte[] in) {
-		byte elina = in[1];
-		byte anna = inputByte;
-		byte moritz = funnyBytes[(int) elina & 0xFF];
-		moritz -= inputByte;
-		in[0] += moritz;
-		moritz = in[2];
-		moritz ^= funnyBytes[(int) anna & 0xFF];
-		elina -= (int) moritz & 0xFF;
-		in[1] = elina;
-		elina = in[3];
-		moritz = elina;
-		elina -= (int) in[0] & 0xFF;
-		moritz = funnyBytes[(int) moritz & 0xFF];
-		moritz += inputByte;
-		moritz ^= in[2];
-		in[2] = moritz;
-		elina += (int) funnyBytes[(int) anna & 0xFF] & 0xFF;
-		in[3] = elina;
-
-		int merry = ((int) in[0]) & 0xFF;
-		merry |= (in[1] << 8) & 0xFF00;
-		merry |= (in[2] << 16) & 0xFF0000;
-		merry |= (in[3] << 24) & 0xFF000000;
-		int ret_value = merry;
-		ret_value = ret_value >>> 0x1d;
-		merry = merry << 3;
-		ret_value = ret_value | merry;
-
-		in[0] = (byte) (ret_value & 0xFF);
-		in[1] = (byte) ((ret_value >> 8) & 0xFF);
-		in[2] = (byte) ((ret_value >> 16) & 0xFF);
-		in[3] = (byte) ((ret_value >> 24) & 0xFF);
-
-		return in;
-	}
-
 	//The below aren't actually AESOFB, they're just MapleStory's
 	//custom encryption routines (that's why we named the class MapleAESOFB,
 	//not just AESOFB!)
@@ -291,12 +268,10 @@ public class MapleAESOFB {
 	 * @param data The data to encrypt.
 	 * @return The encrypted data.
 	 */
-	public static byte[] encryptData(byte data[]) {
-
+	public static byte[] encryptData(byte[] data) {
 		for (int j = 0; j < 6; j++) {
 			byte remember = 0;
 			byte dataLength = (byte) (data.length & 0xFF);
-			// printByteArray(data);
 			if (j % 2 == 0) {
 				for (int i = 0; i < data.length; i++) {
 					byte cur = data[i];
@@ -323,7 +298,6 @@ public class MapleAESOFB {
 					data[i] = cur;
 				}
 			}
-			//System.out.println("enc after iteration " + j + ": " + HexTool.toString(data) + " al: " + al);
 		}
 		return data;
 	}

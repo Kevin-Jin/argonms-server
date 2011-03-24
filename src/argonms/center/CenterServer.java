@@ -138,6 +138,7 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			loginServer = remote;
+			remote.serverOnline();
 			sendConnectedGames(remote);
 		} finally {
 			writeLock.unlock();
@@ -151,6 +152,7 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
+			remote.serverOnline();
 			notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
 			sendConnectedShop(remote);
 			sendConnectedGamesOfWorld(remote);
@@ -165,6 +167,7 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			shopServer = remote;
+			remote.serverOnline();
 			notifyShopConnected(remote.getHost(), remote.getClientPort());
 			sendConnectedGames(remote);
 		} finally {
@@ -216,12 +219,12 @@ public class CenterServer {
 
 		readLock.lock();
 		try {
-			if (loginServer != null && !loginServer.isDisconnected())
+			if (loginServer != null && loginServer.isOnline())
 				loginServer.getSession().send(bytes);
-			if (shopServer != null && !shopServer.isDisconnected())
+			if (shopServer != null && shopServer.isOnline())
 				shopServer.getSession().send(bytes);
 			for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-				if (!gameServer.isDisconnected())
+				if (gameServer.isOnline())
 					gameServer.getSession().send(bytes);
 		} finally {
 			readLock.unlock();
@@ -234,12 +237,12 @@ public class CenterServer {
 	private void notifyGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		byte[] bytes = writeGameConnected(serverId, world, host, ports);
 
-		if (loginServer != null && !loginServer.isDisconnected())
+		if (loginServer != null && loginServer.isOnline())
 			loginServer.getSession().send(bytes);
-		if (shopServer != null && !shopServer.isDisconnected())
+		if (shopServer != null && shopServer.isOnline())
 			shopServer.getSession().send(bytes);
 		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-			if (!gameServer.isDisconnected())
+			if (gameServer.isOnline())
 				gameServer.getSession().send(bytes);
 	}
 
@@ -253,12 +256,12 @@ public class CenterServer {
 		lew.writeByte(world);
 		byte[] bytes = lew.getBytes();
 
-		if (loginServer != null && !loginServer.isDisconnected())
+		if (loginServer != null && loginServer.isOnline())
 			loginServer.getSession().send(bytes);
-		if (shopServer != null && !shopServer.isDisconnected())
+		if (shopServer != null && shopServer.isOnline())
 			shopServer.getSession().send(bytes);
 		for (CenterGameInterface gameServer : getAllServersOfWorld(world, serverId))
-			if (!gameServer.isDisconnected())
+			if (gameServer.isOnline())
 				gameServer.getSession().send(bytes);
 	}
 
@@ -269,7 +272,7 @@ public class CenterServer {
 		byte[] bytes = writeShopConnected(host, port);
 
 		for (CenterGameInterface gameServer : gameServers.values())
-			if (!gameServer.isDisconnected())
+			if (gameServer.isOnline())
 				gameServer.getSession().send(bytes);
 	}
 
@@ -282,7 +285,7 @@ public class CenterServer {
 		byte[] bytes = lew.getBytes();
 
 		for (CenterGameInterface gameServer : gameServers.values())
-			if (!gameServer.isDisconnected())
+			if (gameServer.isOnline())
 				gameServer.getSession().send(bytes);
 	}
 
@@ -290,7 +293,7 @@ public class CenterServer {
 	 * All calls of this method must have acquired either a read or write lock.
 	 */
 	private void sendConnectedShop(CenterGameInterface game) {
-		if (shopServer != null && !shopServer.isDisconnected())
+		if (shopServer != null && shopServer.isOnline())
 			game.getSession().send(writeShopConnected(shopServer.getHost(),
 					shopServer.getClientPort()));
 	}
@@ -300,7 +303,7 @@ public class CenterServer {
 	 */
 	private void sendConnectedGames(CenterRemoteInterface connected) {
 		for (CenterGameInterface game : gameServers.values())
-			if (!game.isDisconnected())
+			if (game.isOnline())
 				connected.getSession().send(writeGameConnected(game.getServerId(),
 						game.getWorld(), game.getHost(), game.getClientPorts()));
 	}
@@ -312,7 +315,7 @@ public class CenterServer {
 		byte ourServerId = connected.getServerId();
 		byte ourWorld = connected.getWorld();
 		for (CenterGameInterface game : gameServers.values())
-			if (!game.isDisconnected() && game.getServerId() != ourServerId && game.getWorld() == ourWorld)
+			if (game.isOnline() && game.getServerId() != ourServerId && game.getWorld() == ourWorld)
 				connected.getSession().send(writeGameConnected(game.getServerId(),
 						game.getWorld(), game.getHost(), game.getClientPorts()));
 	}
@@ -327,7 +330,7 @@ public class CenterServer {
 				server = loginServer;
 			if (ServerType.isShop(serverId))
 				server = shopServer;
-			return (server != null && !server.isDisconnected());
+			return (server != null && server.isOnline());
 		} finally {
 			readLock.unlock();
 		}
@@ -336,7 +339,7 @@ public class CenterServer {
 	public void sendToLogin(byte[] message) {
 		readLock.lock();
 		try {
-			if (loginServer != null && !loginServer.isDisconnected())
+			if (loginServer != null && loginServer.isOnline())
 				loginServer.getSession().send(message);
 		} finally {
 			readLock.unlock();
@@ -347,7 +350,7 @@ public class CenterServer {
 		readLock.lock();
 		try {
 			CenterGameInterface gameServer = gameServers.get(Byte.valueOf(serverId));
-			if (gameServer != null && !gameServer.isDisconnected())
+			if (gameServer != null && gameServer.isOnline())
 				gameServer.getSession().send(message);
 		} finally {
 			readLock.unlock();
@@ -357,7 +360,7 @@ public class CenterServer {
 	public void sendToShop(byte[] message) {
 		readLock.lock();
 		try {
-			if (shopServer != null && !shopServer.isDisconnected())
+			if (shopServer != null && shopServer.isOnline())
 				shopServer.getSession().send(message);
 		} finally {
 			readLock.unlock();

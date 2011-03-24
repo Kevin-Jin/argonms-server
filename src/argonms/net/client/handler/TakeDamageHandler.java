@@ -21,7 +21,7 @@ package argonms.net.client.handler;
 import java.awt.Point;
 
 import argonms.character.Player;
-import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.game.GameClient;
 import argonms.loading.mob.Attack;
 import argonms.loading.mob.MobDataLoader;
@@ -94,7 +94,7 @@ public class TakeDamageHandler {
 				m.hurt(p, hurtDmg);
 			}
 			stance = packet.readByte();
-			if (stance > 0 && !p.isBuffActive(BuffKey.STANCE)) {
+			if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.STANCE)) {
 				//TODO: hacking
 				return;
 			}

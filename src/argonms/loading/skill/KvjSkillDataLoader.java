@@ -143,8 +143,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	private SkillEffectsData processEffect(int skillid, byte level, LittleEndianReader reader) {
-		SkillEffectsData effect = new SkillEffectsData(skillid, level);
+	private PlayerSkillEffectsData processEffect(int skillid, byte level, LittleEndianReader reader) {
+		PlayerSkillEffectsData effect = new PlayerSkillEffectsData(skillid, level);
 		loop:
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {

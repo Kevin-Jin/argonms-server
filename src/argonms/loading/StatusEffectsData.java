@@ -16,31 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character;
+package argonms.loading;
+
+import java.util.Set;
+
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 
 /**
  *
  * @author GoldenKevin
  */
-public enum Disease {
-	NULL		(0x0000000000000000L),
-	SLOW		(0x0000000000000001L),
-	SEDUCE		(0x0000000000000080L),
-	STUN		(0x0002000000000000L),
-	POISON		(0x0004000000000000L),
-	SEAL		(0x0008000000000000L),
-	DARKNESS	(0x0010000000000000L),
-	WEAKEN		(0x4000000000000000L),
-	CURSE		(0x8000000000000000L)
-	;
+public interface StatusEffectsData {
+	public enum EffectSource { ITEM, PLAYER_SKILL, MOB_SKILL }
 
-	private final long mask;
-
-	private Disease(long mask) {
-		this.mask = mask;
-	}
-
-	public long getMask() {
-		return mask;
-	}
+	public EffectSource getSourceType();
+	public int getDataId();
+	public Set<PlayerStatusEffect> getEffects();
+	public int hashCode();
+	public byte getLevel();
+	public int getDuration();
 }

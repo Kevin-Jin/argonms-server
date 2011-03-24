@@ -24,6 +24,8 @@ import argonms.ServerType;
 import argonms.game.GameClient;
 import argonms.login.LoginClient;
 import argonms.shop.ShopClient;
+import argonms.tools.Rng;
+import java.util.Random;
 import org.jboss.netty.channel.Channel;
 
 /**
@@ -38,11 +40,10 @@ public class ClientSession {
 	public ClientSession(Channel ch, byte world, byte channel) {
 		this.ch = ch;
 
-		byte ivRecv[] = { 70, 114, 122, -1 };
-		byte ivSend[] = { 82, 48, 120, -1 };
+		Random generator = Rng.getGenerator();
+		byte[] ivRecv = { 70, 114, 122, (byte) generator.nextInt(256) };
+		byte[] ivSend = { 82, 48, 120, (byte) generator.nextInt(256) };
 
-		ivRecv[3] = (byte) (Math.random() * 255);
-		ivSend[3] = (byte) (Math.random() * 255);
 		this.recvCypher = new MapleAESOFB(ivRecv, (byte) 62);
 		this.sendCypher = new MapleAESOFB(ivSend, (short) (0xFFFF - (byte) 62));
 

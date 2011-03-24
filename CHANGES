@@ -393,6 +393,26 @@
 	in order to speed up sending data for map entities that do not have extra
 	packets that need to be sent.
 
+2011-03-24  GoldenKevin  (revision 20)
+
+	* Refactored player buffs and diseases. Combined them into a single
+	PlayerStatusEffect. MobSkillEffectsData is now related to SkillEffectsData
+	(which has been renamed to PlayerSkillEffectsData) and ItemEffectsData.
+	* Modified GameMap to take advantage of several new classes that I wrote so
+	I could remove all the lock instance data, which helps declutter it. I only
+	added documentation for Lockable(Hash)Map, but I'm sure you can infer what
+	the other similar classes do once you read through that.
+	* Fixed NullPointerException in login server when a game server is closed
+	after it has connected to the center server but before it is ready/online.
+	It was an issue in the center server code that I overlooked...
+	* Tidied up the encryption/decryption routines to conform more to my
+	standards.
+	* All creations of a Random instance and every call to Math.random has been
+	replaced with a call to a centralized Rng class. The class is ThreadLocal,
+	so it should perform a slight bit better than Math.random when there are
+	many concurrent calls, and should reduce the amount of instantiations of
+	Random as it is now one instance per thread.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

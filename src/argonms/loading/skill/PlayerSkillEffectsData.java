@@ -18,10 +18,11 @@
 
 package argonms.loading.skill;
 
-import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.Skills;
-import argonms.loading.StatEffectsData;
+import argonms.loading.BuffsData;
 import argonms.map.MonsterStatusEffect;
+import argonms.tools.Rng;
 
 import java.awt.Point;
 import java.util.EnumSet;
@@ -31,7 +32,7 @@ import java.util.Set;
  *
  * @author GoldenKevin
  */
-public class SkillEffectsData extends StatEffectsData {
+public class PlayerSkillEffectsData extends BuffsData {
 	private short mpCon;
 	private short hpCon;
 	private int x;
@@ -55,13 +56,13 @@ public class SkillEffectsData extends StatEffectsData {
 	private boolean isFreeze;
 	private byte level;
 
-	protected SkillEffectsData(int skillid, byte level) {
+	protected PlayerSkillEffectsData(int skillid, byte level) {
 		super(skillid);
 		this.level = level;
 		this.monsterDiseases = EnumSet.noneOf(MonsterStatusEffect.class);
 		switch (skillid) { //for them skills that don't have x or y
 			case Skills.HIDE:
-				effects.add(BuffKey.HIDE);
+				effects.add(PlayerStatusEffect.HIDE);
 				//kinda hacky, but hide doesn't have a duration
 				setDuration(60 * 120 * 1000);
 				break;
@@ -69,7 +70,7 @@ public class SkillEffectsData extends StatEffectsData {
 	}
 
 	public EffectSource getSourceType() {
-		return EffectSource.SKILL;
+		return EffectSource.PLAYER_SKILL;
 	}
 
 	protected void setMpConsume(short mpCon) {
@@ -352,30 +353,30 @@ public class SkillEffectsData extends StatEffectsData {
 		this.x = x;
 		switch (getDataId()) {
 			case Skills.MAGIC_GUARD:
-				effects.add(BuffKey.MAGIC_GUARD);
+				effects.add(PlayerStatusEffect.MAGIC_GUARD);
 				break;
 			case Skills.INVINCIBLE:
-				effects.add(BuffKey.INVINCIBLE);
+				effects.add(PlayerStatusEffect.INVINCIBLE);
 				break;
 			case Skills.DARK_SIGHT:
-				effects.add(BuffKey.DARKSIGHT);
+				effects.add(PlayerStatusEffect.DARKSIGHT);
 				break;
 			case Skills.PICK_POCKET:
-				effects.add(BuffKey.PICKPOCKET);
+				effects.add(PlayerStatusEffect.PICKPOCKET);
 				break;
 			case Skills.MESO_GUARD:
-				effects.add(BuffKey.MESOGUARD);
+				effects.add(PlayerStatusEffect.MESOGUARD);
 				break;
 			case Skills.MESO_UP:
-				effects.add(BuffKey.MESOUP);
+				effects.add(PlayerStatusEffect.MESOUP);
 				break;
 			case Skills.SHADOW_PARTNER:
-				effects.add(BuffKey.SHADOWPARTNER);
+				effects.add(PlayerStatusEffect.SHADOWPARTNER);
 				break;
 			case Skills.BOW_SOUL_ARROW:
 			case Skills.XBOW_SOUL_ARROW:
 			case Skills.MYSTIC_DOOR: // hacked buff icon
-				effects.add(BuffKey.SOULARROW);
+				effects.add(PlayerStatusEffect.SOULARROW);
 				break;
 			case Skills.SWORD_FIRE_CHARGE:
 			case Skills.BW_FLAME_CHARGE:
@@ -385,7 +386,7 @@ public class SkillEffectsData extends StatEffectsData {
 			case Skills.BW_LIGHTNING_CHARGE:
 			case Skills.SWORD_HOLY_CHARGE:
 			case Skills.BW_DIVINE_CHARGE:
-				effects.add(BuffKey.WK_CHARGE);
+				effects.add(PlayerStatusEffect.WK_CHARGE);
 				break;
 			case Skills.CRUSADER_SWORD_BOOSTER:
 			case Skills.AXE_BOOSTER:
@@ -401,37 +402,37 @@ public class SkillEffectsData extends StatEffectsData {
 			case Skills.DAGGER_BOOSTER:
 			case Skills.KNUCKLER_BOOSTER:
 			case Skills.GUN_BOOSTER:
-				effects.add(BuffKey.BOOSTER);
+				effects.add(PlayerStatusEffect.BOOSTER);
 				break;
 			case Skills.SPEED_INFUSION:
-				effects.add(BuffKey.SPEED_INFUSION);
+				effects.add(PlayerStatusEffect.SPEED_INFUSION);
 				break;
 			case Skills.CONCENTRATE:
-				effects.add(BuffKey.CONCENTRATE);
+				effects.add(PlayerStatusEffect.CONCENTRATE);
 				break;
 			case Skills.DASH:
-				effects.add(BuffKey.DASH);
+				effects.add(PlayerStatusEffect.DASH);
 				break;
 			case Skills.FIGHTER_POWER_GUARD:
 			case Skills.PAGE_POWER_GUARD:
-				effects.add(BuffKey.POWERGUARD);
+				effects.add(PlayerStatusEffect.POWERGUARD);
 				break;
 			case Skills.SPEARMAN_HYPER_BODY:
 			case Skills.GM_HYPER_BODY:
-				effects.add(BuffKey.MAXHP);
+				effects.add(PlayerStatusEffect.MAXHP);
 				break;
 			case Skills.RECOVERY:
-				effects.add(BuffKey.RECOVERY);
+				effects.add(PlayerStatusEffect.RECOVERY);
 				break;
 			case Skills.COMBO:
-				effects.add(BuffKey.COMBO);
+				effects.add(PlayerStatusEffect.COMBO);
 				break;
 			case Skills.MONSTER_RIDING:
 			case Skills.BATTLE_SHIP:
-				effects.add(BuffKey.MONSTER_RIDING);
+				effects.add(PlayerStatusEffect.MONSTER_RIDING);
 				break;
 			case Skills.DRAGON_BLOOD:
-				effects.add(BuffKey.DRAGONBLOOD);
+				effects.add(PlayerStatusEffect.DRAGONBLOOD);
 				break;
 			case Skills.HERO_MAPLE_WARRIOR:
 			case Skills.PALADIN_MAPLE_WARRIOR:
@@ -445,11 +446,11 @@ public class SkillEffectsData extends StatEffectsData {
 			case Skills.SHADOWER_MAPLE_WARRIOR:
 			case Skills.BUCCANEER_MAPLE_WARRIOR:
 			case Skills.CORSAIR_MAPLE_WARRIOR:
-				effects.add(BuffKey.MAPLE_WARRIOR);
+				effects.add(PlayerStatusEffect.MAPLE_WARRIOR);
 				break;
 			case Skills.BOW_MASTER_SHARP_EYES:
 			case Skills.XBOW_MASTER_SHARP_EYES:
-				effects.add(BuffKey.SHARP_EYES);
+				effects.add(PlayerStatusEffect.SHARP_EYES);
 				break;
 			case Skills.BEHOLDER:
 			case Skills.IFRIT:
@@ -459,39 +460,39 @@ public class SkillEffectsData extends StatEffectsData {
 			case Skills.OCTOPUS:
 			case Skills.GAVIOTA:
 			case Skills.WRATH_OF_THE_OCTOPI:
-				effects.add(BuffKey.SUMMON);
+				effects.add(PlayerStatusEffect.SUMMON);
 				break;
 			case Skills.CLERIC_HOLY_SYMBOL:
 			case Skills.GM_HOLY_SYMBOL:
-				effects.add(BuffKey.HOLY_SYMBOL);
+				effects.add(PlayerStatusEffect.HOLY_SYMBOL);
 				break;
 			case Skills.SHADOW_STARS:
-				effects.add(BuffKey.SHADOW_CLAW);
+				effects.add(PlayerStatusEffect.SHADOW_CLAW);
 				break;
 			case Skills.FP_INFINITY:
 			case Skills.IL_INFINITY:
 			case Skills.BISHOP_INFINITY:
-				effects.add(BuffKey.INFINITY);
+				effects.add(PlayerStatusEffect.INFINITY);
 				break;
 			case Skills.HERO_POWER_STANCE:
 			case Skills.PAGE_POWER_STANCE:
 			case Skills.DARK_KNIGHT_POWER_STANCE:
-				effects.add(BuffKey.STANCE);
+				effects.add(PlayerStatusEffect.STANCE);
 				break;
 			case Skills.ECHO_OF_HERO:
-				effects.add(BuffKey.ECHO_OF_HERO);
+				effects.add(PlayerStatusEffect.ECHO_OF_HERO);
 				break;
 			case Skills.FP_MANA_REFLECTION:
 			case Skills.IL_MANA_REFLECTION:
 			case Skills.BISHOP_MANA_REFLECTION:
-				effects.add(BuffKey.MANA_REFLECTION);
+				effects.add(PlayerStatusEffect.MANA_REFLECTION);
 				break;
 			case Skills.HOLY_SHIELD:
-				effects.add(BuffKey.HOLY_SHIELD);
+				effects.add(PlayerStatusEffect.HOLY_SHIELD);
 				break;
 			case Skills.BOW_PUPPET:
 			case Skills.XBOW_PUPPET:
-				effects.add(BuffKey.PUPPET);
+				effects.add(PlayerStatusEffect.PUPPET);
 				break;
 
 			case Skills.DISORDER:
@@ -542,12 +543,12 @@ public class SkillEffectsData extends StatEffectsData {
 				break;
 			case Skills.SILVER_HAWK:
 			case Skills.GOLDEN_EAGLE:
-				effects.add(BuffKey.SUMMON);
+				effects.add(PlayerStatusEffect.SUMMON);
 				monsterDiseases.add(MonsterStatusEffect.STUN);
 				break;
 			case Skills.ELQUINES:
 			case Skills.FROSTPREY:
-				effects.add(BuffKey.SUMMON);
+				effects.add(PlayerStatusEffect.SUMMON);
 				monsterDiseases.add(MonsterStatusEffect.FREEZE);
 				break;
 			case Skills.FP_SEAL:
@@ -558,11 +559,11 @@ public class SkillEffectsData extends StatEffectsData {
 				monsterDiseases.add(MonsterStatusEffect.SHADOW_WEB);
 				break;
 			case Skills.HAMSTRING:
-				effects.add(BuffKey.HAMSTRING);
+				effects.add(PlayerStatusEffect.HAMSTRING);
 				monsterDiseases.add(MonsterStatusEffect.SPEED);
 				break;
 			case Skills.BLIND:
-				effects.add(BuffKey.BLIND);
+				effects.add(PlayerStatusEffect.BLIND);
 				monsterDiseases.add(MonsterStatusEffect.ACC);
 				break;
 			case Skills.NL_NINJA_AMBUSH:
@@ -580,11 +581,11 @@ public class SkillEffectsData extends StatEffectsData {
 		switch (getDataId()) {
 			case Skills.SPEARMAN_HYPER_BODY:
 			case Skills.GM_HYPER_BODY:
-				effects.add(BuffKey.MAXMP);
+				effects.add(PlayerStatusEffect.MAXMP);
 				break;
 			case Skills.BOW_MASTER_SHARP_EYES:
 			case Skills.XBOW_MASTER_SHARP_EYES:
-				effects.add(BuffKey.SHARP_EYES);
+				effects.add(PlayerStatusEffect.SHARP_EYES);
 				break;
 
 			case Skills.DISORDER:
@@ -703,7 +704,7 @@ public class SkillEffectsData extends StatEffectsData {
 	}
 
 	public boolean shouldPerform() {
-		return Math.random() < prop;
+		return Rng.getGenerator().nextDouble() < prop;
 	}
 
 	public byte getMastery() {

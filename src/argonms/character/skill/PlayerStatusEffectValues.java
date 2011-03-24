@@ -18,15 +18,17 @@
 
 package argonms.character.skill;
 
-import argonms.loading.StatEffectsData;
+import argonms.loading.StatusEffectsData;
+import argonms.loading.StatusEffectsData.EffectSource;
 
 /**
  *
  * @author GoldenKevin
  */
-public class BuffState {
-	public enum BuffKey {
+public class PlayerStatusEffectValues {
+	public enum PlayerStatusEffect {
 		//byte 8
+		SLOW			(0x0000000000000001L),
 		HOMING_BEACON   (0x0000000000000001L),
 		MORPH			(0x0000000000000002L),
 		RECOVERY		(0x0000000000000004L),
@@ -34,6 +36,7 @@ public class BuffState {
 		STANCE			(0x0000000000000010L),
 		SHARP_EYES		(0x0000000000000020L),
 		MANA_REFLECTION	(0x0000000000000040L),
+		SEDUCE			(0x0000000000000080L),
 		DRAGON_ROAR     (0x0000000000000080L),
 
 		//byte 7
@@ -97,32 +100,51 @@ public class BuffState {
 		PUPPET			(0x0800000000000000L),
 		MESOGUARD		(0x1000000000000000L),
 		WEAKEN			(0x4000000000000000L),
+		CURSE			(0x8000000000000000L)
 		;
 
 		private final long mask;
 
-		private BuffKey(long mask) {
+		private PlayerStatusEffect(long mask) {
 			this.mask = mask;
 		}
 
 		public long getMask() {
 			return mask;
 		}
+
+		public boolean isDebuff() {
+			switch (this) {
+				case SLOW:
+				case SEDUCE:
+				case STUN:
+				case POISON:
+				case SEAL:
+				case DARKNESS:
+				case WEAKEN:
+				case CURSE:
+					return true;
+				default:
+					return false;
+			}
+		}
 	}
 
-	private int dataid;
-	private byte skillLevel;
+	private StatusEffectsData e;
 
-	public BuffState(StatEffectsData e) {
-		this.dataid = e.getDataId();
-		this.skillLevel = e.getLevel();
+	public PlayerStatusEffectValues(StatusEffectsData e) {
+		this.e = e;
 	}
 
 	public int getSource() {
-		return dataid;
+		return e.getDataId();
 	}
 
 	public byte getLevelWhenCast() {
-		return skillLevel;
+		return e.getLevel();
+	}
+
+	public EffectSource getSourceType() {
+		return e.getSourceType();
 	}
 }

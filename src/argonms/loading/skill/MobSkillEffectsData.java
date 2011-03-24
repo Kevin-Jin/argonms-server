@@ -18,17 +18,21 @@
 
 package argonms.loading.skill;
 
-import argonms.character.Disease;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.loading.StatusEffectsData;
 import argonms.map.MonsterStatusEffect;
+import argonms.tools.Rng;
 import java.awt.Point;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
  *
  * @author GoldenKevin
  */
-public class MobSkillEffectsData {
+public class MobSkillEffectsData implements StatusEffectsData {
 	private int skillid;
 	private byte level;
 	private short mpCon;
@@ -41,7 +45,7 @@ public class MobSkillEffectsData {
 	private short cooltime;
 	private short hp;
 	private MonsterStatusEffect buff;
-	private Disease disease;
+	private PlayerStatusEffect disease;
 	private short summonLimit;
 	private byte summonEffect;
 	private final Map<Byte, Integer> summons;
@@ -69,25 +73,25 @@ public class MobSkillEffectsData {
 				break;
 
 			case 120:
-				disease = Disease.SEAL;
+				disease = PlayerStatusEffect.SEAL;
 				break;
 			case 121:
-				disease = Disease.DARKNESS;
+				disease = PlayerStatusEffect.DARKNESS;
 				break;
 			case 122:
-				disease = Disease.WEAKEN;
+				disease = PlayerStatusEffect.WEAKEN;
 				break;
 			case 123:
-				disease = Disease.STUN;
+				disease = PlayerStatusEffect.STUN;
 				break;
 			case 124:
-				disease = Disease.CURSE;
+				disease = PlayerStatusEffect.CURSE;
 				break;
 			case 125:
-				disease = Disease.POISON;
+				disease = PlayerStatusEffect.POISON;
 				break;
 			case 126:
-				disease = Disease.SLOW;
+				disease = PlayerStatusEffect.SLOW;
 				break;
 		}
 	}
@@ -169,7 +173,7 @@ public class MobSkillEffectsData {
 	}
 
 	public boolean shouldPerform() {
-		return Math.random() < prop;
+		return Rng.getGenerator().nextDouble() < prop;
 	}
 
 	public short getCooltime() {
@@ -204,7 +208,13 @@ public class MobSkillEffectsData {
 		return buff;
 	}
 
-	public Disease getDisease() {
-		return disease;
+	public EffectSource getSourceType() {
+		return EffectSource.MOB_SKILL;
+	}
+
+	public Set<PlayerStatusEffect> getEffects() {
+		if (disease != null)
+			return EnumSet.of(disease);
+		return EnumSet.noneOf(PlayerStatusEffect.class);
 	}
 }

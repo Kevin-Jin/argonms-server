@@ -37,11 +37,13 @@ import argonms.map.MapEntity;
 import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffect;
 import argonms.net.client.CommonPackets;
+import argonms.tools.Rng;
 import argonms.tools.Timer;
 
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.lang.ref.WeakReference;
+import java.util.Random;
 
 /**
  *
@@ -236,11 +238,12 @@ public class Mob extends MapEntity {
 				if (playerSkillEffect.shouldPerform() && !isBuffActive(MonsterStatusEffect.WEAPON_IMMUNITY))
 					applyBuff(MonsterStatusEffect.MAGIC_IMMUNITY, playerSkillEffect.getDuration());
 				break;
-			case MobSkills.SUMMON: //TODO: use playerSkillEffect.getSummonLimit()?
+			case MobSkills.SUMMON:
 				short limit = playerSkillEffect.getSummonLimit();
 				if (limit == 5000)
 					limit = (short) (30 + player.getMap().getPlayerCount() * 2);
 				if (spawnedSummons < limit) {
+					Random generator = Rng.getGenerator();
 					for (Integer oMobId : playerSkillEffect.getSummons().values()) {
 						int mobId = oMobId.intValue();
 						Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId));
@@ -249,20 +252,20 @@ public class Mob extends MapEntity {
 						ypos = getPosition().y;
 						switch (mobId) {
 							case 8500003: // Pap bomb high
-								summon.setFoothold((short)Math.ceil(Math.random() * 19.0));
+								summon.setFoothold((short)Math.ceil(generator.nextDouble() * 19.0));
 								ypos = -590; //no break?
 							case 8500004: // Pap bomb
 								//Spawn between -500 and 500 from the monsters X position
-								xpos = (int)(getPosition().x + Math.ceil(Math.random() * 1000.0) - 500);
+								xpos = (int)(getPosition().x + Math.ceil(generator.nextDouble() * 1000.0) - 500);
 								if (ypos != -590)
 									ypos = getPosition().y;
 								break;
 							case 8510100: //Pianus bomb
-								if (Math.ceil(Math.random() * 5) == 1) {
+								if (Math.ceil(generator.nextDouble() * 5) == 1) {
 									ypos = 78;
-									xpos = (int)(0 + Math.ceil(Math.random() * 5)) + ((Math.ceil(Math.random() * 2) == 1) ? 180 : 0);
+									xpos = (int)(0 + Math.ceil(generator.nextDouble() * 5)) + ((Math.ceil(generator.nextDouble() * 2) == 1) ? 180 : 0);
 								} else
-									xpos = (int)(getPosition().x + Math.ceil(Math.random() * 1000.0) - 500);
+									xpos = (int)(getPosition().x + Math.ceil(generator.nextDouble() * 1000.0) - 500);
 								break;
 						}
 						// Get spawn coordinates (This fixes monster lock)
@@ -270,26 +273,27 @@ public class Mob extends MapEntity {
 						switch (player.getMapId()) {
 							case 220080001: //Pap map
 								if (xpos < -890)
-									xpos = (int)(-890 + Math.ceil(Math.random() * 150));
+									xpos = (int)(-890 + Math.ceil(generator.nextDouble() * 150));
 								else if (xpos > 230)
-									xpos = (int)(230 - Math.ceil(Math.random() * 150));
+									xpos = (int)(230 - Math.ceil(generator.nextDouble() * 150));
 								break;
 							case 230040420: // Pianus map
 								if (xpos < -239)
-									xpos = (int)(-239 + Math.ceil(Math.random() * 150));
+									xpos = (int)(-239 + Math.ceil(generator.nextDouble() * 150));
 								else if (xpos > 371)
-									xpos = (int)(371 - Math.ceil(Math.random() * 150));
+									xpos = (int)(371 - Math.ceil(generator.nextDouble() * 150));
 								break;
 						}
 						summon.setPosition(new Point(xpos, ypos));
 						summon.setSpawnEffect(playerSkillEffect.getSummonEffect());
 						player.getMap().spawnMonster(summon);
+						spawnedSummons++;
 					}
 				}
 				break;
 			default:
-				if (playerSkillEffect.getDisease() != null)
-					player.applyDisease(playerSkillEffect);
+				if (!playerSkillEffect.getEffects().isEmpty())
+					player.applyEffect(playerSkillEffect);
 				if (playerSkillEffect.getBuff() != null)
 					applyBuff(playerSkillEffect.getBuff(), playerSkillEffect.getDuration());
 				break;

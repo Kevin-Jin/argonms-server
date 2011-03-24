@@ -30,10 +30,12 @@ import argonms.loading.skill.SkillDataLoader;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
+import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -154,9 +156,10 @@ public class GameEnterHandler {
 		lew.writeByte((byte) 1);
 		lew.writeByte((byte) 1);
 		lew.writeShort((short) 0);
-		lew.writeInt(CommonPackets.RNG.nextInt());
-		lew.writeInt(CommonPackets.RNG.nextInt());
-		lew.writeInt(CommonPackets.RNG.nextInt());
+		Random generator = Rng.getGenerator();
+		lew.writeInt(generator.nextInt());
+		lew.writeInt(generator.nextInt());
+		lew.writeInt(generator.nextInt());
 
 		CommonPackets.writeCharData(lew, p);
 

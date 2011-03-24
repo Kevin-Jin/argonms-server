@@ -164,7 +164,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		}
 		do {
 			byte level = rs.getByte(2);
-			SkillEffectsData effect = new SkillEffectsData(skillid, level);
+			PlayerSkillEffectsData effect = new PlayerSkillEffectsData(skillid, level);
 			effect.setMpConsume(rs.getShort(6));
 			effect.setHpConsume(rs.getShort(7));
 			effect.setDuration(rs.getInt(5));

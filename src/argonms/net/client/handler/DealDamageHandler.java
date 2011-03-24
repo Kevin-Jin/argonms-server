@@ -19,12 +19,11 @@
 package argonms.net.client.handler;
 
 import argonms.character.Player;
-import argonms.character.skill.BuffState;
-import argonms.character.skill.BuffState.BuffKey;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.Skills;
 import argonms.game.GameClient;
 import argonms.loading.skill.SkillDataLoader;
-import argonms.loading.skill.SkillEffectsData;
+import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillStats;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
@@ -35,6 +34,7 @@ import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.Pair;
+import argonms.tools.Rng;
 import argonms.tools.Timer;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
@@ -54,7 +54,7 @@ public class DealDamageHandler {
 		AttackInfo attack = parseDamage(packet, false);
 		Player p = ((GameClient) rc).getPlayer();
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack), p.getPosition(), p);
-		SkillEffectsData e = attack.getAttackEffect(p);
+		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		int attackCount = 1;
 		if (attack.skill != 0) {
 			attackCount = e.getAttackCount();
@@ -176,7 +176,7 @@ public class DealDamageHandler {
 
 	private static void handlePickPocket(final Player p, Mob monster, Pair<Integer, List<Integer>> oned) {
 		int delay = 0;
-		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getBuff(BuffKey.PICKPOCKET).getLevelWhenCast()).getX();
+		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		int reqdamage = 20000;
 		Point monsterPosition = monster.getPosition();
 
@@ -185,7 +185,7 @@ public class DealDamageHandler {
 				double perc = (double) eachd / (double) reqdamage;
 
 				int todrop = Math.min((int) Math.max(perc * (double) maxmeso, (double) 1), maxmeso);
-				Point tdpos = new Point((int) (monsterPosition.getX() + (Math.random() * 100) - 50), (int) (monsterPosition.getY()));
+				Point tdpos = new Point((int) (monsterPosition.getX() + (Rng.getGenerator().nextDouble() * 100) - 50), (int) (monsterPosition.getY()));
 				final GameMap tdmap = p.getMap();
 				final ItemDrop d = new ItemDrop(todrop);
 				d.init(p.getId(), tdpos, monster.getPosition(), monster.getId());
@@ -203,7 +203,7 @@ public class DealDamageHandler {
 
 	//TODO: handle skills
 	private static void applyAttack(AttackInfo attack, final Player player, int attackCount) {
-		SkillEffectsData attackEffect = null;
+		PlayerSkillEffectsData attackEffect = null;
 		if (attack.skill != 0) {
 			attackEffect = attack.getAttackEffect(player);
 			if (attackEffect == null) {
@@ -261,7 +261,7 @@ public class DealDamageHandler {
 					player.gainHp(addHp);
 				}
 
-				if (player.isBuffActive(BuffKey.PICKPOCKET)) {
+				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {
 					switch (attack.skill) {
 						case 0:
 						case Skills.DOUBLE_STAB:
@@ -275,17 +275,16 @@ public class DealDamageHandler {
 							break;
 					}
 				}
-
 				// effects
 				/*switch (attack.skill) {
 					case Skills.HEAVENS_HAMMER:
 						// TODO min damage still needs calculated.. using -20% as mindamage in the meantime.. seems to work
 						int HHDmg = (int) (player.calculateMaxBaseDamage(player.getTotalWatk()) * (SkillDataLoader.getInstance().getSkill(Skills.HEAVENS_HAMMER).getLevel(player.getSkillLevel(Skills.HEAVENS_HAMMER)).getDamage() / 100));
-						HHDmg = (int) (Math.floor(Math.random() * (HHDmg - HHDmg * .80) + HHDmg * .80));
+						HHDmg = (int) (Math.floor(Rng.getGenerator().nextDouble() * (HHDmg - HHDmg * .80) + HHDmg * .80));
 						monster.damage(player, HHDmg);
 						break;
 					case Skills.SNIPE:
-						totDamageToOneMonster = 95000 + (int) (Math.random() * 5000);
+						totDamageToOneMonster = 95000 + Rng.getGenerator().nextInt(5000);
 						break;
 					case Skills.DRAIN:
 						int gainhp = (int) ((double) totDamageToOneMonster * (double) SkillDataLoader.getInstance().getSkill(Skills.DRAIN).getLevel(player.getSkillLevel(Skills.DRAIN)).getX() / 100.0);
@@ -457,7 +456,7 @@ public class DealDamageHandler {
 			this.speed = 4;
 		}
 
-		public SkillEffectsData getAttackEffect(Player p) {
+		public PlayerSkillEffectsData getAttackEffect(Player p) {
 			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(skill);
 			byte skillLevel = p.getSkillLevel(skill);
 			if (skillLevel == 0)
