@@ -89,19 +89,18 @@ CREATE TABLE `cooldowns` (
 DROP TABLE IF EXISTS `inventoryitems`;
 CREATE TABLE `inventoryitems` (
   `inventoryitemid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `characterid` int(11) NOT NULL,
-  `accountid` int(11) DEFAULT NULL, /* only needed for cash shop inventory and storage */
-  `inventorytype` tinyint(1) DEFAULT NULL, /* only needed for cash shop inventory and storage and equipped */
+  `characterid` int(11) DEFAULT NULL,
+  `accountid` int(11) DEFAULT NULL,
+  `inventorytype` tinyint(1) DEFAULT NULL,
   `position` smallint(5) NOT NULL,
   `itemid` int(11) NOT NULL,
   `expiredate` int(11) UNSIGNED NOT NULL,
   `uniqueid` bigint(20) UNSIGNED NOT NULL,
   `owner` tinytext DEFAULT NULL,
-  `quantity` smallint(5) NOT NULL, /* separate this into a `inventoryitems` table and rename this one `inventories`? */
+  `quantity` smallint(5) NOT NULL,
   PRIMARY KEY (`inventoryitemid`),
   KEY `characterid` (`characterid`),
   KEY `uniqueid` (`uniqueid`),
-  /* hmm, gonna be a problem when a character is deleted and the account's storage and cash shop inventory is deleted with it... */
   CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

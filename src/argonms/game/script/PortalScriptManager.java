@@ -18,6 +18,7 @@
 
 package argonms.game.script;
 
+import argonms.GlobalConstants;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import java.io.FileNotFoundException;
@@ -35,24 +36,44 @@ import org.mozilla.javascript.Scriptable;
 public class PortalScriptManager {
 	private static final Logger LOG = Logger.getLogger(PortalScriptManager.class.getName());
 
+	private static PortalScriptManager singleton;
+
+	private String portalPath;
+
+	private PortalScriptManager(String scriptPath) {
+		portalPath = scriptPath + "portals" + GlobalConstants.DIR_DELIMIT;
+	}
+
 	//TODO: maybe we should just return a boolean value instead of calling
 	//PortalActions.abortWarp? We would have to call a function though instead
 	//of entering on the first line in the global scope...
-	public static void runScript(String scriptName, Player p) {
+	public boolean runScript(String scriptName, Player p) {
 		Context cx = Context.enter();
 		try {
-			FileReader reader = new FileReader("scripts/portals/" + scriptName + ".js");
+			FileReader reader = new FileReader(portalPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
-			globalScope.put("portal", globalScope, new PortalActions((GameClient) p.getClient()));
+			PortalActions portalManager = new PortalActions((GameClient) p.getClient());
+			globalScope.put("portal", globalScope, portalManager);
 			cx.evaluateReader(globalScope, reader, scriptName, 1, null);
 			reader.close();
+			return portalManager.warped();
 		} catch (FileNotFoundException ex) {
 			//not like most of our portal scripts are implemented anyway...
 			LOG.log(Level.FINE, "Missing portal script {0}", scriptName);
+			return false;
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing portal script " + scriptName, ex);
+			return false;
 		} finally {
 			Context.exit();
 		}
+	}
+
+	public static void setInstance(String scriptPath) {
+		singleton = new PortalScriptManager(scriptPath);
+	}
+
+	public static PortalScriptManager getInstance() {
+		return singleton;
 	}
 }

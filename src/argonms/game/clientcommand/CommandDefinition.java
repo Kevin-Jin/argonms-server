@@ -16,17 +16,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package argonms.game.clientcommand;
+
+import argonms.character.Player;
+
 /**
- * Peter (NPC 9101001)
- * Maple Road: Entrance - Mushroom Town Training Camp (Map 3)
- *
- * Teleports players from the Training Camp exit to the road to
- * Mushroom Town.
  *
  * @author GoldenKevin
  */
+public class CommandDefinition extends AbstractCommandDefinition {
+	private CommandAction r;
+	private String help;
+	private byte minGm;
 
-npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
-npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
-npc.getClient().getPlayer().changeMap(40000);
-npc.giveExp(3);
+	public CommandDefinition(CommandAction toExec, String helpMessage, byte minPriv) {
+		r = toExec;
+		help = helpMessage;
+		minGm = minPriv;
+	}
+
+	public String getHelpMessage() {
+		return help;
+	}
+
+	public byte minPrivilegeLevel() {
+		return minGm;
+	}
+
+	public void execute(Player p, String[] args, ClientNoticeStream resp) {
+		r.doAction(p, args, resp);
+	}
+
+	public interface CommandAction {
+		public void doAction(Player p, String[] args, ClientNoticeStream resp);
+	}
+}

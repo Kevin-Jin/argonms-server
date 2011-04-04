@@ -29,12 +29,16 @@ import argonms.tools.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameGoToHandler {
+	private static final Logger LOG = Logger.getLogger(GameGoToHandler.class.getName());
+
 	public static void handleChangeChannel(LittleEndianReader packet, RemoteClient rc) {
 		byte destCh = (byte) (packet.readByte() + 1);
 		byte curCh = rc.getChannel();
@@ -58,15 +62,27 @@ public class GameGoToHandler {
 	}
 
 	public static void handleMapChange(LittleEndianReader packet, RemoteClient rc) {
-		/*byte reason = */packet.readByte(); // 1 = died, 2 = entered portal
+		/*byte type = */packet.readByte(); //1 on first portal enter, 2 on subsequents...?
 		int dest = packet.readInt();
 		String portalName = packet.readLengthPrefixedString();
 		Player p = ((GameClient) rc).getPlayer();
-		if (dest != -1) { //map client command - only let GMs use them.
-			if (p.getPrivilegeLevel() > UserPrivileges.USER)
-				p.changeMap(dest);
-		} else if (!p.getMap().enterPortal(p, portalName)) {
-			rc.getSession().send(CommonPackets.writeEnableActions());
+		switch (dest) {
+			case -1: //enter portal
+				if (!p.getMap().enterPortal(p, portalName))
+					rc.getSession().send(CommonPackets.writeEnableActions());
+				break;
+			case 0: //died
+				if (!p.isAlive()) { //just double check
+					//TODO: cancel all buffs and all that good stuff
+					p.setHp((short) 50);
+					p.setStance((byte) 0);
+					p.changeMap(p.getMap().getReturnMap());
+				}
+				break;
+			default: //client map command
+				if (p.getPrivilegeLevel() > UserPrivileges.USER)
+					p.changeMap(dest);
+				break;
 		}
 	}
 
@@ -77,7 +93,8 @@ public class GameGoToHandler {
 		packet.readByte(); //sourcefm?
 
 		Player p = ((GameClient) rc).getPlayer();
-		p.getMap().enterPortal(p, portalName);
+		if (!p.getMap().enterPortal(p, portalName))
+			rc.getSession().send(CommonPackets.writeEnableActions());
 	}
 
 	public static void handleWarpCs(LittleEndianReader packet, RemoteClient rc) {

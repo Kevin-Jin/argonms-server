@@ -304,7 +304,7 @@ public class GameMap {
 		pos = calcPointBelow(pos);
 		pos.y -= 1;
 		if (mobTime == -1) {
-			Mob mob = new Mob(stats);
+			Mob mob = new Mob(stats, this);
 			mob.setFoothold(fh);
 			mob.setPosition(pos);
 			spawnMonster(mob);
@@ -394,9 +394,8 @@ public class GameMap {
 		destroyEntity(p);
 	}
 
-	public void killMonster(Mob monster, int killer) {
-		monster.died();
-		monsterDrop(monster, monster.getHighestDamageAttacker());
+	public void killMonster(Mob monster, Player killer) {
+		monster.died(killer);
 		destroyEntity(monster);
 		monsters.decrementAndGet();
 	}
@@ -415,7 +414,7 @@ public class GameMap {
 
 	public void pickUpDrop(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			p.gainMesos(d.getMesoValue());
+			p.gainMesos(d.getMesoValue(), false);
 			d.pickUp(p.getId());
 			destroyEntity(d);
 		} else {
@@ -430,20 +429,23 @@ public class GameMap {
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
 					Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemid, qty);
 					short pos;
+					InventorySlot slot;
 					for (Short s : changedSlots.getLeft()) { //modified
 						pos = s.shortValue();
-						qty = inv.get(pos).getQuantity();
-						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos), true, false));
+						slot = inv.get(pos);
+						qty = slot.getQuantity();
+						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
 					}
 					for (Short s : changedSlots.getRight()) { //added
 						pos = s.shortValue();
-						qty = inv.get(pos).getQuantity();
-						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos), true, true));
+						slot = inv.get(pos);
+						qty = slot.getQuantity();
+						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
 					}
 				} else {
 					//TODO: apply item effect
 				}
-				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, pickedUp.getQuantity(), false));
+				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, pickedUp.getQuantity()));
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
 			}
@@ -452,7 +454,7 @@ public class GameMap {
 
 	public void mesoExplosion(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			p.gainMesos(d.getMesoValue());
+			p.gainMesos(d.getMesoValue(), false);
 			d.explode();
 			destroyEntity(d);
 		}
@@ -523,7 +525,7 @@ public class GameMap {
 	public void damageMonster(Player p, Mob m, int damage) {
 		m.hurt(p, damage);
 		if (!m.isAlive())
-			killMonster(m, p.getId());
+			killMonster(m, p);
 	}
 
 	public byte getPortalIdByName(String portalName) {
@@ -548,8 +550,7 @@ public class GameMap {
 	private boolean enterPortal(Player p, PortalData portal) {
 		String scriptName = portal.getScript();
 		if (scriptName != null && scriptName.length () != 0) {
-			PortalScriptManager.runScript(scriptName, p);
-			return true;
+			return PortalScriptManager.getInstance().runScript(scriptName, p);
 		} else {
 			int tm = portal.getTargetMapId();
 			GameMap toMap = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(tm);
@@ -562,7 +563,7 @@ public class GameMap {
 		return false;
 	}
 
-	private Point calcPointBelow(Point initial) {
+	public Point calcPointBelow(Point initial) {
 		Foothold fh = stats.getFootholds().findBelow(initial);
 		if (fh == null)
 			return null;
@@ -580,33 +581,6 @@ public class GameMap {
 				dropY = fh.getY1() + (int) s5;
 		}
 		return new Point(initial.x, dropY);
-	}
-
-	private Point calcDropPos(Point initial, Point fallback) {
-		Point ret = calcPointBelow(new Point(initial.x, initial.y - 99));
-		return ret != null ? ret : fallback;
-	}
-
-	//FIXME: drop positions are off. formula for meso drops when not using mcdb
-	//is way off (almost every mob drops mesos, most are usually only +1)
-	private void monsterDrop(final Mob monster, final int owner) {
-		Timer.getInstance().runAfterDelay(new Runnable() {
-			public void run() {
-				Point pos = monster.getPosition();
-				int mobX = pos.x;
-				int dropNum = 1;
-				for (ItemDrop drop : monster.getDrops()) {
-					if (drop.getDropType() == 3)
-						pos.x = (int) (mobX + (dropNum % 2 == 0 ? (40 * (dropNum + 1) / 2) : -(40 * (dropNum / 2))));
-					else
-						pos.x = (int) (mobX + (dropNum % 2 == 0 ? (25 * (dropNum + 1) / 2) : -(25 * (dropNum / 2))));
-					drop.init(owner, calcDropPos(pos, monster.getPosition()), monster.getPosition(), monster.getId());
-
-					drop(drop);
-					dropNum++;
-				}
-			}
-		}, monster.getAnimationTime("die1")); //artificial drop lag...
 	}
 
 	/**
@@ -719,12 +693,12 @@ public class GameMap {
 		}
 
 		public Mob getNewSpawn() {
-			Mob mob = new Mob(mobStats);
+			Mob mob = new Mob(mobStats, GameMap.this);
 			mob.setFoothold(foothold);
 			mob.setPosition(new Point(pos));
 			spawnedMonsters.incrementAndGet();
 			mob.addDeathHook(new MobDeathHook() {
-				public void monsterKilled(Player highestDamageChar) {
+				public void monsterKilled(Player finalAttacker) {
 					//this has to be atomic, so I had to do away with assigning
 					//nextPossibleSpawn more than once.
 					if (mobTime > 0)

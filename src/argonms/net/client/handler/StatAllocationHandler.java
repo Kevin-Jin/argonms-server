@@ -16,17 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package argonms.net.client.handler;
+
+import argonms.net.client.RemoteClient;
+import argonms.tools.input.LittleEndianReader;
+
 /**
- * Peter (NPC 9101001)
- * Maple Road: Entrance - Mushroom Town Training Camp (Map 3)
- *
- * Teleports players from the Training Camp exit to the road to
- * Mushroom Town.
  *
  * @author GoldenKevin
  */
+public class StatAllocationHandler {
+	public static void handleApAllocation(LittleEndianReader packet, RemoteClient rc) {
+		//TODO: remember to add getY() from Skills.IMPROVE_MAXHP and Skills.IMPROVED_MAXHP_INCREASE if we allocate HP
+		//TODO: remember to add getY() from Skills.IMPROVED_MAXMP_INCREASE if we allocate MP
+	}
 
-npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
-npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
-npc.getClient().getPlayer().changeMap(40000);
-npc.giveExp(3);
+	public static void handleSpAllocation(LittleEndianReader packet, RemoteClient rc) {
+		
+	}
+}

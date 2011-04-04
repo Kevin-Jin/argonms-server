@@ -49,11 +49,10 @@ import org.mozilla.javascript.Scriptable;
  *
  * @author GoldenKevin
  */
-public class NpcConversationActions {
+public class NpcConversationActions extends PlayerScriptInteraction {
 	private static final Logger LOG = Logger.getLogger(NpcConversationActions.class.getName());
 
 	private int npcId;
-	private GameClient client;
 	private Context cx;
 	private Scriptable globalScope;
 	private Object continuation;
@@ -61,8 +60,8 @@ public class NpcConversationActions {
 	private PreviousMessageCache prevs;
 
 	public NpcConversationActions(int npcId, GameClient client, Context cx, Scriptable globalScope) {
+		super(client);
 		this.npcId = npcId;
-		this.client = client;
 		this.cx = cx;
 		this.globalScope = globalScope;
 		this.endingChat = false;
@@ -98,76 +97,76 @@ public class NpcConversationActions {
 			prevs.add(message, false);
 		else
 			clearBackButton();
-		client.getSession().send(writeNpcSay(npcId, message, hasPrev, false));
+		getClient().getSession().send(writeNpcSay(npcId, message, hasPrev, false));
 		throw cx.captureContinuation();
 	}
 
 	public void sayNext(String message) {
 		prevs.add(message, true);
-		client.getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
+		getClient().getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
 		throw cx.captureContinuation();
 	}
 
 	public byte askYesNo(String message) {
 		clearBackButton();
-		client.getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
+		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
 		throw cx.captureContinuation();
 	}
 
 	public byte askAccept(String message) {
 		clearBackButton();
-		client.getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
+		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
 		throw cx.captureContinuation();
 	}
 
 	public byte askAcceptNoESC(String message) {
 		clearBackButton();
-		client.getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
+		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
 		throw cx.captureContinuation();
 	}
 
 	public String askQuiz(byte type, int objectId, int correct, int questions, int time) {
 		clearBackButton();
-		client.getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
+		getClient().getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
 		throw cx.captureContinuation();
 	}
 
 	public String askQuizQuestion(String title, String problem,
 			String hint, int min, int max, int timeLimit) {
 		clearBackButton();
-		client.getSession().send(writeNpcQuizQuestion(npcId,
+		getClient().getSession().send(writeNpcQuizQuestion(npcId,
 				title, problem, hint, min, max, timeLimit));
 		throw cx.captureContinuation();
 	}
 
 	public String askText(String message, String def, short min, short max) {
 		clearBackButton();
-		client.getSession().send(writeNpcAskText(npcId, message, def, min, max));
+		getClient().getSession().send(writeNpcAskText(npcId, message, def, min, max));
 		throw cx.captureContinuation();
 	}
 
 	//I think this is probably 14 (0x0E)...
 	/*public String askBoxText(String message, String def, int col, int line) {
 		clearBackButton();
-		client.getSession().send(writeNpcBoxText(npcId, message, def, col, line));
+		getClient().getSession().send(writeNpcBoxText(npcId, message, def, col, line));
 		throw cx.captureContinuation();
 	}*/
 
 	public int askNumber(String message, int def, int min, int max) {
 		clearBackButton();
-		client.getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
+		getClient().getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
 		throw cx.captureContinuation();
 	}
 
 	public int askMenu(String message) {
 		clearBackButton();
-		client.getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
+		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
 		throw cx.captureContinuation();
 	}
 
 	public int askAvatar(String message, int... styles) {
 		clearBackButton();
-		client.getSession().send(writeNpcAskAvatar(npcId, message, styles));
+		getClient().getSession().send(writeNpcAskAvatar(npcId, message, styles));
 		throw cx.captureContinuation();
 	}
 
@@ -212,11 +211,11 @@ public class NpcConversationActions {
 						endChatHook();
 						break;
 					case 0: //prev
-						client.getSession().send(writeNpcSay(npcId, prevs.goBackAndGet(), prevs.hasPrev(), true));
+						getClient().getSession().send(writeNpcSay(npcId, prevs.goBackAndGet(), prevs.hasPrev(), true));
 						break;
 					case 1: //ok/next
 						if (prevs.hasNext()) {
-							client.getSession().send(writeNpcSay(npcId, prevs.goUpAndGet(), prevs.hasPrev(), prevs.showNext()));
+							getClient().getSession().send(writeNpcSay(npcId, prevs.goUpAndGet(), prevs.hasPrev(), prevs.showNext()));
 						} else {
 							resume(null);
 						}
@@ -304,14 +303,10 @@ public class NpcConversationActions {
 		return npcId;
 	}
 
-	public GameClient getClient() {
-		return client;
-	}
-
 	public void endConversation() {
 		if (!cx.isSealed()) {
 			cx.seal(null);
-			client.setNpc(null);
+			getClient().setNpc(null);
 		}
 	}
 

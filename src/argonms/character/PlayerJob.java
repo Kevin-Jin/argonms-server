@@ -23,28 +23,60 @@ package argonms.character;
  * various conditions.
  * @author GoldenKevin
  */
-public class PlayerJob {
+public final class PlayerJob {
+	public static final int //job paths
+		CLASS_BEGINNER = 0,
+		CLASS_WARRIOR = 1,
+		CLASS_MAGICIAN = 2,
+		CLASS_BOWMAN = 3,
+		CLASS_THIEF = 4,
+		CLASS_PIRATE = 5,
+		CLASS_GAMEMASTER = 9
+	;
+
+	public static final short //jobs
+		JOB_SWORDMAN = 100,
+		JOB_MAGICIAN = 200,
+		JOB_ARCHER = 300,
+		JOB_ROUGE = 400,
+		JOB_PIRATE = 500,
+		JOB_GM = 900,
+		JOB_SUPER_GM = 910
+	;
+
+	private PlayerJob() {
+		
+	}
+
+	public static int getJobPath(short jobid) {
+		return (jobid / 100);
+	}
+
+	public static boolean isBeginner(short jobid) {
+		return (getJobPath(jobid) == CLASS_BEGINNER);
+	}
+
 	public static boolean isWarrior(short jobid) {
-		return ((jobid / 100) == 1);
+		return (getJobPath(jobid) == CLASS_WARRIOR);
 	}
 
 	public static boolean isMage(short jobid) {
-		return ((jobid / 100) == 2);
+		return (getJobPath(jobid) == CLASS_MAGICIAN);
 	}
 
 	public static boolean isArcher(short jobid) {
-		return ((jobid / 100) == 3);
+		return (getJobPath(jobid) == CLASS_BOWMAN);
 	}
 
 	public static boolean isThief(short jobid) {
-		return ((jobid / 100) == 4);
+		return (getJobPath(jobid) == CLASS_THIEF);
 	}
 
 	public static boolean isPirate(short jobid) {
-		return ((jobid / 100) == 5);
+		return (getJobPath(jobid) == CLASS_PIRATE);
 	}
 
 	public static boolean isModerator(short jobid) {
-		return ((jobid / 100) == 9);
+		return (getJobPath(jobid) == CLASS_GAMEMASTER);
 	}
 }

@@ -425,39 +425,109 @@ public class CommonPackets {
 		return writeUpdatePlayerStats(EMPTY_STATUPDATE, true);
 	}
 
-	public static byte[] writeShowMesoGain(int gain, boolean inChat) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(inChat ? 9 : 10);
+	private static byte[] writeShowThirdPersonEffect(Player p, byte effectId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		lew.writeShort(ClientSendOps.SHOW_VISUAL_EFFECT);
+		lew.writeInt(p.getId());
+		lew.writeByte(effectId);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowLevelUp(Player p) {
+		return writeShowThirdPersonEffect(p, (byte) 0);
+	}
+
+	public static byte[] writeShowJobChange(Player p) {
+		return writeShowThirdPersonEffect(p, (byte) 8);
+	}
+
+	public static byte[] writeShowItemGain(int itemid, int quantity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		if (!inChat) {
-			lew.writeByte((byte) 0);
-			lew.writeByte((byte) 1);
-		} else {
-			lew.writeByte((byte) 5);
-		}
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeInt(itemid);
+		lew.writeInt(quantity);
+		lew.writeInt(0);
+		lew.writeInt(0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowMesoGain(int gain) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 1);
 		lew.writeInt(gain);
 		lew.writeShort((short) 0);
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowItemGain(int itemid, int quantity, boolean inChat) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(inChat ? 9 : 20);
+	private static byte[] writeShowInventoryStatus(byte mode) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 
-		if (!inChat) {
-			lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-			lew.writeShort((short) 0);
-			lew.writeInt(itemid);
-			lew.writeInt(quantity);
-			lew.writeInt(0);
-			lew.writeInt(0);
-		} else {
-			lew.writeShort(ClientSendOps.SHOW_ITEM_GAIN_IN_CHAT);
-			lew.writeByte((byte) 3);
-			lew.writeByte((byte) 1);
-			lew.writeInt(itemid);
-			lew.writeInt(quantity);
-		}
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte((byte) 0);
+		lew.writeByte(mode);
+		lew.writeInt(0);
+		lew.writeInt(0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowInventoryFull() {
+		return writeShowInventoryStatus((byte) 0xFF);
+	}
+
+	public static byte[] writeShowInventoryUnavailable() {
+		return writeShowInventoryStatus((byte) 0xFE);
+	}
+
+	public static byte[] writeShowExpGain(int gain, boolean white, boolean fromQuest) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte((byte) 3);
+		lew.writeBool(white);
+		lew.writeInt(gain);
+		lew.writeBool(fromQuest);
+		lew.writeByte((byte) 0);
+		lew.writeShort((short) 0);
+		lew.writeLong(0);
+
+		return lew.getBytes();
+	}
+
+	/**
+	 * 
+	 * @param gain
+	 * @param pointType 4 = fame
+	 *                  5 = mesos
+	 *                  6 = guild points
+	 * @return
+	 */
+	public static byte[] writeShowPointsGainFromQuest(int gain, byte pointType) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte(pointType);
+		lew.writeInt(gain);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowItemGainFromQuest(int itemid, int quantity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+
+		lew.writeShort(ClientSendOps.SHOW_ITEM_GAIN_IN_CHAT);
+		lew.writeByte((byte) 3);
+		lew.writeByte((byte) 1);
+		lew.writeInt(itemid);
+		lew.writeInt(quantity);
 
 		return lew.getBytes();
 	}
@@ -569,24 +639,6 @@ public class CommonPackets {
 		lew.writeShort(total);
 
 		return lew.getBytes();
-	}
-
-	private static byte[] writeShowInventoryStatus(byte mode) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		lew.writeBool(false);
-		lew.writeByte(mode);
-		lew.writeInt(0);
-		lew.writeInt(0);
-		return lew.getBytes();
-	}
-
-	public static byte[] writeShowInventoryFull() {
-		return writeShowInventoryStatus((byte) 0xFF);
-	}
-
-	public static byte[] writeShowInventoryUnavailable() {
-		return writeShowInventoryStatus((byte) 0xFE);
 	}
 
 	public static byte[] writeCooldown(int skill, short seconds) {
@@ -876,36 +928,26 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	//TODO: gotta fix the problem where nobody else can pick up an item
-	//that a player dropped (something with owner and source object id...)
-	public static byte[] writeShowItemDrop(ItemDrop drop, byte animation) {
+	public static byte[] writeShowItemDrop(ItemDrop drop, byte animation, byte pickupAllow) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.SHOW_ITEM_DROP);
-		lew.writeByte(animation); // 1 = animation, 2 = none
+		lew.writeByte(animation);
 		lew.writeInt(drop.getId());
 		lew.writeByte(drop.getDropType());
 		lew.writeInt(drop.getItemId());
 		lew.writeInt(drop.getOwner());
-		lew.writeByte((byte) 0);
+		lew.writeByte(pickupAllow);
 		lew.writePos(drop.getPosition());
-		if (animation != 2) {
-			lew.writeInt(drop.getSourceObjectId());
+		lew.writeInt(drop.getSourceObjectId());
+		if (animation != ItemDrop.SPAWN_ANIMATION_NONE) {
 			lew.writePos(drop.getSourcePos());
-		} else {
-			lew.writeInt(drop.getSourceObjectId());
+			lew.writeShort((short) 0);
 		}
 
-		lew.writeByte((byte) 0);
-		if (animation != 2) {
-			lew.writeByte((byte) 0);
-			lew.writeByte((byte) 1);
-		}
-
-		if (drop.getDropType() != ItemDrop.MESOS) {
+		if (drop.getDropType() == ItemDrop.ITEM)
 			addItemExpire(lew, drop.getItemExpire(), true);
-			lew.writeByte((byte) 1);
-		}
+		lew.writeBool(true); //allow pet item pickup?
 
 		return lew.getBytes();
 	}
@@ -916,7 +958,7 @@ public class CommonPackets {
 		lew.writeShort(ClientSendOps.REMOVE_ITEM_DROP);
 		lew.writeByte(animation);
 		lew.writeInt(d.getId());
-		if (animation >= 2) {
+		if (animation > ItemDrop.DESTROY_ANIMATION_NONE) {
 			lew.writeInt(d.getOwner());
 			if (d.getPetSlot() >= 0)
 				lew.writeByte(d.getPetSlot());
@@ -1008,6 +1050,38 @@ public class CommonPackets {
 		lew.writeLengthPrefixedString(name);
 		lew.writeLengthPrefixedString(message);
 
+		return lew.getBytes();
+	}
+
+	public static byte[] writeServerMessage(byte type, String message, byte channel, boolean megaEar) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter((type == 3 ? 7 : type == 4 ? 6 : 5) + message.length());
+		lew.writeShort(ClientSendOps.SERVER_MESSAGE);
+		lew.writeByte(type);
+		if (type == 4) //scrolling message ticker
+			lew.writeBool(true);
+		lew.writeLengthPrefixedString(message);
+		if (type == 3) { //smega
+			lew.writeByte((byte) (channel - 1));
+			lew.writeBool(megaEar);
+		}
+		return lew.getBytes();
+	}
+
+	public static byte[] writeWhisperMessge(String name, String message, byte channel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + message.length());
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 0x12); //???
+		lew.writeLengthPrefixedString(name);
+		lew.writeShort((short) (channel - 1));
+		lew.writeLengthPrefixedString(message);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeTipMessage(String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + message.length());
+		lew.writeShort(ClientSendOps.TIP_MESSAGE);
+		lew.writeByte((byte) 0xFF);
+		lew.writeLengthPrefixedString(message);
 		return lew.getBytes();
 	}
 

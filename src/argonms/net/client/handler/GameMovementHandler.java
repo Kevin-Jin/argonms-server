@@ -59,6 +59,8 @@ public class GameMovementHandler {
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
 		if (packet.available() != 18) {
+			//TODO: this is received when a player moves after being revived.
+			//decode and handle?
 			LOG.log(Level.WARNING, "Received unusual player movement packet w/ {0} bytes remaining: {1}",
 					new Object[] { packet.available(), packet });
 			return;

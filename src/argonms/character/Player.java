@@ -32,8 +32,13 @@ import argonms.character.inventory.Item;
 import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
+import argonms.character.skill.Skills;
 import argonms.game.GameServer;
 import argonms.loading.StatusEffectsData;
+import argonms.loading.item.ItemDataLoader;
+import argonms.loading.item.ItemEffectsData;
+import argonms.loading.skill.PlayerSkillEffectsData;
+import argonms.loading.skill.SkillDataLoader;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
@@ -41,12 +46,14 @@ import argonms.map.entity.Mob;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
+import argonms.tools.Rng;
 import argonms.tools.Timer;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -54,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -218,19 +226,23 @@ public class Player extends MapEntity {
 
 	public void updateDbInventory(Connection con) {
 		try {
-			//equipped, equips, use, setup, etc, cash
-			PreparedStatement ps = con.prepareStatement("DELETE FROM "
-					+ "`inventoryitems` WHERE `characterid` = ? AND "
-					+ "`inventorytype` <= " + InventoryType.CASH.value());
+			String invUpdate = "DELETE FROM `inventoryitems` WHERE "
+					+ "`characterid` = ? AND `inventorytype` <= "
+					+ InventoryType.CASH.value();
+			boolean invUpdateSpecifyAccId = false;
+			if (inventories.containsKey(InventoryType.STORAGE)) { //game server
+				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
+						+ InventoryType.STORAGE.value();
+				invUpdateSpecifyAccId = true;
+			} else if (inventories.containsKey(InventoryType.CASH_SHOP)) { //shop server
+				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
+						+ InventoryType.CASH_SHOP.value();
+				invUpdateSpecifyAccId = true;
+			}
+			PreparedStatement ps = con.prepareStatement(invUpdate);
 			ps.setInt(1, getId());
-			ps.executeUpdate();
-			ps.close();
-
-			//cash shop inventory and storage
-			ps = con.prepareStatement("DELETE FROM `inventoryitems` WHERE "
-					+ "`accountid` = ? AND `inventorytype` > "
-					+ InventoryType.CASH.value());
-			ps.setInt(1, client.getAccountId());
+			if (invUpdateSpecifyAccId)
+				ps.setInt(2, client.getAccountId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -239,9 +251,20 @@ public class Player extends MapEntity {
 					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?)",
 					PreparedStatement.RETURN_GENERATED_KEYS);
-			ps.setInt(1, getId());
 			ps.setInt(2, client.getAccountId());
 			for (Entry<InventoryType, Inventory> ent : inventories.entrySet()) {
+				switch (ent.getKey()) {
+					case STORAGE:
+					case CASH_SHOP:
+						//null keys are not affected by foreign key constraints,
+						//so we won't get account wide inventories deleted when
+						//this character is deleted.
+						ps.setNull(1, Types.INTEGER);
+						break;
+					default:
+						ps.setInt(1, getId());
+						break;
+				}
 				ps.setInt(3, ent.getKey().value());
 				for (Entry<Short, InventorySlot> e : ent.getValue().getAll().entrySet()) {
 					InventorySlot item = e.getValue();
@@ -513,6 +536,10 @@ public class Player extends MapEntity {
 				p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
 			}
 			p.mesos = rs.getInt(26);
+
+			String invQuery = "SELECT * FROM `inventoryitems` WHERE `characterid` = ? "
+					+ "AND `inventorytype` <= " + InventoryType.CASH.value();
+			boolean invQuerySpecifyAccId = false;
 			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getByte(27)));
 			p.inventories.put(InventoryType.USE, new Inventory(rs.getByte(28)));
 			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getByte(29)));
@@ -520,25 +547,25 @@ public class Player extends MapEntity {
 			p.inventories.put(InventoryType.CASH, new Inventory(rs.getByte(31)));
 			//TODO: get real equipped inventory size?
 			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
-			if (ServerType.isGame(c.getServerId()))
+			if (ServerType.isGame(c.getServerId())) {
 				p.inventories.put(InventoryType.STORAGE, new Inventory(rs.getByte(32)));
-			else if(ServerType.isShop(c.getServerId()))
+				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.value();
+				invQuerySpecifyAccId = true;
+			} else if (ServerType.isShop(c.getServerId())) {
 				//TODO: get real cash shop inventory size?
 				p.inventories.put(InventoryType.CASH_SHOP, new Inventory((byte) 0));
+				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.value();
+				invQuerySpecifyAccId = true;
+			}
 			p.buddies = new BuddyList(rs.getShort(33));
 			p.gm = rs.getByte(34);
 			rs.close();
 			ps.close();
 
-			String q = "SELECT * FROM `inventoryitems` WHERE `characterid` = ?";
-			if (ServerType.isGame(c.getServerId()))
-				q += " AND inventorytype < " + InventoryType.STORAGE.value();
-			else if(ServerType.isLogin(c.getServerId()))
-				q += " AND inventorytype <= " + InventoryType.CASH.value();
-			else if (ServerType.isShop(c.getServerId()))
-				q += " AND inventorytype != " + InventoryType.STORAGE.value();
-			ps = con.prepareStatement(q);
+			ps = con.prepareStatement(invQuery);
 			ps.setInt(1, id);
+			if (invQuerySpecifyAccId)
+				ps.setInt(2, accountid);
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				InventorySlot item;
@@ -743,81 +770,244 @@ public class Player extends MapEntity {
 		return hair;
 	}
 
+	public int getExp() {
+		return exp;
+	}
+
+	public void setExp(int newExp) {
+		this.exp = newExp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
+	}
+
+	public void gainExp(int gain, boolean isKiller, boolean fromQuest) {
+		if (level < 200) {
+			getClient().getSession().send(CommonPackets.writeShowExpGain(gain, isKiller, fromQuest));
+
+			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
+			long newExp = exp + gain; //should solve many overflow errors
+			if (newExp >= ExpTables.getForLevel(level))
+				newExp = levelUp(newExp, updatedStats);
+			updatedStats.put(ClientUpdateKey.EXP, Integer.valueOf(exp = (int) newExp));
+			getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(updatedStats, false));
+		}
+	}
+
+	private long levelUp(long exp, Map<ClientUpdateKey, Number> stats) {
+		boolean singleLevelOnly = !GameServer.getVariables().doMultiLevel();
+		//TODO: send new level to party mates
+		Random generator = Rng.getGenerator();
+		int intMpBonus = _int / 10;
+		//local variables are faster and safer (concurrent access and overflow)
+		//than directly modifying the heap variables...
+		short hpInc = 0, mpInc = 0, apInc = 0, spInc = 0;
+		do {
+			switch (PlayerJob.getJobPath(job)) {
+				case PlayerJob.CLASS_BEGINNER:
+					hpInc += generator.nextInt(16 - 12 + 1) + 12;
+					mpInc += generator.nextInt(12 - 10 + 1) + 10 + intMpBonus;
+					break;
+				case PlayerJob.CLASS_WARRIOR:
+					hpInc += generator.nextInt(28 - 24 + 1) + 24;
+					mpInc += generator.nextInt(6 - 4 + 1) + 4 + intMpBonus;
+					spInc += 3;
+					break;
+				case PlayerJob.CLASS_MAGICIAN:
+					hpInc += generator.nextInt(14 - 10 + 1) + 10;
+					mpInc += generator.nextInt(24 - 22 + 1) + 22 + intMpBonus;
+					spInc += 3;
+					break;
+				case PlayerJob.CLASS_BOWMAN:
+				case PlayerJob.CLASS_THIEF:
+				case PlayerJob.CLASS_GAMEMASTER:
+					hpInc += generator.nextInt(24 - 20 + 1) + 20;
+					mpInc += generator.nextInt(16 - 14 + 1) + 14 + intMpBonus;
+					spInc += 3;
+					break;
+				case PlayerJob.CLASS_PIRATE:
+					hpInc += generator.nextInt(28 - 22 + 1) + 22;
+					mpInc += generator.nextInt(23 - 18 + 1) + 18 + intMpBonus;
+					spInc += 3;
+					break;
+			}
+			byte skillLevel;
+			if ((skillLevel = getSkillLevel(Skills.IMPROVED_MAXHP_INCREASE)) != 0)
+				hpInc += SkillDataLoader.getInstance()
+						.getSkill(Skills.IMPROVED_MAXHP_INCREASE)
+						.getLevel(skillLevel)
+						.getX();
+			if ((skillLevel = getSkillLevel(Skills.IMPROVE_MAXHP)) != 0)
+				hpInc += SkillDataLoader.getInstance()
+						.getSkill(Skills.IMPROVE_MAXHP)
+						.getLevel(skillLevel)
+						.getX();
+			if ((skillLevel = getSkillLevel(Skills.IMPROVED_MAXMP_INCREASE)) != 0)
+				mpInc += SkillDataLoader.getInstance()
+						.getSkill(Skills.IMPROVED_MAXMP_INCREASE)
+						.getLevel(skillLevel)
+						.getX();
+			apInc += 5;
+			exp -= ExpTables.getForLevel(level++);
+			if (singleLevelOnly && exp >= ExpTables.getForLevel(level))
+				exp = ExpTables.getForLevel(level) - 1;
+		} while (level < 200 && exp >= ExpTables.getForLevel(level));
+
+		remHp = maxHp = (short) Math.min(maxHp + hpInc, 30000);
+		remMp = maxMp = (short) Math.min(maxMp + mpInc, 30000);
+		remAp = (short) Math.min(remAp + apInc, Short.MAX_VALUE);
+		remSp = (short) Math.min(remSp + spInc, Short.MAX_VALUE);
+
+		stats.put(ClientUpdateKey.LEVEL, Short.valueOf(level));
+		stats.put(ClientUpdateKey.MAXHP, Short.valueOf(maxHp));
+		stats.put(ClientUpdateKey.MAXMP, Short.valueOf(maxMp));
+		stats.put(ClientUpdateKey.HP, Short.valueOf(remHp));
+		stats.put(ClientUpdateKey.MP, Short.valueOf(remMp));
+		stats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp));
+		stats.put(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp));
+
+		getMap().sendToAll(CommonPackets.writeShowLevelUp(this), this);
+
+		return level < 200 ? exp : 0;
+	}
+
 	public short getLevel() {
 		return level;
+	}
+
+	public void setLevel(short newLevel) {
+		this.level = newLevel;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 	}
 
 	public short getJob() {
 		return job;
 	}
 
+	public void setJob(short newJob) {
+		this.job = newJob;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
+	}
+
 	public short getStr() {
 		return str;
+	}
+
+	public void setStr(short newStr) {
+		this.str = newStr;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(str)), false));
 	}
 
 	public short getDex() {
 		return dex;
 	}
 
+	public void setDex(short newDex) {
+		this.dex = newDex;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(dex)), false));
+	}
+
 	public short getInt() {
 		return _int;
+	}
+
+	public void setInt(short newInt) {
+		this._int = newInt;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(_int)), false));
 	}
 
 	public short getLuk() {
 		return luk;
 	}
 
+	public void setLuk(short newLuk) {
+		this.luk = newLuk;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(luk)), false));
+	}
+
 	public short getHp() {
 		return remHp;
+	}
+
+	public void setHp(short newHp) {
+		//TODO: send new hp to party mates (I think v0.62 supports it...)
+		if (newHp < 0)
+			newHp = 0;
+		else if (newHp > maxHp)
+			newHp = maxHp;
+		this.remHp = newHp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+		if (remHp == 0)
+			died();
+	}
+
+	public void gainHp(int gain) {
+		setHp((short) (remHp + gain));
 	}
 
 	public short getMaxHp() {
 		return maxHp;
 	}
 
-	public void setHp(short newHp) {
-		this.remHp = newHp;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+	public void died() {
+		getClient().getSession().send(CommonPackets.writeEnableActions());
+		//TODO: lose exp
 	}
 
-	public void gainHp(int gain) {
-		this.remHp += gain;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+	public void setMaxHp(short newMax) {
+		this.maxHp = newMax;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(maxHp)), false));
 	}
 
 	public short getMp() {
 		return remMp;
 	}
 
-	public short getMaxMp() {
-		return maxMp;
-	}
-
 	public void setMp(short newMp) {
+		if (newMp < 0)
+			newMp = 0;
+		else if (newMp > maxMp)
+			newMp = maxMp;
 		this.remMp = newMp;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
 	}
 
 	public void gainMp(int gain) {
-		this.remMp += gain;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
+		setMp((short) (remMp + gain));
+	}
+
+	public short getMaxMp() {
+		return maxMp;
+	}
+
+	public void setMaxMp(short newMax) {
+		this.maxMp = newMax;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(maxMp)), false));
 	}
 
 	public short getAp() {
 		return remAp;
 	}
 
+	public void setAp(short newAp) {
+		this.remAp = newAp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp)), false));
+	}
+
 	public short getSp() {
 		return remSp;
 	}
 
-	public int getExp() {
-		return exp;
+	public void setSp(short newSp) {
+		this.remSp = newSp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp)), false));
 	}
 
-	public void gainExp(int gain) {
-		this.exp += gain;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
+	public short getFame() {
+		return fame;
+	}
+
+	public void setFame(short newFame) {
+		this.fame = newFame;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FAME, Integer.valueOf(fame)), false));
 	}
 
 	public Inventory getInventory(InventoryType type) {
@@ -828,14 +1018,17 @@ public class Player extends MapEntity {
 		return mesos;
 	}
 
-	public void gainMesos(int gain) {
-		this.mesos += gain;
+	public void setMesos(int newValue) {
+		this.mesos = newValue;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), false));
-		getClient().getSession().send(CommonPackets.writeShowMesoGain(gain, false));
 	}
 
-	public short getFame() {
-		return fame;
+	public void gainMesos(int gain, boolean fromQuest) {
+		setMesos(mesos + gain);
+		if (!fromQuest)
+			getClient().getSession().send(CommonPackets.writeShowMesoGain(gain));
+		else
+			getClient().getSession().send(CommonPackets.writeShowPointsGainFromQuest(gain, (byte) 5));
 	}
 
 	public GameMap getMap() {
@@ -913,10 +1106,26 @@ public class Player extends MapEntity {
 		return skillLevel != null ? skillLevel.getLevel() : 0;
 	}
 
+	public void castBuffSkill(int skillid, byte level) {
+		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillid).getLevel(level);
+		applyEffect(e);
+	}
+
+	public void consumeItem(int itemid) {
+		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemid);
+		applyEffect(e);
+	}
+
+	public void applyBuff(PlayerStatusEffect buff) {
+		
+	}
+
 	public void applyEffect(final StatusEffectsData e) {
 		synchronized (activeEffects) {
-			for (PlayerStatusEffect buff : e.getEffects())
+			for (PlayerStatusEffect buff : e.getEffects()) {
+				applyBuff(buff);
 				activeEffects.put(buff, new PlayerStatusEffectValues(e));
+			}
 		}
 		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
@@ -1035,6 +1244,8 @@ public class Player extends MapEntity {
 		for (ScheduledFuture<?> cancelTask : skillCancels.values())
 			cancelTask.cancel(true);
 		for (ScheduledFuture<?> cancelTask : itemEffectCancels.values())
+			cancelTask.cancel(true);
+		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
 			cancelTask.cancel(true);
 		if (map != null)
 			map.removePlayer(this);

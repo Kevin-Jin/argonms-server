@@ -16,17 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package argonms.game.clientcommand;
+
+import argonms.net.client.ClientSession;
+import argonms.net.client.CommonPackets;
+import argonms.net.client.RemoteClient;
+import argonms.net.client.handler.GameChatHandler.TextStyle;
+
 /**
- * Peter (NPC 9101001)
- * Maple Road: Entrance - Mushroom Town Training Camp (Map 3)
- *
- * Teleports players from the Training Camp exit to the road to
- * Mushroom Town.
  *
  * @author GoldenKevin
  */
+public class ClientNoticeStream {
+	private ClientSession ses;
 
-npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
-npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
-npc.getClient().getPlayer().changeMap(40000);
-npc.giveExp(3);
+	public ClientNoticeStream(RemoteClient rc) {
+		ses = rc.getSession();
+	}
+
+	public void printOut(String message) {
+		ses.send(CommonPackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.getMod(), message, (byte) -1, true));
+	}
+
+	public void printErr(String message) {
+		ses.send(CommonPackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.getMod(), message, (byte) -1, true));
+	}
+}

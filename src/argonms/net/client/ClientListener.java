@@ -18,6 +18,7 @@
 
 package argonms.net.client;
 
+import argonms.GlobalConstants;
 import argonms.tools.input.LittleEndianByteArrayReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.net.InetSocketAddress;
@@ -127,25 +128,18 @@ public class ClientListener {
 
 	private static final class MaplePacketEncoder extends OneToOneEncoder {
 		protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
-			byte[] encrypted;
 			if (sessions.get(channel) != null) {
 				byte[] input = (byte[]) msg;
-				byte[] unencrypted = new byte[input.length];
-				System.arraycopy(input, 0, unencrypted, 0, input.length);
-
-				encrypted = new byte[unencrypted.length + 4];
-
 				MapleAESOFB sendCypher = sessions.get(channel).getSendCypher();
-				byte[] header = sendCypher.getPacketHeader(unencrypted.length);
-				MapleAESOFB.encryptData(unencrypted);
-				sendCypher.crypt(unencrypted);
-
-				System.arraycopy(header, 0, encrypted, 0, 4);
-				System.arraycopy(unencrypted, 0, encrypted, 4, unencrypted.length);
+				int length = input.length;
+				byte[] header = sendCypher.getPacketHeader(length);
+				byte[] body = new byte[length];
+				System.arraycopy(input, 0, body, 0, length);
+				sendCypher.crypt(MapleAESOFB.encryptData(body));
+				return ChannelBuffers.copiedBuffer(header, body);
 			} else {
-				encrypted = (byte[]) msg;
+				return ChannelBuffers.copiedBuffer((byte[]) msg);
 			}
-			return ChannelBuffers.copiedBuffer(encrypted);
 		}
 	}
 
@@ -185,8 +179,8 @@ public class ClientListener {
 	private static byte[] getHello(MapleAESOFB recvCypher, MapleAESOFB sendCypher) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
 
-		lew.writeShort((short) 0x0d);
-		lew.writeShort((byte) 62);
+		lew.writeShort((short) 0x0D);
+		lew.writeShort(GlobalConstants.MAPLE_VERSION);
 		lew.writeShort((short) 0);
 		lew.writeBytes(recvCypher.getIv());
 		lew.writeBytes(sendCypher.getIv());

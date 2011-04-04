@@ -76,7 +76,7 @@ public class InventoryHandler {
 				rc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
-			d.init(p.getId(), p.getPosition(), p.getPosition(), p.getId());
+			d.init(p.getId(), p.getPosition(), p.getPosition(), p.getId(), ItemDrop.PICKUP_ALLOW_ALL);
 			if (ItemDataLoader.getInstance().canDrop(toDrop.getItemId()))
 				p.getMap().drop(d);
 			else //TODO: does this just show to the current player or to the entire map?
@@ -111,9 +111,9 @@ public class InventoryHandler {
 		int amount = packet.readInt();
 		Player p = ((GameClient) rc).getPlayer();
 		if (amount <= p.getMesos()) {
-			p.gainMesos(-amount);
+			p.gainMesos(-amount, false);
 			ItemDrop d = new ItemDrop(amount);
-			d.init(p.getId(), p.getPosition(), p.getPosition(), p.getId());
+			d.init(p.getId(), p.getPosition(), p.getPosition(), p.getId(), ItemDrop.PICKUP_ALLOW_ALL);
 			p.getMap().drop(d);
 		}
 	}

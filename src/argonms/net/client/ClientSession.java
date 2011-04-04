@@ -18,6 +18,7 @@
 
 package argonms.net.client;
 
+import argonms.GlobalConstants;
 import java.net.SocketAddress;
 
 import argonms.ServerType;
@@ -44,8 +45,8 @@ public class ClientSession {
 		byte[] ivRecv = { 70, 114, 122, (byte) generator.nextInt(256) };
 		byte[] ivSend = { 82, 48, 120, (byte) generator.nextInt(256) };
 
-		this.recvCypher = new MapleAESOFB(ivRecv, (byte) 62);
-		this.sendCypher = new MapleAESOFB(ivSend, (short) (0xFFFF - (byte) 62));
+		this.recvCypher = new MapleAESOFB(ivRecv, GlobalConstants.MAPLE_VERSION);
+		this.sendCypher = new MapleAESOFB(ivSend, (short) (0xFFFF - GlobalConstants.MAPLE_VERSION));
 
 		if (world == ServerType.LOGIN)
 			this.client = new LoginClient();

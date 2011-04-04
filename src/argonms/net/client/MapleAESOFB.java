@@ -342,7 +342,6 @@ public class MapleAESOFB {
 					dataLength--;
 				}
 			}
-			//System.out.println("dec after iteration " + j + ": " + HexTool.toString(data));
 		}
 		return data;
 	}

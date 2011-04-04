@@ -18,6 +18,7 @@
 
 package argonms.game.script;
 
+import argonms.GlobalConstants;
 import argonms.game.GameClient;
 import argonms.net.client.ClientSendOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
@@ -38,11 +39,19 @@ import org.mozilla.javascript.Scriptable;
 public class NpcScriptManager {
 	private static final Logger LOG = Logger.getLogger(NpcScriptManager.class.getName());
 
-	public static void runScript(int npcId, GameClient client) {
+	private static NpcScriptManager singleton;
+
+	private String npcPath;
+
+	private NpcScriptManager(String scriptsPath) {
+		npcPath = scriptsPath + "npcs" + GlobalConstants.DIR_DELIMIT;
+	}
+
+	public void runScript(int npcId, GameClient client) {
 		Context cx = Context.enter();
 		NpcConversationActions convoMan = null;
 		try {
-			FileReader reader = new FileReader("scripts/npcs/" + npcId + ".js");
+			FileReader reader = new FileReader(npcPath + npcId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
@@ -63,7 +72,7 @@ public class NpcScriptManager {
 		}
 	}
 
-	public static void runQuestScript(int questId, GameClient client) {
+	public void runQuestScript(int questId, GameClient client) {
 		/*Context cx = Context.enter();
 		NpcConversationActions convoMan = null;
 		try {
@@ -100,5 +109,14 @@ public class NpcScriptManager {
 		lew.writeBool(false); //next button
 
 		return lew.getBytes();
+	}
+
+	public static void setInstance(String scriptPath) {
+		if (singleton == null)
+			singleton = new NpcScriptManager(scriptPath);
+	}
+
+	public static NpcScriptManager getInstance() {
+		return singleton;
 	}
 }

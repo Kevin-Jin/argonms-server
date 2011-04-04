@@ -20,6 +20,7 @@ package argonms.loading.mob;
 
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.game.GameServer;
 import argonms.tools.Rng;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -266,19 +267,25 @@ public class MobStats {
 	 */
 	public int getMesosToDrop() {
 		Random generator = Rng.getGenerator();
+		int multiplier = GameServer.getVariables().getMesoRate();
 		if (mesoDrop == null) {
-			//taken from OdinMS (simplified a bit). It works surprisingly well.
+			//TODO: formula for meso drops when not using mcdb is way off
+			//(almost every mob drops mesos, most are usually only +1)
+			//perhaps we need a nextGaussian and cut off any remaining outliers
+			//because this method can return +1 no matter what, unless the exp
+			//is a HUGE number (Random.nextDouble() can be very very small)
 			double factor = Math.pow(0.93, getExp() / 300.0);
 			if (factor > 1.0)
 				factor = 1.0;
 			else if (factor < 0.001)
 				factor = 0.005;
-			return Math.min(30000, (int) (factor * getExp() * generator.nextDouble() * 2.1));
+			return (Math.min(30000, (int) (factor * getExp() * generator.nextDouble() * 2.1)) * multiplier);
 		} else {
+			//TODO: should we multiply this by drop rate?
 			if (generator.nextDouble() < mesoDrop.getDropChance()) {
 				int min = mesoDrop.getMinMesoDrop();
 				int max = mesoDrop.getMaxMesoDrop();
-				return (generator.nextInt(max - min + 1) + min);
+				return ((generator.nextInt(max - min + 1) + min) * multiplier);
 			}
 			return 0;
 		}
@@ -287,8 +294,9 @@ public class MobStats {
 	public List<InventorySlot> getItemsToDrop() {
 		Random generator = Rng.getGenerator();
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
+		int multiplier = GameServer.getVariables().getDropRate();
 		for (Entry<Integer, Integer> entry : itemDrops.entrySet())
-			if (generator.nextDouble() < (entry.getValue().intValue() / 1000000.0))
+			if (generator.nextDouble() < (entry.getValue().intValue() / 1000000.0 * multiplier))
 				items.add(InventoryTools.makeItemWithId(entry.getKey().intValue()));
 		return items;
 	}
