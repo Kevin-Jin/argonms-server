@@ -71,7 +71,7 @@ public class GameNpcHandler {
 			}
 		}
 		if (npc != null)
-			NpcScriptManager.runScript(npc.getNpcId(), client);
+			NpcScriptManager.getInstance().runScript(npc.getNpcId(), client);
 	}
 
 	public static void handleContinueConversation(LittleEndianReader packet, RemoteClient rc) {

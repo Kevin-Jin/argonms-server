@@ -413,6 +413,51 @@
 	many concurrent calls, and should reduce the amount of instantiations of
 	Random as it is now one instance per thread.
 
+2011-04-04  GoldenKevin  (revision 21)
+
+	(argonms.jar WILL NO LONGER BE RECOMPILED IN EVERY REVISION. THIS BLOATS
+	THE SVN REPOSITORY, SO FROM NOW ON, YOU WILL HAVE TO BUILD IT YOURSELF FROM
+	NETBEANS OR EXPORT A .JAR FILE IN ECLIPSE). If your NetBeans project is not
+	named argonms, you may have to rename the .jar file when you compile it.
+	* Renamed all buff methods in Mob to effect to be consistent with Player
+	class and because not on effects placed on monsters are buffs, i.e. debuffs.
+	* Player disease cancels are now removed when a player logs off.
+	* All methods in PlayerScriptInteraction are to be in third person when
+	dealing with actions done to the player to be consistent with mobs and
+	other map life, as the script performs actions on the player. The script
+	should not be the player.
+	* Reorganized some code: moved mob drop routines from GameMap to Mob;
+	reordered and added gain/set methods of Player in a logical manner;
+	Added more PlayerJob and Skills constants; PlayerStatusEffectValues cleaned;
+	PlayerScriptInteraction is the ancestor of NpcConversationActions and
+	PortalActions (both of which are no longer static classes);
+	PortalScriptManager.runScript now returns a boolean, which is changed by
+	PortalActions.abortWarp (instead of sending CommonPackets.writeEnableActions
+	in abortWarp, the call to it is now handled by the caller of runScript);
+	split CommonPackets.writeShowItemGain into writeShowItemGainFromQuest and
+	removed inChat variable; Merging of header and body in ClientListener gone,
+	we just send the header and the body arrays to ChannelBuffers.copiedBuffer.
+	Although we still have to eventually merge the two arrays by copying, it
+	makes our own code tidier as the copying logic is done elsewhere; Reordered
+	CommonPackets methods; Added constants to ItemDrop to deal with magic nums.
+	* Added a writeStyledChat method in GameChatHandler. This will probably be
+	the only "fun" feature I add to this source in a long time.
+	* Added support to specify scripts directory from a command line option.
+	This was necessary for the proper functioning of the ArgonMS GUI Launcher.
+	* Fixed any glitches that would have occurred for account item storage/
+	account cash shop storage. An update to your SQL database is necessary.
+	* Implemented CommandProcessor with an implementation that isn't the most
+	efficient, but is better designed than alternatives. In order to create a
+	command definition, you must specify the help text with it.
+	* Item drop packet is more accurate.
+	* Mobs now give exp when they die, and I believe level up and the stat gains
+	that are associated with it work properly. Still gotta implement exp loss
+	when a player dies...
+	* Enabled GameRegistry. Properties are now loaded from game#.properties, and
+	so far getExpRate(), getDropRate(), getMesoRate(), and doMultiLevel() are
+	used somewhere on the game server.
+	* Fixed drop placement from mob deaths.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

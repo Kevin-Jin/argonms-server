@@ -205,6 +205,13 @@ public abstract class ItemDataLoader {
 		return useOnPickup.contains(oId);
 	}
 
+	public ItemEffectsData getEffect(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return statEffects.get(oId);
+	}
+
 	public byte getUpgradeSlots(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))

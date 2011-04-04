@@ -20,6 +20,8 @@ package argonms.game;
 
 import argonms.LocalServer;
 import argonms.ServerType;
+import argonms.game.script.NpcScriptManager;
+import argonms.game.script.PortalScriptManager;
 import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.map.MapDataLoader;
@@ -57,16 +59,16 @@ public class GameServer implements LocalServer {
 
 	private Map<Byte, WorldChannel> channels;
 	private GameCenterInterface gci;
-	private byte serverId;
+	private final byte serverId;
 	private byte world;
 	private String address;
 	private boolean preloadAll;
 	private DataFileType wzType;
-	private String wzPath;
+	private String wzPath, scriptsPath;
 	private boolean useNio;
 	private boolean centerConnected;
-	private GameRegistry registry;
-	private Map<Byte, Set<Byte>> remoteGameChannelMapping;
+	private final GameRegistry registry;
+	private final Map<Byte, Set<Byte>> remoteGameChannelMapping;
 
 	private GameServer(byte serverid) {
 		this.serverId = serverid;
@@ -117,6 +119,13 @@ public class GameServer implements LocalServer {
 			centerPort = Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".center.port"));
 			authKey = prop.getProperty("argonms.game." + serverId + ".auth.key");
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".usenio"));
+
+			registry.setExpRate(Short.parseShort(prop.getProperty("argonms.game." + serverId + ".exprate")));
+			registry.setMesoRate(Short.parseShort(prop.getProperty("argonms.game." + serverId + ".mesorate")));
+			registry.setDropRate(Short.parseShort(prop.getProperty("argonms.game." + serverId + ".droprate")));
+			registry.setItemsWillExpire(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".itemexpire")));
+			registry.setBuffsWillCooldown(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablecooltime")));
+			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
 			return;
@@ -133,6 +142,7 @@ public class GameServer implements LocalServer {
 		}
 		DatabaseConnection.getConnection();
 		wzPath = System.getProperty("argonms.data.dir");
+		scriptsPath = System.getProperty("argonms.scripts.dir");
 		gci = new GameCenterInterface(serverId, world, authKey, this);
 		gci.connect(centerIp, centerPort);
 	}
@@ -145,6 +155,8 @@ public class GameServer implements LocalServer {
 		ItemDataLoader.setInstance(wzType, wzPath);
 		MapDataLoader.setInstance(wzType, wzPath);
 		NpcShopDataLoader.setInstance(wzType, wzPath);
+		NpcScriptManager.setInstance(scriptsPath);
+		PortalScriptManager.setInstance(scriptsPath);
 		long start, end;
 		start = System.nanoTime();
 		System.out.print("Loading String data...");

@@ -34,6 +34,26 @@ public class ItemDrop extends MapEntity {
 		MESOS = 1
 	;
 
+	public static final byte
+		PICKUP_ALLOW_OWNER = 0, //give charid for owner
+		PICKUP_ALLOW_PARTY = 1, //give partyid for owner
+		PICKUP_ALLOW_ALL = 2, //no owner
+		PICKUP_EXPLOSION = 3 //give charid for owner i guess
+	;
+
+	public static final byte
+		SPAWN_ANIMATION_DROP = 1,
+		SPAWN_ANIMATION_NONE = 2,
+		SPAWN_ANIMATION_FADE = 3
+	;
+
+	public static final byte
+		DESTROY_ANIMATION_FADE = 0,
+		DESTROY_ANIMATION_NONE = 1,
+		DESTROY_ANIMATION_LOOTED = 2,
+		DESTROY_ANIMATION_EXPLODE = 4
+	;
+
 	private byte mod;
 	private byte dropType;
 	private int id;
@@ -55,11 +75,12 @@ public class ItemDrop extends MapEntity {
 		this.id = amt;
 	}
 
-	public void init(int owner, Point dropTo, Point dropFrom, int dropperEid) {
+	public void init(int owner, Point dropTo, Point dropFrom, int dropper, byte allow) {
 		this.owner = owner;
 		this.setPosition(dropTo);
 		this.dropFrom = dropFrom;
-		this.dropper = dropperEid;
+		this.dropper = dropper;
+		this.mod = allow;
 	}
 
 	public byte getPetSlot() {
@@ -105,7 +126,7 @@ public class ItemDrop extends MapEntity {
 	public void pickUp(int looter) {
 		this.owner = looter;
 		this.gone = true;
-		this.mod = 2;
+		this.mod = DESTROY_ANIMATION_LOOTED;
 	}
 
 	public void pickUp(int looter, byte pet) {
@@ -115,12 +136,12 @@ public class ItemDrop extends MapEntity {
 
 	public void explode() {
 		this.gone = true;
-		this.mod = 4;
+		this.mod = DESTROY_ANIMATION_EXPLODE;
 	}
 
 	public void expire() {
 		this.gone = true;
-		this.mod = 0;
+		this.mod = DESTROY_ANIMATION_FADE;
 	}
 
 	public boolean isAlive() {
@@ -132,19 +153,19 @@ public class ItemDrop extends MapEntity {
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowItemDrop(this, (byte) 1);
+		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_DROP, mod);
 	}
 
 	public byte[] getShowEntityMessage() {
-		return CommonPackets.writeShowItemDrop(this, (byte) 2);
+		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_NONE, mod);
 	}
 
 	public byte[] getDisappearMessage() {
-		return CommonPackets.writeShowItemDrop(this, (byte) 3);
+		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_FADE, mod);
 	}
 
 	public byte[] getOutOfViewMessage() {
-		return CommonPackets.writeRemoveItemDrop(this, (byte) 1);
+		return CommonPackets.writeRemoveItemDrop(this, DESTROY_ANIMATION_NONE);
 	}
 
 	public byte[] getDestructionMessage() {

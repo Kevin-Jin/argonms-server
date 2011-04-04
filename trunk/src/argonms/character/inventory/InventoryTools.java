@@ -143,6 +143,10 @@ public class InventoryTools {
 		return addToInventory(inv, makeItemWithId(itemid), quantity);
 	}
 
+	public static Pair<List<Short>, List<Short>> addToInventory(Player p, int itemid, short quantity) {
+		return addToInventory(p.getInventory(getCategory(itemid)), itemid, quantity);
+	}
+
 	/**
 	 * Equip a piece of a equipment from a player's equipment inventory.
 	 * @param equips the equipment inventory

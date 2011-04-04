@@ -28,6 +28,8 @@ public final class GlobalConstants {
 
 	public static final int NULL_MAP = 999999999;
 
+	public static final String DIR_DELIMIT = System.getProperty("file.separator");
+
 	private GlobalConstants() {
 		//uninstantiable...
 	}

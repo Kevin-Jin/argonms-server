@@ -188,7 +188,7 @@ public class DealDamageHandler {
 				Point tdpos = new Point((int) (monsterPosition.getX() + (Rng.getGenerator().nextDouble() * 100) - 50), (int) (monsterPosition.getY()));
 				final GameMap tdmap = p.getMap();
 				final ItemDrop d = new ItemDrop(todrop);
-				d.init(p.getId(), tdpos, monster.getPosition(), monster.getId());
+				d.init(p.getId(), tdpos, monster.getPosition(), monster.getId(), ItemDrop.PICKUP_ALLOW_OWNER);
 
 				Timer.getInstance().runAfterDelay(new Runnable() {
 					public void run() {
@@ -293,14 +293,14 @@ public class DealDamageHandler {
 						break;
 					default: //passives attack bonuses
 						if (totDamageToOneMonster > 0 && monster.isAlive()) {
-							if (player.isBuffActive(BuffKey.BLIND)) {
+							if (player.isEffectActive(BuffKey.BLIND)) {
 								SkillEffectsData e = SkillDataLoader.getInstance().getSkill(Skills.BLIND).getLevel(player.getSkillLevel(Skills.BLIND));
 								if (e.shouldPerform()) {
 									MonsterStatusEffect monsterStatusEffect = new MonsterStatusEffect(Collections.singletonMap(MonsterStatus.ACC, player.getBuff(BuffKey.BLIND)), SkillFactory.getSkill(Skills.BLIND), false);
 									monster.applyStatus(player, monsterStatusEffect, false, e.getY() * 1000);
 								}
 							}
-							if (player.isBuffActive(BuffKey.HAMSTRING)) {
+							if (player.isEffectActive(BuffKey.HAMSTRING)) {
 								SkillEffectsData e = SkillDataLoader.getInstance().getSkill(Skills.HAMSTRING).getLevel(player.getSkillLevel(Skills.HAMSTRING));
 								if (e.shouldPerform()) {
 									MonsterStatusEffect monsterStatusEffect = new MonsterStatusEffect(Collections.singletonMap(MonsterStatus.SPEED, SkillFactory.getSkill(Skills.HAMSTRING).getEffect(player.getSkillLevel(SkillFactory.getSkill(3121007))).getX()), SkillFactory.getSkill(3121007), false);

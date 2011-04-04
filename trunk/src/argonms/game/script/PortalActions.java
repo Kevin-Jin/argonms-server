@@ -27,23 +27,24 @@ import argonms.tools.output.LittleEndianByteArrayWriter;
  *
  * @author GoldenKevin
  */
-public class PortalActions {
-	private GameClient client;
+public class PortalActions extends PlayerScriptInteraction {
+	private boolean warped;
 
 	public PortalActions(GameClient gameClient) {
-		this.client = gameClient;
-	}
-
-	public GameClient getClient() {
-		return client;
+		super(gameClient);
+		this.warped = true;
 	}
 
 	public void showHint(String hint, short width, short height) {
-		client.getSession().send(writeHintBox(hint, width, height));
+		getClient().getSession().send(writeHintBox(hint, width, height));
 	}
 
 	public void abortWarp() {
-		client.getSession().send(CommonPackets.writeEnableActions());
+		warped = false;
+	}
+
+	protected boolean warped() {
+		return warped;
 	}
 
 	private static byte[] writeHintBox(String message, short width, short height) {

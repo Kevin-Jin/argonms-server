@@ -39,7 +39,7 @@ import argonms.tools.output.LittleEndianByteArrayWriter;
 public class TakeDamageHandler {
 	private static final byte
 		BUMP_DAMAGE = -1, //the kind of damage you take when you run into a mob
-		MAP_DAMAGE = -2
+		MAP_DAMAGE = -2 //e.g. vines b/w henesys and ellinia
 	;
 
 	public static void handleTakeDamage(LittleEndianReader packet, RemoteClient rc) {
@@ -100,10 +100,8 @@ public class TakeDamageHandler {
 			}
 		}
 
-		if (diseaseSkill > 0) {
-			SkillDataLoader.getInstance().getMobSkill(diseaseSkill).getLevel(diseaseLevel);
-			//TODO: apply diseaseSkill
-		}
+		if (diseaseSkill > 0)
+			p.applyEffect(SkillDataLoader.getInstance().getMobSkill(diseaseSkill).getLevel(diseaseLevel));
 
 		if (damage == -1) {
 			//TODO: no damage player skill

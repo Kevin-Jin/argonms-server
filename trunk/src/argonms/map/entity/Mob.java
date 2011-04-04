@@ -18,32 +18,40 @@
 
 package argonms.map.entity;
 
+import argonms.character.Party;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 
 import argonms.character.Player;
 import argonms.character.inventory.InventorySlot;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.GameServer;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.mob.MobStats;
 import argonms.loading.mob.Skill;
 import argonms.loading.skill.MobSkillEffectsData;
+import argonms.map.GameMap;
 import argonms.map.MapEntity;
 import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffect;
 import argonms.net.client.CommonPackets;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
+import argonms.tools.collections.LockableMap;
 
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.lang.ref.WeakReference;
 import java.util.Random;
+import java.util.WeakHashMap;
 
 /**
  *
@@ -51,10 +59,11 @@ import java.util.Random;
  */
 public class Mob extends MapEntity {
 	private final MobStats stats;
+	private final GameMap map;
 	private int remHp;
 	private int remMp;
 	private final List<MobDeathHook> hooks;
-	private WeakReference<Player> highestDamageKiller;
+	private final LockableMap<Player, PlayerDamage> damages;
 	private WeakReference<Player> controller;
 	private boolean aggroAware, hasAggro;
 	private final Set<MonsterStatusEffect> buffs;
@@ -62,12 +71,13 @@ public class Mob extends MapEntity {
 	private int spawnedSummons;
 	private byte spawnEffect;
 
-	public Mob(MobStats stats) {
+	public Mob(MobStats stats, GameMap map) {
 		this.stats = stats;
+		this.map = map;
 		this.remHp = stats.getMaxHp();
 		this.remMp = stats.getMaxMp();
 		this.hooks = new ArrayList<MobDeathHook>();
-		this.highestDamageKiller = new WeakReference<Player>(null);
+		this.damages = new LockableMap<Player, PlayerDamage>(new WeakHashMap<Player, PlayerDamage>());
 		this.controller = new WeakReference<Player>(null);
 		this.buffs = EnumSet.noneOf(MonsterStatusEffect.class);
 		this.skillCancels = new EnumMap<MonsterStatusEffect, ScheduledFuture<?>>(MonsterStatusEffect.class);
@@ -78,7 +88,12 @@ public class Mob extends MapEntity {
 		return stats.getMobId();
 	}
 
-	public List<ItemDrop> getDrops() {
+	public boolean isMobile() {
+		//TODO: fix for MCDB
+		return stats.getDelays().containsKey("move") || stats.getDelays().containsKey("fly");
+	}
+
+	private List<ItemDrop> getDrops() {
 		List<InventorySlot> items = stats.getItemsToDrop();
 		List<ItemDrop> combined = new ArrayList<ItemDrop>(items.size() + 1);
 		for (InventorySlot item : items)
@@ -90,26 +105,124 @@ public class Mob extends MapEntity {
 		return combined;
 	}
 
-	public boolean isMobile() {
-		return stats.getDelays().containsKey("move") || stats.getDelays().containsKey("fly");
+	private Point calcDropPos(Point initial, Point fallback) {
+		Point ret = map.calcPointBelow(new Point(initial.x, initial.y - 99));
+		return ret != null ? ret : fallback;
+	}
+
+	private void makeDrops(final int owner, final byte pickupAllow) {
+		Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				Point pos = getPosition();
+				int mobX = pos.x;
+				int dropNum = 1;
+				for (ItemDrop drop : getDrops()) {
+					if (pickupAllow == ItemDrop.PICKUP_EXPLOSION)
+						pos.x = mobX + (dropNum % 2 == 0 ? (40 * (dropNum / 2)) : -(40 * (dropNum / 2)));
+					else
+						pos.x = mobX + (dropNum % 2 == 0 ? (25 * (dropNum / 2)) : -(25 * (dropNum / 2)));
+					drop.init(owner, calcDropPos(pos, getPosition()), getPosition(), getId(), pickupAllow);
+
+					map.drop(drop);
+					dropNum++;
+				}
+			}
+		}, getAnimationTime("die1")); //artificial drop lag...
+	}
+
+	private Player giveExp(Player killer) {
+		Player highestDamageAttacker = null;
+		long highestDamage = 0;
+
+		Map<Party, PartyExp> parties = new HashMap<Party, PartyExp>();
+		Player attacker;
+		long damage;
+		short attackerLevel;
+		Party attackerParty;
+		PartyExp partyExp;
+		for (Entry<Player, PlayerDamage> pd : damages.entrySet()) {
+			attacker = pd.getKey();
+			damage = pd.getValue().getDamage();
+			if (damage > highestDamage) {
+				highestDamageAttacker = attacker;
+				highestDamage = damage;
+			}
+			if (attacker == null || attacker.getMapId() != map.getMapId() || !attacker.isAlive())
+				continue;
+
+			attackerLevel = attacker.getLevel();
+			attackerParty = attacker.getParty();
+
+			int exp = (int) (stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10);
+			if (attackerParty != null) {
+				partyExp = parties.get(attackerParty);
+				if (partyExp == null) {
+					partyExp = new PartyExp();
+					parties.put(attackerParty, partyExp);
+				}
+				partyExp.compareAndSetMinAttackerLevel(attackerLevel);
+				partyExp.compareAndSetMaxDamage(damage, attacker);
+			} else {
+				int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+						attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getX() : 0;
+				//exp = exp * getTauntEffect() / 100;
+				exp *= GameServer.getVariables().getExpRate();
+				exp += ((exp * hsRate) / 100);
+				attacker.gainExp(exp, attacker == killer, false);
+			}
+		}
+		if (!parties.isEmpty()) {
+			List<Player> members;
+			for (Entry<Party, PartyExp> entry : parties.entrySet()) {
+				attackerParty = entry.getKey();
+				partyExp = entry.getValue();
+				members = attackerParty.getMembersInMap(map.getMapId());
+				short totalLevel = 0;
+				for (Player member : members) {
+					attackerLevel = member.getLevel();
+					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5))
+						totalLevel += attackerLevel;
+				}
+				for (Player member : members) {
+					attackerLevel = member.getLevel();
+					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5)) {
+						int exp = (int) (stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10);
+						int hsRate = member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getX() : 0;
+						//exp = exp * getTauntEffect() / 100;
+						exp *= GameServer.getVariables().getExpRate();
+						exp += ((exp * hsRate) / 100);
+						member.gainExp(exp, member == killer, false);
+					}
+				}
+			}
+		}
+		return highestDamageAttacker;
+	}
+
+	public void died(Player killer) {
+		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+			cancelTask.cancel(true);
+		for (MobDeathHook hook : hooks)
+			hook.monsterKilled(killer);
+		if (stats.getBuffToGive() > 0) {
+			//TODO, give buff and show message to map
+		}
+		Player highestDamage = giveExp(killer);
+		int id;
+		byte pickupAllow;
+		if (highestDamage.getParty() != null) {
+			id = highestDamage.getParty().getId();
+			pickupAllow = ItemDrop.PICKUP_ALLOW_PARTY;
+		} else {
+			id = highestDamage.getId();
+			pickupAllow = ItemDrop.PICKUP_ALLOW_OWNER;
+		}
+		makeDrops(id, pickupAllow);
 	}
 
 	public void addDeathHook(MobDeathHook hook) {
 		hooks.add(hook);
-	}
-
-	public void died() {
-		for (ScheduledFuture<?> cancelTask : skillCancels.values())
-			cancelTask.cancel(true);
-		for (MobDeathHook hook : hooks)
-			hook.monsterKilled(highestDamageKiller.get());
-		if (stats.getBuffToGive() > 0) {
-			//TODO, give buff and show message to map
-		}
-	}
-
-	public int getHighestDamageAttacker() {
-		return highestDamageKiller.get() != null ? highestDamageKiller.get().getId() : 0;
 	}
 
 	public Player getController() {
@@ -141,9 +254,14 @@ public class Mob extends MapEntity {
 	}
 
 	public void hurt(Player p, int damage) {
+		if (damage > remHp)
+			damage = remHp;
 		this.remHp -= damage;
-		//TODO: calculate highest damage attacker
-		this.highestDamageKiller = new WeakReference<Player>(p);
+		PlayerDamage pd = damages.getWhenSafe(p);
+		if (pd != null)
+			pd.addDamage(damage);
+		else
+			damages.putWhenSafe(p, new PlayerDamage(damage));
 	}
 
 	public List<Skill> getSkills() {
@@ -163,7 +281,7 @@ public class Mob extends MapEntity {
 		return false;
 	}
 
-	private void applyBuff(final MonsterStatusEffect b, int duration) {
+	private void applyEffect(final MonsterStatusEffect b, int duration) {
 		//TODO: IMPLEMENT
 		synchronized (buffs) {
 			buffs.add(b);
@@ -171,13 +289,13 @@ public class Mob extends MapEntity {
 		synchronized (skillCancels) {
 			skillCancels.put(b, Timer.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
-					dispelBuff(b);
+					dispelEffect(b);
 				}
 			}, duration));
 		}
 	}
 
-	private void dispelBuff(MonsterStatusEffect b) {
+	private void dispelEffect(MonsterStatusEffect b) {
 		synchronized (buffs) {
 			buffs.remove(b);
 		}
@@ -186,7 +304,7 @@ public class Mob extends MapEntity {
 		}
 	}
 
-	public boolean isBuffActive(MonsterStatusEffect b) {
+	public boolean isEffectActive(MonsterStatusEffect b) {
 		return buffs.contains(b);
 	}
 
@@ -231,12 +349,12 @@ public class Mob extends MapEntity {
 				player.getMap().spawnMist(mist, playerSkillEffect.getX() * 10);
 				break;
 			case MobSkills.PHYSICAL_IMMUNITY:
-				if (playerSkillEffect.shouldPerform() && !isBuffActive(MonsterStatusEffect.MAGIC_IMMUNITY))
-					applyBuff(MonsterStatusEffect.WEAPON_IMMUNITY, playerSkillEffect.getDuration());
+				if (playerSkillEffect.shouldPerform() && !isEffectActive(MonsterStatusEffect.MAGIC_IMMUNITY))
+					applyEffect(MonsterStatusEffect.WEAPON_IMMUNITY, playerSkillEffect.getDuration());
 				break;
 			case MobSkills.MAGIC_IMMUNITY:
-				if (playerSkillEffect.shouldPerform() && !isBuffActive(MonsterStatusEffect.WEAPON_IMMUNITY))
-					applyBuff(MonsterStatusEffect.MAGIC_IMMUNITY, playerSkillEffect.getDuration());
+				if (playerSkillEffect.shouldPerform() && !isEffectActive(MonsterStatusEffect.WEAPON_IMMUNITY))
+					applyEffect(MonsterStatusEffect.MAGIC_IMMUNITY, playerSkillEffect.getDuration());
 				break;
 			case MobSkills.SUMMON:
 				short limit = playerSkillEffect.getSummonLimit();
@@ -246,7 +364,7 @@ public class Mob extends MapEntity {
 					Random generator = Rng.getGenerator();
 					for (Integer oMobId : playerSkillEffect.getSummons().values()) {
 						int mobId = oMobId.intValue();
-						Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId));
+						Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map);
 						int ypos, xpos;
 						xpos = getPosition().x;
 						ypos = getPosition().y;
@@ -270,7 +388,7 @@ public class Mob extends MapEntity {
 						}
 						// Get spawn coordinates (This fixes monster lock)
 						// TODO get map left and right wall. Any suggestions?
-						switch (player.getMapId()) {
+						switch (map.getMapId()) {
 							case 220080001: //Pap map
 								if (xpos < -890)
 									xpos = (int)(-890 + Math.ceil(generator.nextDouble() * 150));
@@ -295,14 +413,13 @@ public class Mob extends MapEntity {
 				if (!playerSkillEffect.getEffects().isEmpty())
 					player.applyEffect(playerSkillEffect);
 				if (playerSkillEffect.getBuff() != null)
-					applyBuff(playerSkillEffect.getBuff(), playerSkillEffect.getDuration());
+					applyEffect(playerSkillEffect.getBuff(), playerSkillEffect.getDuration());
 				break;
 		}
 	}
 
-	//TODO: implement
 	public boolean wasAttackedBy(Player player) {
-		return false;
+		return damages.containsKey(player);
 	}
 
 	public boolean controllerHasAggro() {
@@ -359,6 +476,52 @@ public class Mob extends MapEntity {
 	}
 
 	public interface MobDeathHook {
-		public void monsterKilled(Player highestDamageChar);
+		public void monsterKilled(Player killer);
+	}
+
+	private static class PlayerDamage {
+		private long damage;
+
+		public PlayerDamage(int initialDamage) {
+			this.damage = initialDamage;
+		}
+
+		public void addDamage(int gain) {
+			damage += gain;
+		}
+
+		public long getDamage() {
+			return damage;
+		}
+	}
+
+	private static class PartyExp {
+		private short minAttackerLevel;
+		private Player highestDamagePlayer;
+		private long highestDamage;
+
+		public PartyExp() {
+			minAttackerLevel = 200;
+		}
+
+		public void compareAndSetMinAttackerLevel(short damagerlevel) {
+			if (damagerlevel < minAttackerLevel)
+				minAttackerLevel = damagerlevel;
+		}
+
+		public void compareAndSetMaxDamage(long damage, Player attacker) {
+			if (damage > highestDamage) {
+				highestDamagePlayer = attacker;
+				highestDamage = damage;
+			}
+		}
+
+		public short getMinAttackerLevel() {
+			return minAttackerLevel;
+		}
+
+		public Player getHighestDamagePlayer() {
+			return highestDamagePlayer;
+		}
 	}
 }

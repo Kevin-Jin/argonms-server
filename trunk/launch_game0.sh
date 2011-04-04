@@ -23,4 +23,5 @@ java -Xmx600m -Dargonms.game.serverid=0 -Dargonms.game.config.file=game0.propert
 -Djava.util.logging.config.file=logging.properties \
 -Dargonms.db.config.file=db.properties \
 -Dargonms.data.dir=wz/ \
+-Dargonms.scripts.dir=scripts/ \
 argonms.game.GameServer

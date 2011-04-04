@@ -20,10 +20,11 @@ package argonms.net.client.handler;
 
 import argonms.UserPrivileges;
 import argonms.character.Player;
-import argonms.game.CommandProcessor;
+import argonms.game.clientcommand.CommandProcessor;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.net.client.ClientSendOps;
+import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
@@ -38,7 +39,7 @@ public class GameChatHandler {
 		byte show = packet.readByte();
 		Player p = ((GameClient) rc).getPlayer();
 		if (!commandProcessed(p, message))
-			p.getMap().sendToAll(writeMapChat(p, message, show));
+			p.getMap().sendToAll(writeMapChat(p, message, show, p.getPrivilegeLevel() > UserPrivileges.USER));
 	}
 
 	public static void handlePrivateChat(LittleEndianReader packet, RemoteClient rc) {
@@ -61,13 +62,13 @@ public class GameChatHandler {
 			GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, message);
 	}
 
-	private static byte[] writeMapChat(Player p, String message, byte show) {
+	private static byte[] writeMapChat(Player p, String message, byte show, boolean gm) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
 				+ message.length());
 
 		lew.writeShort(ClientSendOps.MAP_CHAT);
 		lew.writeInt(p.getId());
-		lew.writeBool(p.getPrivilegeLevel() > UserPrivileges.USER);
+		lew.writeBool(gm);
 		lew.writeLengthPrefixedString(message);
 		lew.writeByte(show);
 
@@ -80,5 +81,56 @@ public class GameChatHandler {
 			return false;
 		CommandProcessor.getInstance().process(p, chat);
 		return true;
+	}
+
+	public enum TextStyle {
+		OK_BOX(1),
+		LIGHT_BLUE_TEXT_WHITE_BG(2),
+		RED_TEXT_CLEAR_BG(5),
+		LIGHT_BLUE_TEXT_CLEAR_BG(6),
+		ORANGE_TEXT_CLEAR_BG(0),
+		PURPLE_TEXT_CLEAR_BG(1),
+		PINK_TEXT_CLEAR_BG(2),
+		DULL_GREEN_TEXT_CLEAR_BG(3),
+		WHITE_TEXT_CLEAR_BG(0),
+		BLACK_TEXT_WHITE_BG(1),
+		BRIGHT_GREEN_TEXT_CLEAR_BG(-1),
+		YELLOW_TEXT_CLEAR_BG(-1)
+		;
+
+		private final byte subType;
+
+		private TextStyle(int subType) {
+			this.subType = (byte) subType;
+		}
+
+		public byte getMod() {
+			return subType;
+		}
+	}
+
+	public static byte[] writeStyledChat(TextStyle ts, Player p, String message, boolean megaEar) {
+		switch (ts) {
+			case OK_BOX:
+			case LIGHT_BLUE_TEXT_WHITE_BG:
+			case RED_TEXT_CLEAR_BG:
+			case LIGHT_BLUE_TEXT_CLEAR_BG:
+				return CommonPackets.writeServerMessage(ts.getMod(), p.getName() + " : " + message, p.getClient().getChannel(), megaEar);
+			case ORANGE_TEXT_CLEAR_BG:
+			case PURPLE_TEXT_CLEAR_BG:
+			case PINK_TEXT_CLEAR_BG:
+				return CommonPackets.writePrivateChatMessage(ts.getMod(), p.getName(), message);
+			case DULL_GREEN_TEXT_CLEAR_BG:
+				return CommonPackets.writeSpouseChatMessage(p.getName(), message);
+			case WHITE_TEXT_CLEAR_BG:
+			case BLACK_TEXT_WHITE_BG:
+				return writeMapChat(p, message, (byte) 0, ts.getMod() != 0);
+			case BRIGHT_GREEN_TEXT_CLEAR_BG:
+				return CommonPackets.writeWhisperMessge(p.getName(), message, p.getClient().getChannel());
+			case YELLOW_TEXT_CLEAR_BG:
+				return CommonPackets.writeTipMessage(p.getName() + " : " + message);
+			default:
+				return null;
+		}
 	}
 }

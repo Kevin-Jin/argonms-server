@@ -67,7 +67,7 @@ public class Mist extends MapEntity {
 				skillDelay = 8;
 				mistType = SMOKE_SCREEN;
 				break;
-			case Skills.POISON_MIST: // FP mist
+			case Skills.POISON_MIST:
 				skillDelay = 8;
 				mistType = POISON_MIST;
 				break;

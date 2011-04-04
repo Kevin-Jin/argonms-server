@@ -16,33 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game;
+package argonms.game.clientcommand;
 
 import argonms.character.Player;
-import java.util.regex.Pattern;
 
 /**
  *
  * @author GoldenKevin
  */
-public class CommandProcessor {
-	private static final Pattern argSplit;
-	private static final CommandProcessor singleton;
+public abstract class AbstractCommandDefinition {
+	public abstract String getHelpMessage();
+	public abstract void execute(Player p, String[] args, ClientNoticeStream resp);
+	public abstract byte minPrivilegeLevel();
 
-	static {
-		argSplit = Pattern.compile(" ");
-		singleton = new CommandProcessor();
-	}
-
-	private CommandProcessor() {
-		
-	}
-
-	public void process(Player p, String line) {
-		String[] args = argSplit.split(line);
-	}
-
-	public static CommandProcessor getInstance() {
-		return singleton;
+	public static boolean isNumber(String s) {
+		char[] array = s.toCharArray();
+		for (int i = array.length - 1; i > 0; --i)
+			if (array[i] > '9' || array[i] < '0')
+				return false;
+		return true;
 	}
 }

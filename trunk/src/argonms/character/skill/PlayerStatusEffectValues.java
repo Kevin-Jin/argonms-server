@@ -20,6 +20,7 @@ package argonms.character.skill;
 
 import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.EffectSource;
+import argonms.loading.skill.PlayerSkillEffectsData;
 
 /**
  *
@@ -29,7 +30,7 @@ public class PlayerStatusEffectValues {
 	public enum PlayerStatusEffect {
 		//byte 8
 		SLOW			(0x0000000000000001L),
-		HOMING_BEACON   (0x0000000000000001L),
+		HOMING_BEACON	(0x0000000000000001L),
 		MORPH			(0x0000000000000002L),
 		RECOVERY		(0x0000000000000004L),
 		MAPLE_WARRIOR	(0x0000000000000008L),
@@ -37,7 +38,7 @@ public class PlayerStatusEffectValues {
 		SHARP_EYES		(0x0000000000000020L),
 		MANA_REFLECTION	(0x0000000000000040L),
 		SEDUCE			(0x0000000000000080L),
-		DRAGON_ROAR     (0x0000000000000080L),
+		DRAGON_ROAR		(0x0000000000000080L),
 
 		//byte 7
 		SHADOW_CLAW		(0x0000000000000100L),
@@ -52,11 +53,11 @@ public class PlayerStatusEffectValues {
 		GHOST_MORPH		(0x0000000000020000L),
 
 		//byte 5
-		BERSERK_FURY    (0x0000000008000000L),
-		DIVINE_BODY     (0x0000000010000000L),
+		BERSERK_FURY	(0x0000000008000000L),
+		DIVINE_BODY		(0x0000000010000000L),
 		//DASH			(0x0000000030000000L),
 		MONSTER_RIDING	(0x0000000040000000L),
-		FINALATTACK     (0x0000000080000000L),
+		FINALATTACK		(0x0000000080000000L),
 
 		//byte 4
 		WATK			(0x0000000100000000L),
@@ -66,7 +67,7 @@ public class PlayerStatusEffectValues {
 		ACC				(0x0000001000000000L),
 		AVOID			(0x0000002000000000L),
 		HANDS			(0x0000004000000000L),
-		DASH            (0x0000006000000000L),
+		DASH			(0x0000006000000000L),
 		SPEED			(0x0000008000000000L),
 
 		//byte 3
@@ -146,5 +147,17 @@ public class PlayerStatusEffectValues {
 
 	public EffectSource getSourceType() {
 		return e.getSourceType();
+	}
+
+	public int getX() {
+		return ((PlayerSkillEffectsData) e).getX();
+	}
+
+	public int getY() {
+		return ((PlayerSkillEffectsData) e).getY();
+	}
+
+	public int getZ() {
+		return ((PlayerSkillEffectsData) e).getZ();
 	}
 }

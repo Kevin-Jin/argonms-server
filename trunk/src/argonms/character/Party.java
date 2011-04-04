@@ -18,10 +18,44 @@
 
 package argonms.character;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  *
  * @author GoldenKevin
  */
 public class Party {
+	private final int id;
+	private final List<Player> localMembers;
 
+	public Party(int pid) {
+		this.id = pid;
+		this.localMembers = new ArrayList<Player>();
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public List<Player> getMembersInLocalChannel() {
+		return Collections.unmodifiableList(localMembers);
+	}
+
+	public List<Player> getMembersInMap(int mapId) {
+		List<Player> filtered = new ArrayList<Player>();
+		for (Player p : localMembers)
+			if (p.getMapId() == mapId)
+				filtered.add(p);
+		return filtered;
+	}
+
+	public void playerConnected(Player p) {
+		localMembers.add(p);
+	}
+
+	public void playerDisconnected(Player p) {
+		localMembers.remove(p);
+	}
 }
