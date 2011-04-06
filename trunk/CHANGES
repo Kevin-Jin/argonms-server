@@ -458,6 +458,19 @@
 	used somewhere on the game server.
 	* Fixed drop placement from mob deaths.
 
+2011-04-06  GoldenKevin  (revision 22)
+
+	* Added help message to !rate command.
+	* Fixed freakish positioning of drops when dropping on a rope or in the air.
+	* Show inventory full message when picking up a drop and inventory is full.
+	* Fixed deadlock when item drops expired.
+	* Random.nextDouble methods used in MobStats for chance calculations are now
+	replaced with nextInt. Should now be less biased and maybe faster (both of
+	which are results of having fewer floating point operations).
+	* Fixed issue with mob drops where the items don't appear to come from the
+	mob (they just rose and fell in the x coordinate that they rest in, not from
+	the mob's center).
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

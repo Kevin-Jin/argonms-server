@@ -23,6 +23,7 @@ import java.awt.Rectangle;
 import argonms.character.Player;
 import argonms.character.skill.Skills;
 import argonms.loading.skill.MobSkillEffectsData;
+import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.map.MapEntity;
 import argonms.net.client.CommonPackets;
 import argonms.tools.Rng;
@@ -44,7 +45,7 @@ public class Mist extends MapEntity {
 	private byte skillLevel;
 	private short skillDelay;
 	private Rectangle box;
-	private double prop;
+	private short prop;
 
 	public Mist(Rectangle mistPosition, Mob mob, MobSkillEffectsData skill) {
 		this.mistType = MOB_MIST;
@@ -56,7 +57,7 @@ public class Mist extends MapEntity {
 		this.prop = skill.getProp();
 	}
 
-	public Mist(Rectangle mistPosition, Player p, MobSkillEffectsData skill) {
+	public Mist(Rectangle mistPosition, Player p, PlayerSkillEffectsData skill) {
 		this.ownerEid = p.getId();
 		this.skillId = skill.getDataId();
 		this.skillLevel = skill.getLevel();
@@ -99,7 +100,7 @@ public class Mist extends MapEntity {
 	}
 
 	public boolean shouldHurt() {
-		return Rng.getGenerator().nextDouble() < prop;
+		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
 	public MapEntityType getEntityType() {

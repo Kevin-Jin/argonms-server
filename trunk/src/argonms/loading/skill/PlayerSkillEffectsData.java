@@ -42,7 +42,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 	private Point lt;
 	private Point rb;
 	private byte mobCount;
-	private double prop;
+	private short prop;
 	private byte mastery;
 	private short cooltime;
 	private short range;
@@ -250,7 +250,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 			case Skills.HERO_POWER_STANCE:
 			case Skills.PAGE_POWER_STANCE:
 			case Skills.DARK_KNIGHT_POWER_STANCE:
-				effects.put(BuffKey.STANCE, Double.valueOf(d.getProp()));
+				effects.put(BuffKey.STANCE, Short.valueOf(d.getProp()));
 				break;
 			case Skills.ECHO_OF_HERO:
 				effects.put(BuffKey.ECHO_OF_HERO, Integer.valueOf(x));
@@ -617,7 +617,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 		this.mobCount = count;
 	}
 
-	protected void setProp(double prop) {
+	protected void setProp(short prop) {
 		this.prop = prop;
 	}
 
@@ -699,12 +699,12 @@ public class PlayerSkillEffectsData extends BuffsData {
 		return mobCount;
 	}
 
-	public double getProp() {
+	public short getProp() {
 		return prop;
 	}
 
 	public boolean shouldPerform() {
-		return Rng.getGenerator().nextDouble() < prop;
+		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
 	public byte getMastery() {

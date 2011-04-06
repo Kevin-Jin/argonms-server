@@ -427,7 +427,7 @@ public class CommonPackets {
 
 	private static byte[] writeShowThirdPersonEffect(Player p, byte effectId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-		lew.writeShort(ClientSendOps.SHOW_VISUAL_EFFECT);
+		lew.writeShort(ClientSendOps.THIRD_PERSON_VISUAL_EFFECT);
 		lew.writeInt(p.getId());
 		lew.writeByte(effectId);
 		return lew.getBytes();
@@ -523,7 +523,7 @@ public class CommonPackets {
 	public static byte[] writeShowItemGainFromQuest(int itemid, int quantity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 
-		lew.writeShort(ClientSendOps.SHOW_ITEM_GAIN_IN_CHAT);
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
 		lew.writeByte((byte) 3);
 		lew.writeByte((byte) 1);
 		lew.writeInt(itemid);

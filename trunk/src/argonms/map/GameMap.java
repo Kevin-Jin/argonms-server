@@ -116,6 +116,10 @@ public class GameMap {
 		}
 	}
 
+	public MapStats getStaticData() {
+		return stats;
+	}
+
 	public int getMapId() {
 		return stats.getMapId();
 	}
@@ -284,17 +288,10 @@ public class GameMap {
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				entities.lockRead();
-				try {
-					ItemDrop d = (ItemDrop) entities.get(eid);
-					if (d != null) {
-						synchronized (d) {
-							d.expire();
-							destroyEntity(d);
-						}
-					}
-				} finally {
-					entities.unlockRead();
+				ItemDrop d = (ItemDrop) entities.getWhenSafe(eid);
+				if (d != null) {
+					d.expire();
+					destroyEntity(d);
 				}
 			}
 		}, DROP_EXPIRE); //expire after 1 minute
@@ -448,6 +445,7 @@ public class GameMap {
 				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, pickedUp.getQuantity()));
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
+				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
 			}
 		}
 	}

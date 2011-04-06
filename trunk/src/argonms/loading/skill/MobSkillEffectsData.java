@@ -41,7 +41,7 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	private int y;
 	private Point lt;
 	private Point rb;
-	private double prop;
+	private short prop;
 	private short cooltime;
 	private short hp;
 	private MonsterStatusEffect buff;
@@ -120,7 +120,7 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		this.rb = new Point(x, y);
 	}
 
-	protected void setProp(double prop) {
+	protected void setProp(short prop) {
 		this.prop = prop;
 	}
 
@@ -168,12 +168,12 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		return rb;
 	}
 
-	public double getProp() {
+	public short getProp() {
 		return prop;
 	}
 
 	public boolean shouldPerform() {
-		return Rng.getGenerator().nextDouble() < prop;
+		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
 	public short getCooltime() {

@@ -179,7 +179,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setMobCount(reader.readByte());
 					break;
 				case KvjEffects.PROP:
-					effect.setProp(reader.readShort() / 100.0);
+					effect.setProp(reader.readShort());
 					break;
 				case KvjEffects.MASTERY:
 					effect.setMastery(reader.readByte());
@@ -246,7 +246,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					//and the value is 38??? Because the key is an integer, we consider it a summon...
 					//assert (skillid == Skills.SHOUT && level == 4);
 					//first byte is mobIndex, which was just Byte.parseByte(key) in KvjCompiler
-					effect.setProp(reader.readByte() / 100.0);
+					effect.setProp(reader.readByte());
 					/*assert (*/reader.readInt()/* == 38)*/;
 					break;
 				case KvjEffects.END_EFFECT:
@@ -311,7 +311,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					effect.setRb(reader.readShort(), reader.readShort());
 					break;
 				case KvjEffects.PROP:
-					effect.setProp(reader.readShort() / 100.0);
+					effect.setProp(reader.readShort());
 					break;
 				case KvjEffects.COOLTIME:
 					effect.setCooltime(reader.readShort());
