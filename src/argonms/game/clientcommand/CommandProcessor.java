@@ -76,7 +76,8 @@ public class CommandProcessor {
 					return;
 				}
 			}
-		}, "", UserPrivileges.SUPER_GM));
+		}, "Change the exp, meso, or drop rate of this game server.",
+				UserPrivileges.SUPER_GM));
 		definitions.put("!help", new CommandDefinition(new HelpCommandHandler(),
 				"Displays this message", UserPrivileges.USER));
 	}

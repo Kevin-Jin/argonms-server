@@ -174,7 +174,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setLt(rs.getShort(27), rs.getShort(28));
 			effect.setRb(rs.getShort(29), rs.getShort(30));
 			effect.setMobCount(rs.getByte(3));
-			effect.setProp(rs.getInt(25) / 100.0);
+			effect.setProp(rs.getShort(25));
 			effect.setCooltime(rs.getShort(31));
 			effect.setWatk(rs.getShort(17));
 			effect.setWdef(rs.getShort(18));
@@ -213,7 +213,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setY(rs.getInt(6));
 			effect.setLt(rs.getShort(10), rs.getShort(11));
 			effect.setRb(rs.getShort(12), rs.getShort(13));
-			effect.setProp(rs.getInt(7) / 100.0);
+			effect.setProp(rs.getShort(7));
 			effect.setCooltime(rs.getShort(9));
 			effect.setHp(rs.getShort(14));
 			if (skillid == MobSkills.SUMMON) {

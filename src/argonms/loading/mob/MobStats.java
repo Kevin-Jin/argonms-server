@@ -282,7 +282,7 @@ public class MobStats {
 			return (Math.min(30000, (int) (factor * getExp() * generator.nextDouble() * 2.1)) * multiplier);
 		} else {
 			//TODO: should we multiply this by drop rate?
-			if (generator.nextDouble() < mesoDrop.getDropChance()) {
+			if (generator.nextInt(1000000) < mesoDrop.getDropChance()) {
 				int min = mesoDrop.getMinMesoDrop();
 				int max = mesoDrop.getMaxMesoDrop();
 				return ((generator.nextInt(max - min + 1) + min) * multiplier);
@@ -296,7 +296,7 @@ public class MobStats {
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
 		int multiplier = GameServer.getVariables().getDropRate();
 		for (Entry<Integer, Integer> entry : itemDrops.entrySet())
-			if (generator.nextDouble() < (entry.getValue().intValue() / 1000000.0 * multiplier))
+			if (generator.nextInt(1000000) < (entry.getValue().intValue() * multiplier))
 				items.add(InventoryTools.makeItemWithId(entry.getKey().intValue()));
 		return items;
 	}
@@ -312,8 +312,8 @@ public class MobStats {
 			this.max = max;
 		}
 
-		public double getDropChance() {
-			return chance / 1000000.0;
+		public int getDropChance() {
+			return chance;
 		}
 
 		public int getMinMesoDrop() {

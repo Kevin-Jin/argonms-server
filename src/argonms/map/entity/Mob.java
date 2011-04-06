@@ -113,18 +113,22 @@ public class Mob extends MapEntity {
 	private void makeDrops(final int owner, final byte pickupAllow) {
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				Point pos = getPosition();
-				int mobX = pos.x;
-				int dropNum = 1;
+				Point mobPos = getPosition(), dropPos = new Point(mobPos);
+				int mobX = mobPos.x;
+				int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
+				int dropNum = 0, delta;
 				for (ItemDrop drop : getDrops()) {
-					if (pickupAllow == ItemDrop.PICKUP_EXPLOSION)
-						pos.x = mobX + (dropNum % 2 == 0 ? (40 * (dropNum / 2)) : -(40 * (dropNum / 2)));
-					else
-						pos.x = mobX + (dropNum % 2 == 0 ? (25 * (dropNum / 2)) : -(25 * (dropNum / 2)));
-					drop.init(owner, calcDropPos(pos, getPosition()), getPosition(), getId(), pickupAllow);
-
-					map.drop(drop);
+					//TODO: recalculate drop position if there is a high
+					//wall (one that the player can't jump up to) or if the
+					//drop will fall outside the walkable part of the map.
 					dropNum++;
+					delta = width * (dropNum / 2);
+					if (dropNum % 2 == 0) //drop even numbered drops right
+						dropPos.x = mobX + delta;
+					else //drop odd numbered drops left
+						dropPos.x = mobX - delta;
+					drop.init(owner, calcDropPos(dropPos, mobPos), mobPos, getId(), pickupAllow);
+					map.drop(drop);
 				}
 			}
 		}, getAnimationTime("die1")); //artificial drop lag...
