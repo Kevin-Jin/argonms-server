@@ -471,6 +471,32 @@
 	mob (they just rose and fell in the x coordinate that they rest in, not from
 	the mob's center).
 
+2011-04-06  GoldenKevin  (revision 23)
+
+	* Mobs now show HP bar when attacked (and boss HP bar should show up to the
+	whole map, but it's untested as of commit time).
+	* Reorganized mob drop routines to allow and take advantage of code reuse
+	when reactor drops are implemented. These functions are now in GameMap.
+	* Self destructing mobs will now show the correct animation and will die at
+	the proper HP impetus.
+	* Fixed bug when using the command /m 0. Incorrectly recognized as a death
+	warp. Also fixed unnecessary writeEnableActions that are sent to the client
+	no matter the result of a portal warp (forgot to return the value returned
+	by enterPortal(Player, PortalData) in enterPortal(Player, String) if the
+	search for a portal with a matching name was found). I think clients are
+	stuck waiting for a response when using the /m command, so if the client
+	does not have sufficient privileges or just does not warp, it is sent a
+	writeEnableActions.
+	* Players will be sent to their forced return map when they log in if their
+	map has one (it's better than sending them to the forced return map when
+	they log off because in the case the server crashes, they still will be
+	warped back the next time they log back on).
+	* Added decrease HP tasks that are present in several maps, as well as a
+	map time limit task. The implementations may leak memory, so I'm going to
+	profile them later (Stupid ScheduledFuture.cancel).
+	* Players going through the Mushroom Town Training Camp or the Showa Spa
+	will be given the appropriate costumes.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

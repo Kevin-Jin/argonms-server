@@ -53,6 +53,7 @@ import argonms.tools.collections.LockableSet;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -60,9 +61,11 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
+//TODO: we still need map timeLimitTasks!
 /**
  *
  * @author GoldenKevin
@@ -81,6 +84,8 @@ public class GameMap {
 	private final LockableSet<Player> players;
 	private final LockableList<MonsterSpawn> monsterSpawns;
 	private final AtomicInteger monsters;
+	private ConcurrentHashMap<Player, ScheduledFuture<?>> timeLimitTasks;
+	private ConcurrentHashMap<Player, ScheduledFuture<?>> decHpTasks;
 	//no need to be Atomic because it always is locked by entities...
 	private int nextEntityId;
 
@@ -114,6 +119,10 @@ public class GameMap {
 			reactor.setDelay(r.getReactorTime());
 			spawnEntity(reactor);
 		}
+		if (stats.getTimeLimit() > 0 && stats.getForcedReturn() != GlobalConstants.NULL_MAP)
+			timeLimitTasks = new ConcurrentHashMap<Player, ScheduledFuture<?>>();
+		if (stats.getDecHp() > 0)
+			decHpTasks = new ConcurrentHashMap<Player, ScheduledFuture<?>>();
 	}
 
 	public MapStats getStaticData() {
@@ -252,7 +261,7 @@ public class GameMap {
 		}
 	}
 
-	public void spawnPlayer(Player p) {
+	public void spawnPlayer(final Player p) {
 		entities.lockWrite();
 		try { //write lock allows us to read in mutex, so no need for a readLock
 			if (p.isVisible()) { //show ourself to other clients if we are not hidden
@@ -268,6 +277,36 @@ public class GameMap {
 			entities.put(Integer.valueOf(p.getId()), p);
 		} finally {
 			entities.unlockWrite();
+		}
+		if (timeLimitTasks != null) {
+			//TODO: I heard that ScheduledFutures still hold onto strong references
+			//when canceled, so should we just use a WeakReference to player?
+			ScheduledFuture<?> future = Timer.getInstance().runAfterDelay(new Runnable() {
+				public void run() {
+					p.changeMap(stats.getForcedReturn());
+					p.getClient().getSession().send(writeShowTimeLimit(0));
+				}
+			}, stats.getTimeLimit() * 1000);
+			p.getClient().getSession().send(writeShowTimeLimit(stats.getTimeLimit()));
+			timeLimitTasks.put(p, future);
+		}
+		if (decHpTasks != null) {
+			ScheduledFuture<?> future = Timer.getInstance().runRepeatedly(new Runnable() {
+				public void run() {
+					p.doDecHp(stats.getProtectItem(), stats.getDecHp());
+				}
+			}, 10000, 10000);
+			decHpTasks.put(p, future);
+		}
+		//it would be too wasteful to save the "fieldType" properties from the
+		//XMLs just to check if it's equal to 81 or 82 here, so check manually
+		switch (stats.getMapId()) {
+			case 1:
+			case 2:
+			case 809000101:
+			case 809000201:
+				p.getClient().getSession().send(writeForceMapEquip());
+				break;
 		}
 	}
 
@@ -295,6 +334,38 @@ public class GameMap {
 				}
 			}
 		}, DROP_EXPIRE); //expire after 1 minute
+	}
+
+	public Point calcDropPos(Point initial, Point fallback) {
+		Point ret = calcPointBelow(new Point(initial.x, initial.y - 99));
+		return ret != null ? ret : fallback;
+	}
+
+	public void drop(ItemDrop drop, MapEntity ent, byte pickupAllow, int owner, boolean disappear) {
+		Point pos = ent.getPosition();
+		drop.init(owner, calcDropPos(pos, pos), pos, ent.getId(), pickupAllow);
+		if (!disappear)
+			drop(drop);
+		else
+			sendToAll(drop.getDisappearMessage());
+	}
+
+	public void drop(List<ItemDrop> drops, MapEntity ent, byte pickupAllow, int owner) {
+		Point entPos = ent.getPosition(), dropPos = new Point(entPos);
+		int entId = ent.getId();
+		int entX = entPos.x;
+		int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
+		int dropNum = 0, delta;
+		for (ItemDrop drop : drops) {
+			dropNum++;
+			delta = width * (dropNum / 2);
+			if (dropNum % 2 == 0) //drop even numbered drops right
+				dropPos.x = entX + delta;
+			else //drop odd numbered drops left
+				dropPos.x = entX - delta;
+			drop.init(owner, calcDropPos(dropPos, entPos), entPos, entId, pickupAllow);
+			drop(drop);
+		}
 	}
 
 	public final void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
@@ -387,6 +458,20 @@ public class GameMap {
 			m.setControllerHasAggro(false);
 			m.setControllerKnowsAboutAggro(false);
 			updateMonsterController(m);
+		}
+		if (timeLimitTasks != null) {
+			ScheduledFuture<?> future = timeLimitTasks.remove(p);
+			if (future != null) {
+				future.cancel(false);
+				if (p.getClient().getSession().isOpen())
+					p.getClient().getSession().send(writeShowTimeLimit(0));
+			}
+		}
+		if (decHpTasks != null) {
+			ScheduledFuture<?> future = decHpTasks.remove(p);
+			if (future != null) {
+				future.cancel(false);
+			}
 		}
 		destroyEntity(p);
 	}
@@ -536,7 +621,7 @@ public class GameMap {
 	public boolean enterPortal(Player p, String portalName) {
 		for (PortalData portal : stats.getPortals().values())
 			if (portal.getPortalName().equals(portalName))
-				enterPortal(p, portal);
+				return enterPortal(p, portal);
 		return false;
 	}
 
@@ -740,6 +825,20 @@ public class GameMap {
 		lew.writeByte(s4); //or is this just 0?
 		lew.writePos(startPos);
 		CommonPackets.writeSerializedMovements(lew, moves);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeShowTimeLimit(int seconds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.CLOCK);
+		lew.writeByte((byte) 2);
+		lew.writeInt(seconds);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeForceMapEquip() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.SHOW_EQUIP_EFFECT);
 		return lew.getBytes();
 	}
 }

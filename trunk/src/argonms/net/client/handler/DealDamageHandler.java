@@ -174,7 +174,7 @@ public class DealDamageHandler {
 		return ret;
 	}
 
-	private static void handlePickPocket(final Player p, Mob monster, Pair<Integer, List<Integer>> oned) {
+	private static void handlePickPocket(Player p, Mob monster, Pair<Integer, List<Integer>> oned) {
 		int delay = 0;
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		int reqdamage = 20000;

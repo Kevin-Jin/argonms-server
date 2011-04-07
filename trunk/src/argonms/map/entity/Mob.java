@@ -42,10 +42,12 @@ import argonms.map.GameMap;
 import argonms.map.MapEntity;
 import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffect;
+import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableMap;
+import argonms.tools.output.LittleEndianByteArrayWriter;
 
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -58,6 +60,12 @@ import java.util.WeakHashMap;
  * @author GoldenKevin
  */
 public class Mob extends MapEntity {
+	public static final byte
+		DESTROY_ANIMATION_NONE = 0,
+		DESTROY_ANIMATION_NORMAL = 1,
+		DESTROY_ANIMATION_EXPLODE = 2
+	;
+
 	private final MobStats stats;
 	private final GameMap map;
 	private int remHp;
@@ -69,7 +77,7 @@ public class Mob extends MapEntity {
 	private final Set<MonsterStatusEffect> buffs;
 	private final Map<MonsterStatusEffect, ScheduledFuture<?>> skillCancels;
 	private int spawnedSummons;
-	private byte spawnEffect;
+	private byte spawnEffect, deathEffect;
 
 	public Mob(MobStats stats, GameMap map) {
 		this.stats = stats;
@@ -81,6 +89,7 @@ public class Mob extends MapEntity {
 		this.controller = new WeakReference<Player>(null);
 		this.buffs = EnumSet.noneOf(MonsterStatusEffect.class);
 		this.skillCancels = new EnumMap<MonsterStatusEffect, ScheduledFuture<?>>(MonsterStatusEffect.class);
+		this.deathEffect = DESTROY_ANIMATION_NORMAL;
 		setStance((byte) 5);
 	}
 
@@ -105,31 +114,10 @@ public class Mob extends MapEntity {
 		return combined;
 	}
 
-	private Point calcDropPos(Point initial, Point fallback) {
-		Point ret = map.calcPointBelow(new Point(initial.x, initial.y - 99));
-		return ret != null ? ret : fallback;
-	}
-
 	private void makeDrops(final int owner, final byte pickupAllow) {
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				Point mobPos = getPosition(), dropPos = new Point(mobPos);
-				int mobX = mobPos.x;
-				int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
-				int dropNum = 0, delta;
-				for (ItemDrop drop : getDrops()) {
-					//TODO: recalculate drop position if there is a high
-					//wall (one that the player can't jump up to) or if the
-					//drop will fall outside the walkable part of the map.
-					dropNum++;
-					delta = width * (dropNum / 2);
-					if (dropNum % 2 == 0) //drop even numbered drops right
-						dropPos.x = mobX + delta;
-					else //drop odd numbered drops left
-						dropPos.x = mobX - delta;
-					drop.init(owner, calcDropPos(dropPos, mobPos), mobPos, getId(), pickupAllow);
-					map.drop(drop);
-				}
+				map.drop(getDrops(), Mob.this, pickupAllow, owner);
 			}
 		}, getAnimationTime("die1")); //artificial drop lag...
 	}
@@ -266,6 +254,19 @@ public class Mob extends MapEntity {
 			pd.addDamage(damage);
 		else
 			damages.putWhenSafe(p, new PlayerDamage(damage));
+
+		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
+		if (stats.getHpTagColor() > 0) //boss
+			map.sendToAll(writeShowBossHp(stats, remHp));
+		else if (stats.isBoss()) //minibosses
+			map.sendToAll(writeShowMobHp(getId(), (byte) (remHp * 100 / stats.getMaxHp())));
+		else
+			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp * 100 / stats.getMaxHp())));
+
+		if (remHp < stats.getSelfDestructHp()) {
+			remHp = 0;
+			deathEffect = DESTROY_ANIMATION_EXPLODE;
+		}
 	}
 
 	public List<Skill> getSkills() {
@@ -468,11 +469,11 @@ public class Mob extends MapEntity {
 	}
 
 	public byte[] getOutOfViewMessage() {
-		return CommonPackets.writeRemoveMonster(this, (byte) 0);
+		return CommonPackets.writeRemoveMonster(this, DESTROY_ANIMATION_NONE);
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveMonster(this, (byte) 1);
+		return CommonPackets.writeRemoveMonster(this, deathEffect);
 	}
 
 	public boolean isNonRangedType() {
@@ -527,5 +528,29 @@ public class Mob extends MapEntity {
 		public Player getHighestDamagePlayer() {
 			return highestDamagePlayer;
 		}
+	}
+
+	private static byte[] writeShowMobHp(int mobid, byte percent) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SHOW_MONSTER_HP);
+		lew.writeInt(mobid);
+		lew.writeByte(percent);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeShowBossHp(MobStats stats, int remHp) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.MAP_EFFECT);
+		lew.writeByte((byte) 0x05);
+		lew.writeInt(stats.getMobId());
+		lew.writeInt(remHp);
+		lew.writeInt(stats.getMaxHp());
+		lew.writeByte(stats.getHpTagColor());
+		lew.writeByte(stats.getHpTagBgColor());
+
+		return lew.getBytes();
 	}
 }
