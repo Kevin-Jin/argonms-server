@@ -66,23 +66,17 @@ public class GameGoToHandler {
 		int dest = packet.readInt();
 		String portalName = packet.readLengthPrefixedString();
 		Player p = ((GameClient) rc).getPlayer();
-		switch (dest) {
-			case -1: //enter portal
-				if (!p.getMap().enterPortal(p, portalName))
-					rc.getSession().send(CommonPackets.writeEnableActions());
-				break;
-			case 0: //died
-				if (!p.isAlive()) { //just double check
-					//TODO: cancel all buffs and all that good stuff
-					p.setHp((short) 50);
-					p.setStance((byte) 0);
-					p.changeMap(p.getMap().getReturnMap());
-				}
-				break;
-			default: //client map command
-				if (p.getPrivilegeLevel() > UserPrivileges.USER)
-					p.changeMap(dest);
-				break;
+		if (dest == -1) { //entered portal
+			if (!p.getMap().enterPortal(p, portalName))
+				rc.getSession().send(CommonPackets.writeEnableActions());
+		} else if (dest == 0 && !p.isAlive()) { //warp when dead and clicked ok
+			//TODO: cancel all buffs and all that good stuff
+			p.setHp((short) 50);
+			p.setStance((byte) 0);
+			p.changeMap(p.getMap().getReturnMap());
+		} else { //client map command
+			if (p.getPrivilegeLevel() <= UserPrivileges.USER || !p.changeMap(dest))
+				rc.getSession().send(CommonPackets.writeEnableActions());
 		}
 	}
 

@@ -18,6 +18,7 @@
 
 package argonms.character;
 
+import argonms.GlobalConstants;
 import argonms.character.skill.SkillEntry;
 import argonms.ServerType;
 import argonms.character.skill.PlayerStatusEffectValues;
@@ -533,6 +534,11 @@ public class Player extends MapEntity {
 			p.savedSpawnPoint = rs.getByte(25);
 			if (ServerType.isGame(c.getServerId())) {
 				p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
+				int forcedReturn = p.map.getForcedReturnMap();
+				if (forcedReturn != GlobalConstants.NULL_MAP) {
+					p.map = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(forcedReturn);
+					p.savedSpawnPoint = 0;
+				}
 				p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
 			}
 			p.mesos = rs.getInt(26);
@@ -955,6 +961,11 @@ public class Player extends MapEntity {
 	public void setMaxHp(short newMax) {
 		this.maxHp = newMax;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(maxHp)), false));
+	}
+
+	public void doDecHp(int protectItem, int dec) {
+		if (!getInventory(InventoryType.EQUIPPED).hasItem(protectItem, (short) 1))
+			gainHp(-dec);
 	}
 
 	public short getMp() {

@@ -34,11 +34,11 @@ public class Timer {
 		timer = new ScheduledThreadPoolExecutor(4);
 	}
 
-	public ScheduledFuture<?>  runAfterDelay(Runnable r, long delay) {
+	public ScheduledFuture<?> runAfterDelay(Runnable r, long delay) {
 		return timer.schedule(r, delay, TimeUnit.MILLISECONDS);
 	}
 
-	public ScheduledFuture<?>  runRepeatedly(Runnable r, long delay, long period) {
+	public ScheduledFuture<?> runRepeatedly(Runnable r, long delay, long period) {
 		return timer.scheduleAtFixedRate(r, delay, period, TimeUnit.MILLISECONDS);
 	}
 

@@ -76,6 +76,10 @@ public class ClientSession {
 		return ch.getRemoteAddress();
 	}
 
+	public boolean isOpen() {
+		return ch.isOpen();
+	}
+
 	public void send(byte[] input) {
 		ch.write(input);
 	}

@@ -38,9 +38,8 @@ import java.awt.Point;
  */
 public class InventoryHandler {
 	private static Point calcDropPos(Player p) {
-		Point initial = p.getPosition();
-		Point ret = p.getMap().calcPointBelow(new Point(initial.x, initial.y - 99));
-		return ret != null ? ret : initial;
+		Point playerPos = p.getPosition();
+		return p.getMap().calcDropPos(playerPos, playerPos);
 	}
 
 	public static void handleItemMove(LittleEndianReader packet, RemoteClient rc) {
