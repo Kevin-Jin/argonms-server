@@ -36,6 +36,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -56,29 +57,24 @@ public class WorldlistHandler {
 		SERVERSTATUS_MAX = 2 //"The Concurrent Users in This World Have Reached the Max. Please Try Again Later."
 	;
 
-	private static void loadCharacters(LittleEndianWriter lew, LoginClient c) {
+	private static void loadAndWriteCharacters(LittleEndianWriter lew, LoginClient c) {
 		Connection con = DatabaseConnection.getConnection();
-		//TODO: There's gotta be a way to not have to query the database twice?
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT count(*) "
-					+ "FROM `characters` WHERE `accountid` = ? AND `world` = ?");
+			ArrayList<Player> players = new ArrayList<Player>(c.getMaxCharacters());
+
+			PreparedStatement ps = con.prepareStatement("SELECT `id` FROM"
+					+ "`characters` WHERE `accountid` = ? AND `world` = ?");
 			ps.setInt(1, c.getAccountId());
 			ps.setInt(2, c.getWorld());
 			ResultSet rs = ps.executeQuery();
-			if (rs.next())
-				lew.writeByte(rs.getByte(1));
+			while (rs.next())
+				players.add(Player.loadPlayer(c, rs.getInt(1)));
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE "
-					+ "`accountid` = ? AND `world` = ?");
-			ps.setInt(1, c.getAccountId());
-			ps.setInt(2, c.getWorld());
-			rs = ps.executeQuery();
-			while (rs.next())
-				writeCharEntry(lew, Player.loadPlayer(c, rs.getInt(1)));
-			rs.close();
-			ps.close();
+			lew.writeByte((byte) players.size());
+			for (Player p : players)
+				writeCharEntry(lew, p);
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load characters of account "
 					+ c.getAccountId(), ex);
@@ -98,7 +94,7 @@ public class WorldlistHandler {
 			writer.writeByte((byte) 8); //"The connection could not be made because of a system error."
 		} else {
 			writer.writeByte((byte) 0); //show characters
-			loadCharacters(writer, client);
+			loadAndWriteCharacters(writer, client);
 			writer.writeInt(client.getMaxCharacters());
 		}
 
@@ -140,9 +136,9 @@ public class WorldlistHandler {
 			ps.setInt(1, client.getAccountId());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				Byte world = Byte.valueOf(rs.getByte(1));
+				byte world = rs.getByte(1);
 				if (LoginServer.getInstance().getWorld(world) != null) {
-					worlds.add(world);
+					worlds.add(Byte.valueOf(world));
 					totalChars++;
 				}
 			}
@@ -158,14 +154,13 @@ public class WorldlistHandler {
 		lew.writeInt(totalChars + (3 - totalChars % 3)); //amount of rows * 3
 		client.getSession().send(lew.getBytes());
 
-		for (byte world : worlds) {
+		for (Byte world : worlds) {
 			lew = new LittleEndianByteArrayWriter(192);
 			lew.writeShort(ClientSendOps.ALL_CHARLIST);
 			lew.writeByte((byte) 0);
-			lew.writeByte(world);
-			client.setWorld(world);
-			//TODO: don't get lazy and optimize this part?
-			loadCharacters(lew, client);
+			lew.writeByte(world.byteValue());
+			client.setWorld(world.byteValue());
+			loadAndWriteCharacters(lew, client);
 			client.getSession().send(lew.getBytes());
 		}
 	}

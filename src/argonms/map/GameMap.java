@@ -53,7 +53,7 @@ import argonms.tools.collections.LockableSet;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -65,7 +65,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-//TODO: we still need map timeLimitTasks!
 /**
  *
  * @author GoldenKevin
@@ -73,8 +72,28 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GameMap {
 	/**
 	 * The maximum distance that any character could see.
+	 * Used to be 850 squared, but the introduction of the jump down movement
+	 * made that constant insufficient, so the maximum distance that a ranged
+	 * entity can be from the player before it is removed (and the minimum
+	 * distance that a ranged entity needs to be from the player before it is
+	 * sent to their client) was increased significantly.
+	 *
+	 * Hopefully should fix those disappearing ranged map entity bugs when
+	 * jumping down. Perhaps this value is too big or too small, but only tests
+	 * would tell.
+	 *
+	 * An inappropriate value for this constant can affect bandwidth usage in
+	 * both ways. A too large value will result in ranged entities (items, mobs,
+	 * etc) being sent to the client even if they never will be able to see it,
+	 * so bandwidth will be wasted. A smaller value will result in ranged
+	 * entities being resent frequently if the player walks around the map many
+	 * times (and will result in "disappearing" glitches if too small).
+	 *
+	 * This value was chosen experimentally from the area I found with one of
+	 * the highest jump down distances - The Field South of Ellinia (100050000)
+	 * on the right side of the map around where the portal is.
 	 */
-	private static final double MAX_VIEW_RANGE_SQ = 850 * 850;
+	private static final double MAX_VIEW_RANGE_SQ = 2100 * 2100;
 	/**
 	 * Amount of time in milliseconds that a dropped item will remain on the map
 	 */
@@ -95,6 +114,7 @@ public class GameMap {
 		this.players = new LockableSet<Player>(new LinkedHashSet<Player>());
 		this.monsterSpawns = new LockableList<MonsterSpawn>(new LinkedList<MonsterSpawn>());
 		this.monsters = new AtomicInteger(0);
+		this.nextEntityId = 1; //reserve eId of 0 for a non-existant entity
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
 				case 'm': {
@@ -254,9 +274,9 @@ public class GameMap {
 		} else {
 			if (ent.getEntityType() == MapEntityType.MONSTER)
 				updateMonsterController((Mob) ent);
-			if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
+			if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
 				p.getClient().getSession().send(ent.getShowEntityMessage());
-				p.addToVisibleMapObjects(ent);
+				p.addToVisibleMapEntities(ent);
 			}
 		}
 	}
@@ -319,10 +339,10 @@ public class GameMap {
 	/**
 	 * Spawns an item drop entity on this map.
 	 * Make sure you call ItemDrop.init with the correct data on the passed
-	 * ItemDrop object before calling this method.
+	 * ItemDrop entity before calling this method.
 	 * @param d the ItemDrop entity to spawn.
 	 */
-	public void drop(ItemDrop d) {
+	private void drop(ItemDrop d) {
 		spawnEntity(d);
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
@@ -336,26 +356,37 @@ public class GameMap {
 		}, DROP_EXPIRE); //expire after 1 minute
 	}
 
-	public Point calcDropPos(Point initial, Point fallback) {
+	private Point calcDropPos(Point initial, Point fallback) {
 		Point ret = calcPointBelow(new Point(initial.x, initial.y - 99));
 		return ret != null ? ret : fallback;
 	}
 
-	public void drop(ItemDrop drop, MapEntity ent, byte pickupAllow, int owner, boolean disappear) {
-		Point pos = ent.getPosition();
-		drop.init(owner, calcDropPos(pos, pos), pos, ent.getId(), pickupAllow);
-		if (!disappear)
+	public void drop(ItemDrop drop, int dropperEid, Point dropperPos, Point dropPos, byte pickupAllow, int owner) {
+		drop.init(owner, dropPos, dropperPos, dropperEid, pickupAllow);
+		drop(drop);
+	}
+
+	public void drop(ItemDrop drop, MapEntity dropper, byte pickupAllow, int owner, boolean undroppable) {
+		Point pos = dropper.getPosition();
+		drop.init(owner, calcDropPos(pos, pos), pos, dropper.getId(), pickupAllow);
+		if (!undroppable)
 			drop(drop);
-		else
+		else //sendToAll or just ((Player) dropper).getClient().getSession().send(...)?
 			sendToAll(drop.getDisappearMessage());
 	}
 
+	//FIXME: temporary fix to the client freeze when expiring more than one item
+	//drop from the same monster at the same time. I believe it is a thread
+	//concurrency issue (although this is faster than having each drop have its
+	//own expiration Runnable if we called drop(ItemDrop), the issue at hand is
+	//the fact we have the concurrency issues, not the performance).
 	public void drop(List<ItemDrop> drops, MapEntity ent, byte pickupAllow, int owner) {
 		Point entPos = ent.getPosition(), dropPos = new Point(entPos);
 		int entId = ent.getId();
 		int entX = entPos.x;
 		int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
 		int dropNum = 0, delta;
+		final List<Integer> dropped = new ArrayList<Integer>(drops.size());
 		for (ItemDrop drop : drops) {
 			dropNum++;
 			delta = width * (dropNum / 2);
@@ -364,8 +395,22 @@ public class GameMap {
 			else //drop odd numbered drops left
 				dropPos.x = entX - delta;
 			drop.init(owner, calcDropPos(dropPos, entPos), entPos, entId, pickupAllow);
-			drop(drop);
+			spawnEntity(drop);
+			dropped.add(Integer.valueOf(drop.getId()));
 		}
+		//expire every drop at once in the same Runnable rather than have a
+		//separate Runnable job for each drop running in parallel.
+		Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				for (Integer eId : dropped) {
+					ItemDrop drop = (ItemDrop) entities.getWhenSafe(eId);
+					if (drop != null) {
+						drop.expire();
+						destroyEntity(drop);
+					}
+				}
+			}
+		}, DROP_EXPIRE);
 	}
 
 	public final void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
@@ -391,7 +436,7 @@ public class GameMap {
 		if (mist.getMistType() == Mist.POISON_MIST) {
 			Runnable poisonTask = new Runnable() {
 				public void run() {
-					List<MapEntity> affectedMonsters = getMapObjectsInRect(mist.getBox());
+					List<MapEntity> affectedMonsters = getMapEntitiesInRect(mist.getBox());
 					for (MapEntity mo : affectedMonsters) {
 						if (mo.getEntityType() == MapEntityType.MONSTER && mist.shouldHurt()) {
 							Mob monster = (Mob) mo;
@@ -435,7 +480,7 @@ public class GameMap {
 		try {
 			if (!ent.isNonRangedType()) {
 				for (Player p : players)
-					p.removeVisibleMapObject(ent);
+					p.removeVisibleMapEntity(ent);
 				sendToAll(ent.getDestructionMessage(), ent.getPosition(), null);
 			} else {
 				sendToAll(ent.getDestructionMessage());
@@ -443,12 +488,7 @@ public class GameMap {
 		} finally {
 			players.unlockRead();
 		}
-		entities.lockWrite();
-		try {
-			entities.remove(Integer.valueOf(ent.getId()));
-		} finally {
-			entities.unlockWrite();
-		}
+		entities.removeWhenSafe(Integer.valueOf(ent.getId()));
 	}
 
 	public void removePlayer(Player p) {
@@ -461,17 +501,13 @@ public class GameMap {
 		}
 		if (timeLimitTasks != null) {
 			ScheduledFuture<?> future = timeLimitTasks.remove(p);
-			if (future != null) {
+			if (future != null)
 				future.cancel(false);
-				if (p.getClient().getSession().isOpen())
-					p.getClient().getSession().send(writeShowTimeLimit(0));
-			}
 		}
 		if (decHpTasks != null) {
 			ScheduledFuture<?> future = decHpTasks.remove(p);
-			if (future != null) {
+			if (future != null)
 				future.cancel(false);
-			}
 		}
 		destroyEntity(p);
 	}
@@ -496,9 +532,12 @@ public class GameMap {
 
 	public void pickUpDrop(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			p.gainMesos(d.getMesoValue(), false);
-			d.pickUp(p.getId());
-			destroyEntity(d);
+			if (p.gainMesos(d.getMesoValue(), false, true)) {
+				d.pickUp(p.getId());
+				destroyEntity(d);
+			} else {
+				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
+			}
 		} else {
 			InventorySlot pickedUp = d.getItem();
 			int itemid = pickedUp.getItemId();
@@ -578,21 +617,27 @@ public class GameMap {
 	public void playerMoved(Player p, List<LifeMovementFragment> moves, Point startPos) {
 		sendToAll(writePlayerMovement(p, moves, startPos), p);
 
-		Iterator<MapEntity> iter = p.getVisibleMapObjects().iterator();
-		while (iter.hasNext()) {
-			MapEntity ent = iter.next();
-			if (!entityVisible(ent, p)) {
-				p.getClient().getSession().send(ent.getOutOfViewMessage());
-				iter.remove();
+		LockableList<MapEntity> visible = p.getVisibleMapEntities();
+		visible.lockWrite();
+		try {
+			Iterator<MapEntity> iter = visible.iterator();
+			while (iter.hasNext()) {
+				MapEntity ent = iter.next();
+				if (!entityVisible(ent, p)) {
+					p.getClient().getSession().send(ent.getOutOfViewMessage());
+					iter.remove();
+				}
 			}
+		} finally {
+			visible.unlockWrite();
 		}
 		entities.lockRead();
 		try {
 			for (MapEntity ent : entities.values()) {
 				if (!ent.isNonRangedType()) {
-					if (entityVisible(ent, p) && !p.canSeeObject(ent) && ent.isAlive()) {
+					if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
 						p.getClient().getSession().send(ent.getShowEntityMessage());
-						p.addToVisibleMapObjects(ent);
+						p.addToVisibleMapEntities(ent);
 					}
 				}
 			}
@@ -737,7 +782,7 @@ public class GameMap {
 		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
 	}
 
-	private List<MapEntity> getMapObjectsInRect(Rectangle box) {
+	private List<MapEntity> getMapEntitiesInRect(Rectangle box) {
 		List<MapEntity> ret = new LinkedList<MapEntity>();
 		entities.lockRead();
 		try {
@@ -758,7 +803,7 @@ public class GameMap {
 		private final int mobTime;
 		private final AtomicInteger spawnedMonsters;
 		private final boolean immobile;
-		
+
 		public MonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
 			this.mobStats = stats;
 			this.pos = pos;

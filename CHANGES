@@ -497,6 +497,36 @@
 	* Players going through the Mushroom Town Training Camp or the Showa Spa
 	will be given the appropriate costumes.
 
+2011-04-10  GoldenKevin  (revision 24)
+
+	* Don't explode Mob if one hit KO'ed.
+	* Fixed bug where a player was unable to warp if they picked up mesos.
+	* Players will not pick up meso drops if it makes them exceed the maximum
+	amount (2147483647).
+	* Added a meso option to the !stat command. Values greater than 2147483647
+	will no longer throw a NumberFormatException on the server, but instead will
+	send a syntax message to the client.
+	* Cleaned up time limit stuff in GameMap. The clock is automatically removed
+	by the client when the player changes maps, so we don't have to send the
+	clock close message.
+	* Tentative fix for visible ranged map entities disappearing when jumping
+	down. May need tweaking in the future.
+	* Renamed any remnants of variables/methods with names based on map entity's
+	previous name of map object in order to eliminate any confusion.
+	* Made Player.visibleEntities a LockableList as there is a possibility of
+	concurrent access from GameMap and from Player on different threads.
+	* Temporary fix for client freeze when multiple map item drops visibly
+	disappear at the exact same time. Will need further testing to get to the
+	root of the problem. The current fix suggests that the underlying problem is
+	a thread concurrency problem.
+	* Slightly optimized WorldlistHandler.loadCharacters so only one database
+	query is needed.
+	* Updated argon.sql again because I forgot to specify the constraint for
+	`inventoryitems`.`accountid`.
+	* Some refactoring in GameMap - drop(ItemDrop) is no longer public and must
+	be indirectly called by the public overloaded drop methods.
+	* No longer show "You have gained +-x mesos" when dropping mesos.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

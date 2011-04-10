@@ -30,18 +30,12 @@ import argonms.map.entity.ItemDrop;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
-import java.awt.Point;
 
 /**
  *
  * @author GoldenKevin
  */
 public class InventoryHandler {
-	private static Point calcDropPos(Player p) {
-		Point playerPos = p.getPosition();
-		return p.getMap().calcDropPos(playerPos, playerPos);
-	}
-
 	public static void handleItemMove(LittleEndianReader packet, RemoteClient rc) {
 		packet.readInt();
 		InventoryType type = InventoryType.get(packet.readByte());
@@ -82,11 +76,7 @@ public class InventoryHandler {
 				rc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
-			d.init(p.getId(), calcDropPos(p), p.getPosition(), p.getId(), ItemDrop.PICKUP_ALLOW_ALL);
-			if (ItemDataLoader.getInstance().canDrop(toDrop.getItemId()))
-				p.getMap().drop(d);
-			else //TODO: does this just show to the current player or to the entire map?
-				rc.getSession().send(d.getDisappearMessage());
+			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getItemId()));
 		} else { //move item
 			Inventory inv = p.getInventory(type);
 			InventorySlot move = inv.get(src);
@@ -119,8 +109,7 @@ public class InventoryHandler {
 		if (amount <= p.getMesos()) {
 			p.gainMesos(-amount, false);
 			ItemDrop d = new ItemDrop(amount);
-			d.init(p.getId(), calcDropPos(p), p.getPosition(), p.getId(), ItemDrop.PICKUP_ALLOW_ALL);
-			p.getMap().drop(d);
+			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), false);
 		}
 	}
 
