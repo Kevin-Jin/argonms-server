@@ -40,13 +40,19 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 	}
 
 	public void execute(Player p, String[] args, ClientNoticeStream resp) {
-		if (args.length < 4 || !isNumber(args[3])) {
+		if (args.length < 4) {
+			resp.printErr("Invalid usage. " + getUsage());
+			return;
+		}
+		int val;
+		try {
+			val = Integer.parseInt(args[3]);
+		} catch (NumberFormatException e) {
 			resp.printErr("Invalid usage. " + getUsage());
 			return;
 		}
 		String option = args[1];
 		String stat = args[2];
-		int val = Integer.parseInt(args[3]);
 		if (option.equalsIgnoreCase("set")) {
 			if (stat.equalsIgnoreCase("str")) {
 				p.setStr((short) Math.min(val, Short.MAX_VALUE));
@@ -77,9 +83,11 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 				p.setMp((short) Math.min(val, p.getMaxMp()));
 			} else if (stat.equalsIgnoreCase("fame")) {
 				p.setFame((short) Math.min(val, Short.MAX_VALUE));
+			} else if (stat.equalsIgnoreCase("meso")) {
+				p.setMesos(val);
 			} else {
 				resp.printErr("Invalid stat " + stat + ". Valid choices: str, dex,"
-						+ "int, luk, ap, sp, level, exp, job, maxhp, maxmp, hp, mp, fame");
+						+ "int, luk, ap, sp, level, exp, job, maxhp, maxmp, hp, mp, fame, meso");
 			}
 		} else if (option.equalsIgnoreCase("add")) {
 			if (stat.equalsIgnoreCase("str")) {
@@ -109,9 +117,11 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 				p.setMp((short) Math.min(p.getMp() + val, p.getMaxMp()));
 			} else if (stat.equalsIgnoreCase("fame")) {
 				p.setFame((short) Math.min(p.getFame() + val, Short.MAX_VALUE));
-			} else {
+			}  else if (stat.equalsIgnoreCase("meso")) {
+				p.setMesos((int) Math.min((long) p.getMesos() + val, Integer.MAX_VALUE));
+			}else {
 				resp.printErr("Invalid stat " + stat + ". Valid choices: str, dex,"
-						+ "int, luk, ap, sp, level, exp, maxhp, maxmp, hp, mp, fame");
+						+ "int, luk, ap, sp, level, exp, maxhp, maxmp, hp, mp, fame, meso");
 			}
 		} else {
 			resp.printErr("Invalid usage. " + getUsage());

@@ -939,7 +939,7 @@ public class CommonPackets {
 		lew.writeInt(drop.getOwner());
 		lew.writeByte(pickupAllow);
 		lew.writePos(drop.getPosition());
-		lew.writeInt(drop.getSourceObjectId());
+		lew.writeInt(drop.getSourceEntityId());
 		if (animation != ItemDrop.SPAWN_ANIMATION_NONE) {
 			lew.writePos(drop.getSourcePos());
 			lew.writeShort((short) 0);

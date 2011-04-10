@@ -20,7 +20,6 @@ package argonms.character.inventory;
 
 import java.awt.Point;
 
-//are pets considered MapObjects? o.o
 /**
  *
  * @author GoldenKevin
@@ -32,8 +31,6 @@ public class Pet extends InventorySlot {
 	private byte fullness;
 	private boolean expired;
 
-	//map position/animation info only needed for equipped pets.
-	//I'm surprised that pets don't require their own map object id...
 	private Point pos;
 	private byte stance;
 	private short foothold;

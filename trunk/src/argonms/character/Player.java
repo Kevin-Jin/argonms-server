@@ -49,6 +49,7 @@ import argonms.net.client.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
+import argonms.tools.collections.LockableList;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -109,8 +110,8 @@ public class Player extends MapEntity {
 	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
 	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
 
-	private List<MapEntity> visibleObjects;
-	private List<Mob> controllingMobs;
+	private final LockableList<MapEntity> visibleEntities;
+	private final List<Mob> controllingMobs;
 
 	private int guild;
 	private Party party;
@@ -126,7 +127,7 @@ public class Player extends MapEntity {
 		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
-		visibleObjects = new ArrayList<MapEntity>();
+		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
 	}
 
@@ -1029,17 +1030,32 @@ public class Player extends MapEntity {
 		return mesos;
 	}
 
-	public void setMesos(int newValue) {
+	public void setMesos(int newValue, boolean fromDrop) {
 		this.mesos = newValue;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), false));
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), fromDrop));
+	}
+
+	public void setMesos(int newValue) {
+		setMesos(newValue, false);
+	}
+
+	public boolean gainMesos(int gain, boolean fromQuest, boolean fromDrop) {
+		long newValue = (long) mesos + gain;
+		if (newValue <= Integer.MAX_VALUE) {
+			setMesos((int) newValue, fromDrop);
+			if (!fromQuest) {
+				if (gain > 0) //don't show when we're dropping mesos, only show when we're picking up
+					getClient().getSession().send(CommonPackets.writeShowMesoGain(gain));
+			} else {
+				getClient().getSession().send(CommonPackets.writeShowPointsGainFromQuest(gain, (byte) 5));
+			}
+			return true;
+		}
+		return false;
 	}
 
 	public void gainMesos(int gain, boolean fromQuest) {
-		setMesos(mesos + gain);
-		if (!fromQuest)
-			getClient().getSession().send(CommonPackets.writeShowMesoGain(gain));
-		else
-			getClient().getSession().send(CommonPackets.writeShowPointsGainFromQuest(gain, (byte) 5));
+		gainMesos(gain, fromQuest, false);
 	}
 
 	public GameMap getMap() {
@@ -1266,20 +1282,25 @@ public class Player extends MapEntity {
 		client = null;
 	}
 
-	public boolean canSeeObject(MapEntity o) {
-		return visibleObjects.contains(o);
+	public boolean canSeeEntity(MapEntity o) {
+		visibleEntities.lockRead();
+		try {
+			return visibleEntities.contains(o);
+		} finally {
+			visibleEntities.unlockRead();
+		}
 	}
 
-	public void addToVisibleMapObjects(MapEntity o) {
-		visibleObjects.add(o);
+	public void addToVisibleMapEntities(MapEntity o) {
+		visibleEntities.addWhenSafe(o);
 	}
 
-	public List<MapEntity> getVisibleMapObjects() {
-		return visibleObjects;
+	public LockableList<MapEntity> getVisibleMapEntities() {
+		return visibleEntities;
 	}
 
-	public void removeVisibleMapObject(MapEntity o) {
-		visibleObjects.remove(o);
+	public void removeVisibleMapEntity(MapEntity o) {
+		visibleEntities.removeWhenSafe(o);
 	}
 
 	public List<Mob> getControlledMobs() {

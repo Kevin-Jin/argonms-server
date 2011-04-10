@@ -177,22 +177,23 @@ public class DealDamageHandler {
 	private static void handlePickPocket(Player p, Mob monster, Pair<Integer, List<Integer>> oned) {
 		int delay = 0;
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
-		int reqdamage = 20000;
-		Point monsterPosition = monster.getPosition();
+		double reqdamage = 20000;
+		final Point mobPos = monster.getPosition();
+		final int mobEntId = monster.getId();
+		final int pEntId = p.getId();
+		final GameMap tdmap = p.getMap();
 
 		for (Integer eachd : oned.getRight()) {
 			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(4211003)).shouldPerform()) {
-				double perc = (double) eachd / (double) reqdamage;
+				double perc = eachd.doubleValue() / reqdamage;
 
-				int todrop = Math.min((int) Math.max(perc * (double) maxmeso, (double) 1), maxmeso);
-				Point tdpos = new Point((int) (monsterPosition.getX() + (Rng.getGenerator().nextDouble() * 100) - 50), (int) (monsterPosition.getY()));
-				final GameMap tdmap = p.getMap();
-				final ItemDrop d = new ItemDrop(todrop);
-				d.init(p.getId(), tdpos, monster.getPosition(), monster.getId(), ItemDrop.PICKUP_ALLOW_OWNER);
+				int dropAmt = Math.min(Math.max((int) (perc * maxmeso), 1), maxmeso);
+				final Point tdpos = new Point(mobPos.x + Rng.getGenerator().nextInt(100) - 50, mobPos.y);
+				final ItemDrop d = new ItemDrop(dropAmt);
 
 				Timer.getInstance().runAfterDelay(new Runnable() {
 					public void run() {
-						tdmap.drop(d);
+						tdmap.drop(d, mobEntId, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
 					}
 				}, delay);
 

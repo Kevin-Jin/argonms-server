@@ -263,7 +263,7 @@ public class Mob extends MapEntity {
 		else
 			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp * 100 / stats.getMaxHp())));
 
-		if (remHp < stats.getSelfDestructHp()) {
+		if (remHp > 0 && remHp <= stats.getSelfDestructHp()) {
 			remHp = 0;
 			deathEffect = DESTROY_ANIMATION_EXPLODE;
 		}

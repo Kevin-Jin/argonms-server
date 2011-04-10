@@ -107,7 +107,7 @@ public class ItemDrop extends MapEntity {
 		return dropFrom;
 	}
 
-	public int getSourceObjectId() {
+	public int getSourceEntityId() {
 		return dropper;
 	}
 

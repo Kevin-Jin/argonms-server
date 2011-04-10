@@ -100,8 +100,10 @@ CREATE TABLE `inventoryitems` (
   `quantity` smallint(5) NOT NULL,
   PRIMARY KEY (`inventoryitemid`),
   KEY `characterid` (`characterid`),
+  KEY `accountid` (`accountid`),
   KEY `uniqueid` (`uniqueid`),
-  CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inventoryitems_ibfk_2` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventoryequipment`;

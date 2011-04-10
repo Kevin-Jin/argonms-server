@@ -53,7 +53,6 @@ import java.util.logging.Logger;
 public class GameMovementHandler {
 	private static final Logger LOG = Logger.getLogger(GameMovementHandler.class.getName());
 
-	 //TODO: fix ranged map objects not appearing fast enough when jumping down
 	public static void handleMovePlayer(LittleEndianReader packet, RemoteClient rc) {
 		packet.readByte();
 		Point startPos = packet.readPos();
@@ -71,13 +70,13 @@ public class GameMovementHandler {
 	}
 
 	public static void handleMoveMob(LittleEndianReader packet, RemoteClient rc) {
-		int objectid = packet.readInt();
+		int entId = packet.readInt();
 		short moveid = packet.readShort();
 
 		Player player = ((GameClient) rc).getPlayer();
 		//TODO: Synchronize on the mob (for the canUseSkill, which gets Hp, and
 		//the aggro things)
-		MapEntity ent = player.getMap().getEntityById(objectid);
+		MapEntity ent = player.getMap().getEntityById(entId);
 		if (ent == null || ent.getEntityType() != MapEntityType.MONSTER)
 			return;
 		Mob monster = (Mob) ent;
@@ -139,9 +138,9 @@ public class GameMovementHandler {
 		boolean aggro = monster.controllerHasAggro();
 
 		if (skillToUse != null)
-			rc.getSession().send(moveMonsterResponse(objectid, moveid, monster.getMp(), aggro, skillToUse.getSkill(), skillToUse.getLevel()));
+			rc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, skillToUse.getSkill(), skillToUse.getLevel()));
 		else
-			rc.getSession().send(moveMonsterResponse(objectid, moveid, monster.getMp(), aggro, (short) 0, (byte) 0));
+			rc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, (short) 0, (byte) 0));
 
 		if (aggro)
 			monster.setControllerKnowsAboutAggro(true);
@@ -266,11 +265,11 @@ public class GameMovementHandler {
 		}
 	}
 
-	private static byte[] moveMonsterResponse(int objectid, short moveid, int currentMp, boolean useSkills, short skillId, byte skillLevel) {
+	private static byte[] moveMonsterResponse(int entityid, short moveid, int currentMp, boolean useSkills, short skillId, byte skillLevel) {
 		LittleEndianByteArrayWriter mplew = new LittleEndianByteArrayWriter(13);
 
 		mplew.writeShort(ClientSendOps.MOVE_MONSTER_RESPONSE);
-		mplew.writeInt(objectid);
+		mplew.writeInt(entityid);
 		mplew.writeShort(moveid);
 		mplew.writeBool(useSkills);
 		mplew.writeShort((short) currentMp);
