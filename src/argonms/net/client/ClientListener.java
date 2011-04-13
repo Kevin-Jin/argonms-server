@@ -39,11 +39,14 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.oio.OioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import org.jboss.netty.handler.timeout.IdleStateAwareChannelUpstreamHandler;
+import org.jboss.netty.handler.timeout.IdleStateEvent;
+import org.jboss.netty.handler.timeout.IdleStateHandler;
+import org.jboss.netty.util.HashedWheelTimer;
 
 /**
  *
@@ -72,11 +75,13 @@ public class ClientListener {
 			);
 		}
 		bootstrap = new ServerBootstrap(chFactory);
+		bootstrap.setOption("child.tcpNoDelay", true);
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
 				pipeline.addLast("decoder", new MaplePacketDecoder());
 				pipeline.addLast("encoder", new MaplePacketEncoder());
+				pipeline.addLast("timeout", new IdleStateHandler(new HashedWheelTimer(), 0, 0, 30));
 				pipeline.addLast("handler", new MapleServerHandler());
 				return pipeline;
 			}
@@ -143,7 +148,7 @@ public class ClientListener {
 		}
 	}
 
-	private class MapleServerHandler extends SimpleChannelUpstreamHandler {
+	private class MapleServerHandler extends IdleStateAwareChannelUpstreamHandler {
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Accepting client from {0}", e.getChannel().getRemoteAddress());
 		}
@@ -154,6 +159,11 @@ public class ClientListener {
 			session.getClient().setSession(session);
 			e.getChannel().write(getHello(session.getRecvCypher(), session.getSendCypher()));
 			sessions.set(e.getChannel(), session);
+		}
+
+		public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception {
+			LOG.log(Level.FINER, "Client from {0} went idle -> pinging", e.getChannel().getRemoteAddress());
+			sessions.get(e.getChannel()).getClient().startPingTask();
 		}
 
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {

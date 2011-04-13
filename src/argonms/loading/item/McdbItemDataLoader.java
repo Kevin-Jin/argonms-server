@@ -290,10 +290,10 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				//it would be a waste of memory if all these values were 0, hm...
 				ItemEffectsData effect = new ItemEffectsData(itemid);
 				effect.setDuration(rs.getInt("time") * 1000);
-				effect.setHp(rs.getShort("hp"));
-				effect.setMp(rs.getShort("mp"));
-				effect.setHpR(rs.getShort("hpr"));
-				effect.setMpR(rs.getShort("mpr"));
+				effect.setHpRecover(rs.getShort("hp"));
+				effect.setMpRecover(rs.getShort("mp"));
+				effect.setHpRecoverPercent(rs.getShort("hpr"));
+				effect.setMpRecoverPercent(rs.getShort("mpr"));
 				effect.setMorph(rs.getInt("morph"));
 				effect.setWatk(rs.getShort("watk"));
 				effect.setWdef(rs.getShort("wdef"));

@@ -43,7 +43,7 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	private Point rb;
 	private short prop;
 	private short cooltime;
-	private short hp;
+	private short maxHpPerc;
 	private MonsterStatusEffect buff;
 	private PlayerStatusEffect disease;
 	private short summonLimit;
@@ -51,6 +51,7 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	private final Map<Byte, Integer> summons;
 
 	protected MobSkillEffectsData(int skillid, byte level) {
+		this.maxHpPerc = 100;
 		this.summons = new TreeMap<Byte, Integer>();
 		this.skillid = skillid;
 		this.level = level;
@@ -128,8 +129,8 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		this.cooltime = duration;
 	}
 
-	protected void setHp(short hp) {
-		this.hp = hp;
+	protected void setMaxHpPercent(short hp) {
+		this.maxHpPerc = hp;
 	}
 
 	protected void setLimit(short limit) {
@@ -180,8 +181,8 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		return cooltime;
 	}
 
-	public short getHp() {
-		return hp;
+	public short getMaxPercentHp() {
+		return maxHpPerc;
 	}
 
 	public short getSummonLimit() {

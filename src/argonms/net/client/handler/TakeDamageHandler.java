@@ -21,6 +21,7 @@ package argonms.net.client.handler;
 import java.awt.Point;
 
 import argonms.character.Player;
+import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.game.GameClient;
 import argonms.loading.mob.Attack;
@@ -68,35 +69,37 @@ public class TakeDamageHandler {
 			ent = packet.readInt();
 			direction = packet.readByte();
 			Mob m = (Mob) p.getMap().getEntityById(ent);
-			if (m.getMobId() != mobid) {
-				//TODO: hacking
-				return;
-			}
-			if (attack != BUMP_DAMAGE) {
-				Attack a = MobDataLoader.getInstance().getMobStats(mobid).getAttacks().get(Byte.valueOf(attack));
-				deadlyAttack = a.isDeadlyAttack();
-				diseaseLevel = a.getDiseaseLevel();
-				diseaseSkill = a.getDiseaseSkill();
-				mpBurn = a.getMpBurn();
-			}
-			byte reduction = packet.readByte();
-			packet.readByte();
-			if (reduction != 0) {
-				pgmr.setReduction(reduction);
-				pgmr.setPhysical(packet.readBool());
-				pgmr.setEntityId(packet.readInt());
-				pgmr.setSkill(packet.readByte()); //powerguard = 6, mana reflection = 0
-				pgmr.setPosition(packet.readPos());
-				pgmr.setDamage(damage);
-				int hurtDmg = (damage * reduction / 100);
-				if (pgmr.isPhysical())
-					damage = (damage - hurtDmg);
-				m.hurt(p, hurtDmg);
-			}
-			stance = packet.readByte();
-			if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.STANCE)) {
-				//TODO: hacking
-				return;
+			if (m != null) { //lag...
+				if (m.getMobId() != mobid) {
+					//TODO: hacking
+					return;
+				}
+				if (attack != BUMP_DAMAGE) {
+					Attack a = MobDataLoader.getInstance().getMobStats(mobid).getAttacks().get(Byte.valueOf(attack));
+					deadlyAttack = a.isDeadlyAttack();
+					diseaseLevel = a.getDiseaseLevel();
+					diseaseSkill = a.getDiseaseSkill();
+					mpBurn = a.getMpBurn();
+				}
+				byte reduction = packet.readByte();
+				packet.readByte();
+				if (reduction != 0) {
+					pgmr.setReduction(reduction);
+					pgmr.setPhysical(packet.readBool());
+					pgmr.setEntityId(packet.readInt());
+					pgmr.setSkill(packet.readByte()); //powerguard = 6, mana reflection = 0
+					pgmr.setPosition(packet.readPos());
+					pgmr.setDamage(damage);
+					int hurtDmg = (damage * reduction / 100);
+					if (pgmr.isPhysical())
+						damage = (damage - hurtDmg);
+					m.hurt(p, hurtDmg);
+				}
+				stance = packet.readByte();
+				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.STANCE)) {
+					//TODO: hacking
+					return;
+				}
 			}
 		}
 
@@ -109,6 +112,12 @@ public class TakeDamageHandler {
 		//TODO: handle the rest of the good player skill stuffs (achilles, magic guard, powerguard, etc)!
 
 		if (!deadlyAttack) {
+			PlayerStatusEffectValues mg = p.getEffectValue(PlayerStatusEffect.MAGIC_GUARD);
+			if (mg != null) {
+				int delta = damage * mg.getModifier() / 100;
+				damage -= delta;
+				mpBurn += delta;
+			}
 			p.gainHp(-damage);
 			if (mpBurn > 0)
 				p.gainMp(-mpBurn);

@@ -22,12 +22,13 @@ import argonms.net.client.ClientPacketProcessor;
 import argonms.net.client.ClientRecvOps;
 import argonms.net.client.RemoteClient;
 import argonms.net.client.handler.DealDamageHandler;
+import argonms.net.client.handler.GameBuffHandler;
 import argonms.net.client.handler.GameChatHandler;
 import argonms.net.client.handler.GameEnterHandler;
 import argonms.net.client.handler.GameGoToHandler;
 import argonms.net.client.handler.GameMovementHandler;
 import argonms.net.client.handler.GameNpcHandler;
-import argonms.net.client.handler.GamePlayerHandler;
+import argonms.net.client.handler.GamePlayerMiscHandler;
 import argonms.net.client.handler.InventoryHandler;
 import argonms.net.client.handler.TakeDamageHandler;
 import argonms.tools.input.LittleEndianReader;
@@ -91,7 +92,7 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				GameChatHandler.handleMapChat(reader, s);
 				break;
 			case ClientRecvOps.FACIAL_EXPRESSION:
-				GamePlayerHandler.handleEmote(reader, s);
+				GamePlayerMiscHandler.handleEmote(reader, s);
 				break;
 			case ClientRecvOps.NPC_TALK:
 				GameNpcHandler.handleStartConversation(reader, s);
@@ -102,8 +103,20 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.ITEM_MOVE:
 				InventoryHandler.handleItemMove(reader, s);
 				break;
+			case ClientRecvOps.USE_ITEM:
+				GameBuffHandler.handleUseItem(reader, s);
+				break;
+			case ClientRecvOps.CANCEL_ITEM:
+				GameBuffHandler.handleCancelItem(reader, s);
+				break;
 			case ClientRecvOps.HEAL_OVER_TIME:
-				GamePlayerHandler.handleReplenishHpMp(reader, s);
+				GamePlayerMiscHandler.handleReplenishHpMp(reader, s);
+				break;
+			case ClientRecvOps.USE_SKILL:
+				GameBuffHandler.handleUseSkill(reader, s);
+				break;
+			case ClientRecvOps.CANCEL_SKILL:
+				GameBuffHandler.handleCancelSkill(reader, s);
 				break;
 			case ClientRecvOps.MESO_DROP:
 				InventoryHandler.handleMesoDrop(reader, s);
@@ -113,6 +126,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				break;
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, s);
+				break;
+			case ClientRecvOps.CHANGE_BINDING:
+				GamePlayerMiscHandler.handleBindingChange(reader, s);
 				break;
 			case ClientRecvOps.MOVE_MOB:
 				GameMovementHandler.handleMoveMob(reader, s);

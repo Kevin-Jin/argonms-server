@@ -258,7 +258,7 @@ public class DealDamageHandler {
 				if (attack.skill == Skills.ENERGY_DRAIN) { // Energy Drain
 					int addHp;
 					addHp = (int) ((double) totDamage * (double) SkillDataLoader.getInstance().getSkill(Skills.ENERGY_DRAIN).getLevel(player.getSkillLevel(Skills.ENERGY_DRAIN)).getX() / 100.0);
-					addHp = Math.min(monster.getMaxHp(), Math.min(addHp, player.getMaxHp() / 2));
+					addHp = Math.min(monster.getMaxHp(), Math.min(addHp, player.getCurrentMaxHp() / 2));
 					player.gainHp(addHp);
 				}
 

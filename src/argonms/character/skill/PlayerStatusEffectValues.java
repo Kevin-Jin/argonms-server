@@ -77,8 +77,8 @@ public class PlayerStatusEffectValues {
 		HIDE			(0x0000040000000000L),
 		BOOSTER			(0x0000080000000000L),
 		POWERGUARD		(0x0000100000000000L),
-		MAXHP			(0x0000200000000000L),
-		MAXMP			(0x0000400000000000L),
+		HYPER_BODY_HP	(0x0000200000000000L),
+		HYPER_BODY_MP	(0x0000400000000000L),
 		INVINCIBLE		(0x0000800000000000L),
 		SPEED_INFUSION	(0x0000800000000000L),
 
@@ -132,9 +132,11 @@ public class PlayerStatusEffectValues {
 	}
 
 	private StatusEffectsData e;
+	private short mod;
 
-	public PlayerStatusEffectValues(StatusEffectsData e) {
+	public PlayerStatusEffectValues(StatusEffectsData e, short mod) {
 		this.e = e;
+		this.mod = mod;
 	}
 
 	public int getSource() {
@@ -149,15 +151,7 @@ public class PlayerStatusEffectValues {
 		return e.getSourceType();
 	}
 
-	public int getX() {
-		return ((PlayerSkillEffectsData) e).getX();
-	}
-
-	public int getY() {
-		return ((PlayerSkillEffectsData) e).getY();
-	}
-
-	public int getZ() {
-		return ((PlayerSkillEffectsData) e).getZ();
+	public short getModifier() {
+		return mod;
 	}
 }

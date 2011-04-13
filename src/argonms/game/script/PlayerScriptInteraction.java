@@ -65,13 +65,13 @@ public abstract class PlayerScriptInteraction {
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				quantity = slot.getQuantity();
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
 			}
 			for (Short s : changedSlots.getRight()) { //added
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				quantity = slot.getQuantity();
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, true));
 			}
 			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, quantity));
 			return true;

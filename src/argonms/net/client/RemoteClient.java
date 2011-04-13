@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  */
 public abstract class RemoteClient {
 	private static final Logger LOG = Logger.getLogger(RemoteClient.class.getName());
-	private static final int TIMEOUT = 10000; //in milliseconds
+	private static final int TIMEOUT = 15000; //in milliseconds
 	public static final byte
 		STATUS_NOTLOGGEDIN = 0,
 		STATUS_MIGRATION = 1,
@@ -47,8 +47,12 @@ public abstract class RemoteClient {
 	private String name;
 	private ClientSession session;
 	private byte world, channel;
-	private KeepAliveTask heartbeat;
+	private KeepAliveTask heartbeatTask;
 	private boolean serverTransition;
+
+	public RemoteClient() {
+		heartbeatTask = new KeepAliveTask();
+	}
 
 	public int getAccountId() {
 		return id;
@@ -91,20 +95,16 @@ public abstract class RemoteClient {
 	}
 
 	public void receivedPong() {
-		heartbeat.receivedResponse();
+		heartbeatTask.receivedPong();
 	}
 
 	public void startPingTask() {
-		heartbeat = new KeepAliveTask();
-		ScheduledFuture<?> f = Timer.getInstance().runRepeatedly(heartbeat, 0, TIMEOUT);
-		heartbeat.setFuture(f);
+		heartbeatTask.sendPing();
+		heartbeatTask.waitForPong();
 	}
 
 	public void stopPingTask() {
-		if (heartbeat != null) {
-			heartbeat.stop();
-			heartbeat = null;
-		}
+		heartbeatTask.stop();
 	}
 
 	public void clientError(String message) {
@@ -149,34 +149,31 @@ public abstract class RemoteClient {
 	}
 
 	private class KeepAliveTask implements Runnable {
-		private long lastPong;
 		private ScheduledFuture<?> future;
 
-		public KeepAliveTask() {
-			lastPong = System.currentTimeMillis();
+		public void sendPing() {
+			session.send(pingMessage());
+		}
+
+		public void waitForPong() {
+			future = Timer.getInstance().runAfterDelay(this, TIMEOUT);
 		}
 
 		public void run() {
-			if (System.currentTimeMillis() - lastPong > TIMEOUT) {
-				LOG.log(Level.INFO, "Account {0} timed out after " + TIMEOUT
-						+ " milliseconds.", getAccountName());
-				getSession().close();
-			} else {
-				getSession().send(pingMessage());
-			}
+			LOG.log(Level.INFO, "Account {0} timed out after " + TIMEOUT
+					+ " milliseconds -> Disconnecting.", getAccountName());
+			getSession().close();
 		}
 
-		public void setFuture(ScheduledFuture<?> future) {
-			this.future = future;
-		}
-
-		public void receivedResponse() {
-			lastPong = System.currentTimeMillis();
+		public void receivedPong() {
+			stop();
 		}
 
 		public void stop() {
-			future.cancel(true);
-			future = null;
+			if (future != null) {
+				future.cancel(true);
+				future = null;
+			}
 		}
 	}
 }

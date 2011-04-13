@@ -23,10 +23,10 @@ import argonms.character.KeyBinding;
 import argonms.character.Player;
 import argonms.character.SkillMacro;
 import argonms.character.skill.Skills;
+import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.WorldChannel;
-import argonms.loading.skill.SkillDataLoader;
 import argonms.net.client.ClientSendOps;
 import argonms.net.client.CommonPackets;
 import argonms.net.client.RemoteClient;
@@ -93,7 +93,7 @@ public class GameEnterHandler {
 		}*/
 		client.getSession().send(writeEnterMap(player));
 		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
-			player.applyEffect(SkillDataLoader.getInstance().getSkill(Skills.HIDE).getLevel((byte) 1));
+			StatusEffectTools.useSkill(player, Skills.HIDE, ((byte) 1));
 		player.getMap().spawnPlayer(player);
 
 		/*try {

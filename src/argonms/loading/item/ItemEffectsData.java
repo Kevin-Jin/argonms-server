@@ -38,7 +38,7 @@ public class ItemEffectsData extends BuffsData {
 
 	//use a bitfield on boolean fields to save memory...
 	private byte flags;
-	private short hpR, mpR;
+	private short hp, mp, hpR, mpR;
 	private int moveTo;
 	private List<Integer> petConsumableBy;
 
@@ -83,12 +83,20 @@ public class ItemEffectsData extends BuffsData {
 		this.petConsumableBy.add(Integer.valueOf(petid));
 	}
 
-	protected void setHpR(short recover) {
-		this.hpR = recover;
+	protected void setHpRecover(short recover) {
+		this.hp = recover;
 	}
 
-	protected void setMpR(short recover) {
-		this.mpR = recover;
+	protected void setMpRecover(short recover) {
+		this.mp = recover;
+	}
+
+	protected void setHpRecoverPercent(short percent) {
+		this.hpR = percent;
+	}
+
+	protected void setMpRecoverPercent(short percent) {
+		this.mpR = percent;
 	}
 
 	public int getMoveTo() {
@@ -123,11 +131,19 @@ public class ItemEffectsData extends BuffsData {
 		return petConsumableBy;
 	}
 
-	public short getHpR() {
+	public short getHpRecover() {
+		return hp;
+	}
+
+	public short getMpRecover() {
+		return mp;
+	}
+
+	public short getHpRecoverPercent() {
 		return hpR;
 	}
 
-	public short getMpR() {
+	public short getMpRecoverPercent() {
 		return mpR;
 	}
 

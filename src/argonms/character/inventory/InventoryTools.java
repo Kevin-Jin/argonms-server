@@ -245,6 +245,36 @@ public class InventoryTools {
 		return otherChange;
 	}
 
+	public static InventorySlot takeFromInventory(Inventory inv, short slot, short toRemove) {
+		InventorySlot item = inv.get(slot);
+		if (item.getQuantity() > toRemove) {
+			item.setQuantity((short) (item.getQuantity() - toRemove));
+			return item;
+		} else {
+			inv.remove(slot);
+			return null;
+		}
+	}
+
+	public static Pair<List<Short>, List<Short>> removeFromInventory(Inventory inv, int itemId, short quantity) {
+		List<Short> changed = new ArrayList<Short>();
+		List<Short> removed = new ArrayList<Short>();
+		int delta;
+		for (Short slot : inv.getItemSlots(itemId)) {
+			InventorySlot item = inv.get(slot.shortValue());
+			delta = Math.min(quantity, item.getQuantity());
+			quantity -= delta;
+			item.setQuantity((short) (item.getQuantity() - delta));
+			if (item.getQuantity() == 0) {
+				inv.remove(slot);
+				removed.add(slot);
+			} else {
+				changed.add(slot);
+			}
+		}
+		return new Pair<List<Short>, List<Short>>(changed, removed);
+	}
+
 	/**
 	 * Remove a piece of equipment from a player's equipped inventory and move
 	 * it to their equipment inventory.

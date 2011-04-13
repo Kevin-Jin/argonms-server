@@ -34,11 +34,9 @@ import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.character.skill.Skills;
+import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
 import argonms.loading.StatusEffectsData;
-import argonms.loading.item.ItemDataLoader;
-import argonms.loading.item.ItemEffectsData;
-import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
@@ -89,7 +87,10 @@ public class Player extends MapEntity {
 
 	private short level;
 	private short job;
-	private short str, dex, _int, luk, remHp, remMp, maxHp, maxMp, remAp, remSp;
+	private short baseStr, baseDex, baseInt, baseLuk, baseMaxHp, baseMaxMp;
+	private short remHp, remMp, remAp, remSp, maxHp, maxMp;
+	private int addStr, addDex, addInt, addLuk, addMaxHp, addMaxMp,
+			addWatk, addWdef, addMatk, addMdef, addAcc, addAvo, addHands, addSpeed, addJump;
 	private int exp;
 	private int mesos;
 	private short fame;
@@ -188,14 +189,14 @@ public class Player extends MapEntity {
 			ps.setInt(7, hair);
 			ps.setShort(8, level);
 			ps.setShort(9, job);
-			ps.setShort(10, str);
-			ps.setShort(11, dex);
-			ps.setShort(12, _int);
-			ps.setShort(13, luk);
+			ps.setShort(10, baseStr);
+			ps.setShort(11, baseDex);
+			ps.setShort(12, baseInt);
+			ps.setShort(13, baseLuk);
 			ps.setShort(14, remHp);
-			ps.setShort(15, maxHp);
+			ps.setShort(15, baseMaxHp);
 			ps.setShort(16, remMp);
-			ps.setShort(17, maxMp);
+			ps.setShort(17, baseMaxMp);
 			ps.setShort(18, remAp);
 			ps.setShort(19, remSp);
 			ps.setInt(20, exp);
@@ -480,6 +481,8 @@ public class Player extends MapEntity {
 		Connection con = DatabaseConnection.getConnection();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
+		boolean gameServer = ServerType.isGame(c.getServerId());
+		boolean shopServer = ServerType.isShop(c.getServerId());
 		try {
 			ps = con.prepareStatement("SELECT * FROM `characters` WHERE `id` = ?");
 			ps.setInt(1, id);
@@ -491,7 +494,7 @@ public class Player extends MapEntity {
 				return null;
 			}
 			int accountid = rs.getInt(1);
-			if (c.getServerId() != ServerType.LOGIN) { //game/shop server
+			if (gameServer || shopServer) {
 				c.setAccountId(accountid); //we aren't aware of our accountid yet
 			} else if (accountid != c.getAccountId()) { //login server
 				LOG.log(Level.WARNING, "Client account {0} is trying to load "
@@ -500,7 +503,7 @@ public class Player extends MapEntity {
 				return null;
 			}
 			byte world = rs.getByte(2);
-			if (c.getServerId() == ServerType.SHOP) {
+			if (shopServer) {
 				c.setWorld(world); //we aren't aware of our world yet
 			} else if (world != c.getWorld()) {
 				LOG.log(Level.WARNING, "Client account {0} is trying to load "
@@ -518,14 +521,12 @@ public class Player extends MapEntity {
 			p.hair = rs.getShort(8);
 			p.level = rs.getShort(9);
 			p.job = rs.getShort(10);
-			p.str = rs.getShort(11);
-			p.dex = rs.getShort(12);
-			p._int = rs.getShort(13);
-			p.luk = rs.getShort(14);
-			p.remHp = rs.getShort(15);
-			p.maxHp = rs.getShort(16);
-			p.remMp = rs.getShort(17);
-			p.maxMp = rs.getShort(18);
+			p.baseStr = rs.getShort(11);
+			p.baseDex = rs.getShort(12);
+			p.baseInt = rs.getShort(13);
+			p.baseLuk = rs.getShort(14);
+			p.baseMaxHp = rs.getShort(16);
+			p.baseMaxMp = rs.getShort(18);
 			p.remAp = rs.getShort(19);
 			p.remSp = rs.getShort(20);
 			p.exp = rs.getInt(21);
@@ -533,7 +534,7 @@ public class Player extends MapEntity {
 			p.partner = rs.getInt(23);
 			p.savedMapId = rs.getInt(24);
 			p.savedSpawnPoint = rs.getByte(25);
-			if (ServerType.isGame(c.getServerId())) {
+			if (gameServer) {
 				p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
 				int forcedReturn = p.map.getForcedReturnMap();
 				if (forcedReturn != GlobalConstants.NULL_MAP) {
@@ -541,6 +542,15 @@ public class Player extends MapEntity {
 					p.savedSpawnPoint = 0;
 				}
 				p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
+
+				//login and shop servers don't need remHp & remMp, so sending 0
+				//for remHp/remMp in CommonPackets.writeCharStats is fine
+				p.maxHp = p.baseMaxHp;
+				p.remHp = (short) Math.min(rs.getShort(15), p.maxHp);
+				p.maxMp = p.baseMaxMp;
+				p.remMp = (short) Math.min(rs.getShort(17), p.maxMp);
+				//TODO: move more game/shop server exclusive stat loading into
+				//this block?
 			}
 			p.mesos = rs.getInt(26);
 
@@ -554,11 +564,11 @@ public class Player extends MapEntity {
 			p.inventories.put(InventoryType.CASH, new Inventory(rs.getByte(31)));
 			//TODO: get real equipped inventory size?
 			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
-			if (ServerType.isGame(c.getServerId())) {
+			if (gameServer) {
 				p.inventories.put(InventoryType.STORAGE, new Inventory(rs.getByte(32)));
 				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.value();
 				invQuerySpecifyAccId = true;
-			} else if (ServerType.isShop(c.getServerId())) {
+			} else if (shopServer) {
 				//TODO: get real cash shop inventory size?
 				p.inventories.put(InventoryType.CASH_SHOP, new Inventory((byte) 0));
 				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.value();
@@ -638,6 +648,8 @@ public class Player extends MapEntity {
 						e.setJump(ers.getShort(16));
 						e.setUpgradeSlots(ers.getByte(17));
 					}
+					if (gameServer)
+						p.equipChanged(e, true);
 					ers.close();
 					eps.close();
 					item = e;
@@ -675,7 +687,7 @@ public class Player extends MapEntity {
 			rs.close();
 			ps.close();
 
-			if (ServerType.isGame(c.getServerId())) {
+			if (gameServer) {
 				ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 						+ "FROM `skills` WHERE `characterid` = ?");
 				ps.setInt(1, id);
@@ -757,6 +769,13 @@ public class Player extends MapEntity {
 		return ret;
 	}
 
+	public void bindKey(byte key, byte type, int action) {
+		//if (type == 0)
+			//bindings.remove(Byte.valueOf(key));
+		//else
+			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
+	}
+
 	public List<SkillMacro> getMacros() {
 		return skillMacros;
 	}
@@ -803,7 +822,7 @@ public class Player extends MapEntity {
 		boolean singleLevelOnly = !GameServer.getVariables().doMultiLevel();
 		//TODO: send new level to party mates
 		Random generator = Rng.getGenerator();
-		int intMpBonus = _int / 10;
+		int intMpBonus = baseInt / 10;
 		//local variables are faster and safer (concurrent access and overflow)
 		//than directly modifying the heap variables...
 		short hpInc = 0, mpInc = 0, apInc = 0, spInc = 0;
@@ -858,14 +877,14 @@ public class Player extends MapEntity {
 				exp = ExpTables.getForLevel(level) - 1;
 		} while (level < 200 && exp >= ExpTables.getForLevel(level));
 
-		remHp = maxHp = (short) Math.min(maxHp + hpInc, 30000);
-		remMp = maxMp = (short) Math.min(maxMp + mpInc, 30000);
+		remHp = updateMaxHp((short) Math.min(baseMaxHp + hpInc, 30000));
+		remMp = updateMaxMp((short) Math.min(baseMaxMp + mpInc, 30000));
 		remAp = (short) Math.min(remAp + apInc, Short.MAX_VALUE);
 		remSp = (short) Math.min(remSp + spInc, Short.MAX_VALUE);
 
 		stats.put(ClientUpdateKey.LEVEL, Short.valueOf(level));
-		stats.put(ClientUpdateKey.MAXHP, Short.valueOf(maxHp));
-		stats.put(ClientUpdateKey.MAXMP, Short.valueOf(maxMp));
+		stats.put(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp));
+		stats.put(ClientUpdateKey.MAXMP, Short.valueOf(baseMaxMp));
 		stats.put(ClientUpdateKey.HP, Short.valueOf(remHp));
 		stats.put(ClientUpdateKey.MP, Short.valueOf(remMp));
 		stats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp));
@@ -895,39 +914,55 @@ public class Player extends MapEntity {
 	}
 
 	public short getStr() {
-		return str;
+		return baseStr;
+	}
+
+	public int getCurrentStr() {
+		return baseStr + addStr;
 	}
 
 	public void setStr(short newStr) {
-		this.str = newStr;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(str)), false));
+		this.baseStr = newStr;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
 	}
 
 	public short getDex() {
-		return dex;
+		return baseDex;
+	}
+
+	public int getCurrentDex() {
+		return baseDex + addDex;
 	}
 
 	public void setDex(short newDex) {
-		this.dex = newDex;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(dex)), false));
+		this.baseDex = newDex;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
 	}
 
 	public short getInt() {
-		return _int;
+		return baseInt;
+	}
+
+	public int getCurrentInt() {
+		return baseInt + addInt;
 	}
 
 	public void setInt(short newInt) {
-		this._int = newInt;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(_int)), false));
+		this.baseInt = newInt;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
 	}
 
 	public short getLuk() {
-		return luk;
+		return baseLuk;
+	}
+
+	public int getCurrentLuk() {
+		return baseLuk + addLuk;
 	}
 
 	public void setLuk(short newLuk) {
-		this.luk = newLuk;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(luk)), false));
+		this.baseLuk = newLuk;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
 	}
 
 	public short getHp() {
@@ -947,10 +982,14 @@ public class Player extends MapEntity {
 	}
 
 	public void gainHp(int gain) {
-		setHp((short) (remHp + gain));
+		setHp((short) Math.min(remHp + gain, Short.MAX_VALUE));
 	}
 
 	public short getMaxHp() {
+		return baseMaxHp;
+	}
+
+	public short getCurrentMaxHp() {
 		return maxHp;
 	}
 
@@ -959,14 +998,43 @@ public class Player extends MapEntity {
 		//TODO: lose exp
 	}
 
+	private short updateMaxHp(short newMax) {
+		this.baseMaxHp = newMax;
+		recalculateMaxHp();
+		return maxHp;
+	}
+
 	public void setMaxHp(short newMax) {
-		this.maxHp = newMax;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(maxHp)), false));
+		updateMaxHp(newMax);
+		if (remHp > maxHp)
+			remHp = maxHp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp)), false));
+	}
+
+	public void recalculateMaxHp(short hhbPerc) {
+		if (hhbPerc == 0)
+			this.maxHp = (short) Math.min(30000, baseMaxHp + addMaxHp);
+		else
+			this.maxHp = (short) Math.min(30000, baseMaxHp + addMaxHp
+					+ Math.round((baseMaxHp + addMaxHp) * hhbPerc / 100.0));
+	}
+
+	private void recalculateMaxHp() {
+		PlayerStatusEffectValues hhb = getEffectValue(PlayerStatusEffect.HYPER_BODY_HP);
+		short mod = (hhb == null) ? 0 : hhb.getModifier();
+		recalculateMaxHp(mod);
 	}
 
 	public void doDecHp(int protectItem, int dec) {
-		if (!getInventory(InventoryType.EQUIPPED).hasItem(protectItem, (short) 1))
+		if (!getInventory(InventoryType.EQUIPPED).hasItem(protectItem, (short) 1)) {
+			PlayerStatusEffectValues mg = getEffectValue(PlayerStatusEffect.MAGIC_GUARD);
+			if (mg != null) {
+				int delta = dec * mg.getModifier() / 100;
+				dec -= delta;
+				gainMp(-delta);
+			}
 			gainHp(-dec);
+		}
 	}
 
 	public short getMp() {
@@ -983,16 +1051,46 @@ public class Player extends MapEntity {
 	}
 
 	public void gainMp(int gain) {
-		setMp((short) (remMp + gain));
+		setMp((short) Math.min(remMp + gain, Short.MAX_VALUE));
 	}
 
 	public short getMaxMp() {
+		return baseMaxMp;
+	}
+
+	public short getCurrentMaxMp() {
+		return maxMp;
+	}
+
+	private short updateMaxMp(short newMax) {
+		this.baseMaxMp = newMax;
+		recalculateMaxMp();
 		return maxMp;
 	}
 
 	public void setMaxMp(short newMax) {
-		this.maxMp = newMax;
-		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(maxMp)), false));
+		updateMaxMp(newMax);
+		if (remMp > maxMp)
+			remMp = maxMp;
+		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(baseMaxMp)), false));
+	}
+
+	/**
+	 *
+	 * @param mhbPerc Mana hyper body percent.
+	 */
+	public void recalculateMaxMp(short mhbPerc) {
+		if (mhbPerc == 0)
+			this.maxMp = (short) Math.min(30000, baseMaxMp + addMaxMp);
+		else
+			this.maxMp = (short) Math.min(30000, baseMaxMp + addMaxMp
+					+ Math.round((baseMaxMp + addMaxMp) * mhbPerc / 100.0));
+	}
+
+	private void recalculateMaxMp() {
+		PlayerStatusEffectValues mhb = getEffectValue(PlayerStatusEffect.HYPER_BODY_MP);
+		short mod = (mhb == null) ? 0 : mhb.getModifier();
+		recalculateMaxMp(mod);
 	}
 
 	public short getAp() {
@@ -1058,6 +1156,42 @@ public class Player extends MapEntity {
 		gainMesos(gain, fromQuest, false);
 	}
 
+	public void addWatk(int inc) {
+		addWatk += inc;
+	}
+
+	public void addWdef(int inc) {
+		addWdef += inc;
+	}
+
+	public void addMatk(int inc) {
+		addMatk += inc;
+	}
+
+	public void addMdef(int inc) {
+		addMdef += inc;
+	}
+
+	public void addAcc(int inc) {
+		addAcc += inc;
+	}
+
+	public void addAvoid(int inc) {
+		addAvo += inc;
+	}
+
+	public void addHands(int inc) {
+		addHands += inc;
+	}
+
+	public void addSpeed(int inc) {
+		addSpeed += inc;
+	}
+
+	public void addJump(int inc) {
+		addJump += inc;
+	}
+
 	public GameMap getMap() {
 		return map;
 	}
@@ -1088,8 +1222,64 @@ public class Player extends MapEntity {
 		return buddies;
 	}
 
-	//TODO: implement!
-	public void updateEquips() {
+	//Scrolling equips will screw this up, so remember
+	//to call equipChanged(e, false) before scrolling and
+	//then call equipChanged(e, true) after scrolling
+	public void equipChanged(Equip e, boolean putOn) {
+		short stat;
+		if (putOn) {
+			stat = e.getHp();
+			if (stat > 0) {
+				addMaxHp += stat;
+				recalculateMaxHp();
+			}
+			stat = e.getMp();
+			if (stat > 0) {
+				addMaxMp += stat;
+				recalculateMaxMp();
+			}
+			addStr += e.getStr();
+			addDex += e.getDex();
+			addInt += e.getInt();
+			addLuk += e.getLuk();
+			addWatk += e.getWatk();
+			addWdef += e.getWdef();
+			addMatk += e.getMatk();
+			addMdef += e.getMdef();
+			addAcc += e.getAcc();
+			addAvo += e.getAvoid();
+			addHands += e.getHands();
+			addSpeed += e.getSpeed();
+			addJump += e.getJump();
+		} else {
+			stat = e.getHp();
+			if (stat > 0) {
+				addMaxHp -= stat;
+				recalculateMaxHp();
+				if (remHp > maxHp)
+					remHp = maxHp;
+			}
+			stat = e.getMp();
+			if (stat > 0) {
+				addMaxMp -= stat;
+				recalculateMaxMp();
+				if (remMp > maxMp)
+					remMp = maxMp;
+			}
+			addStr -= e.getStr();
+			addDex -= e.getDex();
+			addInt -= e.getInt();
+			addLuk -= e.getLuk();
+			addWatk -= e.getWatk();
+			addWdef -= e.getWdef();
+			addMatk -= e.getMatk();
+			addMdef -= e.getMdef();
+			addAcc -= e.getAcc();
+			addAvo -= e.getAvoid();
+			addHands -= e.getHands();
+			addSpeed -= e.getSpeed();
+			addJump -= e.getJump();
+		}
 	}
 
 	public Pet[] getPets() {
@@ -1111,6 +1301,33 @@ public class Player extends MapEntity {
 		return Collections.unmodifiableMap(skillEntries);
 	}
 
+	public byte getSkillLevel(int skill) {
+		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
+		return skillLevel != null ? skillLevel.getLevel() : 0;
+	}
+
+	/**
+	 *
+	 * @param skill
+	 * @param level
+	 * @param masterLevel set to -1 if you do not wish to change the max level
+	 */
+	public void setSkillLevel(int skill, byte level, byte masterLevel) {
+		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
+		if (skillLevel == null) {
+			if (masterLevel == -1)
+				masterLevel = 0;
+			skillLevel = new SkillEntry(level, masterLevel);
+			skillEntries.put(Integer.valueOf(skill), skillLevel);
+		} else {
+			skillLevel.changeCurrentLevel(level);
+			if (masterLevel != -1)
+				skillLevel.changeMasterLevel(masterLevel);
+		}
+		getClient().getSession().send(CommonPackets.writeUpdateSkillLevel(
+				skill, skillLevel.getLevel(), skillLevel.getMasterLevel()));
+	}
+
 	public void addCooldown(final int skill, short time) {
 		cooldowns.put(Integer.valueOf(skill), new Cooldown(time * 1000, new Runnable() {
 			public void run() {
@@ -1128,30 +1345,13 @@ public class Player extends MapEntity {
 		return cooldowns;
 	}
 
-	public byte getSkillLevel(int skill) {
-		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
-		return skillLevel != null ? skillLevel.getLevel() : 0;
-	}
-
-	public void castBuffSkill(int skillid, byte level) {
-		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillid).getLevel(level);
-		applyEffect(e);
-	}
-
-	public void consumeItem(int itemid) {
-		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemid);
-		applyEffect(e);
-	}
-
-	public void applyBuff(PlayerStatusEffect buff) {
-		
-	}
-
-	public void applyEffect(final StatusEffectsData e) {
+	public Map<PlayerStatusEffect, Short> applyEffect(final StatusEffectsData e) {
+		Map<PlayerStatusEffect, Short> updatedStats = new EnumMap<PlayerStatusEffect, Short>(PlayerStatusEffect.class);
 		synchronized (activeEffects) {
 			for (PlayerStatusEffect buff : e.getEffects()) {
-				applyBuff(buff);
-				activeEffects.put(buff, new PlayerStatusEffectValues(e));
+				PlayerStatusEffectValues value = StatusEffectTools.applyEffect(this, e, buff);
+				updatedStats.put(buff, Short.valueOf(value.getModifier()));
+				activeEffects.put(buff, value);
 			}
 		}
 		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
@@ -1176,6 +1376,7 @@ public class Player extends MapEntity {
 				}
 				break;
 		}
+		return updatedStats;
 	}
 
 	public Map<PlayerStatusEffect, PlayerStatusEffectValues> getAllEffects() {
@@ -1186,15 +1387,10 @@ public class Player extends MapEntity {
 		return activeEffects.get(buff);
 	}
 
-	//TODO: implement!
-	private void dispelBuff(PlayerStatusEffect buff, PlayerStatusEffectValues state) {
-		
-	}
-
 	public void dispelEffect(StatusEffectsData e) {
 		synchronized (activeEffects) {
 			for (PlayerStatusEffect buff : e.getEffects())
-				dispelBuff(buff, activeEffects.remove(buff));
+				StatusEffectTools.dispelEffect(this, buff, activeEffects.remove(buff));
 		}
 		switch (e.getSourceType()) {
 			case ITEM:
@@ -1227,6 +1423,10 @@ public class Player extends MapEntity {
 		return itemEffectCancels.containsKey(Integer.valueOf(itemid));
 	}
 
+	public boolean isDebuffActive(int mobSkillId) {
+		return diseaseCancels.containsKey(Integer.valueOf(mobSkillId));
+	}
+
 	public int getItemEffect() {
 		return 0;
 	}
@@ -1246,6 +1446,8 @@ public class Player extends MapEntity {
 			map = goTo;
 			setPosition(map.getPortalPosition(initialPortal));
 			client.getSession().send(CommonPackets.writeChangeMap(mapid, initialPortal, this));
+			if (!isVisible())
+				getClient().getSession().send(CommonPackets.writeShowHide());
 			map.spawnPlayer(this);
 			return true;
 		}
@@ -1303,6 +1505,15 @@ public class Player extends MapEntity {
 		visibleEntities.removeWhenSafe(o);
 	}
 
+	public void clearVisibleEntities() {
+		visibleEntities.lockWrite();
+		try {
+			visibleEntities.clear();
+		} finally {
+			visibleEntities.unlockWrite();
+		}
+	}
+
 	public List<Mob> getControlledMobs() {
 		return Collections.unmodifiableList(controllingMobs);
 	}
@@ -1313,6 +1524,10 @@ public class Player extends MapEntity {
 
 	public void uncontrolMonster(Mob m) {
 		controllingMobs.remove(m);
+	}
+
+	public void clearControlledMobs() {
+		controllingMobs.clear();
 	}
 
 	public void checkMonsterAggro(Mob monster) {
@@ -1380,10 +1595,10 @@ public class Player extends MapEntity {
 		p.hair = (short) hair;
 		p.skin = (byte) skin;
 		p.gender = gender;
-		p.str = str;
-		p.dex = dex;
-		p._int = _int;
-		p.luk = luk;
+		p.baseStr = str;
+		p.baseDex = dex;
+		p.baseInt = _int;
+		p.baseLuk = luk;
 		p.level = 1;
 		p.gm = account.getGm();
 
