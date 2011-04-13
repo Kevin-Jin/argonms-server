@@ -20,9 +20,18 @@ package argonms.game.clientcommand;
 
 import argonms.UserPrivileges;
 import argonms.character.Player;
+import argonms.character.inventory.Inventory;
+import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventoryTools;
 import argonms.game.GameServer;
 import argonms.game.clientcommand.CommandDefinition.CommandAction;
+import argonms.loading.skill.SkillDataLoader;
+import argonms.loading.skill.SkillStats;
+import argonms.net.client.CommonPackets;
+import argonms.tools.Pair;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -48,6 +57,93 @@ public class CommandProcessor {
 
 	private void populateDefinitions() {
 		definitions.put("!stat", new StatCommandHandler());
+		definitions.put("!skill", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Syntax: !skill [skillid] [level] <master level>";
+			}
+
+			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
+				if (args.length < 3) {
+					resp.printErr("Invalid usage. " + getUsage());
+					return;
+				}
+				int skillId;
+				byte skillLevel, masterLevel = -1;
+				SkillStats s;
+				try {
+					skillId = Integer.parseInt(args[1]);
+					s = SkillDataLoader.getInstance().getSkill(skillId);
+					if (s == null)
+						throw new NumberFormatException();
+				} catch (NumberFormatException e) {
+					resp.printErr(args[1] + " is not a valid skillid. " + getUsage());
+					return;
+				}
+				try {
+					skillLevel = Byte.parseByte(args[2]);
+					if (s.getLevel(skillLevel) == null)
+						throw new NumberFormatException();
+				} catch (NumberFormatException e) {
+					resp.printErr(args[2] + " is not a valid level of skill " + skillId + ". " + getUsage());
+					return;
+				}
+				if (args.length > 3) {
+					try {
+						masterLevel = Byte.parseByte(args[3]);
+						if (s.getLevel(masterLevel) == null)
+							throw new NumberFormatException();
+					} catch (NumberFormatException e) {
+						resp.printErr(args[3] + " is not a valid master level of skill " + skillId + ". " + getUsage());
+						return;
+					}
+				}
+				p.setSkillLevel(skillId, skillLevel, masterLevel);
+			}
+		}, "", UserPrivileges.GM));
+		definitions.put("!give", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Syntax: !give [itemid] <quantity>";
+			}
+
+			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
+				if (args.length < 2) {
+					resp.printErr("Invalid usage. " + getUsage());
+					return;
+				}
+				int itemId;
+				short quantity = 1;
+				try {
+					itemId = Integer.parseInt(args[1]);
+				} catch (NumberFormatException e) {
+					resp.printErr(args[1] + " is not a valid itemid. " + getUsage());
+					return;
+				}
+				if (args.length > 2) {
+					try {
+						quantity = Short.parseShort(args[2]);
+					} catch (NumberFormatException e) {
+						resp.printErr(args[2] + " is not a valid item quantity. " + getUsage());
+						return;
+					}
+				}
+				//TODO: check if item is valid before adding to inventory.
+				InventoryType type = InventoryTools.getCategory(itemId);
+				Inventory inv = p.getInventory(type);
+				Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+				short pos;
+				InventorySlot slot;
+				for (Short s : changedSlots.getLeft()) { //modified
+					pos = s.shortValue();
+					slot = inv.get(pos);
+					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
+				}
+				for (Short s : changedSlots.getRight()) { //added
+					pos = s.shortValue();
+					slot = inv.get(pos);
+					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, true));
+				}
+			}
+		}, "", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !rate [exp/meso/drop] [new rate]";

@@ -303,11 +303,11 @@ public class KvjItemDataLoader extends ItemDataLoader {
 				case KvjEffects.AVOID:
 					effect.setAvoid(reader.readShort());
 					break;
-				case KvjEffects.HP_BONUS:
-					effect.setHp(reader.readShort());
+				case KvjEffects.HP:
+					effect.setHpRecover(reader.readShort());
 					break;
-				case KvjEffects.MP_BONUS:
-					effect.setMp(reader.readShort());
+				case KvjEffects.MP:
+					effect.setMpRecover(reader.readShort());
 					break;
 				case KvjEffects.SPEED:
 					effect.setSpeed(reader.readShort());
@@ -318,11 +318,11 @@ public class KvjItemDataLoader extends ItemDataLoader {
 				case KvjEffects.MORPH:
 					effect.setMorph(reader.readInt());
 					break;
-				case KvjEffects.HP_RECOVER:
-					effect.setHpR(reader.readShort());
+				case KvjEffects.HP_RECOVER_PERCENT:
+					effect.setHpRecoverPercent(reader.readShort());
 					break;
-				case KvjEffects.MP_RECOVER:
-					effect.setMpR(reader.readShort());
+				case KvjEffects.MP_RECOVER_PERCENT:
+					effect.setMpRecoverPercent(reader.readShort());
 					break;
 				case KvjEffects.MOVE_TO:
 					effect.setMoveTo(reader.readInt());

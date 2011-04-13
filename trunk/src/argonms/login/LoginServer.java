@@ -24,6 +24,7 @@ import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.net.client.ClientListener;
 import argonms.tools.DatabaseConnection;
+import argonms.tools.Timer;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -120,6 +121,7 @@ public class LoginServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
+		Timer.enable();
 		handler = new ClientListener(ServerType.LOGIN, (byte) -1, useNio);
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Login Server is online.");

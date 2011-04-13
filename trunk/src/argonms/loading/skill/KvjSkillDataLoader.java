@@ -208,11 +208,11 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 				case KvjEffects.AVOID:
 					effect.setAvoid(reader.readShort());
 					break;
-				case KvjEffects.HP_BONUS:
-					effect.setHp(reader.readShort());
+				case KvjEffects.HP:
+					effect.setHpRecoverRate(reader.readShort());
 					break;
-				case KvjEffects.MP_BONUS:
-					effect.setMp(reader.readShort());
+				case KvjEffects.MP:
+					effect.setMpRecoverRate(reader.readShort());
 					break;
 				case KvjEffects.SPEED:
 					effect.setSpeed(reader.readShort());
@@ -316,8 +316,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 				case KvjEffects.COOLTIME:
 					effect.setCooltime(reader.readShort());
 					break;
-				case KvjEffects.HP_BONUS:
-					effect.setHp(reader.readShort());
+				case KvjEffects.HP:
+					effect.setMaxHpPercent(reader.readShort());
 					break;
 				case KvjEffects.SUMMON_EFFECT:
 					effect.setSummonEffect(reader.readByte());

@@ -69,7 +69,7 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("level")) {
 				p.setLevel((short) Math.min(val, 200));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < 200)
+				if (p.getLevel() < 200 || val == 0)
 					p.setExp(Math.min(val, ExpTables.getForLevel(p.getLevel()) - 1));
 			} else if (stat.equalsIgnoreCase("job")) {
 				p.setJob((short) val);
@@ -78,9 +78,9 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("maxmp")) {
 				p.setMaxMp((short) Math.min(val, 30000));
 			} else if (stat.equalsIgnoreCase("hp")) {
-				p.setHp((short) Math.min(val, p.getMaxHp()));
+				p.setHp((short) Math.min(val, p.getCurrentMaxHp()));
 			} else if (stat.equalsIgnoreCase("mp")) {
-				p.setMp((short) Math.min(val, p.getMaxMp()));
+				p.setMp((short) Math.min(val, p.getCurrentMaxMp()));
 			} else if (stat.equalsIgnoreCase("fame")) {
 				p.setFame((short) Math.min(val, Short.MAX_VALUE));
 			} else if (stat.equalsIgnoreCase("meso")) {
@@ -112,9 +112,9 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("maxmp")) {
 				p.setMaxMp((short) Math.min(p.getMaxMp() + val, 30000));
 			} else if (stat.equalsIgnoreCase("hp")) {
-				p.setHp((short) Math.min(p.getHp() + val, p.getMaxHp()));
+				p.setHp((short) Math.min(p.getHp() + val, p.getCurrentMaxHp()));
 			} else if (stat.equalsIgnoreCase("mp")) {
-				p.setMp((short) Math.min(p.getMp() + val, p.getMaxMp()));
+				p.setMp((short) Math.min(p.getMp() + val, p.getCurrentMaxMp()));
 			} else if (stat.equalsIgnoreCase("fame")) {
 				p.setFame((short) Math.min(p.getFame() + val, Short.MAX_VALUE));
 			}  else if (stat.equalsIgnoreCase("meso")) {

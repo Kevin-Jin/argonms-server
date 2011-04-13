@@ -182,8 +182,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setMdef(rs.getShort(20));
 			effect.setAcc(rs.getShort(21));
 			effect.setAvoid(rs.getShort(22));
-			effect.setHp(rs.getShort(23));
-			effect.setMp(rs.getShort(24));
+			effect.setHpRecoverRate(rs.getShort(23));
+			effect.setMpRecoverRate(rs.getShort(24));
 			effect.setSpeed(rs.getShort(15));
 			effect.setJump(rs.getShort(16));
 			effect.setAttackCount(rs.getByte(4));
@@ -215,7 +215,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setRb(rs.getShort(12), rs.getShort(13));
 			effect.setProp(rs.getShort(7));
 			effect.setCooltime(rs.getShort(9));
-			effect.setHp(rs.getShort(14));
+			effect.setMaxHpPercent(rs.getShort(14));
 			if (skillid == MobSkills.SUMMON) {
 				PreparedStatement summonsPs = con.prepareStatement("SELECT `mobindex`,`mobid` FROM `mobskillsummons` WHERE `level` = ? ORDER BY `mobindex`");
 				summonsPs.setInt(1, level);

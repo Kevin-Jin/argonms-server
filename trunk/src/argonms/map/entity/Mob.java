@@ -33,7 +33,9 @@ import java.util.concurrent.ScheduledFuture;
 import argonms.character.Player;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
+import argonms.loading.item.ItemDataLoader;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.mob.MobStats;
 import argonms.loading.mob.Skill;
@@ -156,7 +158,7 @@ public class Mob extends MapEntity {
 				partyExp.compareAndSetMaxDamage(damage, attacker);
 			} else {
 				int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-						attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getX() : 0;
+						attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
 				//exp = exp * getTauntEffect() / 100;
 				exp *= GameServer.getVariables().getExpRate();
 				exp += ((exp * hsRate) / 100);
@@ -180,7 +182,7 @@ public class Mob extends MapEntity {
 					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5)) {
 						int exp = (int) (stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10);
 						int hsRate = member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getX() : 0;
+								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
 						//exp = exp * getTauntEffect() / 100;
 						exp *= GameServer.getVariables().getExpRate();
 						exp += ((exp * hsRate) / 100);
@@ -197,8 +199,10 @@ public class Mob extends MapEntity {
 			cancelTask.cancel(true);
 		for (MobDeathHook hook : hooks)
 			hook.monsterKilled(killer);
-		if (stats.getBuffToGive() > 0) {
-			//TODO, give buff and show message to map
+		int deathBuff = stats.getBuffToGive();
+		if (deathBuff > 0) {
+			killer.applyEffect(ItemDataLoader.getInstance().getEffect(deathBuff));
+			map.sendToAll(CommonPackets.writeBuffEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
 		}
 		Player highestDamage = giveExp(killer);
 		int id;
@@ -274,9 +278,7 @@ public class Mob extends MapEntity {
 	}
 
 	public boolean canUseSkill(MobSkillEffectsData effect) {
-		if (effect.getHp() < (remHp / stats.getMaxHp() * 100))
-			return false;
-		return true;
+		return ((remHp / stats.getMaxHp() * 100) <= effect.getMaxPercentHp());
 	}
 
 	public boolean hasSkill(short skillId, byte skillLevel) {

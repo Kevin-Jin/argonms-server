@@ -38,6 +38,10 @@ public class SkillEntry {
 		++level;
 	}
 
+	public void changeCurrentLevel(byte newLevel) {
+		this.level = newLevel;
+	}
+
 	public byte getMasterLevel() {
 		return master;
 	}

@@ -34,8 +34,7 @@ public abstract class BuffsData implements StatusEffectsData {
 	private short mdef;
 	private short acc;
 	private short avoid;
-	private short hp;
-	private short mp;
+	private short hands;
 	private short speed;
 	private short jump;
 	private int morph;
@@ -52,58 +51,73 @@ public abstract class BuffsData implements StatusEffectsData {
 	}
 
 	public void setWatk(short pad) {
-		effects.add(PlayerStatusEffect.WATK);
-		this.watk = pad;
+		if (pad != 0) {
+			effects.add(PlayerStatusEffect.WATK);
+			this.watk = pad;
+		}
 	}
 
 	public void setWdef(short pdd) {
-		effects.add(PlayerStatusEffect.WDEF);
-		this.wdef = pdd;
+		if (pdd != 0) {
+			effects.add(PlayerStatusEffect.WDEF);
+			this.wdef = pdd;
+		}
 	}
 
 	public void setMatk(short mad) {
-		effects.add(PlayerStatusEffect.MATK);
-		this.matk = mad;
+		if (mad != 0) {
+			effects.add(PlayerStatusEffect.MATK);
+			this.matk = mad;
+		}
 	}
 
 	public void setMdef(short mdd) {
-		effects.add(PlayerStatusEffect.MDEF);
-		this.mdef = mdd;
+		if (mdd != 0) {
+			effects.add(PlayerStatusEffect.MDEF);
+			this.mdef = mdd;
+		}
 	}
 
 	public void setAcc(short acc) {
-		effects.add(PlayerStatusEffect.ACC);
-		this.acc = acc;
+		if (acc != 0) {
+			effects.add(PlayerStatusEffect.ACC);
+			this.acc = acc;
+		}
 	}
 
 	public void setAvoid(short eva) {
-		effects.add(PlayerStatusEffect.AVOID);
-		this.avoid = eva;
+		if (eva != 0) {
+			effects.add(PlayerStatusEffect.AVOID);
+			this.avoid = eva;
+		}
 	}
 
-	public void setHp(short hp) {
-		effects.add(PlayerStatusEffect.MAXHP);
-		this.hp = hp;
-	}
-
-	public void setMp(short mp) {
-		effects.add(PlayerStatusEffect.MAXMP);
-		this.mp = mp;
+	public void setHands(short hands) {
+		if (hands != 0) {
+			effects.add(PlayerStatusEffect.HANDS);
+			this.hands = hands;
+		}
 	}
 
 	public void setSpeed(short speed) {
-		effects.add(PlayerStatusEffect.SPEED);
-		this.speed = speed;
+		if (speed != 0) {
+			effects.add(PlayerStatusEffect.SPEED);
+			this.speed = speed;
+		}
 	}
 
 	public void setJump(short jump) {
-		effects.add(PlayerStatusEffect.JUMP);
-		this.jump = jump;
+		if (jump != 0) {
+			effects.add(PlayerStatusEffect.JUMP);
+			this.jump = jump;
+		}
 	}
 
 	public void setMorph(int id) {
-		effects.add(PlayerStatusEffect.MORPH);
-		this.morph = id;
+		if (id != 0) {
+			effects.add(PlayerStatusEffect.MORPH);
+			this.morph = id;
+		}
 	}
 
 	public int getDuration() {
@@ -134,12 +148,8 @@ public abstract class BuffsData implements StatusEffectsData {
 		return avoid;
 	}
 
-	public short getHp() {
-		return hp;
-	}
-
-	public short getMp() {
-		return mp;
+	public short getHands() {
+		return hands;
 	}
 
 	public short getSpeed() {

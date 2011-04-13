@@ -19,6 +19,7 @@
 package argonms.net.client.handler;
 
 import argonms.character.Player;
+import argonms.character.inventory.Equip;
 import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
@@ -46,14 +47,14 @@ public class InventoryHandler {
 		if (src < 0 && dst > 0) { //unequip
 			InventoryTools.unequip(p.getInventory(InventoryType.EQUIPPED), p.getInventory(InventoryType.EQUIP), src, dst);
 			rc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
-			p.updateEquips();
+			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false);
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
 				rc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
 				if (result.length == 2)
 					rc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
-				p.updateEquips();
+				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true);
 			} else {
 				rc.getSession().send(CommonPackets.writeInventoryFull());
 			}

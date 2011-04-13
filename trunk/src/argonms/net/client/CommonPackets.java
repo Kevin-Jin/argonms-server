@@ -53,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -425,6 +426,73 @@ public class CommonPackets {
 		return writeUpdatePlayerStats(EMPTY_STATUPDATE, true);
 	}
 
+	public static byte[] writeUseSkill(Player p, Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SKILL_USE);
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			lew.writeShort(statupdate.getValue().shortValue());
+			lew.writeInt(skillId);
+			lew.writeInt(duration);
+		}
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 0); //additional info
+		lew.writeByte((byte) 0); //# of times skill was cast
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUseItem(Player p, Map<PlayerStatusEffect, Short> stats, int itemId, int duration) {
+		return writeUseSkill(p, stats, -itemId, duration);
+	}
+
+	public static byte[] writeCancelSkillOrItem(Player p, Set<PlayerStatusEffect> stats) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+
+		lew.writeShort(ClientSendOps.SKILL_CANCEL);
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats)
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		lew.writeByte((byte) 3);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateSkillLevel(int skillid, byte level, byte masterlevel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(18);
+
+		lew.writeShort(ClientSendOps.SKILL_ENTRY_UPDATE);
+		lew.writeBool(true);
+		lew.writeShort((short) 1);
+		lew.writeInt(skillid);
+		lew.writeInt(level);
+		lew.writeInt(masterlevel);
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuffEffect(Player p, byte effectType, int skillId, byte skillLevel, byte direction) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(direction != 3 ? 13 : 12);
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_VISUAL_EFFECT);
+		lew.writeInt(p.getId());
+		lew.writeByte(effectType);
+		lew.writeInt(skillId);
+		lew.writeByte(skillLevel);
+		if (direction != 3)
+			lew.writeByte(direction);
+
+		return lew.getBytes();
+	}
+
 	private static byte[] writeShowThirdPersonEffect(Player p, byte effectId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.THIRD_PERSON_VISUAL_EFFECT);
@@ -528,6 +596,16 @@ public class CommonPackets {
 		lew.writeByte((byte) 1);
 		lew.writeInt(itemid);
 		lew.writeInt(quantity);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowSelfBuff(Player p, byte effectType, int skillId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte(effectType);
+		lew.writeInt(skillId);
 
 		return lew.getBytes();
 	}
@@ -650,7 +728,7 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeChangeMap(int mapid, byte spawnPoint, Player p) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(26);
 
 		lew.writeShort(ClientSendOps.CHANGE_MAP);
 		lew.writeInt(p.getClient().getChannel() - 1);
@@ -661,7 +739,7 @@ public class CommonPackets {
 		lew.writeShort(p.getHp()); // hp (???)
 		lew.writeByte((byte) 0);
 		//long questMask = 0x1FFFFFFFFFFFFFFL;
-		long questMask = TimeUtil.unixToWindowsTime((long) System.currentTimeMillis());
+		long questMask = TimeUtil.unixToWindowsTime(System.currentTimeMillis());
 		lew.writeLong(questMask);
 
 		return lew.getBytes();
@@ -805,7 +883,7 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeRemovePlayer(Player p) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
 
 		lew.writeShort(ClientSendOps.REMOVE_PLAYER);
 		lew.writeInt(p.getId());
@@ -815,7 +893,7 @@ public class CommonPackets {
 
 	public static byte[] writeShowPet(Player p, byte slot, Pet pet,
 			boolean equip, boolean hunger) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(equip ? 32 + pet.getName().length() : 9);
 
 		lew.writeShort(ClientSendOps.SHOW_PET);
 		lew.writeInt(p.getId());
@@ -868,7 +946,7 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeRemoveMonster(Mob m, byte animation) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.REMOVE_MONSTER);
 		lew.writeInt(m.getId());
 		lew.writeByte(animation);
@@ -1013,8 +1091,8 @@ public class CommonPackets {
 		//what.
 		if (d.isInTown()) {
 			lew.writeShort(ClientSendOps.SPAWN_PORTAL);
-			lew.writeInt(999999999);
-			lew.writeInt(999999999);
+			lew.writeInt(GlobalConstants.NULL_MAP);
+			lew.writeInt(GlobalConstants.NULL_MAP);
 		} else {
 			lew.writeShort(ClientSendOps.REMOVE_DOOR);
 			lew.writeBool(false);
@@ -1118,4 +1196,24 @@ public class CommonPackets {
 
 		return lew.getBytes();
 	}*/
+
+	public static byte[] writeShowHide() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.GM);
+		lew.writeByte((byte) 0x10);
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeStopHide() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.GM);
+		lew.writeByte((byte) 0x10);
+		lew.writeBool(false);
+
+		return lew.getBytes();
+	}
 }

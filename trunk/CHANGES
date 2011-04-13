@@ -527,6 +527,46 @@
 	be indirectly called by the public overloaded drop methods.
 	* No longer show "You have gained +-x mesos" when dropping mesos.
 
+2011-04-13  GoldenKevin  (revision 25)
+
+	* Added support for modifications of the key map.
+	* Renamed GamePlayerHandler to GamePlayerMiscHandler.
+	* Starting to code support for castable/usable/consumable skills/items.
+	Added support for:
+		* Magic Guard
+		* Hide (which was half coded in already anyway)
+		* And the parts of any skill that generically increases [m|w][atk|def],
+		speed, jump, etc.
+	* Fixed MCDB skill data loading adding every effect for any skill.
+	* Fixed a lot of StatusEffectsData problems. Please update to KvjBin r18 and
+	recompile your Skill.wz and Item.wz.
+	* You can cast and cancel buff skills and items (including Hide, which
+	should be applied to every GM when they log in). Whether the skill/item
+	actually buffs you is a whole 'nother story. Working on them at the moment
+	though...
+	* Potions that simply heal your HP or MP should work.
+	* Hide actually makes you appear like you're in Dark Sight, but you can
+	still cast skills and attack (credits to Vana for that one).
+	* There is now a distinction between a Player's base stats and his stats
+	adjusted with buffs. The current implementation works, but it's not perfect
+	yet (still looking for any alternatives that may be faster), so watk, wdef,
+	matk, mdef, acc, eva, hands, speed, and jump bonuses from skills and equips;
+	str, dex, int, luk, hp, and mp bonuses from equips; and hp and mp percentage
+	based increases from hyperbody are now recognized on the server. Str, dex,
+	int, and luk are under the assumption that all bonuses are by addition only,
+	(i.e. no percentages). If any percentage based bonuses are introduced for
+	those aforementioned stats, then they will have to use similar routines to
+	those of maxHp and maxMp (albeit without the remHp and remMp checks).
+	* Added support for pings being sent to idle connections.
+	* Enabled TCP_NO_DELAY (disabling Nagle's Algorithm) because it caused some
+	noticeable latency when connecting from anywhere besides localhost
+	(especially demonstrated by a monster dropping multiple items).
+	* Fixed a frequent source of NullPointerExceptions in TakeDamageHandler.
+	* Fixed ranged monsters not appearing when a player warps to a map and warps
+	back.
+	* Added !skill and !give commands for GMs. "!stat set exp 0" now works if
+	you are level 200.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

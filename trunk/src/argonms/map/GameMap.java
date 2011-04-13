@@ -499,6 +499,8 @@ public class GameMap {
 			m.setControllerKnowsAboutAggro(false);
 			updateMonsterController(m);
 		}
+		p.clearControlledMobs();
+		p.clearVisibleEntities();
 		if (timeLimitTasks != null) {
 			ScheduledFuture<?> future = timeLimitTasks.remove(p);
 			if (future != null)
@@ -554,13 +556,11 @@ public class GameMap {
 					for (Short s : changedSlots.getLeft()) { //modified
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						qty = slot.getQuantity();
 						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
 					}
 					for (Short s : changedSlots.getRight()) { //added
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						qty = slot.getQuantity();
 						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
 					}
 				} else {

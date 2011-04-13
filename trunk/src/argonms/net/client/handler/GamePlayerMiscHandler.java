@@ -30,7 +30,13 @@ import argonms.tools.output.LittleEndianByteArrayWriter;
  *
  * @author GoldenKevin
  */
-public class GamePlayerHandler {
+public class GamePlayerMiscHandler {
+	private static final int
+		BINDING_CHANGE_KEY_MAPPING = 0,
+		BINDING_CHANGE_AUTO_HP_POT = 1,
+		BINDING_CHANGE_AUTO_MP_POT = 2
+	;
+
 	public static void handleReplenishHpMp(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		packet.skip(4);
@@ -57,6 +63,39 @@ public class GamePlayerHandler {
 			}
 		}
 		p.getMap().sendToAll(writeExpressionChange(p, emote), p);
+	}
+
+	public static void handleBindingChange(LittleEndianReader packet, RemoteClient rc) {
+		Player p = ((GameClient) rc).getPlayer();
+		int actionType = packet.readInt();
+		switch (actionType) {
+			case BINDING_CHANGE_KEY_MAPPING: {
+				for (int i = packet.readInt(); i > 0; --i) {
+					byte key = (byte) packet.readInt();
+					byte type = packet.readByte();
+					int action = packet.readInt();
+					p.bindKey(key, type, action);
+				}
+				break;
+			//TODO: how the heck do you send these bindings to the client?
+			} case BINDING_CHANGE_AUTO_HP_POT: {
+				int itemid = packet.readInt();
+				if (itemid == 0) {
+					//unequip
+				} else {
+					//equip
+				}
+				break;
+			} case BINDING_CHANGE_AUTO_MP_POT: {
+				int itemid = packet.readInt();
+				if (itemid == 0) {
+					//unequip
+				} else {
+					//equip
+				}
+				break;
+			}
+		}
 	}
 
 	private static byte[] writeExpressionChange(Player p, int expression) {
