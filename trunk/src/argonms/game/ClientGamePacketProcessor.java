@@ -18,19 +18,10 @@
 
 package argonms.game;
 
-import argonms.net.client.ClientPacketProcessor;
-import argonms.net.client.ClientRecvOps;
-import argonms.net.client.RemoteClient;
-import argonms.net.client.handler.DealDamageHandler;
-import argonms.net.client.handler.GameBuffHandler;
-import argonms.net.client.handler.GameChatHandler;
-import argonms.net.client.handler.GameEnterHandler;
-import argonms.net.client.handler.GameGoToHandler;
-import argonms.net.client.handler.GameMovementHandler;
-import argonms.net.client.handler.GameNpcHandler;
-import argonms.net.client.handler.GamePlayerMiscHandler;
-import argonms.net.client.handler.InventoryHandler;
-import argonms.net.client.handler.TakeDamageHandler;
+import argonms.game.handler.*;
+import argonms.net.external.ClientPacketProcessor;
+import argonms.net.external.ClientRecvOps;
+import argonms.net.external.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;

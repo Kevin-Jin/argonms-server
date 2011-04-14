@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import argonms.net.server.CenterRemoteOps;
-import argonms.net.server.CenterRemotePacketProcessor;
-import argonms.net.server.RemoteCenterInterface;
+import argonms.net.internal.CenterRemoteOps;
+import argonms.net.internal.CenterRemotePacketProcessor;
+import argonms.net.internal.RemoteCenterInterface;
 import argonms.tools.input.LittleEndianReader;
 
 /**

@@ -20,7 +20,7 @@ package argonms.game.script;
 
 import argonms.GlobalConstants;
 import argonms.game.GameClient;
-import argonms.net.client.ClientSendOps;
+import argonms.net.external.ClientSendOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;

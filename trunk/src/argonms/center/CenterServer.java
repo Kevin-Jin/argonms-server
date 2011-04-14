@@ -19,12 +19,12 @@
 package argonms.center;
 
 import argonms.ServerType;
-import argonms.net.client.RemoteClient;
+import argonms.net.external.RemoteClient;
+import argonms.net.internal.CenterRemoteOps;
 import argonms.net.remoteadmin.TelnetListener;
 import argonms.center.send.CenterGameInterface;
 import argonms.center.send.CenterLoginInterface;
 import argonms.center.send.CenterRemoteInterface;
-import argonms.net.server.CenterRemoteOps;
 import argonms.center.send.CenterShopInterface;
 import argonms.center.recv.RemoteServerListener;
 import argonms.tools.DatabaseConnection;

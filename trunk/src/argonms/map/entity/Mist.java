@@ -25,7 +25,7 @@ import argonms.character.skill.Skills;
 import argonms.loading.skill.MobSkillEffectsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.map.MapEntity;
-import argonms.net.client.CommonPackets;
+import argonms.net.external.CommonPackets;
 import argonms.tools.Rng;
 
 /**

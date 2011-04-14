@@ -20,7 +20,7 @@ package argonms.login;
 
 import argonms.ServerType;
 import argonms.net.HashFunctions;
-import argonms.net.client.RemoteClient;
+import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -20,7 +20,7 @@ package argonms.center.recv;
 
 import argonms.center.CenterServer;
 import argonms.center.send.CenterShopInterface;
-import argonms.net.server.RemoteCenterOps;
+import argonms.net.internal.RemoteCenterOps;
 import argonms.tools.input.LittleEndianReader;
 
 /**

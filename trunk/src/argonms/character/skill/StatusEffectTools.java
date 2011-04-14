@@ -27,7 +27,7 @@ import argonms.loading.item.ItemDataLoader;
 import argonms.loading.item.ItemEffectsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
-import argonms.net.client.CommonPackets;
+import argonms.net.external.CommonPackets;
 
 /**
  *

@@ -26,8 +26,8 @@ import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.net.client.ClientSession;
-import argonms.net.client.CommonPackets;
+import argonms.net.external.ClientSession;
+import argonms.net.external.CommonPackets;
 import argonms.tools.Pair;
 
 /**

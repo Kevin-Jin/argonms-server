@@ -567,6 +567,15 @@
 	* Added !skill and !give commands for GMs. "!stat set exp 0" now works if
 	you are level 200.
 
+2011-04-14  GoldenKevin  (revision 26)
+
+	* Renamed package argonms.net.client to argonms.net.external and
+	argonms.net.server to argonms.net.internal. Thus, external refers to any
+	communications with a MapleStory client, while internal refers to inter-
+	server communications with other servers that use the ArgonMS protocol.
+	* Distributed all classes from argonms.net.external.handler into packages
+	specific for each type of server (i.e. argonms.game/login/shop.handler).
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
