@@ -18,10 +18,10 @@
 
 package argonms.shop;
 
-import argonms.net.client.ClientPacketProcessor;
-import argonms.net.client.ClientRecvOps;
-import argonms.net.client.RemoteClient;
-import argonms.net.client.handler.ShopHandler;
+import argonms.net.external.ClientPacketProcessor;
+import argonms.net.external.ClientRecvOps;
+import argonms.net.external.RemoteClient;
+import argonms.shop.handler.*;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;

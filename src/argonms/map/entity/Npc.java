@@ -19,7 +19,7 @@
 package argonms.map.entity;
 
 import argonms.map.MapEntity;
-import argonms.net.client.CommonPackets;
+import argonms.net.external.CommonPackets;
 
 /**
  *

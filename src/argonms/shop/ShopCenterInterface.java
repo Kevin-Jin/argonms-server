@@ -20,8 +20,8 @@ package argonms.shop;
 
 import argonms.LocalServer;
 import argonms.ServerType;
-import argonms.net.server.RemoteCenterInterface;
-import argonms.net.server.RemoteCenterOps;
+import argonms.net.internal.RemoteCenterInterface;
+import argonms.net.internal.RemoteCenterOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 
 /**

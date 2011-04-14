@@ -20,7 +20,6 @@ package argonms.character.skill;
 
 import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.EffectSource;
-import argonms.loading.skill.PlayerSkillEffectsData;
 
 /**
  *

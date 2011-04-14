@@ -18,10 +18,10 @@
 
 package argonms.game.clientcommand;
 
-import argonms.net.client.ClientSession;
-import argonms.net.client.CommonPackets;
-import argonms.net.client.RemoteClient;
-import argonms.net.client.handler.GameChatHandler.TextStyle;
+import argonms.game.handler.GameChatHandler.TextStyle;
+import argonms.net.external.ClientSession;
+import argonms.net.external.CommonPackets;
+import argonms.net.external.RemoteClient;
 
 /**
  *

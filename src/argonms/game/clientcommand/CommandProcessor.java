@@ -28,7 +28,7 @@ import argonms.game.GameServer;
 import argonms.game.clientcommand.CommandDefinition.CommandAction;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.skill.SkillStats;
-import argonms.net.client.CommonPackets;
+import argonms.net.external.CommonPackets;
 import argonms.tools.Pair;
 import java.util.LinkedHashMap;
 import java.util.List;

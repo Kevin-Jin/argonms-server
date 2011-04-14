@@ -20,7 +20,7 @@ package argonms.game;
 
 import argonms.character.Player;
 import argonms.game.script.NpcConversationActions;
-import argonms.net.client.RemoteClient;
+import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

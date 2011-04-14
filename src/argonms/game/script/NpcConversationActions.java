@@ -19,7 +19,7 @@
 package argonms.game.script;
 
 import argonms.game.GameClient;
-import argonms.net.client.ClientSendOps;
+import argonms.net.external.ClientSendOps;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;

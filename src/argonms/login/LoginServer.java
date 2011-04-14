@@ -22,7 +22,7 @@ import argonms.LocalServer;
 import argonms.ServerType;
 import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
-import argonms.net.client.ClientListener;
+import argonms.net.external.ClientListener;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Timer;
 import java.io.FileReader;

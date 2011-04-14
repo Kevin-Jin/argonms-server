@@ -18,11 +18,10 @@
 
 package argonms.login;
 
-import argonms.net.client.ClientPacketProcessor;
-import argonms.net.client.ClientRecvOps;
-import argonms.net.client.RemoteClient;
-import argonms.net.client.handler.AuthHandler;
-import argonms.net.client.handler.WorldlistHandler;
+import argonms.login.handler.*;
+import argonms.net.external.ClientPacketProcessor;
+import argonms.net.external.ClientRecvOps;
+import argonms.net.external.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;

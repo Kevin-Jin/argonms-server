@@ -19,8 +19,9 @@
 package argonms.center.recv;
 
 import argonms.center.CenterRemoteSession;
-import argonms.net.server.InterServerPacketDecoder;
-import argonms.net.server.InterServerPacketEncoder;
+import argonms.net.internal.InterServerPacketDecoder;
+import argonms.net.internal.InterServerPacketEncoder;
+
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.Executors;
