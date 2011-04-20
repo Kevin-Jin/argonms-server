@@ -24,6 +24,8 @@ import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
 import argonms.game.script.PortalScriptManager;
 import argonms.loading.item.ItemDataLoader;
@@ -35,7 +37,7 @@ import argonms.loading.map.ReactorData;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.mob.MobStats;
 import argonms.loading.reactor.ReactorDataLoader;
-import argonms.map.MapEntity.MapEntityType;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mist;
@@ -45,22 +47,24 @@ import argonms.map.entity.Npc;
 import argonms.map.entity.Reactor;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Pair;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableList;
 import argonms.tools.collections.LockableMap;
-import argonms.tools.collections.LockableSet;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,22 +103,19 @@ public class GameMap {
 	 */
 	private static final int DROP_EXPIRE = 60000;
 	private final MapStats stats;
-	private final LockableMap<Integer, MapEntity> entities;
-	private final LockableSet<Player> players;
+	private final Map<EntityType, EntityPool> entPools;
 	private final LockableList<MonsterSpawn> monsterSpawns;
 	private final AtomicInteger monsters;
 	private ConcurrentHashMap<Player, ScheduledFuture<?>> timeLimitTasks;
 	private ConcurrentHashMap<Player, ScheduledFuture<?>> decHpTasks;
-	//no need to be Atomic because it always is locked by entities...
-	private int nextEntityId;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
-		this.entities = new LockableMap<Integer, MapEntity>(new LinkedHashMap<Integer, MapEntity>());
-		this.players = new LockableSet<Player>(new LinkedHashSet<Player>());
+		this.entPools = new EnumMap<EntityType, EntityPool>(EntityType.class);
+		for (EntityType type : EntityType.values())
+			entPools.put(type, new EntityPool());
 		this.monsterSpawns = new LockableList<MonsterSpawn>(new LinkedList<MonsterSpawn>());
 		this.monsters = new AtomicInteger(0);
-		this.nextEntityId = 1; //reserve eId of 0 for a non-existant entity
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
 				case 'm': {
@@ -149,7 +150,7 @@ public class GameMap {
 		return stats;
 	}
 
-	public int getMapId() {
+	public int getDataId() {
 		return stats.getMapId();
 	}
 
@@ -191,17 +192,12 @@ public class GameMap {
 	 * @return the map entity with the given id, or null if there is no such
 	 * entity.
 	 */
-	public MapEntity getEntityById(int eId) {
-		entities.lockRead();
-		try {
-			return entities.get(Integer.valueOf(eId));
-		} finally {
-			entities.unlockRead();
-		}
+	public MapEntity getEntityById(EntityType type, int eId) {
+		return entPools.get(type).getByIdSafely(eId);
 	}
 
 	public int getPlayerCount() {
-		return players.getSizeWhenSafe();
+		return entPools.get(EntityType.PLAYER).getSizeSafely();
 	}
 
 	private void updateMonsterController(Mob monster) {
@@ -214,9 +210,11 @@ public class GameMap {
 			else
 				controller = null;
 		int minControlled = Integer.MAX_VALUE;
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
-			for (Player p : players) {
+			for (MapEntity ent : players.allEnts()) {
+				Player p = (Player) ent;
 				int count = p.getControlledMobs().size();
 				if (p.isVisible() && count < minControlled) {
 					minControlled = count;
@@ -240,12 +238,13 @@ public class GameMap {
 	}
 
 	public final void spawnEntity(MapEntity ent) {
-		entities.lockWrite();
+		EntityPool pool = entPools.get(ent.getEntityType());
+		pool.lockWrite();
 		try {
-			ent.setId(nextEntityId++);
-			entities.put(Integer.valueOf(ent.getId()), ent);
+			ent.setId(pool.nextEntId());
+			pool.add(ent);
 		} finally {
-			entities.unlockWrite();
+			pool.unlockWrite();
 		}
 		if (ent.isNonRangedType())
 			sendToAll(ent.getCreationMessage());
@@ -263,16 +262,10 @@ public class GameMap {
 					case PLAYER_NPC:
 						p.getClient().getSession().send(CommonPackets.writeControlNpc((Npc) ent));
 						break;
-					/*case PLAYER:
-						Pet[] equippedPets = ((Player) ent).getPets();
-						for (byte i = 0; i < 3; i++) {
-							if (equippedPets[i] != null)
-								p.getClient().getSession().send(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));
-						break;*/
 				}
 			}
 		} else {
-			if (ent.getEntityType() == MapEntityType.MONSTER)
+			if (ent.getEntityType() == EntityType.MONSTER)
 				updateMonsterController((Mob) ent);
 			if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
 				p.getClient().getSession().send(ent.getShowEntityMessage());
@@ -282,21 +275,17 @@ public class GameMap {
 	}
 
 	public void spawnPlayer(final Player p) {
-		entities.lockWrite();
+		EntityPool players = entPools.get(EntityType.PLAYER);
+		players.lockWrite();
 		try { //write lock allows us to read in mutex, so no need for a readLock
-			if (p.isVisible()) { //show ourself to other clients if we are not hidden
+			if (p.isVisible()) //show ourself to other clients if we are not hidden
 				sendToAll(p.getCreationMessage());
-				/*Pet[] equippedPets = p.getPets();
-					for (byte i = 0; i < 3; i++) {
-						if (equippedPets[i] != null)
-							p.getClient().getSession().send(CommonPackets.writeShowPet(this, i, equippedPets[i], true, false));*/
-			}
-			players.addWhenSafe(p);
-			for (MapEntity ent : entities.values())
-				sendEntityData(ent, p);
-			entities.put(Integer.valueOf(p.getId()), p);
+			for (EntityPool pool : entPools.values())
+				for (MapEntity ent : pool.allEnts())
+					sendEntityData(ent, p);
+			players.add(p);
 		} finally {
-			entities.unlockWrite();
+			players.unlockWrite();
 		}
 		if (timeLimitTasks != null) {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
@@ -347,7 +336,7 @@ public class GameMap {
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
-				ItemDrop d = (ItemDrop) entities.getWhenSafe(eid);
+				ItemDrop d = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eid);
 				if (d != null) {
 					d.expire();
 					destroyEntity(d);
@@ -403,7 +392,7 @@ public class GameMap {
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				for (Integer eId : dropped) {
-					ItemDrop drop = (ItemDrop) entities.getWhenSafe(eId);
+					ItemDrop drop = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eId.intValue());
 					if (drop != null) {
 						drop.expire();
 						destroyEntity(drop);
@@ -436,13 +425,13 @@ public class GameMap {
 		if (mist.getMistType() == Mist.POISON_MIST) {
 			Runnable poisonTask = new Runnable() {
 				public void run() {
-					List<MapEntity> affectedMonsters = getMapEntitiesInRect(mist.getBox());
+					List<MapEntity> affectedMonsters = getMapEntitiesInRect(mist.getBox(), EnumSet.of(EntityType.MONSTER));
 					for (MapEntity mo : affectedMonsters) {
-						if (mo.getEntityType() == MapEntityType.MONSTER && mist.shouldHurt()) {
+						if (mist.shouldHurt()) {
 							Mob monster = (Mob) mo;
 							//TODO: implement poison mist
 							//MonsterStatusEffect poisonEffect = new MonsterStatusEffect(Collections.singletonMap(MonsterStatus.POISON, 1), mist.getSourceSkill(), false);
-							//((MapleMonster) mo).applyStatus(mist.getOwner(), poisonEffect, true, duration, false);
+							//monster.applyStatus(mist.getOwner(), poisonEffect, true, duration, false);
 						}
 					}
 				}
@@ -466,21 +455,24 @@ public class GameMap {
 		//let every client animate their own NPCs.
 		//controlling mobs is complicated enough as it is, we
 		//don't need to keep track of more than necessary things
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
-			for (Player p : players)
-				p.getClient().getSession().send(CommonPackets.writeControlNpc(n));
+			for (MapEntity p : players.allEnts())
+				((Player) p).getClient().getSession().send(CommonPackets.writeControlNpc(n));
 		} finally {
 			players.unlockRead();
 		}
 	}
 
 	public void destroyEntity(MapEntity ent) {
+		entPools.get(ent.getEntityType()).removeByIdSafely(Integer.valueOf(ent.getId()));
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
 			if (!ent.isNonRangedType()) {
-				for (Player p : players)
-					p.removeVisibleMapEntity(ent);
+				for (MapEntity p : players.allEnts())
+					((Player) p).removeVisibleMapEntity(ent);
 				sendToAll(ent.getDestructionMessage(), ent.getPosition(), null);
 			} else {
 				sendToAll(ent.getDestructionMessage());
@@ -488,11 +480,9 @@ public class GameMap {
 		} finally {
 			players.unlockRead();
 		}
-		entities.removeWhenSafe(Integer.valueOf(ent.getId()));
 	}
 
 	public void removePlayer(Player p) {
-		players.removeWhenSafe(p);
 		for (Mob m : p.getControlledMobs()) {
 			m.setController(null);
 			m.setControllerHasAggro(false);
@@ -534,7 +524,7 @@ public class GameMap {
 
 	public void pickUpDrop(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			if (p.gainMesos(d.getMesoValue(), false, true)) {
+			if (p.gainMesos(d.getDataId(), false, true)) {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 			} else {
@@ -542,31 +532,31 @@ public class GameMap {
 			}
 		} else {
 			InventorySlot pickedUp = d.getItem();
-			int itemid = pickedUp.getItemId();
+			int itemid = pickedUp.getDataId();
 			short qty = pickedUp.getQuantity();
-			InventoryType type = InventoryTools.getCategory(d.getItem().getItemId());
+			InventoryType type = InventoryTools.getCategory(d.getItem().getDataId());
 			Inventory inv = p.getInventory(type);
 			if (InventoryTools.canFitEntirely(inv, itemid, qty)) {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
-					Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemid, qty);
+					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty);
 					short pos;
 					InventorySlot slot;
-					for (Short s : changedSlots.getLeft()) { //modified
+					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
 						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
 					}
-					for (Short s : changedSlots.getRight()) { //added
+					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
 						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
 					}
 				} else {
-					//TODO: apply item effect
+					StatusEffectTools.useItem(p, itemid);
 				}
-				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, pickedUp.getQuantity()));
+				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, qty));
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
 				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
@@ -576,7 +566,7 @@ public class GameMap {
 
 	public void mesoExplosion(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			p.gainMesos(d.getMesoValue(), false);
+			p.gainMesos(d.getDataId(), false);
 			d.explode();
 			destroyEntity(d);
 		}
@@ -590,7 +580,7 @@ public class GameMap {
 
 	//FIXME: I think all mobs spawn only on the top spawnpoint. o.O
 	public void respawnMobs() {
-		if (players.getSizeWhenSafe() == 0)
+		if (entPools.get(EntityType.PLAYER).getSizeSafely() == 0)
 			return;
 		monsterSpawns.lockRead();
 		try {
@@ -631,18 +621,23 @@ public class GameMap {
 		} finally {
 			visible.unlockWrite();
 		}
-		entities.lockRead();
-		try {
-			for (MapEntity ent : entities.values()) {
-				if (!ent.isNonRangedType()) {
-					if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
-						p.getClient().getSession().send(ent.getShowEntityMessage());
-						p.addToVisibleMapEntities(ent);
+		//TODO: once we implement all entity types and the ranged flags of each
+		//are stable, make a constant EnumSet of EntityTypes that only contain
+		//non ranged types and only iterate over the pools of those types
+		for (EntityPool pool : entPools.values()) {
+			pool.lockRead();
+			try {
+				for (MapEntity ent : pool.allEnts()) {
+					if (!ent.isNonRangedType()) {
+						if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
+							p.getClient().getSession().send(ent.getShowEntityMessage());
+							p.addToVisibleMapEntities(ent);
+						}
 					}
 				}
+			} finally {
+				pool.unlockRead();
 			}
-		} finally {
-			entities.unlockRead();
 		}
 	}
 
@@ -717,10 +712,11 @@ public class GameMap {
 	 * @param message the packet to send to all players
 	 */
 	public void sendToAll(byte[] message) {
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
-			for (Player p : players)
-				p.getClient().getSession().send(message);
+			for (MapEntity p : players.allEnts())
+				((Player) p).getClient().getSession().send(message);
 		} finally {
 			players.unlockRead();
 		}
@@ -734,11 +730,12 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Player source) {
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
-			for (Player p : players)
+			for (MapEntity p : players.allEnts())
 				if (!p.equals(source))
-					p.getClient().getSession().send(message);
+					((Player) p).getClient().getSession().send(message);
 		} finally {
 			players.unlockRead();
 		}
@@ -755,12 +752,13 @@ public class GameMap {
 	 * players should receive this message, pass null for this parameter.
 	 */
 	public void sendToAll(byte[] message, Point center, double range, Player source) {
+		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
-			for (Player p : players)
+			for (MapEntity p : players.allEnts())
 				if (!p.equals(source))
 					if (center.distanceSq(p.getPosition()) <= range)
-						p.getClient().getSession().send(message);
+						((Player) p).getClient().getSession().send(message);
 		} finally {
 			players.unlockRead();
 		}
@@ -782,17 +780,24 @@ public class GameMap {
 		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
 	}
 
-	private List<MapEntity> getMapEntitiesInRect(Rectangle box) {
+	private List<MapEntity> getMapEntitiesInRect(Rectangle box, Set<EntityType> types) {
 		List<MapEntity> ret = new LinkedList<MapEntity>();
-		entities.lockRead();
-		try {
-			for (MapEntity ent : entities.values())
-				if (box.contains(ent.getPosition()))
-					ret.add(ent);
-		} finally {
-			entities.unlockRead();
+		for (EntityType type : types) {
+			EntityPool pool = entPools.get(type);
+			pool.lockRead();
+			try {
+				for (MapEntity ent : pool.allEnts())
+					if (box.contains(ent.getPosition()))
+						ret.add(ent);
+			} finally {
+				pool.unlockRead();
+			}
 		}
 		return ret;
+	}
+
+	public List<MapEntity> getMapEntitiesInRect(Rectangle box) {
+		return getMapEntitiesInRect(box, EnumSet.allOf(EntityType.class));
 	}
 
 	private class MonsterSpawn implements Comparable<MonsterSpawn> {
@@ -831,8 +836,11 @@ public class GameMap {
 					//nextPossibleSpawn more than once.
 					if (mobTime > 0)
 						nextPossibleSpawn = System.currentTimeMillis() + mobTime * 1000;
-					else
-						nextPossibleSpawn = System.currentTimeMillis() + mobStats.getDelays().get("die1").intValue();
+					else {
+						Integer deathTime = mobStats.getDelays().get("die1");
+						nextPossibleSpawn = System.currentTimeMillis()
+								+ (deathTime != null ? deathTime.intValue() : 0);
+					}
 					spawnedMonsters.decrementAndGet();
 				}
 			});
@@ -885,5 +893,74 @@ public class GameMap {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.SHOW_EQUIP_EFFECT);
 		return lew.getBytes();
+	}
+
+	private static class EntityPool {
+		private final LockableMap<Integer, MapEntity> entities;
+		//no need to be Atomic because it always is locked when accessed...
+		private int nextEntId;
+
+		public EntityPool() {
+			this.entities = new LockableMap<Integer, MapEntity>(new LinkedHashMap<Integer, MapEntity>());
+			this.nextEntId = 0;
+		}
+
+		//TODO: reuse entity ids of the dead
+		public int nextEntId() {
+			//preincrement so we can reserve eId of 0 for a non-existant entity
+			return ++nextEntId;
+		}
+
+		public MapEntity getById(int entityId) {
+			return entities.get(Integer.valueOf(entityId));
+		}
+
+		public MapEntity getByIdSafely(int entityId) {
+			return entities.getWhenSafe(Integer.valueOf(entityId));
+		}
+
+		public void add(MapEntity ent) {
+			entities.put(Integer.valueOf(ent.getId()), ent);
+		}
+
+		public void addSafely(MapEntity ent) {
+			entities.putWhenSafe(Integer.valueOf(ent.getId()), ent);
+		}
+
+		public void removeById(int entityId) {
+			entities.remove(Integer.valueOf(entityId));
+		}
+
+		public void removeByIdSafely(int entityId) {
+			entities.removeWhenSafe(Integer.valueOf(entityId));
+		}
+
+		public int getSize() {
+			return entities.size();
+		}
+
+		public int getSizeSafely() {
+			return entities.getSizeWhenSafe();
+		}
+
+		public Collection<MapEntity> allEnts() {
+			return entities.values();
+		}
+
+		public void lockRead() {
+			entities.lockRead();
+		}
+
+		public void unlockRead() {
+			entities.unlockRead();
+		}
+
+		public void lockWrite() {
+			entities.lockWrite();
+		}
+
+		public void unlockWrite() {
+			entities.unlockWrite();
+		}
 	}
 }

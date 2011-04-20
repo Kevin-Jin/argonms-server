@@ -58,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @see argonms.tools.collections.LockableMap
  * @author GoldenKevin
  */
+@SuppressWarnings("serial")
 public class LockableHashMap<K, V> extends HashMap<K, V> {
 	private Lock readLock, writeLock;
 

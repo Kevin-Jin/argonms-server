@@ -95,7 +95,7 @@ public class Mob extends MapEntity {
 		setStance((byte) 5);
 	}
 
-	public int getMobId() {
+	public int getDataId() {
 		return stats.getMobId();
 	}
 
@@ -141,7 +141,7 @@ public class Mob extends MapEntity {
 				highestDamageAttacker = attacker;
 				highestDamage = damage;
 			}
-			if (attacker == null || attacker.getMapId() != map.getMapId() || !attacker.isAlive())
+			if (attacker == null || attacker.getMapId() != map.getDataId() || !attacker.isAlive())
 				continue;
 
 			attackerLevel = attacker.getLevel();
@@ -170,7 +170,7 @@ public class Mob extends MapEntity {
 			for (Entry<Party, PartyExp> entry : parties.entrySet()) {
 				attackerParty = entry.getKey();
 				partyExp = entry.getValue();
-				members = attackerParty.getMembersInMap(map.getMapId());
+				members = attackerParty.getMembersInMap(map.getDataId());
 				short totalLevel = 0;
 				for (Player member : members) {
 					attackerLevel = member.getLevel();
@@ -395,7 +395,7 @@ public class Mob extends MapEntity {
 						}
 						// Get spawn coordinates (This fixes monster lock)
 						// TODO get map left and right wall. Any suggestions?
-						switch (map.getMapId()) {
+						switch (map.getDataId()) {
 							case 220080001: //Pap map
 								if (xpos < -890)
 									xpos = (int)(-890 + Math.ceil(generator.nextDouble() * 150));
@@ -450,8 +450,8 @@ public class Mob extends MapEntity {
 		return time != null ? time.intValue() : 0;
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.MONSTER;
+	public EntityType getEntityType() {
+		return EntityType.MONSTER;
 	}
 
 	public boolean isAlive() {

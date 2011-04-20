@@ -26,11 +26,17 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class ReactorStats {
+	private int reactorId;
 	private int link;
 	private Map<Byte, State> states;
 
-	protected ReactorStats() {
+	protected ReactorStats(int reactorId) {
+		this.reactorId = reactorId;
 		states = new HashMap<Byte, State>();
+	}
+
+	public int getReactorId() {
+		return reactorId;
 	}
 
 	protected void setLink(int reactorid) {

@@ -66,7 +66,7 @@ public class ItemDrop extends MapEntity {
 
 	public ItemDrop(InventorySlot item) {
 		this.dropType = ITEM;
-		this.id = item.getItemId();
+		this.id = item.getDataId();
 		this.item = item;
 	}
 
@@ -91,11 +91,7 @@ public class ItemDrop extends MapEntity {
 		return dropType;
 	}
 
-	public int getItemId() {
-		return id;
-	}
-
-	public int getMesoValue() {
+	public int getDataId() {
 		return id;
 	}
 
@@ -115,8 +111,8 @@ public class ItemDrop extends MapEntity {
 		return item.getExpiration();
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.ITEM;
+	public EntityType getEntityType() {
+		return EntityType.DROP;
 	}
 
 	public InventorySlot getItem() {

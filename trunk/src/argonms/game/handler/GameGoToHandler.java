@@ -25,20 +25,16 @@ import argonms.game.GameServer;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
-import argonms.tools.Pair;
+import argonms.tools.collections.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameGoToHandler {
-	private static final Logger LOG = Logger.getLogger(GameGoToHandler.class.getName());
-
 	public static void handleChangeChannel(LittleEndianReader packet, RemoteClient rc) {
 		byte destCh = (byte) (packet.readByte() + 1);
 		byte curCh = rc.getChannel();
@@ -46,8 +42,8 @@ public class GameGoToHandler {
 		int port;
 		try {
 			Pair<byte[], Integer> hostAndPort = GameServer.getChannel(curCh).getInterChannelInterface().getChannelHost(destCh);
-			host = hostAndPort.getLeft();
-			port = hostAndPort.getRight().intValue();
+			host = hostAndPort.left;
+			port = hostAndPort.right.intValue();
 		} catch (UnknownHostException e) {
 			host = null;
 			port = -1;

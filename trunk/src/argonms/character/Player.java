@@ -67,6 +67,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//TODO: Split into a PlayerStats class that does not have any of the following
+//vars: add*, map, bindings, skillMacros, buddies, skillEntries, cooldowns,
+//activeEffects, *cancels, visibleEntities, controllingMobs, guild, party
+//(i.e. none of the GameServer stuff) so we don't have to instantiate this huge
+//object when loading a character in ShopServer or the LoginServer. Use
+//composition or inheritance to include the aforementioned data for GameServer
+//and move Player to the argonms.map.entity package.
 /**
  *
  * @author GoldenKevin
@@ -132,6 +139,10 @@ public class Player extends MapEntity {
 		controllingMobs = new ArrayList<Mob>();
 	}
 
+	public int getDataId() {
+		return getId();
+	}
+
 	public void saveCharacter() {
 		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 		boolean prevAutoCommit = true;
@@ -150,7 +161,7 @@ public class Player extends MapEntity {
 			}
 			con.commit();
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save character " + getId()
+			LOG.log(Level.WARNING, "Could not save character " + getDataId()
 					+ ". Rolling back all changes...", ex);
 			try {
 				con.rollback();
@@ -163,7 +174,7 @@ public class Player extends MapEntity {
 				con.setTransactionIsolation(prevTransactionIsolation);
 			} catch (SQLException ex) {
 				LOG.log(Level.WARNING, "Could not reset Connection config "
-						+ "after saving character " + getId(), ex);
+						+ "after saving character " + getDataId(), ex);
 			}
 		}
 	}
@@ -213,7 +224,7 @@ public class Player extends MapEntity {
 			ps.setShort(31, inventories.get(InventoryType.STORAGE).getMaxSlots());
 			ps.setShort(32, buddies.getCapacity());
 			ps.setByte(33, gm);
-			ps.setInt(34, getId());
+			ps.setInt(34, getDataId());
 			int updateRows = ps.executeUpdate();
 			if (updateRows < 1)
 				LOG.log(Level.WARNING, "Updating a deleted character with name "
@@ -243,7 +254,7 @@ public class Player extends MapEntity {
 				invUpdateSpecifyAccId = true;
 			}
 			PreparedStatement ps = con.prepareStatement(invUpdate);
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			if (invUpdateSpecifyAccId)
 				ps.setInt(2, client.getAccountId());
 			ps.executeUpdate();
@@ -265,7 +276,7 @@ public class Player extends MapEntity {
 						ps.setNull(1, Types.INTEGER);
 						break;
 					default:
-						ps.setInt(1, getId());
+						ps.setInt(1, getDataId());
 						break;
 				}
 				ps.setInt(3, ent.getKey().value());
@@ -273,7 +284,7 @@ public class Player extends MapEntity {
 					InventorySlot item = e.getValue();
 
 					ps.setShort(4, e.getKey().shortValue());
-					ps.setInt(5, item.getItemId());
+					ps.setInt(5, item.getDataId());
 					ps.setLong(6, item.getExpiration());
 					ps.setLong(7, item.getUniqueId());
 					ps.setString(8, item.getOwner());
@@ -380,13 +391,13 @@ public class Player extends MapEntity {
 		try {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM `skills` "
 					+ "WHERE `characterid` = ?");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
 			ps = con.prepareStatement("INSERT INTO `skills` (`characterid`," +
 					"`skillid`,`level`,`mastery`) VALUES (?,?,?,?)");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			for (Entry<Integer, SkillEntry> skill : skillEntries.entrySet()) {
 				SkillEntry skillLevel = skill.getValue();
 				ps.setInt(2, skill.getKey().intValue());
@@ -406,13 +417,13 @@ public class Player extends MapEntity {
 		try {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM `cooldowns` "
 					+ "WHERE `characterid` = ?");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
 			ps = con.prepareStatement("INSERT INTO `cooldowns`" +
 					"(`characterid`,`skill`,`remaining`) VALUES (?,?,?)");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
 				ps.setInt(1, cooling.getKey().intValue());
 				ps.setShort(2, cooling.getValue().getSecondsRemaining());
@@ -430,7 +441,7 @@ public class Player extends MapEntity {
 		try {
 			PreparedStatement ps = con.prepareStatement("DELETE FROM `keymaps` "
 					+ "WHERE `characterid` = ?");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -438,7 +449,7 @@ public class Player extends MapEntity {
 			//rewriteBatchedStatements=true or else this would take over 2 secs!
 			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
 					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
 				KeyBinding binding = entry.getValue();
 				ps.setByte(2, entry.getKey().byteValue());
@@ -451,7 +462,7 @@ public class Player extends MapEntity {
 
 			ps = con.prepareStatement("DELETE FROM `skillmacros` WHERE "
 					+ "`characterid` = ?");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
@@ -459,7 +470,7 @@ public class Player extends MapEntity {
 			ps = con.prepareStatement("INSERT INTO `skillmacros` "
 					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,"
 					+ "`skill2`,`skill3`) VALUES (?,?,?,?,?,?,?)");
-			ps.setInt(1, getId());
+			ps.setInt(1, getDataId());
 			for (SkillMacro macro : skillMacros) {
 				ps.setByte(2, pos++);
 				ps.setString(3, macro.getName());
@@ -1207,7 +1218,7 @@ public class Player extends MapEntity {
 	}
 
 	public int getMapId() {
-		return (map != null ? map.getMapId() : savedMapId);
+		return (map != null ? map.getDataId() : savedMapId);
 	}
 
 	public byte getSpawnPoint() {
@@ -1549,8 +1560,8 @@ public class Player extends MapEntity {
 		}
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.PLAYER;
+	public EntityType getEntityType() {
+		return EntityType.PLAYER;
 	}
 
 	public boolean isAlive() {
@@ -1614,16 +1625,16 @@ public class Player extends MapEntity {
 		Inventory etc = p.inventories.get(InventoryType.ETC);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, top, (short) 1)
-				.getRight().get(0).shortValue(), (short) -5);
+				.addedOrRemovedSlots.get(0).shortValue(), (short) -5);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, bottom, (short) 1)
-				.getRight().get(0).shortValue(), (short) -6);
+				.addedOrRemovedSlots.get(0).shortValue(), (short) -6);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools.addToInventory(equipment, shoes, (short) 1)
-				.getRight().get(0).shortValue(), (short) -7);
+				.addedOrRemovedSlots.get(0).shortValue(), (short) -7);
 		InventoryTools.equip(equipment, equipped,
 				InventoryTools .addToInventory(equipment, weapon, (short) 1)
-				.getRight().get(0).shortValue(), (short) -11);
+				.addedOrRemovedSlots.get(0).shortValue(), (short) -11);
 		InventoryTools.addToInventory(etc, 4161001, (short) 1);
 
 		p.bindings.put(Byte.valueOf((byte) 2), new KeyBinding((byte) 4, 10));
@@ -1710,7 +1721,7 @@ public class Player extends MapEntity {
 				con.setTransactionIsolation(prevTransactionIsolation);
 			} catch (SQLException ex) {
 				LOG.log(Level.WARNING, "Could not reset Connection config "
-						+ "after creating character " + p.getId(), ex);
+						+ "after creating character " + p.getDataId(), ex);
 			}
 		}
 

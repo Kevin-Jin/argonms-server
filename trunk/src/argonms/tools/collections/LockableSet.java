@@ -74,7 +74,7 @@ public class LockableSet<T> implements Set<T> {
 		return set.toArray();
 	}
 
-	public <T> T[] toArray(T[] a) {
+	public <E> E[] toArray(E[] a) {
 		return set.toArray(a);
 	}
 

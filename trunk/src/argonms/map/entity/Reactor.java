@@ -39,6 +39,10 @@ public class Reactor extends MapEntity {
 		this.alive = true;
 	}
 
+	public int getDataId() {
+		return stats.getReactorId();
+	}
+
 	public void setName(String name) {
 		this.name = name;
 	}
@@ -60,11 +64,11 @@ public class Reactor extends MapEntity {
 	}
 
 	public State getState() {
-		return stats.getStates().get(Integer.valueOf(state));
+		return stats.getStates().get(Byte.valueOf(state));
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.REACTOR;
+	public EntityType getEntityType() {
+		return EntityType.REACTOR;
 	}
 
 	public void setAlive(boolean alive) {

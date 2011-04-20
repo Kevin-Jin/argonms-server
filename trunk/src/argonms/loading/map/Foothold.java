@@ -23,6 +23,7 @@ package argonms.loading.map;
  * @author GoldenKevin
  */
 public class Foothold implements Comparable<Foothold> {
+	private short id;
 	private short x1;
 	private short y1;
 	private short x2;
@@ -30,8 +31,12 @@ public class Foothold implements Comparable<Foothold> {
 	private short prev;
 	private short next;
 
-	protected Foothold() {
-		
+	protected Foothold(short id) {
+		this.id = id;
+	}
+
+	public short getId() {
+		return id;
 	}
 
 	protected void setX1(short x1) {

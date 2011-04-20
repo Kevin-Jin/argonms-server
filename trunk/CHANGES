@@ -576,6 +576,40 @@
 	* Distributed all classes from argonms.net.external.handler into packages
 	specific for each type of server (i.e. argonms.game/login/shop.handler).
 
+2011-04-20  GoldenKevin  (revision 27)
+
+	* Moved argonms.tools.Pair to argonms.tools.collections.Pair, and got rid of
+	its accessor and mutator methods. left and right values of a Pair are now
+	immutable and can be directly accessed by the public members left and right.
+	* Updated logging.properties to refer to the new locations of some classes.
+	* Added a !spawn command.
+	* Added a !tp command to teleport one player to another, and an !info
+	command that gives the location of a player. Both require that any
+	referenced characters are on the same channel as the caller.
+	(PlayerLog.getPlayer(String) is now case insensitive).
+	* Fixed "!stat set exp 0" at level 200.
+	* Replaced usages of Pair<List<String>, List<String>> in InventoryTools with
+	the more semantical and succinct static nested class UpdatedSlots.
+	* Consume on pickup items should now function correctly.
+	* Standardized methods for getting the WZ identifier of certain entities, as
+	well as maps themselves (e.g. Mob.getMobId() is now Mob.getDataId()).
+	* Added a getDataId() method to Player even though it returns the same value
+	as getId() at the moment. Will make future refactoring easier if I choose to
+	differentiate between a Player's database character id and the Player's map
+	entity id.
+	* Renamed MapEntity.MapEntityType to EntityType.
+	* GameMap.entities is now split up into separate entity pools since the
+	client has separate pools for each entity type. Should solve some issues
+	with entity id exhaustion on busy maps (and remove the artificial limit of
+	30000 non-Player entities per map). The SQL has been updated to reflect
+	these changes on the Player's side.
+	* Readded foothold IDs to the data. KvjCompiler updated to r19. Please
+	recompile your Map.wz.
+	* Equips from monster drops now have randomized stats.
+	* Fixed some monster drop issues when dropping certain equips.
+	* Added Miniroom and PlayerShop map entity stub classes. HiredMerchant
+	extends PlayerShop now instead of Npc.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

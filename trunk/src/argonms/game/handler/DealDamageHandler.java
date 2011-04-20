@@ -27,15 +27,15 @@ import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillStats;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
-import argonms.map.MapEntity.MapEntityType;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mob;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
-import argonms.tools.Pair;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
+import argonms.tools.collections.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-//TODO: implement!
 /**
  *
  * @author GoldenKevin
@@ -183,7 +182,7 @@ public class DealDamageHandler {
 		final int pEntId = p.getId();
 		final GameMap tdmap = p.getMap();
 
-		for (Integer eachd : oned.getRight()) {
+		for (Integer eachd : oned.right) {
 			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(4211003)).shouldPerform()) {
 				double perc = eachd.doubleValue() / reqdamage;
 
@@ -225,31 +224,28 @@ public class DealDamageHandler {
 		if (attack.skill == Skills.MESO_EXPLOSION) {
 			int delay = 0;
 			for (Pair<Integer, List<Integer>> oned : attack.allDamage) {
-				MapEntity ent = map.getEntityById(oned.getLeft().intValue());
-				if (ent != null && ent.getEntityType() == MapEntityType.ITEM) {
-					final ItemDrop mapitem = (ItemDrop) ent;
-					if (mapitem.getMesoValue() >= 10) {
-						Timer.getInstance().runAfterDelay(new Runnable() {
-							public void run() {
-								synchronized (mapitem) {
-									if (mapitem.isAlive())
-										map.mesoExplosion(mapitem, player);
-								}
+				final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, oned.left.intValue());
+				if (drop != null && drop.getDataId() >= 10) {
+					Timer.getInstance().runAfterDelay(new Runnable() {
+						public void run() {
+							synchronized (drop) {
+								if (drop.isAlive())
+									map.mesoExplosion(drop, player);
 							}
-						}, delay);
-						delay += 100;
-					}
+						}
+					}, delay);
+					delay += 100;
 				}
 			}
 		}
 
 		for (Pair<Integer, List<Integer>> oned : attack.allDamage) {
 			//TODO: Synchronize on the monster for aggro and hp stuffs
-			Mob monster = (Mob) map.getEntityById(oned.getLeft().intValue());
+			Mob monster = (Mob) map.getEntityById(EntityType.MONSTER, oned.left.intValue());
 
 			if (monster != null) {
 				int totDamageToOneMonster = 0;
-				for (Integer eachd : oned.getRight())
+				for (Integer eachd : oned.right)
 					totDamageToOneMonster += eachd.intValue();
 				totDamage += totDamageToOneMonster;
 
@@ -376,11 +372,11 @@ public class DealDamageHandler {
 		lew.writeInt(projectile);
 
 		for (Pair<Integer, List<Integer>> oned : info.allDamage) {
-			if (oned.getRight() != null) {
-				lew.writeInt(oned.getLeft().intValue());
+			if (oned.right != null) {
+				lew.writeInt(oned.left.intValue());
 				lew.writeByte((byte) 0xFF);
-				lew.writeByte((byte) oned.getRight().size());
-				for (Integer eachd : oned.getRight())
+				lew.writeByte((byte) oned.right.size());
+				for (Integer eachd : oned.right)
 					// highest bit set = crit
 					lew.writeInt(eachd.intValue());
 			}
@@ -403,10 +399,10 @@ public class DealDamageHandler {
 		lew.writeInt(projectile);
 
 		for (Pair<Integer, List<Integer>> oned : info.allDamage) {
-			if (oned.getRight() != null) {
-				lew.writeInt(oned.getLeft().intValue());
+			if (oned.right != null) {
+				lew.writeInt(oned.left.intValue());
 				lew.writeByte((byte) 0xFF);
-				for (Integer eachd : oned.getRight())
+				for (Integer eachd : oned.right)
 					lew.writeInt(eachd.intValue());
 			}
 		}

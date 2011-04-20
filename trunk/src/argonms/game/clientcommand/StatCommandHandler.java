@@ -69,8 +69,10 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("level")) {
 				p.setLevel((short) Math.min(val, 200));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < 200 || val == 0)
+				if (p.getLevel() < 200)
 					p.setExp(Math.min(val, ExpTables.getForLevel(p.getLevel()) - 1));
+				else if (val == 0)
+					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("job")) {
 				p.setJob((short) val);
 			} else if (stat.equalsIgnoreCase("maxhp")) {

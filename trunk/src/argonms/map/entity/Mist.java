@@ -103,8 +103,8 @@ public class Mist extends MapEntity {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.MIST;
+	public EntityType getEntityType() {
+		return EntityType.MIST;
 	}
 
 	public boolean isAlive() {

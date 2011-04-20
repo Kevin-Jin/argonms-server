@@ -51,7 +51,7 @@ public class Ring extends Equip implements Cloneable {
 	}
 
 	public Ring clone() {
-		Ring copy = new Ring(getItemId());
+		Ring copy = new Ring(getDataId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());

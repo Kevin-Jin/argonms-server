@@ -32,8 +32,8 @@ public class MysticDoor extends MapEntity {
 		this.townDoor = town;
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.DOOR;
+	public EntityType getEntityType() {
+		return EntityType.DOOR;
 	}
 
 	public boolean isInTown() {

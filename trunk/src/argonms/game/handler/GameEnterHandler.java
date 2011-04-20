@@ -56,12 +56,10 @@ public class GameEnterHandler {
 		client.setPlayer(player);
 		boolean allowLogin;
 		byte state = client.getOnlineState();
-		//if already online, has to be on this world since loadPlayer checks
-		//if this world and world from db match.
-		if (state == RemoteClient.STATUS_MIGRATION)
-			allowLogin = GameServer.getInstance().channelOfPlayer(player.getId()) == -1;
-		else
-			allowLogin = false;
+		//TODO: check every game server of this world to see if we are logged in
+		//(since a character of a particular world cannot be logged in on any
+		//other world). Remember to check local process and remote processes.
+		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
 		if (!allowLogin) {
 			LOG.log(Level.WARNING, "Player {0} tried to double login on world"
 					+ " {1}", new Object[] { player.getName(), rc.getWorld() });

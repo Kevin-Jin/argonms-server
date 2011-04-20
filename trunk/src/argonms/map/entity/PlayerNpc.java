@@ -23,11 +23,11 @@ package argonms.map.entity;
  * @author GoldenKevin
  */
 public class PlayerNpc extends Npc {
-	public PlayerNpc(int npcid) {
-		super(npcid);
+	public PlayerNpc(int playerId) {
+		super(playerId);
 	}
 
-	public MapEntityType getEntityType() {
-		return MapEntityType.PLAYER_NPC;
+	public EntityType getEntityType() {
+		return EntityType.PLAYER_NPC;
 	}
 }

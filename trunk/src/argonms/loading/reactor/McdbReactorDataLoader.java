@@ -45,7 +45,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 			ps.setInt(1, reactorid);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				stats = new ReactorStats();
+				stats = new ReactorStats(reactorid);
 				doWork(rs, stats);
 			}
 			rs.close();
@@ -64,7 +64,8 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 			ps = con.prepareStatement("SELECT * FROM `reactoreventdata`");
 			rs = ps.executeQuery();
 			while (rs.next()) {
-				ReactorStats stats = new ReactorStats();
+				int reactorId = rs.getInt(2);
+				ReactorStats stats = new ReactorStats(reactorId);
 				reactorStats.put(Integer.valueOf(doWork(rs, stats)), stats);
 			}
 			return true;

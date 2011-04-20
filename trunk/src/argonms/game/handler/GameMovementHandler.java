@@ -24,7 +24,7 @@ import argonms.loading.mob.Skill;
 import argonms.loading.skill.MobSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.map.MapEntity;
-import argonms.map.MapEntity.MapEntityType;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.movement.AbsoluteLifeMovement;
 import argonms.map.movement.ChairMovement;
 import argonms.map.movement.ChangeEquipSpecialAwesome;
@@ -76,10 +76,9 @@ public class GameMovementHandler {
 		Player player = ((GameClient) rc).getPlayer();
 		//TODO: Synchronize on the mob (for the canUseSkill, which gets Hp, and
 		//the aggro things)
-		MapEntity ent = player.getMap().getEntityById(entId);
-		if (ent == null || ent.getEntityType() != MapEntityType.MONSTER)
+		Mob monster = (Mob) player.getMap().getEntityById(EntityType.MONSTER, entId);
+		if (monster == null)
 			return;
-		Mob monster = (Mob) ent;
 
 		List<LifeMovementFragment> res = null;
 		boolean useSkill = packet.readBool();

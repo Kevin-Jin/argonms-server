@@ -27,6 +27,7 @@ import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameClient;
 import argonms.loading.item.ItemDataLoader;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.ItemDrop;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
@@ -77,12 +78,12 @@ public class InventoryHandler {
 				rc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
-			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getItemId()));
+			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getDataId()));
 		} else { //move item
 			Inventory inv = p.getInventory(type);
 			InventorySlot move = inv.get(src);
 			InventorySlot replace = inv.get(dst);
-			short slotMax = ItemDataLoader.getInstance().getSlotMax(move.getItemId());
+			short slotMax = ItemDataLoader.getInstance().getSlotMax(move.getDataId());
 			if (notStackable(move, replace, slotMax)) { //swap
 				exchange(p, type, src, dst);
 			} else { //merge!
@@ -123,7 +124,7 @@ public class InventoryHandler {
 		Player p = ((GameClient) rc).getPlayer();
 		//TODO: Synchronize on the item (!d.isAlive and GameMap.pickUpDrop are
 		//not thread safe if two players try picking it up at the exact same time).
-		ItemDrop d = (ItemDrop) p.getMap().getEntityById(eid);
+		ItemDrop d = (ItemDrop) p.getMap().getEntityById(EntityType.DROP, eid);
 		if (d == null || !d.isAlive()) {
 			rc.getSession().send(CommonPackets.writeInventoryFull());
 			rc.getSession().send(CommonPackets.writeShowInventoryFull());
@@ -133,9 +134,9 @@ public class InventoryHandler {
 	}
 
 	private static boolean notStackable(InventorySlot src, InventorySlot dst, short slotMax) {
-		return dst == null || src.getItemId() != dst.getItemId() || slotMax == 1
-				|| InventoryTools.isThrowingStar(src.getItemId())
-				|| InventoryTools.isBullet(src.getItemId());
+		return dst == null || src.getDataId() != dst.getDataId() || slotMax == 1
+				|| InventoryTools.isThrowingStar(src.getDataId())
+				|| InventoryTools.isBullet(src.getDataId());
 	}
 
 	private static void exchange(Player p, InventoryType type, short src, short dst) {

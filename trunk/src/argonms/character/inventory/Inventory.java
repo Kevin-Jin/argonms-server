@@ -99,7 +99,7 @@ public class Inventory {
 		//keep them sorted in ascending order!
 		Set<Short> positions = new TreeSet<Short>();
 		for (Entry<Short, InventorySlot> entry : slots.entrySet())
-			if (entry.getValue().getItemId() == itemid)
+			if (entry.getValue().getDataId() == itemid)
 				positions.add(entry.getKey());
 		return positions;
 	}
@@ -125,7 +125,7 @@ public class Inventory {
 	public boolean hasItem(int itemid, short minQty) {
 		short remaining = minQty;
 		for (InventorySlot i : slots.values()) {
-			if (i.getItemId() == itemid) {
+			if (i.getDataId() == itemid) {
 				remaining -= i.getQuantity();
 				if (remaining <= 0)
 					return true;

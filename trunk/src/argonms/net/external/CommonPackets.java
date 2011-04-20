@@ -136,14 +136,14 @@ public class CommonPackets {
 			for (Entry<Short, InventorySlot> ent : equip.getAll().entrySet()) {
 				byte pos = (byte) (ent.getKey().shortValue() * -1);
 				if (pos < 100 && myEquip.get(pos) == null) {
-					myEquip.put(pos, ent.getValue().getItemId());
+					myEquip.put(pos, ent.getValue().getDataId());
 				} else if (pos > 100 && pos != 111) {
 					pos -= 100;
 					if (myEquip.get(pos) != null)
 						maskedEquip.put(pos, myEquip.get(pos));
-					myEquip.put(pos, ent.getValue().getItemId());
+					myEquip.put(pos, ent.getValue().getDataId());
 				} else if (myEquip.get(pos) != null) {
-					maskedEquip.put(pos, ent.getValue().getItemId());
+					maskedEquip.put(pos, ent.getValue().getDataId());
 				}
 			}
 
@@ -160,11 +160,11 @@ public class CommonPackets {
 			lew.writeByte((byte) 0xFF);
 
 			InventorySlot cWeapon = equip.get((short) 111);
-			lew.writeInt(cWeapon != null ? cWeapon.getItemId() : 0);
+			lew.writeInt(cWeapon != null ? cWeapon.getDataId() : 0);
 		}
 		Pet[] pets = p.getPets();
 		for (int i = 0; i < 3; i++)
-			lew.writeInt(pets[i] == null ? 0 : pets[i].getItemId());
+			lew.writeInt(pets[i] == null ? 0 : pets[i].getDataId());
 	}
 
 	private static void addItemInfo(LittleEndianWriter lew, short pos,
@@ -192,7 +192,7 @@ public class CommonPackets {
 			lew.writeByte((byte) pos);
 		}
 		lew.writeByte(item.getTypeByte());
-		lew.writeInt(item.getItemId());
+		lew.writeInt(item.getDataId());
 		lew.writeBool(cashItem);
 		if (cashItem)
 			lew.writeLong(item.getUniqueId());
@@ -245,8 +245,8 @@ public class CommonPackets {
 			lew.writeShort(item.getQuantity());
 			lew.writeLengthPrefixedString(item.getOwner());
 			lew.writeShort(item.getFlag());
-			if (InventoryTools.isThrowingStar(item.getItemId())
-					|| InventoryTools.isBullet(item.getItemId())) {
+			if (InventoryTools.isThrowingStar(item.getDataId())
+					|| InventoryTools.isBullet(item.getDataId())) {
 				//Might be rechargeable ID for internal tracking/duping tracking
 				lew.writeLong(0);
 			}
@@ -356,10 +356,10 @@ public class CommonPackets {
 			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
 			lew.writeLong(ring.getUniqueId());
 			lew.writeInt((int) ring.getPartnerRingId()); //this is definitely wrong, considering UIDs are 64-bit long
-			if (ring.getItemId() >= 1112800 && ring.getItemId() <= 1112803 || ring.getItemId() <= 1112806 || ring.getItemId() <= 1112807 || ring.getItemId() <= 1112809) {
+			if (ring.getDataId() >= 1112800 && ring.getDataId() <= 1112803 || ring.getDataId() <= 1112806 || ring.getDataId() <= 1112807 || ring.getDataId() <= 1112809) {
 				FR_last = true;
 				lew.writeInt(0);
-				lew.writeInt(ring.getItemId());
+				lew.writeInt(ring.getDataId());
 				lew.writeShort((short) 0);
 			} else {
 				if (rings.size() > 1)
@@ -805,7 +805,7 @@ public class CommonPackets {
 		if (p.isEffectActive(PlayerStatusEffect.MONSTER_RIDING)) {
 			/*TamingMob mount = p.getEquippedMount();
 			if (mount != null) {
-				lew.writeInt(mount.getItemId());
+				lew.writeInt(mount.getDataId());
 				lew.writeInt(mount.getSkillId());
 				lew.writeInt(CHAR_MAGIC_SPAWN);
 			} else {*/
@@ -838,7 +838,7 @@ public class CommonPackets {
 		for (Pet pet : p.getPets()) {
 			if (pet != null) {
 				lew.writeByte((byte) 1);
-				lew.writeInt(pet.getItemId());
+				lew.writeInt(pet.getDataId());
 				lew.writeLengthPrefixedString(pet.getName());
 				lew.writeLong(pet.getUniqueId());
 				lew.writePos(pet.getPosition());
@@ -866,7 +866,7 @@ public class CommonPackets {
 				lew.writeByte((byte) 1);
 				lew.writeLong(ring.getUniqueId());
 				lew.writeLong(ring.getPartnerRingId());
-				lew.writeInt(ring.getItemId());
+				lew.writeInt(ring.getDataId());
 			}
 			lew.writeShort((short) 0);
 		} else {
@@ -901,7 +901,7 @@ public class CommonPackets {
 		lew.writeBool(equip);
 		lew.writeBool(hunger);
 		if (equip) {
-			lew.writeInt(pet.getItemId());
+			lew.writeInt(pet.getDataId());
 			lew.writeLengthPrefixedString(pet.getName());
 			lew.writeLong(pet.getUniqueId());
 			lew.writePos(pet.getPosition());
@@ -917,7 +917,7 @@ public class CommonPackets {
 	private static void writeMonsterData(LittleEndianWriter lew, Mob monster, boolean newSpawn, byte effect) {
 		lew.writeInt(monster.getId());
 		lew.writeByte((byte) 5);
-		lew.writeInt(monster.getMobId());
+		lew.writeInt(monster.getDataId());
 
 		//mob status
 		lew.writeByte((byte) 0);
@@ -974,7 +974,7 @@ public class CommonPackets {
 
 	private static void writeNpcData(LittleEndianWriter lew, Npc npc) {
 		lew.writeInt(npc.getId());
-		lew.writeInt(npc.getNpcId());
+		lew.writeInt(npc.getDataId());
 		lew.writeShort((short) npc.getPosition().x);
 		lew.writeShort(npc.getCy());
 		lew.writeBool(!npc.isF());
@@ -1013,7 +1013,7 @@ public class CommonPackets {
 		lew.writeByte(animation);
 		lew.writeInt(drop.getId());
 		lew.writeByte(drop.getDropType());
-		lew.writeInt(drop.getItemId());
+		lew.writeInt(drop.getDataId());
 		lew.writeInt(drop.getOwner());
 		lew.writeByte(pickupAllow);
 		lew.writePos(drop.getPosition());
