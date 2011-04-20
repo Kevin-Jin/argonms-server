@@ -22,8 +22,8 @@ package argonms.map.entity;
  *
  * @author GoldenKevin
  */
-public class HiredMerchant extends PlayerShop {
+public class PlayerShop extends Miniroom {
 	public EntityType getEntityType() {
-		return EntityType.HIRED_MERCHANT;
+		return EntityType.PLAYER_SHOP;
 	}
 }

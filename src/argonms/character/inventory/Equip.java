@@ -227,7 +227,7 @@ public class Equip extends InventorySlot implements Cloneable {
 	}
 
 	public Equip clone() {
-		Equip copy = new Equip(getItemId());
+		Equip copy = new Equip(getDataId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());

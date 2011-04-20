@@ -75,7 +75,7 @@ public class LockableList<T> implements List<T> {
 		return list.toArray();
 	}
 
-	public <T> T[] toArray(T[] a) {
+	public <E> E[] toArray(E[] a) {
 		return list.toArray(a);
 	}
 

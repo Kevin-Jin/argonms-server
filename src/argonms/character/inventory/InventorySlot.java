@@ -46,7 +46,7 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 	public abstract short getQuantity();
 	public abstract void setQuantity(short value);
 
-	public int getItemId() {
+	public int getDataId() {
 		return id;
 	}
 
@@ -83,7 +83,7 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 	}
 
 	public int compareTo(InventorySlot item) {
-		return this.getItemId() - item.getItemId();
+		return this.getDataId() - item.getDataId();
 	}
 
 	public abstract InventorySlot clone();

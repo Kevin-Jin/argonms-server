@@ -194,7 +194,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 	}
 
 	private void processFoothold(LittleEndianReader reader, MapStats stats) {
-		Foothold fh = new Foothold();
+		Foothold fh = new Foothold(reader.readShort());
 		fh.setX1(reader.readShort());
 		fh.setY1(reader.readShort());
 		fh.setX2(reader.readShort());

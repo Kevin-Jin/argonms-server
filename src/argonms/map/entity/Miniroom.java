@@ -19,61 +19,14 @@
 package argonms.map.entity;
 
 import argonms.map.MapEntity;
-import argonms.net.external.CommonPackets;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Npc extends MapEntity {
-	private int npcid;
-	private short rx0, rx1;
-	private short cy;
-	private boolean f;
-
-	public Npc(int npcid) {
-		this.npcid = npcid;
-	}
-
-	public int getDataId() {
-		return npcid;
-	}
-
-	public void setRx(short rx0, short rx1) {
-		this.rx0 = rx0;
-		this.rx1 = rx1;
-	}
-
-	public void setCy(short cy) {
-		this.cy = cy;
-	}
-
-	public void setF(boolean f) {
-		this.f = f;
-	}
-
-	public short getRx0() {
-		return rx0;
-	}
-
-	public short getRx1() {
-		return rx1;
-	}
-
-	public boolean isF() {
-		return f;
-	}
-
-	public short getCy() {
-		return cy;
-	}
-
-	public byte[] getShopPacket() {
-		return null;
-	}
-
+public class Miniroom extends MapEntity {
 	public EntityType getEntityType() {
-		return EntityType.NPC;
+		return EntityType.MINI_ROOM;
 	}
 
 	public boolean isAlive() {
@@ -85,19 +38,19 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowNpc(this);
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	public byte[] getOutOfViewMessage() {
-		return null;
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveNpc(this);
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 	public boolean isNonRangedType() {

@@ -27,6 +27,7 @@ import argonms.game.GameClient;
 import argonms.loading.mob.Attack;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.skill.SkillDataLoader;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.Mob;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.RemoteClient;
@@ -68,9 +69,9 @@ public class TakeDamageHandler {
 			mobid = packet.readInt();
 			ent = packet.readInt();
 			direction = packet.readByte();
-			Mob m = (Mob) p.getMap().getEntityById(ent);
+			Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, ent);
 			if (m != null) { //lag...
-				if (m.getMobId() != mobid) {
+				if (m.getDataId() != mobid) {
 					//TODO: hacking
 					return;
 				}

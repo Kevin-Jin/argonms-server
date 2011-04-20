@@ -51,7 +51,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Reactor.wz").append(File.separator).append(id).append(".img.kvj").toString());
 			if (f.exists()) {
-				stats = new ReactorStats();
+				stats = new ReactorStats(reactorid);
 				doWork(new LittleEndianByteArrayReader(f), stats);
 			}
 		} catch (IOException e) {
@@ -64,12 +64,13 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		try {
 			File root = new File(dataPath + "Reactor.wz");
 			for (String kvj : root.list()) {
-				ReactorStats stats = new ReactorStats();
+				int reactorId = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".img.kvj")));
+				ReactorStats stats = new ReactorStats(reactorId);
 				doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)), stats);
 				//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
 				//doWork(new LittleEndianStreamReader(is), stats);
 				//is.close();
-				reactorStats.put(Integer.valueOf(kvj.substring(0, kvj.lastIndexOf(".img.kvj"))), stats);
+				reactorStats.put(Integer.valueOf(reactorId), stats);
 			}
 			return true;
 		} catch (IOException ex) {

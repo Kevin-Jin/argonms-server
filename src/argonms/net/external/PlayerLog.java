@@ -29,24 +29,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerLog {
 	private final Map<String, Player> nameToPlayerMapping;
 	private final Map<Integer, Player> idToPlayerMapping;
-	//private short connected;
 
 	public PlayerLog() {
 		this.nameToPlayerMapping = new ConcurrentHashMap<String, Player>();
 		this.idToPlayerMapping = new ConcurrentHashMap<Integer, Player>();
-		//this.connected = 0;
 	}
 
 	public void addPlayer(Player p) {
-		nameToPlayerMapping.put(p.getName(), p);
-		idToPlayerMapping.put(Integer.valueOf(p.getId()), p);
-		//connected++;
+		nameToPlayerMapping.put(p.getName().toLowerCase(), p);
+		idToPlayerMapping.put(Integer.valueOf(p.getDataId()), p);
 	}
 
 	public void deletePlayer(Player p) {
 		nameToPlayerMapping.remove(p.getName());
-		idToPlayerMapping.remove(Integer.valueOf(p.getId()));
-		//connected--;
+		idToPlayerMapping.remove(Integer.valueOf(p.getDataId()));
 	}
 
 	public Player getPlayer(int id) {
@@ -54,11 +50,10 @@ public class PlayerLog {
 	}
 
 	public Player getPlayer(String name) {
-		return nameToPlayerMapping.get(name);
+		return nameToPlayerMapping.get(name.toLowerCase());
 	}
 
 	public short getConnectedCount() {
-		//return connected;
 		return (short) nameToPlayerMapping.size();
 	}
 }

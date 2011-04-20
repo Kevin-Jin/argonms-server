@@ -21,7 +21,7 @@ package argonms.game;
 import argonms.character.Player;
 import argonms.net.external.CommonPackets;
 import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.Pair;
+import argonms.tools.collections.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;

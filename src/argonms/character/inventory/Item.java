@@ -47,7 +47,7 @@ public class Item extends InventorySlot implements Cloneable {
 	}
 
 	public Item clone() {
-		Item copy = new Item(getItemId());
+		Item copy = new Item(getDataId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());

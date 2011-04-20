@@ -131,7 +131,7 @@ public class Pet extends InventorySlot {
 	}
 
 	public Pet clone() {
-		Pet copy = new Pet(getItemId());
+		Pet copy = new Pet(getDataId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());

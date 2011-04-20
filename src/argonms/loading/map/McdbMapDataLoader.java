@@ -178,7 +178,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 			ps.setInt(1, mapid);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				Foothold fh = new Foothold();
+				Foothold fh = new Foothold(rs.getShort(2));
 				fh.setX1(rs.getShort(3));
 				fh.setY1(rs.getShort(4));
 				fh.setX2(rs.getShort(5));

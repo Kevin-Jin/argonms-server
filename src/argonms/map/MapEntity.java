@@ -25,9 +25,13 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public abstract class MapEntity {
-	public enum MapEntityType {
-		NPC, MONSTER, ITEM, PLAYER, DOOR, SUMMON, MIST, REACTOR, HIRED_MERCHANT,
-		PLAYER_NPC, MINI_GAME, PLAYER_SHOP, TRADE
+	//TODO: check if the client has separate entity pools that correspond with
+	//these. If we got too specific, the client may have collisions (check if
+	//npc and player npc; hired merchant and player shop; etc are really in
+	//different pools. We may have to use a separate enum for PoolType.
+	public enum EntityType {
+		NPC, MONSTER, DROP, PLAYER, DOOR, MIST, REACTOR, HIRED_MERCHANT,
+		PLAYER_NPC, MINI_ROOM, PLAYER_SHOP
 	}
 
 	private int entityid;
@@ -39,7 +43,7 @@ public abstract class MapEntity {
 	private byte stance;
 	private short foothold;
 
-	public abstract MapEntityType getEntityType();
+	public abstract EntityType getEntityType();
 
 	public abstract boolean isAlive();
 	public abstract boolean isVisible();

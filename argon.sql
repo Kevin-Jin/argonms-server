@@ -73,7 +73,7 @@ CREATE TABLE `characters` (
   PRIMARY KEY (`id`),
   KEY `accountid` (`accountid`),
   CONSTRAINT `characters_ibfk_1` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=30000 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 DROP TABLE IF EXISTS `cooldowns`;
 CREATE TABLE `cooldowns` (

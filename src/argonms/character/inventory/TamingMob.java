@@ -73,7 +73,7 @@ public class TamingMob extends Equip {
 	}
 
 	public TamingMob clone() {
-		TamingMob copy = new TamingMob(getItemId());
+		TamingMob copy = new TamingMob(getDataId());
 		copy.setExpiration(getExpiration());
 		copy.setUniqueId(getUniqueId());
 		copy.setOwner(getOwner());

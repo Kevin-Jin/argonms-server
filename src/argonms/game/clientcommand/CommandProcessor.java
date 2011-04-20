@@ -24,14 +24,18 @@ import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.game.GameServer;
 import argonms.game.clientcommand.CommandDefinition.CommandAction;
+import argonms.loading.mob.MobDataLoader;
+import argonms.loading.mob.MobStats;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.skill.SkillStats;
+import argonms.map.GameMap;
+import argonms.map.entity.Npc;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Pair;
+import java.awt.Point;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -57,6 +61,30 @@ public class CommandProcessor {
 
 	private void populateDefinitions() {
 		definitions.put("!stat", new StatCommandHandler());
+		definitions.put("!tp", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Syntax: !tp [name of player to warp] [name of player to warp to]";
+			}
+
+			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
+				if (args.length < 3) {
+					resp.printErr("Invalid usage. " + getUsage());
+					return;
+				}
+				Player warpee = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
+				if (warpee == null) {
+					resp.printErr("No player named " + args[1] + " is online on this channel.");
+					return;
+				}
+				Player warpTo = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[2]);
+				if (warpTo == null) {
+					resp.printErr("No player named " + args[2] + " is online on this channel.");
+					return;
+				}
+				GameMap map = warpTo.getMap();
+				warpee.changeMap(map.getDataId(), map.nearestSpawnPoint(warpTo.getPosition()));
+			}
+		}, "Teleport a player on this channel to another on this channel", UserPrivileges.GM));
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !skill [skillid] [level] <master level>";
@@ -99,7 +127,7 @@ public class CommandProcessor {
 				}
 				p.setSkillLevel(skillId, skillLevel, masterLevel);
 			}
-		}, "", UserPrivileges.GM));
+		}, "Change the level of one of your skills", UserPrivileges.GM));
 		definitions.put("!give", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !give [itemid] <quantity>";
@@ -114,6 +142,7 @@ public class CommandProcessor {
 				short quantity = 1;
 				try {
 					itemId = Integer.parseInt(args[1]);
+					//TODO: check if item is valid. Throw NumberFormatException if not
 				} catch (NumberFormatException e) {
 					resp.printErr(args[1] + " is not a valid itemid. " + getUsage());
 					return;
@@ -126,24 +155,98 @@ public class CommandProcessor {
 						return;
 					}
 				}
-				//TODO: check if item is valid before adding to inventory.
 				InventoryType type = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(type);
-				Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
 				short pos;
 				InventorySlot slot;
-				for (Short s : changedSlots.getLeft()) { //modified
+				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
 					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
 				}
-				for (Short s : changedSlots.getRight()) { //added
+				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
 					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, true));
 				}
 			}
-		}, "", UserPrivileges.GM));
+		}, "Give yourself an item", UserPrivileges.GM));
+		definitions.put("!spawn", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Syntax: !spawn [mob/npc] [mob/npc WZ id] <mobtime>";
+			}
+
+			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
+				if (args.length < 3) {
+					resp.printErr("Invalid usage. " + getUsage());
+					return;
+				}
+				boolean mob;
+				if (args[1].equalsIgnoreCase("mob")) {
+					mob = true;
+				} else if (args[1].equalsIgnoreCase("npc")) {
+					mob = false;
+				} else {
+					resp.printErr(args[1] + " is not a valid spawn type. " + getUsage());
+					return;
+				}
+				int dataId;
+				try {
+					dataId = Integer.parseInt(args[2]);
+				} catch (NumberFormatException e) {
+					resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
+					return;
+				}
+				GameMap map = p.getMap();
+				if (mob) {
+					MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
+					if (stats == null) {
+						resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
+						return;
+					}
+					Point pos = p.getPosition();
+					int mobtime = -1;
+					if (args.length > 3) {
+						try {
+							mobtime = Integer.parseInt(args[3]);
+						} catch (NumberFormatException e) {
+							resp.printErr(args[3] + " is not a valid mobtime. " + getUsage());
+							return;
+						}
+					}
+					map.addMonsterSpawn(stats, map.calcPointBelow(pos), map.getStaticData().getFootholds().findBelow(pos).getId(), mobtime);
+				} else {
+					//TODO: check if npcid is valid.
+					Point pos = p.getPosition();
+					Npc n = new Npc(dataId);
+					n.setFoothold(map.getStaticData().getFootholds().findBelow(pos).getId());
+					n.setPosition(map.calcPointBelow(pos));
+					n.setCy((short) pos.y);
+					n.setRx((short) pos.x, (short) pos.x);
+					n.setF(true);
+					map.spawnNpc(n);
+				}
+			}
+		}, "Spawn a temporary NPC or monster at your current location", UserPrivileges.GM));
+		definitions.put("!info", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Syntax: !info <player's name";
+			}
+
+			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
+				if (args.length > 1) {
+					p = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
+					if (p == null) {
+						resp.printErr("No player named " + args[1] + " is online on this channel.");
+						resp.printErr(getUsage());
+						return;
+					}
+				}
+				Point pos = p.getPosition();
+				resp.printOut("PlayerId=" + p.getId() + "; Map=" + p.getMapId() + "; Position(" + pos.x + "," + pos.y + ")");
+			}
+		}, "Show location info of yourself or another player", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !rate [exp/meso/drop] [new rate]";

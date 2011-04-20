@@ -18,7 +18,9 @@
 
 package argonms.loading.mob;
 
+import argonms.character.inventory.Equip;
 import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameServer;
 import argonms.tools.Rng;
@@ -295,9 +297,14 @@ public class MobStats {
 		Random generator = Rng.getGenerator();
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
 		int multiplier = GameServer.getVariables().getDropRate();
-		for (Entry<Integer, Integer> entry : itemDrops.entrySet())
-			if (generator.nextInt(1000000) < (entry.getValue().intValue() * multiplier))
-				items.add(InventoryTools.makeItemWithId(entry.getKey().intValue()));
+		for (Entry<Integer, Integer> entry : itemDrops.entrySet()) {
+			if (generator.nextInt(1000000) < (entry.getValue().intValue() * multiplier)) {
+				InventorySlot item = InventoryTools.makeItemWithId(entry.getKey().intValue());
+				if (item.getType() == ItemType.EQUIP)
+					InventoryTools.randomizeStats((Equip) item);
+				items.add(item);
+			}
+		}
 		return items;
 	}
 

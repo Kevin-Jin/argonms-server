@@ -24,7 +24,8 @@ import argonms.character.inventory.Equip.WeaponType;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.string.StringDataLoader;
-import argonms.tools.Pair;
+import argonms.tools.Rng;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -75,12 +76,12 @@ public class InventoryTools {
 		return item;
 	}
 
-	public static Pair<List<Short>, List<Short>> addToInventory(Inventory inv, InventorySlot item, short quantity) {
+	public static UpdatedSlots addToInventory(Inventory inv, InventorySlot item, short quantity) {
 		List<Short> modifiedSlots = new ArrayList<Short>();
 		List<Short> insertedSlots = new ArrayList<Short>();
 
 		if (quantity > 0) {
-			int itemid = item.getItemId();
+			int itemid = item.getDataId();
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
 
@@ -120,7 +121,7 @@ public class InventoryTools {
 				}
 			}
 		}
-		return new Pair<List<Short>, List<Short>>(modifiedSlots, insertedSlots);
+		return new UpdatedSlots(modifiedSlots, insertedSlots);
 	}
 
 	/**
@@ -139,11 +140,11 @@ public class InventoryTools {
 	 * had their quantities changed, and the right being a list of slots that
 	 * were added.
 	 */
-	public static Pair<List<Short>, List<Short>> addToInventory(Inventory inv, int itemid, short quantity) {
+	public static UpdatedSlots addToInventory(Inventory inv, int itemid, short quantity) {
 		return addToInventory(inv, makeItemWithId(itemid), quantity);
 	}
 
-	public static Pair<List<Short>, List<Short>> addToInventory(Player p, int itemid, short quantity) {
+	public static UpdatedSlots addToInventory(Player p, int itemid, short quantity) {
 		return addToInventory(p.getInventory(getCategory(itemid)), itemid, quantity);
 	}
 
@@ -168,7 +169,7 @@ public class InventoryTools {
 		boolean removeOld = true;
 		switch (dest) {
 			case -5: { //top/overall slot
-				if (isOverall(toEquip.getItemId())) {
+				if (isOverall(toEquip.getDataId())) {
 					InventorySlot bottom = equipped.get((short) -6);
 					if (bottom != null) {
 						short slot;
@@ -176,7 +177,7 @@ public class InventoryTools {
 							slot = src; //overwrite our overall with the pants
 							removeOld = false;
 						} else { //we have top and pants equipped already
-							if (!canFitEntirely(equips, bottom.getItemId(), bottom.getQuantity()))
+							if (!canFitEntirely(equips, bottom.getDataId(), bottom.getQuantity()))
 								return null;
 							slot = equips.getFreeSlots(1).get(0);
 						}
@@ -187,13 +188,13 @@ public class InventoryTools {
 				break;
 			} case -6: { //pants
 				InventorySlot top = equipped.get((short) -5);
-				if (top != null && isOverall(top.getItemId())) {
+				if (top != null && isOverall(top.getDataId())) {
 					short slot;
 					if (existing == null) { //no pants equipped before
 						slot = src; //overwrite our pants with the overall
 						removeOld = false;
 					} else { //we have overall and pants equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, top.getItemId(), top.getQuantity()))
+						if (!canFitEntirely(equips, top.getDataId(), top.getQuantity()))
 							return null;
 						slot = equips.getFreeSlots(1).get(0);
 					}
@@ -203,13 +204,13 @@ public class InventoryTools {
 				break;
 			} case -10: { //shield
 				InventorySlot weapon = equipped.get((short) -11);
-				if (weapon != null && isTwoHanded(weapon.getItemId())) {
+				if (weapon != null && isTwoHanded(weapon.getDataId())) {
 					short slot;
 					if (existing == null) { //no shield equipped before
 						slot = src; //overwrite our shield with two handed weapon
 						removeOld = false;
 					} else { //we have shield and two handed weapon equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, weapon.getItemId(), weapon.getQuantity()))
+						if (!canFitEntirely(equips, weapon.getDataId(), weapon.getQuantity()))
 							return null;
 						slot = equips.getFreeSlots(1).get(0);
 					}
@@ -218,7 +219,7 @@ public class InventoryTools {
 				}
 				break;
 			} case -11: { //weapon
-				if (isTwoHanded(toEquip.getItemId())) {
+				if (isTwoHanded(toEquip.getDataId())) {
 					InventorySlot shield = equipped.get((short) -10);
 					if (shield != null) {
 						short slot;
@@ -226,7 +227,7 @@ public class InventoryTools {
 							slot = src; //overwrite our weapon with the shield
 							removeOld = false;
 						} else { //we have weapon and shield equipped already
-							if (!canFitEntirely(equips, shield.getItemId(), shield.getQuantity()))
+							if (!canFitEntirely(equips, shield.getDataId(), shield.getQuantity()))
 								return null;
 							slot = equips.getFreeSlots(1).get(0);
 						}
@@ -256,7 +257,7 @@ public class InventoryTools {
 		}
 	}
 
-	public static Pair<List<Short>, List<Short>> removeFromInventory(Inventory inv, int itemId, short quantity) {
+	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, short quantity) {
 		List<Short> changed = new ArrayList<Short>();
 		List<Short> removed = new ArrayList<Short>();
 		int delta;
@@ -272,7 +273,7 @@ public class InventoryTools {
 				changed.add(slot);
 			}
 		}
-		return new Pair<List<Short>, List<Short>>(changed, removed);
+		return new UpdatedSlots(changed, removed);
 	}
 
 	/**
@@ -296,7 +297,6 @@ public class InventoryTools {
 		return true;
 	}
 
-	//TODO: We need a bit of variation in the stats. They need to have a range...
 	public static Equip getCleanEquip(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!equipCache.containsKey(oId)) {
@@ -308,24 +308,53 @@ public class InventoryTools {
 			else
 				e = new Equip(itemId);
 			short[] statUps = ItemDataLoader.getInstance().getBonusStats(itemId);
-			e.setStr(statUps[StatEffect.STR]);
-			e.setDex(statUps[StatEffect.DEX]);
-			e.setInt(statUps[StatEffect.INT]);
-			e.setLuk(statUps[StatEffect.LUK]);
-			e.setHp(statUps[StatEffect.MHP]);
-			e.setMp(statUps[StatEffect.MMP]);
-			e.setWatk(statUps[StatEffect.PAD]);
-			e.setMatk(statUps[StatEffect.MAD]);
-			e.setWdef(statUps[StatEffect.PDD]);
-			e.setMdef(statUps[StatEffect.MDD]);
-			e.setAcc(statUps[StatEffect.ACC]);
-			e.setAvoid(statUps[StatEffect.EVA]);
-			e.setSpeed(statUps[StatEffect.Speed]);
-			e.setJump(statUps[StatEffect.Jump]);
+			if (statUps != null) {
+				e.setStr(statUps[StatEffect.STR]);
+				e.setDex(statUps[StatEffect.DEX]);
+				e.setInt(statUps[StatEffect.INT]);
+				e.setLuk(statUps[StatEffect.LUK]);
+				e.setHp(statUps[StatEffect.MHP]);
+				e.setMp(statUps[StatEffect.MMP]);
+				e.setWatk(statUps[StatEffect.PAD]);
+				e.setMatk(statUps[StatEffect.MAD]);
+				e.setWdef(statUps[StatEffect.PDD]);
+				e.setMdef(statUps[StatEffect.MDD]);
+				e.setAcc(statUps[StatEffect.ACC]);
+				e.setAvoid(statUps[StatEffect.EVA]);
+				e.setSpeed(statUps[StatEffect.Speed]);
+				e.setJump(statUps[StatEffect.Jump]);
+			}
 			e.setUpgradeSlots(ItemDataLoader.getInstance().getUpgradeSlots(itemId));
 			equipCache.put(oId, e);
 		}
 		return equipCache.get(oId).clone();
+	}
+
+	private static short makeRandStat(short original, int maxDiff) {
+		if (original == 0)
+			return 0;
+
+		//max difference allowed between clean stat and rand stat
+		maxDiff = Math.min((int) Math.ceil(original * 0.1), maxDiff);
+		//select a random number between (original - maxDiff) and (original + maxDiff) inclusive
+		return (short) (Rng.getGenerator().nextInt((maxDiff * 2) + 1) + (original - maxDiff));
+	}
+
+	public static void randomizeStats(Equip e) {
+		e.setStr(makeRandStat(e.getStr(), 5));
+		e.setDex(makeRandStat(e.getDex(), 5));
+		e.setInt(makeRandStat(e.getInt(), 5));
+		e.setLuk(makeRandStat(e.getLuk(), 5));
+		e.setMatk(makeRandStat(e.getMatk(), 5));
+		e.setWatk(makeRandStat(e.getWatk(), 5));
+		e.setAcc(makeRandStat(e.getAcc(), 5));
+		e.setAvoid(makeRandStat(e.getAvoid(), 5));
+		e.setJump(makeRandStat(e.getJump(), 5));
+		e.setSpeed(makeRandStat(e.getSpeed(), 5));
+		e.setWdef(makeRandStat(e.getWdef(), 10));
+		e.setMdef(makeRandStat(e.getMdef(), 10));
+		e.setHp(makeRandStat(e.getHp(), 10));
+		e.setMp(makeRandStat(e.getMp(), 10));
 	}
 
 	//TODO: take into account a player's skills and stats (i.e. claw mastery for stars)
@@ -566,6 +595,16 @@ public class InventoryTools {
 			return 8;
 		} else {
 			return 0;
+		}
+	}
+
+	public static class UpdatedSlots {
+		public final List<Short> modifiedSlots;
+		public final List<Short> addedOrRemovedSlots;
+
+		public UpdatedSlots(List<Short> modify, List<Short> addOrRemove) {
+			modifiedSlots = modify;
+			addedOrRemovedSlots = addOrRemove;
 		}
 	}
 }

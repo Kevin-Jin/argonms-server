@@ -18,17 +18,15 @@
 
 package argonms.game.script;
 
-import java.util.List;
-
 import argonms.character.inventory.Inventory;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.net.external.ClientSession;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Pair;
 
 /**
  *
@@ -58,16 +56,16 @@ public abstract class PlayerScriptInteraction {
 		Inventory inv = getClient().getPlayer().getInventory(type);
 		if (InventoryTools.canFitEntirely(inv, itemid, quantity)) {
 			ClientSession ses = getClient().getSession();
-			Pair<List<Short>, List<Short>> changedSlots = InventoryTools.addToInventory(inv, itemid, quantity);
+			UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemid, quantity);
 			short pos;
 			InventorySlot slot;
-			for (Short s : changedSlots.getLeft()) { //modified
+			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				quantity = slot.getQuantity();
 				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
 			}
-			for (Short s : changedSlots.getRight()) { //added
+			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				quantity = slot.getQuantity();
