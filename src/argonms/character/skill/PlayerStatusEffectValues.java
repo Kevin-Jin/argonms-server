@@ -130,8 +130,8 @@ public class PlayerStatusEffectValues {
 		}
 	}
 
-	private StatusEffectsData e;
-	private short mod;
+	private final StatusEffectsData e;
+	private final short mod;
 
 	public PlayerStatusEffectValues(StatusEffectsData e, short mod) {
 		this.e = e;

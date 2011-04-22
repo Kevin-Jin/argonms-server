@@ -26,7 +26,6 @@ import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillStats;
 import argonms.map.GameMap;
-import argonms.map.MapEntity;
 import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mob;

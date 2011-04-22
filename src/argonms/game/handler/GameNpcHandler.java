@@ -26,12 +26,10 @@ import argonms.game.script.NpcConversationActions;
 import argonms.game.script.NpcScriptManager;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.shop.NpcShopDataLoader;
-import argonms.map.MapEntity;
 import argonms.map.MapEntity.EntityType;
 import argonms.map.NpcShop;
 import argonms.map.NpcShop.ShopItem;
 import argonms.map.entity.Npc;
-import argonms.map.entity.PlayerNpc;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.RemoteClient;
 import argonms.tools.BitTools;
@@ -47,36 +45,24 @@ public class GameNpcHandler {
 		GameClient client = (GameClient) rc;
 		int oid = packet.readInt();
 		/*Point currentPos = */packet.readPos(); //player's position at time of click
-		//TODO: should we only have one pool for npc and pnpc? The client
-		//doesn't tell us what to access here. So for the moment, talking to
-		//player NPCs is broken (maybe even spawning player NPCs alongside NPCs
-		//is broken)
-		MapEntity ent = client.getPlayer().getMap().getEntityById(EntityType.NPC, oid);
+		Npc npc = (Npc) client.getPlayer().getMap().getEntityById(EntityType.NPC, oid);
 
-		Npc npc = null;
-		switch (ent.getEntityType()) {
-			case NPC: {
-				npc = (Npc) ent;
-				if (NpcShopDataLoader.getInstance().canLoad(npc.getDataId())) {
-					client.getSession().send(npc.getShopPacket());
+		if (!npc.isPlayerNpc()) {
+			if (NpcShopDataLoader.getInstance().canLoad(npc.getDataId())) {
+				client.getSession().send(npc.getShopPacket());
+				return;
+			}
+		} else {
+			switch (client.getPlayer().getMapId()) {
+				case 100000201: //Bowman Instructional School
+				case 101000003: //Magic Library
+				case 102000003: //Warriors' Sanctuary
+				case 103000003: //Thieves' Hideout
+					client.getSession().send(writeMaxLevelPlayerNpc(npc.getDataId()));
 					return;
-				}
-				break;
-			} case PLAYER_NPC: {
-				npc = (PlayerNpc) ent;
-				switch (client.getPlayer().getMapId()) {
-					case 100000201: //Bowman Instructional School
-					case 101000003: //Magic Library
-					case 102000003: //Warriors' Sanctuary
-					case 103000003: //Thieves' Hideout
-						client.getSession().send(writeMaxLevelPlayerNpc(npc.getDataId()));
-						return;
-				}
-				break;
 			}
 		}
-		if (npc != null)
-			NpcScriptManager.getInstance().runScript(npc.getDataId(), client);
+		NpcScriptManager.getInstance().runScript(npc.getDataId(), client);
 	}
 
 	public static void handleContinueConversation(LittleEndianReader packet, RemoteClient rc) {

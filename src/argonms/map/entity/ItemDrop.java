@@ -145,7 +145,7 @@ public class ItemDrop extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return !gone;
+		return true;
 	}
 
 	public byte[] getCreationMessage() {

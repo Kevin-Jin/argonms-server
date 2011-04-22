@@ -129,6 +129,5 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			resp.printErr("Invalid usage. " + getUsage());
 			return;
 		}
-		
 	}
 }

@@ -133,6 +133,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.PLAYER_UPDATE:
 				((GameClient) s).getPlayer().saveCharacter();
 				break;
+			case ClientRecvOps.MAPLE_TV:
+				//I think we can all agree that we don't care...
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;

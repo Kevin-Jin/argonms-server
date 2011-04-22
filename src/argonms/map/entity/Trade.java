@@ -22,13 +22,13 @@ package argonms.map.entity;
  *
  * @author GoldenKevin
  */
-public class HiredMerchant extends Miniroom {
+public class Trade extends Miniroom {
 	public MiniroomType getMiniroomType() {
-		return MiniroomType.HIRED_MERCHANT;
+		return MiniroomType.TRADE;
 	}
 
 	public boolean isVisible() {
-		return true;
+		return false;
 	}
 
 	public byte[] getCreationMessage() {

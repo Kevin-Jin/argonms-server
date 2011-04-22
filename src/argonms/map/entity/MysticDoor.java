@@ -45,7 +45,7 @@ public class MysticDoor extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return false;
+		return true;
 	}
 
 	public byte[] getCreationMessage() {

@@ -44,6 +44,7 @@ import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
 import argonms.map.entity.Mob.MobDeathHook;
 import argonms.map.entity.Npc;
+import argonms.map.entity.PlayerNpc;
 import argonms.map.entity.Reactor;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
@@ -127,8 +128,8 @@ public class GameMap {
 					n.setPosition(new Point(spawnData.getX(), spawnData.getY()));
 					n.setCy(spawnData.getCy());
 					n.setRx(spawnData.getRx0(), spawnData.getRx1());
-					n.setF(spawnData.isF());
-					spawnNpc(n);
+					n.setStance((byte) (spawnData.isF() ? 0 : 1));
+					spawnEntity(n);
 					break;
 				}
 			}
@@ -205,7 +206,7 @@ public class GameMap {
 			return;
 		Player controller = monster.getController();
 		if (controller != null)
-			if (monster.getController().getMap() == this)
+			if (controller.getMap() == this)
 				return;
 			else
 				controller = null;
@@ -233,7 +234,7 @@ public class GameMap {
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(true);
 			}
-			controller.getClient().getSession().send(CommonPackets.writeControlMonster(monster, aggro));
+			controller.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, aggro));
 		}
 	}
 
@@ -246,30 +247,43 @@ public class GameMap {
 		} finally {
 			pool.unlockWrite();
 		}
-		if (ent.isNonRangedType())
-			sendToAll(ent.getCreationMessage());
-		else
-			sendToAll(ent.getCreationMessage(), ent.getPosition(), null);
+		if (ent.isVisible()) {
+			if (ent.isNonRangedType()) {
+				sendToAll(ent.getCreationMessage());
+			} else {
+				byte[] packet = ent.getCreationMessage();
+				EntityPool players = entPools.get(EntityType.PLAYER);
+				players.lockRead();
+				try {
+					for (MapEntity pEnt : players.allEnts()) {
+						Player p = (Player) pEnt;
+						if (entityInRange(ent, p)) {
+							p.addToVisibleMapEntities(ent);
+							p.getClient().getSession().send(packet);
+						}
+					}
+				} finally {
+					players.unlockRead();
+				}
+			}
+		}
 	}
 
 	private void sendEntityData(MapEntity ent, Player p) {
-		if (ent.isNonRangedType()) {
-			if (ent.isVisible()) {
+		if (ent.isVisible()) {
+			if (ent.isNonRangedType()) {
 				p.getClient().getSession().send(ent.getShowEntityMessage());
-				switch (ent.getEntityType()) { //maybe it's just NPC?
-					case NPC:
-					case HIRED_MERCHANT:
-					case PLAYER_NPC:
-						p.getClient().getSession().send(CommonPackets.writeControlNpc((Npc) ent));
-						break;
+				if (ent.getEntityType() == EntityType.NPC && ((Npc) ent).isPlayerNpc())
+					p.getClient().getSession().send(CommonPackets.writePlayerNpcLook((PlayerNpc) ent));
+			} else {
+				if (ent.isAlive()) {
+					if (ent.getEntityType() == EntityType.MONSTER)
+						updateMonsterController((Mob) ent);
+					if (entityInRange(ent, p) && !p.seesEntity(ent)) {
+						p.getClient().getSession().send(ent.getShowEntityMessage());
+						p.addToVisibleMapEntities(ent);
+					}
 				}
-			}
-		} else {
-			if (ent.getEntityType() == EntityType.MONSTER)
-				updateMonsterController((Mob) ent);
-			if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
-				p.getClient().getSession().send(ent.getShowEntityMessage());
-				p.addToVisibleMapEntities(ent);
 			}
 		}
 	}
@@ -280,10 +294,11 @@ public class GameMap {
 		try { //write lock allows us to read in mutex, so no need for a readLock
 			if (p.isVisible()) //show ourself to other clients if we are not hidden
 				sendToAll(p.getCreationMessage());
+			players.add(p);
 			for (EntityPool pool : entPools.values())
 				for (MapEntity ent : pool.allEnts())
-					sendEntityData(ent, p);
-			players.add(p);
+					if (p != ent)
+						sendEntityData(ent, p);
 		} finally {
 			players.unlockWrite();
 		}
@@ -450,16 +465,13 @@ public class GameMap {
 		}, duration);
 	}
 
-	public final void spawnNpc(Npc n) {
+	public void spawnPlayerNpc(PlayerNpc n) {
 		spawnEntity(n);
-		//let every client animate their own NPCs.
-		//controlling mobs is complicated enough as it is, we
-		//don't need to keep track of more than necessary things
 		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
 			for (MapEntity p : players.allEnts())
-				((Player) p).getClient().getSession().send(CommonPackets.writeControlNpc(n));
+				((Player) p).getClient().getSession().send(CommonPackets.writePlayerNpcLook(n));
 		} finally {
 			players.unlockRead();
 		}
@@ -467,22 +479,30 @@ public class GameMap {
 
 	public void destroyEntity(MapEntity ent) {
 		entPools.get(ent.getEntityType()).removeByIdSafely(Integer.valueOf(ent.getId()));
-		EntityPool players = entPools.get(EntityType.PLAYER);
-		players.lockRead();
-		try {
-			if (!ent.isNonRangedType()) {
-				for (MapEntity p : players.allEnts())
-					((Player) p).removeVisibleMapEntity(ent);
-				sendToAll(ent.getDestructionMessage(), ent.getPosition(), null);
-			} else {
+		if (ent.isVisible()) {
+			if (ent.isNonRangedType()) {
 				sendToAll(ent.getDestructionMessage());
+			} else {
+				byte[] packet = ent.getDestructionMessage();
+				EntityPool players = entPools.get(EntityType.PLAYER);
+				players.lockRead();
+				try {
+					for (MapEntity pEnt : players.allEnts()) {
+						Player p = (Player) pEnt;
+						if (entityInRange(ent, p)) {
+							p.removeVisibleMapEntity(ent);
+							p.getClient().getSession().send(packet);
+						}
+					}
+				} finally {
+					players.unlockRead();
+				}
 			}
-		} finally {
-			players.unlockRead();
 		}
 	}
 
 	public void removePlayer(Player p) {
+		destroyEntity(p);
 		for (Mob m : p.getControlledMobs()) {
 			m.setController(null);
 			m.setControllerHasAggro(false);
@@ -501,7 +521,6 @@ public class GameMap {
 			if (future != null)
 				future.cancel(false);
 		}
-		destroyEntity(p);
 	}
 
 	public void killMonster(Mob monster, Player killer) {
@@ -604,6 +623,16 @@ public class GameMap {
 		}
 	}
 
+	public void unhidePlayer(Player p) {
+		sendToAll(p.getShowEntityMessage());
+		for (MapEntity ent : entPools.get(EntityType.MONSTER).allEnts())
+			updateMonsterController((Mob) ent);
+	}
+
+	public void hidePlayer(Player p) {
+		sendToAll(p.getDestructionMessage(), p);
+	}
+
 	public void playerMoved(Player p, List<LifeMovementFragment> moves, Point startPos) {
 		sendToAll(writePlayerMovement(p, moves, startPos), p);
 
@@ -613,36 +642,62 @@ public class GameMap {
 			Iterator<MapEntity> iter = visible.iterator();
 			while (iter.hasNext()) {
 				MapEntity ent = iter.next();
-				if (!entityVisible(ent, p)) {
+				if (!entityInRange(ent, p)) {
 					p.getClient().getSession().send(ent.getOutOfViewMessage());
 					iter.remove();
+				}
+			}
+			//TODO: once we implement all entity types and the ranged flags of each
+			//are stable, make a constant EnumSet of EntityTypes that only contain
+			//non ranged types and only iterate over the pools of those types
+			for (EntityPool pool : entPools.values()) {
+				pool.lockRead();
+				try {
+					for (MapEntity ent : pool.allEnts()) {
+						if (!ent.isNonRangedType()) {
+							if (entityInRange(ent, p) && !p.seesEntity(ent) && ent.isVisible() && ent.isAlive()) {
+								p.getClient().getSession().send(ent.getShowEntityMessage());
+								visible.add(ent);
+							}
+						}
+					}
+				} finally {
+					pool.unlockRead();
 				}
 			}
 		} finally {
 			visible.unlockWrite();
 		}
-		//TODO: once we implement all entity types and the ranged flags of each
-		//are stable, make a constant EnumSet of EntityTypes that only contain
-		//non ranged types and only iterate over the pools of those types
-		for (EntityPool pool : entPools.values()) {
-			pool.lockRead();
-			try {
-				for (MapEntity ent : pool.allEnts()) {
-					if (!ent.isNonRangedType()) {
-						if (entityVisible(ent, p) && !p.canSeeEntity(ent) && ent.isAlive()) {
-							p.getClient().getSession().send(ent.getShowEntityMessage());
-							p.addToVisibleMapEntities(ent);
-						}
+	}
+
+	private void rangedEntityMoved(MapEntity ent) {
+		EntityPool players = entPools.get(EntityType.PLAYER);
+		byte[] showPacket = ent.getShowEntityMessage();
+		byte[] removePacket = ent.getDestructionMessage();
+		players.lockRead();
+		try {
+			for (MapEntity pEnt : players.allEnts()) {
+				Player p = (Player) pEnt;
+				if (entityInRange(ent, p)) {
+					if (!p.seesEntity(p)) {
+						p.addToVisibleMapEntities(ent);
+						p.getClient().getSession().send(showPacket);
+					}
+				} else {
+					if (p.seesEntity(p)) {
+						p.removeVisibleMapEntity(ent);
+						p.getClient().getSession().send(removePacket);
 					}
 				}
-			} finally {
-				pool.unlockRead();
 			}
+		} finally {
+			players.unlockRead();
 		}
 	}
 
 	public void monsterMoved(Player p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
-		sendToAll(writeMonsterMovement(useSkill, skill, skillId, s2, s3, s4, m.getId(), startPos, moves), m.getPosition(), MAX_VIEW_RANGE_SQ, p);
+		rangedEntityMoved(m);
+		sendToAll(writeMonsterMovement(useSkill, skill, skillId, s2, s3, s4, m.getId(), startPos, moves), m.getPosition(), p);
 	}
 
 	public void damageMonster(Player p, Mob m, int damage) {
@@ -776,7 +831,7 @@ public class GameMap {
 		sendToAll(message, center, MAX_VIEW_RANGE_SQ, source);
 	}
 
-	private static boolean entityVisible(MapEntity ent, Player p) {
+	private static boolean entityInRange(MapEntity ent, Player p) {
 		return (p.getPosition().distanceSq(ent.getPosition()) <= MAX_VIEW_RANGE_SQ);
 	}
 
@@ -834,9 +889,9 @@ public class GameMap {
 				public void monsterKilled(Player finalAttacker) {
 					//this has to be atomic, so I had to do away with assigning
 					//nextPossibleSpawn more than once.
-					if (mobTime > 0)
+					if (mobTime > 0) {
 						nextPossibleSpawn = System.currentTimeMillis() + mobTime * 1000;
-					else {
+					} else {
 						Integer deathTime = mobStats.getDelays().get("die1");
 						nextPossibleSpawn = System.currentTimeMillis()
 								+ (deathTime != null ? deathTime.intValue() : 0);

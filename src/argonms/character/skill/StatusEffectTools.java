@@ -254,7 +254,7 @@ public class StatusEffectTools {
 			case HIDE:
 				mod = 0;
 				p.getClient().getSession().send(CommonPackets.writeShowHide());
-				p.getMap().sendToAll(p.getDestructionMessage(), p);
+				p.getMap().hidePlayer(p);
 				break;
 			case BOOSTER:
 				break;
@@ -394,7 +394,7 @@ public class StatusEffectTools {
 				break;
 			case HIDE:
 				p.getClient().getSession().send(CommonPackets.writeStopHide());
-				p.getMap().sendToAll(p.getShowEntityMessage());
+				p.getMap().unhidePlayer(p);
 				break;
 			case BOOSTER:
 				break;

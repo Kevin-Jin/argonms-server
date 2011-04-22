@@ -23,7 +23,19 @@ package argonms.map.entity;
  * @author GoldenKevin
  */
 public class PlayerShop extends Miniroom {
-	public EntityType getEntityType() {
-		return EntityType.PLAYER_SHOP;
+	public MiniroomType getMiniroomType() {
+		return MiniroomType.PLAYER_SHOP;
+	}
+
+	public boolean isVisible() {
+		return true;
+	}
+
+	public byte[] getCreationMessage() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	public byte[] getDestructionMessage() {
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 }

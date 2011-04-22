@@ -42,6 +42,7 @@ import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
 import argonms.map.entity.Mob;
+import argonms.map.entity.Miniroom;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
@@ -89,9 +90,6 @@ public class Player extends MapEntity {
 	private byte skin;
 	private byte gender;
 
-	private final Map<Byte, KeyBinding> bindings;
-	private final List<SkillMacro> skillMacros;
-
 	private short level;
 	private short job;
 	private short baseStr, baseDex, baseInt, baseLuk, baseMaxHp, baseMaxMp;
@@ -111,6 +109,9 @@ public class Player extends MapEntity {
 	private final Pet[] equippedPets;
 	private TamingMob equippedMount;
 
+	private final Map<Byte, KeyBinding> bindings;
+	private final List<SkillMacro> skillMacros;
+
 	private final Map<Integer, SkillEntry> skillEntries;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<PlayerStatusEffect, PlayerStatusEffectValues> activeEffects;
@@ -123,12 +124,13 @@ public class Player extends MapEntity {
 
 	private int guild;
 	private Party party;
+	private Miniroom miniroom;
 
 	private Player () {
-		bindings = new TreeMap<Byte, KeyBinding>();
-		skillMacros = new ArrayList<SkillMacro>(5);
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		equippedPets = new Pet[3];
+		bindings = new TreeMap<Byte, KeyBinding>();
+		skillMacros = new ArrayList<SkillMacro>(5);
 		skillEntries = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		activeEffects = new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class);
@@ -773,24 +775,6 @@ public class Player extends MapEntity {
 		return name;
 	}
 
-	public KeyBinding[] getKeyMap() {
-		KeyBinding[] ret = new KeyBinding[90];
-		for (Entry<Byte, KeyBinding> entry : bindings.entrySet())
-			ret[entry.getKey().byteValue()] = entry.getValue();
-		return ret;
-	}
-
-	public void bindKey(byte key, byte type, int action) {
-		//if (type == 0)
-			//bindings.remove(Byte.valueOf(key));
-		//else
-			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
-	}
-
-	public List<SkillMacro> getMacros() {
-		return skillMacros;
-	}
-
 	public byte getGender() {
 		return gender;
 	}
@@ -1308,6 +1292,24 @@ public class Player extends MapEntity {
 		return equippedMount;
 	}
 
+	public KeyBinding[] getKeyMap() {
+		KeyBinding[] ret = new KeyBinding[90];
+		for (Entry<Byte, KeyBinding> entry : bindings.entrySet())
+			ret[entry.getKey().byteValue()] = entry.getValue();
+		return ret;
+	}
+
+	public void bindKey(byte key, byte type, int action) {
+		//if (type == 0)
+			//bindings.remove(Byte.valueOf(key));
+		//else
+			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
+	}
+
+	public List<SkillMacro> getMacros() {
+		return skillMacros;
+	}
+
 	public Map<Integer, SkillEntry> getSkillEntries() {
 		return Collections.unmodifiableMap(skillEntries);
 	}
@@ -1480,6 +1482,14 @@ public class Player extends MapEntity {
 		return party;
 	}
 
+	public Miniroom getMiniRoom() {
+		return miniroom;
+	}
+
+	public void setMiniRoom(Miniroom room) {
+		this.miniroom = room;
+	}
+
 	public void close() {
 		for (ScheduledFuture<?> cancelTask : skillCancels.values())
 			cancelTask.cancel(true);
@@ -1495,7 +1505,7 @@ public class Player extends MapEntity {
 		client = null;
 	}
 
-	public boolean canSeeEntity(MapEntity o) {
+	public boolean seesEntity(MapEntity o) {
 		visibleEntities.lockRead();
 		try {
 			return visibleEntities.contains(o);
@@ -1549,11 +1559,11 @@ public class Player extends MapEntity {
 			} else {
 				if (controller != null) {
 					controller.uncontrolMonster(monster);
-					controller.getClient().getSession().send(CommonPackets.writeStopControllingMonster(monster));
+					controller.getClient().getSession().send(CommonPackets.writeStopControlMonster(monster));
 				}
 				monster.setController(this);
 				controlMonster(monster);
-				getClient().getSession().send(CommonPackets.writeControlMonster(monster, true));
+				getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, true));
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			}

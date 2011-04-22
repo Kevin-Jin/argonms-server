@@ -40,6 +40,8 @@ import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
 import argonms.map.entity.MysticDoor;
 import argonms.map.entity.Npc;
+import argonms.map.entity.PlayerNpc;
+import argonms.map.entity.Reactor;
 import argonms.tools.HexTool;
 import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
@@ -123,48 +125,53 @@ public class CommonPackets {
 		lew.writeInt(0);
 	}
 
-	public static void writeAvatar(LittleEndianWriter lew, Player p, boolean messenger) {
-		lew.writeByte(p.getGender());
-		lew.writeByte(p.getSkinColor());
-		lew.writeInt(p.getEyes());
+	private static void writeAvatar(LittleEndianWriter lew, byte gender, byte skin,
+			int eyes, boolean messenger, int hair, Map<Short, Integer> equips, Pet[] pets) {
+		lew.writeByte(gender);
+		lew.writeByte(skin);
+		lew.writeInt(eyes);
 		lew.writeBool(!messenger);
-		lew.writeInt(p.getHair()); // hair
-		Inventory equip = p.getInventory(InventoryType.EQUIPPED);
-		Map<Byte, Integer> myEquip = new LinkedHashMap<Byte, Integer>();
+		lew.writeInt(hair); // hair
+
+		Map<Byte, Integer> visEquip = new LinkedHashMap<Byte, Integer>();
 		Map<Byte, Integer> maskedEquip = new LinkedHashMap<Byte, Integer>();
-		synchronized (equip) {
-			for (Entry<Short, InventorySlot> ent : equip.getAll().entrySet()) {
-				byte pos = (byte) (ent.getKey().shortValue() * -1);
-				if (pos < 100 && myEquip.get(pos) == null) {
-					myEquip.put(pos, ent.getValue().getDataId());
-				} else if (pos > 100 && pos != 111) {
-					pos -= 100;
-					if (myEquip.get(pos) != null)
-						maskedEquip.put(pos, myEquip.get(pos));
-					myEquip.put(pos, ent.getValue().getDataId());
-				} else if (myEquip.get(pos) != null) {
-					maskedEquip.put(pos, ent.getValue().getDataId());
-				}
+		for (Entry<Short, Integer> ent : equips.entrySet()) {
+			byte pos = (byte) (ent.getKey().shortValue() * -1);
+			Byte oPos = Byte.valueOf(pos);
+			if (pos < 100 && visEquip.get(oPos) == null) {
+				visEquip.put(oPos, ent.getValue());
+			} else if (pos > 100 && pos != 111) {
+				pos -= 100;
+				if (visEquip.get(oPos) != null)
+					maskedEquip.put(pos, visEquip.get(oPos));
+				visEquip.put(oPos, ent.getValue());
+			} else if (visEquip.get(oPos) != null) {
+				maskedEquip.put(oPos, ent.getValue());
 			}
-
-			for (Entry<Byte, Integer> entry : myEquip.entrySet()) {
-				lew.writeByte(entry.getKey().byteValue());
-				lew.writeInt(entry.getValue().intValue());
-			}
-			lew.writeByte((byte) 0xFF);
-
-			for (Entry<Byte, Integer> entry : maskedEquip.entrySet()) {
-				lew.writeByte(entry.getKey().byteValue());
-				lew.writeInt(entry.getValue().intValue());
-			}
-			lew.writeByte((byte) 0xFF);
-
-			InventorySlot cWeapon = equip.get((short) 111);
-			lew.writeInt(cWeapon != null ? cWeapon.getDataId() : 0);
 		}
-		Pet[] pets = p.getPets();
+
+		for (Entry<Byte, Integer> entry : visEquip.entrySet()) {
+			lew.writeByte(entry.getKey().byteValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte((byte) 0xFF);
+
+		for (Entry<Byte, Integer> entry : maskedEquip.entrySet()) {
+			lew.writeByte(entry.getKey().byteValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte((byte) 0xFF);
+
+		Integer cWeapon = equips.get(Short.valueOf((short) 111));
+		lew.writeInt(cWeapon != null ? cWeapon.intValue() : 0);
+
 		for (int i = 0; i < 3; i++)
 			lew.writeInt(pets[i] == null ? 0 : pets[i].getDataId());
+	}
+
+	public static void writeAvatar(LittleEndianWriter lew, Player p, boolean messenger) {
+		writeAvatar(lew, p.getGender(), p.getSkinColor(), p.getEyes(), messenger,
+				p.getHair(), p.getInventory(InventoryType.EQUIPPED).getItemIds(), p.getPets());
 	}
 
 	private static void addItemInfo(LittleEndianWriter lew, short pos,
@@ -914,6 +921,17 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writePlayerNpcLook(PlayerNpc pnpc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.PLAYER_NPC);
+		lew.writeBool(true);
+		lew.writeInt(pnpc.getDataId());
+		lew.writeLengthPrefixedString(pnpc.getPlayerName());
+		writeAvatar(lew, pnpc.getGender(), pnpc.getSkinColor(), pnpc.getEyes(),
+				true, pnpc.getHair(), pnpc.getEquips(), new Pet[3]);
+		return lew.getBytes();
+	}
+
 	private static void writeMonsterData(LittleEndianWriter lew, Mob monster, boolean newSpawn, byte effect) {
 		lew.writeInt(monster.getId());
 		lew.writeByte((byte) 5);
@@ -938,6 +956,13 @@ public class CommonPackets {
 		lew.writeInt(0);
 	}
 
+	/**
+	 * Spawn an monster without making the client animate the monster for itself.
+	 * @param monster
+	 * @param newSpawn
+	 * @param effect
+	 * @return
+	 */
 	public static byte[] writeShowMonster(Mob monster, boolean newSpawn, byte effect) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.SHOW_MONSTER);
@@ -945,6 +970,13 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	/**
+	 * This will only make the monster disappear if it was spawned by sending
+	 * writeShowMonster.
+	 * @param monster
+	 * @param animation
+	 * @return
+	 */
 	public static byte[] writeRemoveMonster(Mob m, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.REMOVE_MONSTER);
@@ -953,7 +985,15 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeControlMonster(Mob monster, boolean aggro) {
+	/**
+	 * Spawn an monster and make the client animate it. The client will not be
+	 * physically affected by it (i.e. it can't hit or be hurt by the monster)
+	 * unless writeShowMonster is also sent.
+	 * @param monster
+	 * @param aggro
+	 * @return
+	 */
+	public static byte[] writeShowAndControlMonster(Mob monster, boolean aggro) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.CONTROL_MONSTER);
 		lew.writeByte((byte) (monster.isVisible() ? aggro ? 2 : 1 : 0));
@@ -964,7 +1004,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeStopControllingMonster(Mob monster) {
+	public static byte[] writeStopControlMonster(Mob monster) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.CONTROL_MONSTER);
 		lew.writeByte((byte) 0);
@@ -977,13 +1017,18 @@ public class CommonPackets {
 		lew.writeInt(npc.getDataId());
 		lew.writeShort((short) npc.getPosition().x);
 		lew.writeShort(npc.getCy());
-		lew.writeBool(!npc.isF());
+		lew.writeByte(npc.getStance());
 		lew.writeShort(npc.getFoothold());
 		lew.writeShort(npc.getRx0());
 		lew.writeShort(npc.getRx1());
 		lew.writeBool(true);
 	}
 
+	/**
+	 * Spawn an NPC without making the client animate the NPC for itself.
+	 * @param npc
+	 * @return
+	 */
 	public static byte[] writeShowNpc(Npc npc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
 		lew.writeShort(ClientSendOps.SHOW_NPC);
@@ -991,6 +1036,12 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	/**
+	 * This will only make the NPC disappear if it was spawned by sending
+	 * writeShowNpc.
+	 * @param npc
+	 * @return
+	 */
 	public static byte[] writeRemoveNpc(Npc npc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
 		lew.writeShort(ClientSendOps.REMOVE_NPC);
@@ -998,11 +1049,30 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeControlNpc(Npc npc) {
+	/**
+	 * Spawn an NPC and make the client animate it.
+	 * @param npc
+	 * @return
+	 */
+	public static byte[] writeShowAndControlNpc(Npc npc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
 		lew.writeShort(ClientSendOps.CONTROL_NPC);
-		lew.writeBool(true);
+		lew.writeByte((byte) 1);
 		writeNpcData(lew, npc);
+		return lew.getBytes();
+	}
+
+	/**
+	 * This will only make the NPC disappear if it was spawned by sending
+	 * writeShowAndControlNpc.
+	 * @param npc
+	 * @return
+	 */
+	public static byte[] writeStopControlAndRemoveNpc(Npc npc) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+		lew.writeShort(ClientSendOps.CONTROL_NPC);
+		lew.writeByte((byte) 0);
+		lew.writeInt(npc.getId());
 		return lew.getBytes();
 	}
 
@@ -1098,6 +1168,44 @@ public class CommonPackets {
 			lew.writeBool(false);
 			lew.writeInt(d.getId());
 		}
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeTriggerReactor(Reactor reactor) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
+
+		lew.writeShort(ClientSendOps.HIT_REACTOR);
+		lew.writeInt(reactor.getId());
+		lew.writeByte(reactor.getStateId());
+		lew.writePos(reactor.getPosition());
+		lew.writeShort(reactor.getStance());
+		lew.writeBool(false);
+		lew.writeByte((byte) 5); // frame delay, set to 5 since there doesn't appear to be a fixed formula for it
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowReactor(Reactor reactor) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
+
+		lew.writeShort(ClientSendOps.SHOW_REACTOR);
+		lew.writeInt(reactor.getId());
+		lew.writeInt(reactor.getDataId());
+		lew.writeByte(reactor.getStateId());
+		lew.writePos(reactor.getPosition());
+		lew.writeBool(false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveReactor(Reactor reactor) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+
+		lew.writeShort(ClientSendOps.REMOVE_REACTOR);
+		lew.writeInt(reactor.getId());
+		lew.writeByte(reactor.getStateId());
+		lew.writePos(reactor.getPosition());
 
 		return lew.getBytes();
 	}

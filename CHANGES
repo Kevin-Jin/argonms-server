@@ -609,6 +609,38 @@
 	* Fixed some monster drop issues when dropping certain equips.
 	* Added Miniroom and PlayerShop map entity stub classes. HiredMerchant
 	extends PlayerShop now instead of Npc.
+	* Fixed mob deaths when using MCDB.
+
+2011-04-22  GoldenKevin  (revision 28)
+
+	* Moved !spawn command into a separate class.
+	* Added a !id command to look up the data ID of an object based on its name.
+	* Implemented player NPC packets. Still haven't worked on saving/loading and
+	the placement of them though (I provided a !playernpc command to create a
+	temporary one of yourself).
+	* Fixed up NPC packets. writeShowNpc is redundant if we send writeControlNpc
+	Renamed writeControlNpc to writeShowAndControlNpc. Fixed removing NPCs (we
+	have to call writeStopControlAndRemoveNpc instead of just plain
+	writeRemoveNpc, which only works if we wrote writeShowNpc to spawn the NPC).
+	* Player NPCs and regular NPCs share the same entity pool. Removed
+	EntityType.PLAYER_NPC.
+	* Mobs begin immediately animating when a player leaves hide. Although they
+	will still continue animating even after the player goes into hide until the
+	player changes maps.
+	* Spawned NPCs now are in the direction of the player when it was spawned.
+	* Fixed issues with mobs not animating when a player enters a map.
+	* No more unhandled packet messages when passing by a Maple TV.
+	* Combined several EntityTypes that I believe would be in the same entity
+	pool on the client. Now, the entity types that were combined have a more
+	specific sub entity type to identify each distinct map entity.
+	* Reorganized miniroom stuff in a more sensical manner.
+	* Modified the behavior of map entities, and made the usages of isAlive()
+	and isVisible() more standardized. Ranged entities are added to the Player's
+	visible map entities when spawned (instead of when the Player starts moving)
+	and moving mobs will be included in the Player's visible map entities if
+	they move toward the Player's view. Dead ranged entities are now removed
+	from a Player's visible map entities.
+	* Reactors are now visible, although you can't destroy them.
 
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
