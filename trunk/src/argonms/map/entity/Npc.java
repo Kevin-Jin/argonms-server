@@ -29,7 +29,6 @@ public class Npc extends MapEntity {
 	private int npcid;
 	private short rx0, rx1;
 	private short cy;
-	private boolean f;
 
 	public Npc(int npcid) {
 		this.npcid = npcid;
@@ -48,10 +47,6 @@ public class Npc extends MapEntity {
 		this.cy = cy;
 	}
 
-	public void setF(boolean f) {
-		this.f = f;
-	}
-
 	public short getRx0() {
 		return rx0;
 	}
@@ -60,16 +55,16 @@ public class Npc extends MapEntity {
 		return rx1;
 	}
 
-	public boolean isF() {
-		return f;
-	}
-
 	public short getCy() {
 		return cy;
 	}
 
 	public byte[] getShopPacket() {
 		return null;
+	}
+
+	public boolean isPlayerNpc() {
+		return false;
 	}
 
 	public EntityType getEntityType() {
@@ -85,7 +80,7 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getCreationMessage() {
-		return CommonPackets.writeShowNpc(this);
+		return CommonPackets.writeShowAndControlNpc(this);
 	}
 
 	public byte[] getShowEntityMessage() {
@@ -97,7 +92,7 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveNpc(this);
+		return CommonPackets.writeStopControlAndRemoveNpc(this);
 	}
 
 	public boolean isNonRangedType() {

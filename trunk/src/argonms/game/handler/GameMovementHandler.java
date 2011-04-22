@@ -120,11 +120,11 @@ public class GameMovementHandler {
 			if (monster.wasAttackedBy(player)) { // aggro and controller change
 				if (controller != null) {
 					controller.uncontrolMonster(monster);
-					controller.getClient().getSession().send(CommonPackets.writeStopControllingMonster(monster));
+					controller.getClient().getSession().send(CommonPackets.writeStopControlMonster(monster));
 				}
 				monster.setController(player);
 				player.controlMonster(monster);
-				player.getClient().getSession().send(CommonPackets.writeControlMonster(monster, true));
+				player.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, true));
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			} else {

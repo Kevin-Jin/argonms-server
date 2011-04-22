@@ -22,11 +22,7 @@ package argonms.map.entity;
  *
  * @author GoldenKevin
  */
-public class HiredMerchant extends Miniroom {
-	public MiniroomType getMiniroomType() {
-		return MiniroomType.HIRED_MERCHANT;
-	}
-
+public abstract class Minigame extends Miniroom {
 	public boolean isVisible() {
 		return true;
 	}
@@ -37,5 +33,17 @@ public class HiredMerchant extends Miniroom {
 
 	public byte[] getDestructionMessage() {
 		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	public static class Omok extends Minigame {
+		public MiniroomType getMiniroomType() {
+			return MiniroomType.OMOK;
+		}
+	}
+
+	public static class MatchCards extends Minigame {
+		public MiniroomType getMiniroomType() {
+			return MiniroomType.MATCH_CARDS;
+		}
 	}
 }

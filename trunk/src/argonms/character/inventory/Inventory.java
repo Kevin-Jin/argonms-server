@@ -19,6 +19,7 @@
 package argonms.character.inventory;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,13 @@ public class Inventory {
 
 	public Map<Short, InventorySlot> getAll() {
 		return Collections.unmodifiableMap(slots);
+	}
+
+	public Map<Short, Integer> getItemIds() {
+		Map<Short, Integer> ids = new LinkedHashMap<Short, Integer>(slots.size());
+		for (Entry<Short, InventorySlot> entry : slots.entrySet())
+			ids.put(entry.getKey(), Integer.valueOf(entry.getValue().getDataId()));
+		return ids;
 	}
 
 	public InventorySlot get(short slot) {

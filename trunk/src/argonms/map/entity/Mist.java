@@ -112,7 +112,7 @@ public class Mist extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return false;
+		return true;
 	}
 
 	public byte[] getCreationMessage() {

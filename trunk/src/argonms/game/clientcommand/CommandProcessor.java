@@ -27,12 +27,10 @@ import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.game.GameServer;
 import argonms.game.clientcommand.CommandDefinition.CommandAction;
-import argonms.loading.mob.MobDataLoader;
-import argonms.loading.mob.MobStats;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.skill.SkillStats;
 import argonms.map.GameMap;
-import argonms.map.entity.Npc;
+import argonms.map.entity.PlayerNpc;
 import argonms.net.external.CommonPackets;
 import java.awt.Point;
 import java.util.LinkedHashMap;
@@ -60,6 +58,7 @@ public class CommandProcessor {
 	}
 
 	private void populateDefinitions() {
+		definitions.put("!id", new SearchCommandHandler());
 		definitions.put("!stat", new StatCommandHandler());
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
@@ -172,63 +171,30 @@ public class CommandProcessor {
 				}
 			}
 		}, "Give yourself an item", UserPrivileges.GM));
-		definitions.put("!spawn", new CommandDefinition(new CommandAction() {
+		definitions.put("!spawn", new SpawnCommandHandler());
+		definitions.put("!playernpc", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !spawn [mob/npc] [mob/npc WZ id] <mobtime>";
+				return "Syntax: !playernpc <scriptid>";
 			}
 
 			public void doAction(Player p, String[] args, ClientNoticeStream resp) {
-				if (args.length < 3) {
-					resp.printErr("Invalid usage. " + getUsage());
-					return;
-				}
-				boolean mob;
-				if (args[1].equalsIgnoreCase("mob")) {
-					mob = true;
-				} else if (args[1].equalsIgnoreCase("npc")) {
-					mob = false;
-				} else {
-					resp.printErr(args[1] + " is not a valid spawn type. " + getUsage());
-					return;
-				}
-				int dataId;
-				try {
-					dataId = Integer.parseInt(args[2]);
-				} catch (NumberFormatException e) {
-					resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
-					return;
-				}
-				GameMap map = p.getMap();
-				if (mob) {
-					MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
-					if (stats == null) {
-						resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
-						return;
-					}
-					Point pos = p.getPosition();
-					int mobtime = -1;
-					if (args.length > 3) {
-						try {
-							mobtime = Integer.parseInt(args[3]);
-						} catch (NumberFormatException e) {
-							resp.printErr(args[3] + " is not a valid mobtime. " + getUsage());
+				int scriptId = 9901000;
+				if (args.length > 1) {
+					try {
+						scriptId = Integer.parseInt(args[1]);
+						if (scriptId < 9901000 || scriptId > 9901319) {
+							resp.printErr("Scriptid must be between 9901000 and 9901319.");
 							return;
 						}
+					} catch (NumberFormatException e) {
+						resp.printErr(args[2] + " is not a valid scriptid. " + getUsage());
+						return;
 					}
-					map.addMonsterSpawn(stats, map.calcPointBelow(pos), map.getStaticData().getFootholds().findBelow(pos).getId(), mobtime);
-				} else {
-					//TODO: check if npcid is valid.
-					Point pos = p.getPosition();
-					Npc n = new Npc(dataId);
-					n.setFoothold(map.getStaticData().getFootholds().findBelow(pos).getId());
-					n.setPosition(map.calcPointBelow(pos));
-					n.setCy((short) pos.y);
-					n.setRx((short) pos.x, (short) pos.x);
-					n.setF(true);
-					map.spawnNpc(n);
 				}
+				PlayerNpc npc = new PlayerNpc(p, scriptId);
+				p.getMap().spawnPlayerNpc(npc);
 			}
-		}, "Spawn a temporary NPC or monster at your current location", UserPrivileges.GM));
+		}, "Spawn a temporary player NPC of yourself.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !info <player's name";

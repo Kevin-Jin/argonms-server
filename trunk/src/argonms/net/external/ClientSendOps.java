@@ -48,6 +48,7 @@ public final class ClientSendOps {
 		SPAWN_PORTAL = 0x40,
 		SERVER_MESSAGE = 0x41,
 		TIP_MESSAGE = 0x4A,
+		PLAYER_NPC = 0x4E,
 		SKILL_MACRO = 0x5B,
 		CHANGE_MAP = 0x5C,
 		MTS_OPEN = 0x5D,
@@ -89,6 +90,9 @@ public final class ClientSendOps {
 		REMOVE_MIST = 0xD3,
 		SHOW_DOOR = 0xD4,
 		REMOVE_DOOR = 0xD5,
+		HIT_REACTOR = 0xD6,
+		SHOW_REACTOR = 0xD8,
+		REMOVE_REACTOR = 0xD9,
 		NPC_TALK = 0xED,
 		NPC_SHOP = 0xEE,
 		KEYMAP = 0x107

@@ -21,6 +21,7 @@ package argonms.map.entity;
 import argonms.loading.reactor.ReactorStats;
 import argonms.loading.reactor.State;
 import argonms.map.MapEntity;
+import argonms.net.external.CommonPackets;
 
 /**
  *
@@ -63,6 +64,10 @@ public class Reactor extends MapEntity {
 		return delay;
 	}
 
+	public byte getStateId() {
+		return state;
+	}
+
 	public State getState() {
 		return stats.getStates().get(Byte.valueOf(state));
 	}
@@ -80,23 +85,23 @@ public class Reactor extends MapEntity {
 	}
 
 	public boolean isVisible() {
-		return false;
+		return true;
 	}
 
 	public byte[] getCreationMessage() {
-		return null;
+		return CommonPackets.writeShowReactor(this);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return null;
+	public byte[] getShowEntityMessage() { //I guess there is nothing else...?
+		return CommonPackets.writeShowReactor(this);
 	}
 
-	public byte[] getOutOfViewMessage() {
-		return null;
+	public byte[] getOutOfViewMessage() { //I guess there is nothing else...?
+		return CommonPackets.writeRemoveReactor(this);
 	}
 
 	public byte[] getDestructionMessage() {
-		return null;
+		return CommonPackets.writeRemoveReactor(this);
 	}
 
 	public boolean isNonRangedType() {

@@ -25,13 +25,8 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public abstract class MapEntity {
-	//TODO: check if the client has separate entity pools that correspond with
-	//these. If we got too specific, the client may have collisions (check if
-	//npc and player npc; hired merchant and player shop; etc are really in
-	//different pools. We may have to use a separate enum for PoolType.
 	public enum EntityType {
-		NPC, MONSTER, DROP, PLAYER, DOOR, MIST, REACTOR, HIRED_MERCHANT,
-		PLAYER_NPC, MINI_ROOM, PLAYER_SHOP
+		MONSTER, DROP, NPC, PLAYER, REACTOR, MINI_ROOM, DOOR, MIST
 	}
 
 	private int entityid;

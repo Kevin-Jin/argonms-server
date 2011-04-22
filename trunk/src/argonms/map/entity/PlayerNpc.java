@@ -18,16 +18,64 @@
 
 package argonms.map.entity;
 
+import argonms.character.Player;
+import argonms.character.inventory.Inventory;
+import java.awt.Point;
+import java.util.Map;
+
 /**
  *
  * @author GoldenKevin
  */
 public class PlayerNpc extends Npc {
-	public PlayerNpc(int playerId) {
-		super(playerId);
+	private String name;
+	private byte gender;
+	private byte skin;
+	private int eyes;
+	private int hair;
+	private Map<Short, Integer> equips;
+
+	public PlayerNpc(Player p, int npcId) {
+		super(npcId);
+		setPosition(new Point(p.getPosition()));
+		//setStance(p.getStance()); //it's entertaining to see a player NPC stuck in an alert pose, flying pose, or ladder climbing pose!
+		setStance((byte) (p.getStance() & 0x01)); //only uses lsb, which is what determines direction
+		setFoothold(p.getMap().getStaticData().getFootholds().findBelow(getPosition()).getId());
+		setCy((short) getPosition().y);
+		setRx((short) getPosition().x, (short) getPosition().x);
+		name = p.getName();
+		gender = p.getGender();
+		skin = p.getSkinColor();
+		eyes = p.getEyes();
+		hair = p.getHair();
+		equips = p.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
 	}
 
-	public EntityType getEntityType() {
-		return EntityType.PLAYER_NPC;
+	public String getPlayerName() {
+		return name;
+	}
+
+	public byte getGender() {
+		return gender;
+	}
+
+	public byte getSkinColor() {
+		return skin;
+	}
+
+	public int getEyes() {
+		return eyes;
+	}
+
+	public int getHair() {
+		return hair;
+	}
+
+	public Map<Short, Integer> getEquips() {
+		return equips;
+	}
+
+	public boolean isPlayerNpc() {
+		return true;
 	}
 }

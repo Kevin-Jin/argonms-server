@@ -19,12 +19,46 @@
 package argonms.map.entity;
 
 import argonms.map.MapEntity;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Miniroom extends MapEntity {
+public abstract class Miniroom extends MapEntity {
+	public enum MiniroomType {
+		OMOK (1),
+		MATCH_CARDS (2),
+		TRADE (3),
+		PLAYER_SHOP (4),
+		HIRED_MERCHANT (5);
+
+		private final int id;
+
+		private static final Map<Integer, MiniroomType> lookup = new HashMap<Integer, MiniroomType>();
+
+		//initialize reverse lookup
+		static {
+			for(MiniroomType type : MiniroomType.values())
+				lookup.put(Integer.valueOf(type.getValue()), type);
+		}
+
+		private MiniroomType(int clientVal) {
+			id = clientVal;
+		}
+
+		public int getValue() {
+			return id;
+		}
+
+		public static MiniroomType getByValue(int value) {
+			return lookup.get(Integer.valueOf(value));
+		}
+	}
+
+	public abstract MiniroomType getMiniroomType();
+
 	public EntityType getEntityType() {
 		return EntityType.MINI_ROOM;
 	}
@@ -33,24 +67,12 @@ public class Miniroom extends MapEntity {
 		return true;
 	}
 
-	public boolean isVisible() {
-		return true;
-	}
-
-	public byte[] getCreationMessage() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
 	public byte[] getShowEntityMessage() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return getCreationMessage();
 	}
 
 	public byte[] getOutOfViewMessage() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
-	public byte[] getDestructionMessage() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return null;
 	}
 
 	public boolean isNonRangedType() {
