@@ -295,10 +295,16 @@ public class GameMap {
 			if (p.isVisible()) //show ourself to other clients if we are not hidden
 				sendToAll(p.getCreationMessage());
 			players.add(p);
-			for (EntityPool pool : entPools.values())
-				for (MapEntity ent : pool.allEnts())
-					if (p != ent)
-						sendEntityData(ent, p);
+			for (EntityPool pool : entPools.values()) {
+				pool.lockRead();
+				try {
+					for (MapEntity ent : pool.allEnts())
+						if (p != ent)
+							sendEntityData(ent, p);
+				} finally {
+					pool.unlockRead();
+				}
+			}
 		} finally {
 			players.unlockWrite();
 		}
@@ -625,8 +631,14 @@ public class GameMap {
 
 	public void unhidePlayer(Player p) {
 		sendToAll(p.getShowEntityMessage());
-		for (MapEntity ent : entPools.get(EntityType.MONSTER).allEnts())
-			updateMonsterController((Mob) ent);
+		EntityPool mobs = entPools.get(EntityType.MONSTER);
+		mobs.lockRead();
+		try {
+			for (MapEntity ent : mobs.allEnts())
+				updateMonsterController((Mob) ent);
+		} finally {
+			mobs.unlockRead();
+		}
 	}
 
 	public void hidePlayer(Player p) {
@@ -886,7 +898,7 @@ public class GameMap {
 			mob.setPosition(new Point(pos));
 			spawnedMonsters.incrementAndGet();
 			mob.addDeathHook(new MobDeathHook() {
-				public void monsterKilled(Player finalAttacker) {
+				public void monsterKilled(Player highestAttacker, Player finalAttacker) {
 					//this has to be atomic, so I had to do away with assigning
 					//nextPossibleSpawn more than once.
 					if (mobTime > 0) {

@@ -47,7 +47,8 @@ public abstract class BuffsData implements StatusEffectsData {
 	}
 
 	public void setDuration(int time) {
-		this.duration = time;
+		if (time != 0) //the only buff with time of 0 is HIDE as far as I know.
+			this.duration = time;
 	}
 
 	public void setWatk(short pad) {

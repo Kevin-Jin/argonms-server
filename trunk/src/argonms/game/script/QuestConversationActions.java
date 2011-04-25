@@ -16,22 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms;
+package argonms.game.script;
+
+import argonms.game.GameClient;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
-public final class GlobalConstants {
-	public static final byte MAPLE_VERSION = 62;
-	public static final boolean TEST_SERVER = false;
+public class QuestConversationActions extends NpcConversationActions {
+	private short questId;
 
-	public static final int NULL_MAP = 999999999;
-	public static final short MAX_LEVEL = 200;
+	public QuestConversationActions(int npcId, short questId, GameClient client, Context cx, Scriptable globalScope) {
+		super(npcId, client, cx, globalScope);
+		this.questId = questId;
+	}
 
-	public static final String DIR_DELIMIT = System.getProperty("file.separator");
+	public void startQuest() {
+		getClient().getPlayer().startQuest(questId, getNpcId());
+	}
 
-	private GlobalConstants() {
-		//uninstantiable...
+	public void completeQuest() {
+		getClient().getPlayer().completeQuest(questId, getNpcId(), -1);
 	}
 }

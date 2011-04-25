@@ -37,18 +37,23 @@ import argonms.character.skill.Skills;
 import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
 import argonms.loading.StatusEffectsData;
+import argonms.loading.quest.QuestDataLoader;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
 import argonms.map.entity.Mob;
 import argonms.map.entity.Miniroom;
+import argonms.map.entity.Mob.MobDeathHook;
 import argonms.net.external.CommonPackets;
+import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableList;
+import argonms.tools.collections.Pair;
+import java.lang.ref.WeakReference;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -122,6 +127,8 @@ public class Player extends MapEntity {
 	private final LockableList<MapEntity> visibleEntities;
 	private final List<Mob> controllingMobs;
 
+	private final Map<Short, QuestEntry> questStatuses;
+
 	private int guild;
 	private Party party;
 	private Miniroom miniroom;
@@ -139,6 +146,7 @@ public class Player extends MapEntity {
 		diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
+		questStatuses = new HashMap<Short, QuestEntry>();
 	}
 
 	public int getDataId() {
@@ -160,6 +168,7 @@ public class Player extends MapEntity {
 				updateDbSkills(con);
 				updateDbCooldowns(con);
 				updateDbBindings(con);
+				updateDbQuests(con);
 			}
 			con.commit();
 		} catch (SQLException ex) {
@@ -297,9 +306,7 @@ public class Player extends MapEntity {
 					//in iteration order...
 					ps.executeUpdate(); //need the generated keys, so no batch
 					ResultSet rs = ps.getGeneratedKeys();
-					int inventoryKey = -1;
-					if (rs.next())
-						inventoryKey = rs.getInt(1);
+					int inventoryKey = rs.next() ? rs.getInt(1) : -1;
 					rs.close();
 
 					switch (item.getType()) {
@@ -487,6 +494,48 @@ public class Player extends MapEntity {
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not save keymap and skill macros of "
 					+ "character " + name, ex);
+		}
+	}
+
+	public void updateDbQuests(Connection con) {
+		try {
+			PreparedStatement ps = con.prepareStatement("DELETE FROM "
+					+ "`queststatuses` WHERE `characterid` = ?"), mps;
+			ResultSet rs;
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `queststatuses` "
+					+ "(`characterid`,`questid`,`state`,`completed`) VALUES "
+					+ "(?,?,?, ?)",
+					PreparedStatement.RETURN_GENERATED_KEYS);
+			ps.setInt(1, getDataId());
+			for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
+				QuestEntry status = entry.getValue();
+				ps.setShort(2, entry.getKey().shortValue());
+				ps.setByte(3, status.getState());
+				ps.setLong(4, status.getCompletionTime());
+				ps.executeUpdate();
+				rs = ps.getGeneratedKeys();
+				int questEntryId = rs.next() ? rs.getInt(1) : -1;
+				rs.close();
+				mps = con.prepareStatement("INSERT INTO `questmobprogress` "
+						+ "(`queststatusid`,`mobid`,`count`) VALUES (?,?,?)");
+				mps.setInt(1, questEntryId);
+				for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
+					mps.setInt(2, mobProgress.getKey().intValue());
+					mps.setShort(3, mobProgress.getValue().shortValue());
+					mps.addBatch();
+				}
+				mps.executeBatch();
+				mps.close();
+			}
+			ps.close();
+
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not save quest states of character "
+					+ name, ex);
 		}
 	}
 
@@ -745,6 +794,34 @@ public class Player extends MapEntity {
 				}
 				rs.close();
 				ps.close();
+
+				ps = con.prepareStatement("SELECT `id`,`questid`,`state`,"
+						+ "`completed` FROM `queststatuses` WHERE "
+						+ "`characterid` = ?");
+				ps.setInt(1, id);
+				rs = ps.executeQuery();
+				while (rs.next()) {
+					int questEntryId = rs.getInt(1);
+					short questId = rs.getShort(2);
+					Map<Integer, Short> mobReq = QuestDataLoader.getInstance().getAllRequiredMobKills(questId);
+					Map<Integer, Pair<Short, Short>> progress = new HashMap<Integer, Pair<Short, Short>>(mobReq.size());
+					PreparedStatement mps = con.prepareStatement("SELECT "
+							+ "`mobid`,`count` FROM `questmobprogress` WHERE "
+							+ "`queststatusid` = ?");
+					mps.setInt(1, questEntryId);
+					ResultSet mrs = mps.executeQuery();
+					while (mrs.next()) {
+						Integer mobId = Integer.valueOf(mrs.getInt(1));
+						progress.put(mobId, new Pair<Short, Short>(Short.valueOf(mrs.getShort(2)), mobReq.get(mobId)));
+					}
+					mrs.close();
+					mps.close();
+					QuestEntry status = new QuestEntry(rs.getByte(3), progress, true);
+					status.setCompletionTime(rs.getLong(4));
+					p.questStatuses.put(Short.valueOf(questId), status);
+				}
+				rs.close();
+				ps.close();
 			}
 
 			return p;
@@ -801,7 +878,7 @@ public class Player extends MapEntity {
 	}
 
 	public void gainExp(int gain, boolean isKiller, boolean fromQuest) {
-		if (level < 200) {
+		if (level < GlobalConstants.MAX_LEVEL) {
 			getClient().getSession().send(CommonPackets.writeShowExpGain(gain, isKiller, fromQuest));
 
 			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
@@ -870,7 +947,7 @@ public class Player extends MapEntity {
 			exp -= ExpTables.getForLevel(level++);
 			if (singleLevelOnly && exp >= ExpTables.getForLevel(level))
 				exp = ExpTables.getForLevel(level) - 1;
-		} while (level < 200 && exp >= ExpTables.getForLevel(level));
+		} while (level < GlobalConstants.MAX_LEVEL && exp >= ExpTables.getForLevel(level));
 
 		remHp = updateMaxHp((short) Math.min(baseMaxHp + hpInc, 30000));
 		remMp = updateMaxMp((short) Math.min(baseMaxMp + mpInc, 30000));
@@ -887,7 +964,7 @@ public class Player extends MapEntity {
 
 		getMap().sendToAll(CommonPackets.writeShowLevelUp(this), this);
 
-		return level < 200 ? exp : 0;
+		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
 	}
 
 	public short getLevel() {
@@ -1113,6 +1190,12 @@ public class Player extends MapEntity {
 	public void setFame(short newFame) {
 		this.fame = newFame;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FAME, Integer.valueOf(fame)), false));
+	}
+
+	public void gainFame(int gain, boolean fromQuest) {
+		setFame((short) Math.min(fame + gain, Short.MAX_VALUE));
+		if (fromQuest)
+			CommonPackets.writeShowPointsGainFromQuest(gain, PacketSubHeaders.STATUS_INFO_FAME);
 	}
 
 	public Inventory getInventory(InventoryType type) {
@@ -1568,6 +1651,107 @@ public class Player extends MapEntity {
 				monster.setControllerKnowsAboutAggro(false);
 			}
 		}
+	}
+
+	public Map<Short, QuestEntry> getAllQuests() {
+		return questStatuses;
+	}
+
+	private void localStartQuest(short questId) {
+		Short oId = Short.valueOf(questId);
+		QuestEntry status = questStatuses.get(oId);
+		Map<Integer, Short> mobs = QuestDataLoader.getInstance().getAllRequiredMobKills(questId);
+		if (status == null) { //first time touching this quest
+			status = new QuestEntry(QuestEntry.STATE_STARTED, mobs);
+			questStatuses.put(oId, status);
+		} else { //if we previously forfeited this quest
+			status.updateState(QuestEntry.STATE_STARTED);
+		}
+		QuestDataLoader.getInstance().startedQuest(this, questId);
+	}
+
+	public void startQuest(short questId, int npcId) {
+		localStartQuest(questId);
+		getClient().getSession().send(CommonPackets.writeQuestProgress(questId, ""));
+		//TODO: check if quest start is not success
+		getClient().getSession().send(CommonPackets.writeQuestStartSuccess(questId, npcId));
+	}
+
+	public void completeQuest(short questId, int npcId, int selection) {
+		Short oId = Short.valueOf(questId);
+		QuestEntry status = questStatuses.get(oId);
+		Map<Integer, Short> mobs;
+		if (status != null) {
+			status.updateState(QuestEntry.STATE_COMPLETED);
+		} else { //shouldn't ever happen...
+			//...unless we want someone to complete a quest without even
+			//starting it. *cough* potential admin powers abuse *cough*.
+			mobs = QuestDataLoader.getInstance().getAllRequiredMobKills(questId);
+			//cheat and set all mob kills to the required
+			Map<Integer, Pair<Short, Short>> progress = new HashMap<Integer, Pair<Short, Short>>();
+			for (Entry<Integer, Short> req : mobs.entrySet())
+				progress.put(req.getKey(), new Pair<Short, Short>(req.getValue(), req.getValue()));
+			status = new QuestEntry(QuestEntry.STATE_COMPLETED, progress, true);
+			questStatuses.put(oId, status);
+		}
+		status.setCompletionTime(System.currentTimeMillis());
+		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
+		if (next != 0)
+			localStartQuest(next);
+		getClient().getSession().send(CommonPackets.writeQuestCompleted(questId, status));
+		getClient().getSession().send(CommonPackets.writeQuestStartNext(questId, npcId, next));
+		getClient().getSession().send(CommonPackets.writeShowSelfQuestEffect());
+		getMap().sendToAll(CommonPackets.writeShowQuestEffect(this));
+	}
+
+	public void forfeitQuest(short questId) {
+		Short oId = Short.valueOf(questId);
+		QuestEntry status = questStatuses.get(oId);
+		if (status != null) {
+			status.updateState(QuestEntry.STATE_NOT_STARTED);
+		} else { //shouldn't ever happen
+			Map<Integer, Short> reqMobs = QuestDataLoader.getInstance().getAllRequiredMobKills(questId);
+			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
+			questStatuses.put(oId, status);
+		}
+		getClient().getSession().send(CommonPackets.writeQuestForfeit(questId));
+	}
+
+	public void updateQuestProgress(short questId, int mobId) {
+		QuestEntry status = questStatuses.get(Short.valueOf(questId));
+		if (status != null) {
+			status.killedMob(mobId);
+			getClient().getSession().send(CommonPackets.writeQuestProgress(questId, status.getData()));
+		} else { //shouldn't ever happen
+			
+		}
+	}
+
+	public List<MobDeathHook> getMobDeathHooks(final int mobId) {
+		List<MobDeathHook> hooks = new ArrayList<MobDeathHook>();
+		for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
+			QuestEntry status = entry.getValue();
+			if (status.getState() == QuestEntry.STATE_STARTED && status.isWatching(mobId)) {
+				final short questId = entry.getKey().shortValue();
+				final int mobMap = getMapId();
+				//hopefully, this will prevent any memory leaks.
+				final WeakReference<Player> futureSelf = new WeakReference<Player>(this);
+				hooks.add(new MobDeathHook() {
+					//TODO: special cases when we have party and we distribute
+					//mob kill to all users.
+					public void monsterKilled(Player highestDamager, Player last) {
+						Player ourself = futureSelf.get();
+						if (ourself != null && highestDamager == ourself
+								//I think we had to be the highest damager and
+								//we had to kill it to be recognized for the kill
+								&& last == highestDamager
+								&& ourself.getMapId() == mobMap)
+							ourself.updateQuestProgress(questId, mobId);
+					}
+				});
+			}
+		}
+		return hooks;
 	}
 
 	public EntityType getEntityType() {

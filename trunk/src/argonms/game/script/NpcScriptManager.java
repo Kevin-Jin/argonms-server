@@ -20,6 +20,7 @@ package argonms.game.script;
 
 import argonms.GlobalConstants;
 import argonms.game.GameClient;
+import argonms.loading.quest.QuestDataLoader;
 import argonms.net.external.ClientSendOps;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.io.FileNotFoundException;
@@ -41,10 +42,12 @@ public class NpcScriptManager {
 
 	private static NpcScriptManager singleton;
 
-	private String npcPath;
+	private final String npcPath;
+	private final String questPath;
 
 	private NpcScriptManager(String scriptsPath) {
 		npcPath = scriptsPath + "npcs" + GlobalConstants.DIR_DELIMIT;
+		questPath = scriptsPath + "quests" + GlobalConstants.DIR_DELIMIT;
 	}
 
 	public void runScript(int npcId, GameClient client) {
@@ -67,34 +70,110 @@ public class NpcScriptManager {
 			client.getSession().send(unscriptedNpc(npcId));
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing NPC script " + npcId, ex);
+			if (convoMan != null)
+				convoMan.endConversation();
 		} finally {
 			Context.exit();
 		}
 	}
 
-	public void runQuestScript(int questId, GameClient client) {
-		/*Context cx = Context.enter();
-		NpcConversationActions convoMan = null;
+	//one script two methods routines for quests
+	/*private void runQuestScript(int npcId, short questId, GameClient client, String fn) {
+		Context cx = Context.enter();
+		QuestConversationActions convoMan = null;
 		try {
-			FileReader reader = new FileReader("scripts/quest/" + questId + ".js");
+			FileReader reader = new FileReader(questPath + questId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
-			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
+			convoMan = new QuestConversationActions(npcId, questId, client, cx, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
-			Script script = cx.compileReader(reader, Integer.toString(npcId), 1, null);
+			cx.evaluateReader(globalScope, reader, Integer.toString(questId), 1, null);
+			reader.close();
+			Object f = globalScope.get(fn, globalScope);
+			if (f != Scriptable.NOT_FOUND) {
+				try {
+					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
+					convoMan.endConversation();
+				} catch (ContinuationPending pending) {
+					convoMan.setContinuation(pending.getContinuation());
+				}
+			} else {
+				client.getSession().send(unscriptedQuest(npcId, questId, fn));
+				convoMan.endConversation();
+			}
+		} catch (FileNotFoundException ex) {
+			client.getSession().send(unscriptedQuest(npcId, questId, fn));
+		} catch (IOException ex) {
+			LOG.log(Level.WARNING, "Error executing quest script " + questId, ex);
+			if (convoMan != null)
+				convoMan.endConversation();
+		} finally {
+			Context.exit();
+		}
+	}
+
+	public void runStartQuestScript(int npcId, short questId, GameClient client) {
+		runQuestScript(npcId, questId, client, "start");
+	}
+
+	public void runCompleteQuestScript(int npcId, short questId, GameClient client) {
+		runQuestScript(npcId, questId, client, "end");
+	}
+
+	private static byte[] unscriptedQuest(int npc, short quest, String type) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_TALK);
+		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
+		lew.writeInt(npc);
+		lew.writeByte((byte) 0); //SAY (ok box)
+		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about quest #" + quest + " (" + type + ")!");
+		lew.writeBool(false); //prev button
+		lew.writeBool(false); //next button
+
+		return lew.getBytes();
+	}*/
+
+	private void runQuestScript(int npcId, short questId, GameClient client, String scriptName) {
+		Context cx = Context.enter();
+		QuestConversationActions convoMan = null;
+		try {
+			FileReader reader = new FileReader(questPath + scriptName + ".js");
+			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(-1); // must use interpreter mode
+			convoMan = new QuestConversationActions(npcId, questId, client, cx, globalScope);
+			globalScope.put("npc", globalScope, convoMan);
+			client.setNpc(convoMan);
+			Script script = cx.compileReader(reader, scriptName, 1, null);
 			reader.close();
 			cx.executeScriptWithContinuations(script, globalScope);
-			convoMan.endConversation(false);
+			convoMan.endConversation();
 		} catch (ContinuationPending pending) {
 			convoMan.setContinuation(pending.getContinuation());
 		} catch (FileNotFoundException ex) {
-			client.getSession().send(unscriptedNpc(npcId));
+			client.getSession().send(unscriptedQuest(npcId, scriptName));
 		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Error executing quest script " + questId, ex);
+			LOG.log(Level.WARNING, "Error executing quest script " + scriptName, ex);
+			if (convoMan != null)
+				convoMan.endConversation();
 		} finally {
 			Context.exit();
-		}*/
+		}
+	}
+
+	public void runStartQuestScript(int npcId, short questId, GameClient client) {
+		String scriptName = QuestDataLoader.getInstance().getStartScriptName(questId);
+		if (scriptName == null)
+			scriptName = "q" + questId + "s";
+		runQuestScript(npcId, questId, client, scriptName);
+	}
+
+	public void runCompleteQuestScript(int npcId, short questId, GameClient client) {
+		String scriptName = QuestDataLoader.getInstance().getEndScriptName(questId);
+		if (scriptName == null)
+			scriptName = "q" + questId + "e";
+		runQuestScript(npcId, questId, client, scriptName);
 	}
 
 	private static byte[] unscriptedNpc(int npc) {
@@ -105,6 +184,20 @@ public class NpcScriptManager {
 		lew.writeInt(npc);
 		lew.writeByte((byte) 0); //SAY (ok box)
 		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about NPC #" + npc + "!");
+		lew.writeBool(false); //prev button
+		lew.writeBool(false); //next button
+
+		return lew.getBytes();
+	}
+
+	private static byte[] unscriptedQuest(int npc, String scriptName) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_TALK);
+		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
+		lew.writeInt(npc);
+		lew.writeByte((byte) 0); //SAY (ok box)
+		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about quest " + scriptName + "!");
 		lew.writeBool(false); //prev button
 		lew.writeBool(false); //next button
 

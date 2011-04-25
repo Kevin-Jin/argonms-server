@@ -21,6 +21,7 @@ package argonms.net.external;
 import argonms.GlobalConstants;
 import argonms.character.ClientUpdateKey;
 import argonms.character.Player;
+import argonms.character.QuestEntry;
 import argonms.character.skill.SkillEntry;
 import argonms.character.skill.SkillTools;
 import argonms.character.skill.Cooldown;
@@ -33,7 +34,7 @@ import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
-import argonms.character.inventory.TamingMob;
+import argonms.character.skill.StatusEffectTools;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mist;
@@ -42,15 +43,13 @@ import argonms.map.entity.MysticDoor;
 import argonms.map.entity.Npc;
 import argonms.map.entity.PlayerNpc;
 import argonms.map.entity.Reactor;
-import argonms.tools.HexTool;
 import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
-
 import java.awt.Rectangle;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,8 +89,8 @@ public class CommonPackets {
 	 * @param show Show the expiration time.
 	 */
 	private static void addItemExpire(LittleEndianWriter lew, long time, boolean show) {
-		if (!show || time <= 0) //Midnight January 1, 2079 = no expiration
-			time = 3439756800000L; //some arbitrary date Wizet made up...
+		if (!show || time <= 0)
+			time = TimeUtil.NO_EXPIRATION;
 		lew.writeLong(TimeUtil.unixToWindowsTime(time));
 	}
 
@@ -337,24 +336,36 @@ public class CommonPackets {
 			lew.writeShort(cooling.getValue().getSecondsRemaining());
 		}
 
-		lew.writeShort((short) 0); //ah whatever, implement quests later...
-		/*List<MapleQuestStatus> started = p.getActiveQuests();
-		lew.writeShort((short) started.size());
-		for (MapleQuestStatus q : started) {
-			lew.writeShort(q.getQuest().getId());
-			lew.writeLengthPrefixedString(q);
+		Map<Short, QuestEntry> quests = p.getAllQuests();
+		Map<Short, QuestEntry> started = new HashMap<Short, QuestEntry>();
+		Map<Short, QuestEntry> completed = new HashMap<Short, QuestEntry>();
+		for (Entry<Short, QuestEntry> entry : quests.entrySet()) {
+			QuestEntry status = entry.getValue();
+			switch (status.getState()) {
+				case QuestEntry.STATE_NOT_STARTED:
+					break;
+				case QuestEntry.STATE_STARTED:
+					started.put(entry.getKey(), status);
+					break;
+				case QuestEntry.STATE_COMPLETED:
+					completed.put(entry.getKey(), status);
+					break;
+			}
 		}
-		List<MapleQuestStatus> completed = p.getCompletedQuests();
+		lew.writeShort((short) started.size());
+		for (Entry<Short, QuestEntry> startedQuest : started.entrySet()) {
+			lew.writeShort(startedQuest.getKey().shortValue());
+			lew.writeLengthPrefixedString(startedQuest.getValue().getData());
+		}
 		lew.writeShort((short) completed.size());
-		for (MapleQuestStatus q : completed) {
-			lew.writeShort(q.getQuest().getId());
-			lew.writeInt(KoreanDateUtil.getQuestTimestamp(q.getCompletionTime()));
-			lew.writeInt(KoreanDateUtil.getQuestTimestamp(q.getCompletionTime()));
-		}*/
+		for (Entry<Short, QuestEntry> completedQuest : completed.entrySet()) {
+			lew.writeShort(completedQuest.getKey().shortValue());
+			lew.writeLong(TimeUtil.unixToWindowsTime(completedQuest.getValue().getCompletionTime()));
+		}
 
 		//dude, what the fuck was that guy who wrote this smoking?
 		boolean FR_last = false;
-		//if (!rings.isEmpty())
+		if (!rings.isEmpty())
 			lew.writeShort((short) 0);
 		for (Ring ring : rings.values()) {
 			lew.writeShort((short) 0);
@@ -509,18 +520,22 @@ public class CommonPackets {
 	}
 
 	public static byte[] writeShowLevelUp(Player p) {
-		return writeShowThirdPersonEffect(p, (byte) 0);
+		return writeShowThirdPersonEffect(p, StatusEffectTools.LEVEL_UP);
 	}
 
 	public static byte[] writeShowJobChange(Player p) {
-		return writeShowThirdPersonEffect(p, (byte) 8);
+		return writeShowThirdPersonEffect(p, StatusEffectTools.JOB_ADVANCEMENT);
+	}
+
+	public static byte[] writeShowQuestEffect(Player p) {
+		return writeShowThirdPersonEffect(p, StatusEffectTools.QUEST);
 	}
 
 	public static byte[] writeShowItemGain(int itemid, int quantity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		lew.writeByte((byte) 0);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_INVENTORY);
 		lew.writeByte((byte) 0);
 		lew.writeInt(itemid);
 		lew.writeInt(quantity);
@@ -534,7 +549,7 @@ public class CommonPackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		lew.writeByte((byte) 0);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_INVENTORY);
 		lew.writeByte((byte) 1);
 		lew.writeInt(gain);
 		lew.writeShort((short) 0);
@@ -546,7 +561,7 @@ public class CommonPackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		lew.writeByte((byte) 0);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_INVENTORY);
 		lew.writeByte(mode);
 		lew.writeInt(0);
 		lew.writeInt(0);
@@ -562,17 +577,56 @@ public class CommonPackets {
 		return writeShowInventoryStatus((byte) 0xFE);
 	}
 
-	public static byte[] writeShowExpGain(int gain, boolean white, boolean fromQuest) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20);
+	public static byte[] writeQuestForfeit(short questId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
-		lew.writeByte((byte) 3);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_QUEST);
+		lew.writeShort(questId);
+		lew.writeByte(QuestEntry.STATE_NOT_STARTED);
+		lew.writeShort((short) 0);
+		lew.writeLong(0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeQuestProgress(short questId, String data) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8 + data.length());
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_QUEST);
+		lew.writeShort(questId);
+		lew.writeByte(QuestEntry.STATE_STARTED);
+		lew.writeLengthPrefixedString(data);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeQuestCompleted(short questId, QuestEntry status) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_QUEST);
+		lew.writeShort(questId);
+		lew.writeByte(QuestEntry.STATE_COMPLETED);
+		lew.writeLong(TimeUtil.unixToWindowsTime(status.getCompletionTime()));
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowExpGain(int gain, boolean white, boolean fromQuest) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(!fromQuest ? 20 : 21);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_EXP);
 		lew.writeBool(white);
 		lew.writeInt(gain);
 		lew.writeBool(fromQuest);
 		lew.writeByte((byte) 0);
 		lew.writeShort((short) 0);
 		lew.writeLong(0);
+		if (fromQuest)
+			lew.writeByte((byte) 0);
 
 		return lew.getBytes();
 	}
@@ -580,9 +634,9 @@ public class CommonPackets {
 	/**
 	 * 
 	 * @param gain
-	 * @param pointType 4 = fame
-	 *                  5 = mesos
-	 *                  6 = guild points
+	 * @param pointType must be one of the following values from
+	 * PacketSubHeaders: STATUS_INFO_FAME, STATUS_INFO_MESOS,
+	 * STATUS_INFO_GUILD_POINTS
 	 * @return
 	 */
 	public static byte[] writeShowPointsGainFromQuest(int gain, byte pointType) {
@@ -595,24 +649,84 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeShowQuestReqsFulfilled(short questId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.SHOW_QUEST_COMPLETION);
+		lew.writeShort(questId);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowItemGainFromQuest(int itemid, int quantity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
-		lew.writeByte((byte) 3);
-		lew.writeByte((byte) 1);
+		lew.writeByte(StatusEffectTools.ITEM_GAIN);
+		lew.writeByte((byte) 1); //Number of different items (itemid and amount gets repeated)
 		lew.writeInt(itemid);
 		lew.writeInt(quantity);
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowSelfBuff(Player p, byte effectType, int skillId) {
+	/**
+	 *
+	 * @param p
+	 * @param effectType a const from StatusEffectTools.
+	 * @param skillId
+	 * @return
+	 */
+	public static byte[] writeShowSelfEffect(Player p, byte effectType, int skillId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
 		lew.writeByte(effectType);
 		lew.writeInt(skillId);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowSelfQuestEffect() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte(StatusEffectTools.QUEST);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeQuestStartSuccess(short questId, int npcId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+
+		lew.writeShort(ClientSendOps.QUEST_START);
+		lew.writeByte(QuestEntry.QUEST_START_SUCCESS);
+		lew.writeShort(questId);
+		lew.writeInt(npcId);
+		lew.writeShort((short) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeQuestStartNext(short questId, int npcId, short next) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+
+		lew.writeShort(ClientSendOps.QUEST_START);
+		lew.writeByte(QuestEntry.QUEST_START_SUCCESS);
+		lew.writeShort(questId);
+		lew.writeInt(npcId);
+		lew.writeShort(next);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeQuestStartError(short questId, byte errorType) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+
+		lew.writeShort(ClientSendOps.QUEST_START);
+		lew.writeByte(errorType);
+		lew.writeShort(questId);
+		lew.writeInt(0);
 
 		return lew.getBytes();
 	}
@@ -1309,7 +1423,7 @@ public class CommonPackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 
 		lew.writeShort(ClientSendOps.GM);
-		lew.writeByte((byte) 0x10);
+		lew.writeByte(PacketSubHeaders.GM_HIDE);
 		lew.writeBool(true);
 
 		return lew.getBytes();
@@ -1319,7 +1433,7 @@ public class CommonPackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 
 		lew.writeShort(ClientSendOps.GM);
-		lew.writeByte((byte) 0x10);
+		lew.writeByte(PacketSubHeaders.GM_HIDE);
 		lew.writeBool(false);
 
 		return lew.getBytes();

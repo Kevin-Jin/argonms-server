@@ -18,6 +18,7 @@
 
 package argonms.map.entity;
 
+import argonms.GlobalConstants;
 import argonms.character.Party;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -197,14 +198,14 @@ public class Mob extends MapEntity {
 	public void died(Player killer) {
 		for (ScheduledFuture<?> cancelTask : skillCancels.values())
 			cancelTask.cancel(true);
-		for (MobDeathHook hook : hooks)
-			hook.monsterKilled(killer);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			killer.applyEffect(ItemDataLoader.getInstance().getEffect(deathBuff));
 			map.sendToAll(CommonPackets.writeBuffEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
 		}
 		Player highestDamage = giveExp(killer);
+		for (MobDeathHook hook : hooks)
+			hook.monsterKilled(highestDamage, killer);
 		int id;
 		byte pickupAllow;
 		if (highestDamage.getParty() != null) {
@@ -250,6 +251,10 @@ public class Mob extends MapEntity {
 	}
 
 	public void hurt(Player p, int damage) {
+		if (damages.getWhenSafe(p) == null)
+			for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
+				hooks.add(hook);
+
 		if (damage > remHp)
 			damage = remHp;
 		this.remHp -= damage;
@@ -483,7 +488,7 @@ public class Mob extends MapEntity {
 	}
 
 	public interface MobDeathHook {
-		public void monsterKilled(Player killer);
+		public void monsterKilled(Player highestDamage, Player last);
 	}
 
 	private static class PlayerDamage {
@@ -508,7 +513,7 @@ public class Mob extends MapEntity {
 		private long highestDamage;
 
 		public PartyExp() {
-			minAttackerLevel = 200;
+			minAttackerLevel = GlobalConstants.MAX_LEVEL;
 		}
 
 		public void compareAndSetMinAttackerLevel(short damagerlevel) {
