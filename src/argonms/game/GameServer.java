@@ -26,6 +26,7 @@ import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.map.MapDataLoader;
 import argonms.loading.mob.MobDataLoader;
+import argonms.loading.quest.QuestDataLoader;
 import argonms.loading.reactor.ReactorDataLoader;
 import argonms.loading.shop.NpcShopDataLoader;
 import argonms.loading.skill.SkillDataLoader;
@@ -149,6 +150,7 @@ public class GameServer implements LocalServer {
 
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
 		StringDataLoader.setInstance(wzType, wzPath);
+		QuestDataLoader.setInstance(wzType, wzPath);
 		SkillDataLoader.setInstance(wzType, wzPath);
 		ReactorDataLoader.setInstance(wzType, wzPath);
 		MobDataLoader.setInstance(wzType, wzPath);
@@ -161,6 +163,9 @@ public class GameServer implements LocalServer {
 		start = System.nanoTime();
 		System.out.print("Loading String data...");
 		StringDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
+		System.out.print("Loading Quest data...");
+		QuestDataLoader.getInstance().loadAll();
 		System.out.println("\tDone!");
 		if (preloadAll) {
 			System.out.print("Loading Skill data...");

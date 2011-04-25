@@ -18,6 +18,9 @@
 
 package argonms.tools;
 
+import java.util.Calendar;
+import java.util.TimeZone;
+
 /**
  *
  * @author GoldenKevin
@@ -27,6 +30,19 @@ public final class TimeUtil {
 	 * Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
 	 */
 	private static final long EPOCH_BIAS = 116444736000000000L;
+	private static final int TIME_ZONE_OFFSET;
+	/**
+	 * Some arbitrary date that Wizet made up that is supposed to tell the
+	 * client that an item has no expiration date on it.
+	 * The date itself happens to be midnight January 1, 2079 UTC...
+	 */
+	public static final long NO_EXPIRATION;
+
+	static {
+		TimeZone tz = Calendar.getInstance().getTimeZone();
+		TIME_ZONE_OFFSET = tz.getRawOffset() + tz.getDSTSavings();
+		NO_EXPIRATION = 3439756800000L - TimeUtil.TIME_ZONE_OFFSET;
+	}
 
 	/**
 	 * Converts a POSIX/Unix timestamp AKA time_t (milliseconds since the Unix
@@ -36,6 +52,23 @@ public final class TimeUtil {
 	 * @return FILETIME
 	 */
 	public static long unixToWindowsTime(long unixTime) {
-		return (unixTime * 10000 + EPOCH_BIAS);
+		return ((unixTime + TIME_ZONE_OFFSET) * 10000 + EPOCH_BIAS);
+	}
+
+	public static Calendar intDateToCalendar(int idate) {
+		String timeStr = Integer.toString(idate);
+		Calendar cal = Calendar.getInstance();
+		switch (timeStr.length()) {
+			case 8: //YYYYMMDD
+				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)), Integer.parseInt(timeStr.substring(6, 8)));
+				break;
+			case 10: //YYYYMMDDHH
+				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)), Integer.parseInt(timeStr.substring(6, 8)), Integer.parseInt(timeStr.substring(8, 10)), 0);
+				break;
+			default:
+				cal = null;
+				break;
+		}
+		return cal;
 	}
 }

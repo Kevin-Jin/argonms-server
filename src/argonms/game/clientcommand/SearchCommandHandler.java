@@ -20,6 +20,7 @@ package argonms.game.clientcommand;
 
 import argonms.UserPrivileges;
 import argonms.character.Player;
+import argonms.loading.quest.QuestDataLoader;
 import argonms.loading.string.StringDataLoader;
 import java.util.List;
 
@@ -37,7 +38,7 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Syntax: !id [item/mob/map/skill/npc] [name]";
+		return "Syntax: !id [item/mob/map/skill/npc/quest] [name]";
 	}
 
 	private String restOfString(String[] splitted, int start) {
@@ -73,9 +74,9 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 		} else if (type.equalsIgnoreCase("NPC") || type.equalsIgnoreCase("NPCS")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedNpcs(query);
 			typeName = "NPCs";
-		/*} else if (type.equalsIgnoreCase("QUEST") || type.equalsIgnoreCase("QUESTS")) {
-			matches = StringDataLoader.getInstance().getSimilarNamedQuests(query);
-			typeName = "quests";*/
+		} else if (type.equalsIgnoreCase("QUEST") || type.equalsIgnoreCase("QUESTS")) {
+			matches = QuestDataLoader.getInstance().getSimilarNamedQuests(query);
+			typeName = "quests";
 		} else {
 			resp.printErr(type + " is not a valid search type. " + getUsage());
 			return;

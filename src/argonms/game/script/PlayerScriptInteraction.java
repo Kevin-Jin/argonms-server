@@ -51,6 +51,10 @@ public abstract class PlayerScriptInteraction {
 		client.getPlayer().gainMesos(gain * GameServer.getVariables().getMesoRate(), true);
 	}
 
+	public boolean playerHasItem(int itemid, short quantity) {
+		return InventoryTools.hasItem(client.getPlayer(), itemid, quantity);
+	}
+
 	public boolean giveItem(int itemid, short quantity) {
 		InventoryType type = InventoryTools.getCategory(itemid);
 		Inventory inv = getClient().getPlayer().getInventory(type);
@@ -62,14 +66,14 @@ public abstract class PlayerScriptInteraction {
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				quantity = slot.getQuantity();
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
+				//sending false for fromDrop crashes the game for some reason...
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				quantity = slot.getQuantity();
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, true));
+				//sending false for fromDrop crashes the game for some reason...
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
 			}
 			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, quantity));
 			return true;

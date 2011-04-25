@@ -36,11 +36,13 @@ import argonms.net.external.CommonPackets;
 public class StatusEffectTools {
 	public static final byte
 		LEVEL_UP = 0,
-		PASSIVE = 1,
+		PASSIVE_BUFF = 1,
 		ACTIVE_BUFF = 2, //energy charge + party buffs + beholder?
+		ITEM_GAIN = 3,
 		PET_LVL_UP = 3,
 		DRAGON_BLOOD = 5,
-		CHANGE_JOB = 8,
+		JOB_ADVANCEMENT = 8,
+		QUEST = 9,
 		MOB_BUFF = 11
 	;
 
@@ -52,7 +54,7 @@ public class StatusEffectTools {
 					case Skills.FP_MP_EATER:
 					case Skills.IL_MP_EATER:
 					case Skills.CLERIC_MP_EATER:
-						return CommonPackets.writeBuffEffect(p, PASSIVE, e.getDataId(), e.getLevel(), (byte) 3);
+						return CommonPackets.writeBuffEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), (byte) 3);
 				}
 				break;
 			case ITEM:

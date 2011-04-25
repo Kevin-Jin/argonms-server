@@ -276,6 +276,10 @@ public class InventoryTools {
 		return new UpdatedSlots(changed, removed);
 	}
 
+	public static UpdatedSlots removeFromInventory(Player p, int itemId, short quantity) {
+		return removeFromInventory(p.getInventory(getCategory(itemId)), itemId, quantity);
+	}
+
 	/**
 	 * Remove a piece of equipment from a player's equipped inventory and move
 	 * it to their equipment inventory.
@@ -295,6 +299,13 @@ public class InventoryTools {
 			return false;
 		unequip(equipped, equips, src, freeSlots.get(0));
 		return true;
+	}
+
+	public static boolean hasItem(Player p, int itemId, short quantity) {
+		InventoryType type = getCategory(itemId);
+		return (p.getInventory(type).hasItem(itemId, quantity)
+				|| type == InventoryType.EQUIP
+				&& p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity));
 	}
 
 	public static Equip getCleanEquip(int itemId) {

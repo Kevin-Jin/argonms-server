@@ -642,6 +642,32 @@
 	from a Player's visible map entities.
 	* Reactors are now visible, although you can't destroy them.
 
+2011-04-25  GoldenKevin  (revision 29)
+
+	* Locked some more things that needed locking in GameMap.
+	* StringDataLoader has been brought up to the standards of the rest of the
+	DataLoaders. Optimized McdbStringDataLoader.
+	* Started adding support for KvJ Quest.wz loading. Update to KvjBin r22.
+	MCDB Quest loading soon to come (so far, the names of quests are loaded in
+	MCDB so you can perform an ID lookup on them through the !id command).
+	Quests are preloaded unconditionally (like Strings) because Quest.wz
+	contains too few files (and each of which are relatively small) to justify
+	any checking to see if a piece of data has been loaded or not and any
+	synchronization overhead.
+	* Fixed hide expiring immediately when using MCDB.
+	* Made quite a lot of headway into implementing quests. Finished many code
+	stubs. There is still a lot to do (not all QuestRewards are done and not all
+	QuestChecks are performed) and quests that rely on the destruction of
+	reactors are not finishable at the moment.
+	* Fixed expiredate field in the inventoryitems table. It is now a 8-byte
+	integer instead of a 4-byte one. Added queststatuses and questmobprogress
+	tables for saving a player's quest progress. Please update your database.
+	* Added a PacketSubHeaders class. Read the class javadoc for more info.
+	* The assorted timestamps that are sent to clients are now adjusted
+	according to the server's time zone upon server start. Previously, each
+	timestamp was in UTC time.
+	* Added quest scripts for Roger's Apple.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

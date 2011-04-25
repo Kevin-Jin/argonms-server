@@ -18,6 +18,7 @@
 
 package argonms.game.clientcommand;
 
+import argonms.GlobalConstants;
 import argonms.UserPrivileges;
 import argonms.character.ExpTables;
 import argonms.character.Player;
@@ -67,9 +68,9 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("sp")) {
 				p.setSp((short) Math.min(val, Short.MAX_VALUE));
 			} else if (stat.equalsIgnoreCase("level")) {
-				p.setLevel((short) Math.min(val, 200));
+				p.setLevel((short) Math.min(val, GlobalConstants.MAX_LEVEL));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < 200)
+				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
 					p.setExp(Math.min(val, ExpTables.getForLevel(p.getLevel()) - 1));
 				else if (val == 0)
 					p.setExp(0);
@@ -105,9 +106,9 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			} else if (stat.equalsIgnoreCase("sp")) {
 				p.setSp((short) Math.min(p.getSp() + val, Short.MAX_VALUE));
 			} else if (stat.equalsIgnoreCase("level")) {
-				p.setLevel((short) Math.min(p.getLevel() + val, 200));
+				p.setLevel((short) Math.min(p.getLevel() + val, GlobalConstants.MAX_LEVEL));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < 200)
+				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
 					p.setExp(Math.min(p.getExp() + val, ExpTables.getForLevel(p.getLevel()) - 1));
 			} else if (stat.equalsIgnoreCase("maxhp")) {
 				p.setMaxHp((short) Math.min(p.getMaxHp() + val, 30000));

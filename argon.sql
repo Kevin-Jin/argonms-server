@@ -94,7 +94,7 @@ CREATE TABLE `inventoryitems` (
   `inventorytype` tinyint(1) DEFAULT NULL,
   `position` smallint(5) NOT NULL,
   `itemid` int(11) NOT NULL,
-  `expiredate` int(11) UNSIGNED NOT NULL,
+  `expiredate` bigint(20) UNSIGNED NOT NULL,
   `uniqueid` bigint(20) UNSIGNED NOT NULL,
   `owner` tinytext DEFAULT NULL,
   `quantity` smallint(5) NOT NULL,
@@ -199,6 +199,29 @@ DROP TABLE IF EXISTS `macbans`;
 CREATE TABLE `macbans` (
   `mac` tinytext NOT NULL
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `queststatuses`;
+CREATE TABLE `queststatuses` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `questid` smallint(5) NOT NULL,
+  `state` tinyint(1) NOT NULL,
+  `completed` bigint(20),
+  PRIMARY KEY(`id`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `queststatuses_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `questmobprogress`;
+CREATE TABLE `questmobprogress` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `queststatusid` int(11) UNSIGNED NOT NULL,
+  `mobid` int(11) NOT NULL,
+  `count` smallint(3) NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `queststatusid` (`queststatusid`),
+  CONSTRAINT `questmobprogress_ibfk_1` FOREIGN KEY (`queststatusid`) REFERENCES `queststatuses` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `skills`;
 CREATE TABLE `skills` (

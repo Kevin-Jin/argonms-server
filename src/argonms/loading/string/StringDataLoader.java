@@ -32,15 +32,13 @@ import java.util.Map.Entry;
 public abstract class StringDataLoader {
 	private static StringDataLoader instance;
 
-	protected Map<Integer, String> itemNames;
-	protected Map<Integer, String> skillNames;
-	protected Map<Integer, String> streetNames;
-	protected Map<Integer, String> mapNames;
-	protected Map<Integer, String> mobNames;
-	protected Map<Integer, String> npcNames;
-	protected Map<Integer, String> itemMsgs;
-
-	public abstract boolean loadAll();
+	protected final Map<Integer, String> itemNames;
+	protected final Map<Integer, String> skillNames;
+	protected final Map<Integer, String> streetNames;
+	protected final Map<Integer, String> mapNames;
+	protected final Map<Integer, String> mobNames;
+	protected final Map<Integer, String> npcNames;
+	protected final Map<Integer, String> itemMsgs;
 
 	protected StringDataLoader() {
 		itemNames = new HashMap<Integer, String>();
@@ -52,30 +50,30 @@ public abstract class StringDataLoader {
 		itemMsgs = new HashMap<Integer, String>();
 	}
 
+	public abstract boolean loadAll();
+
 	public String getItemNameFromId(int itemid) {
-		return itemNames.get(itemid);
+		return itemNames.get(Integer.valueOf(itemid));
 	}
 
 	public String getSkillNameFromId(int skillid) {
-		return skillNames.get(skillid);
+		return skillNames.get(Integer.valueOf(skillid));
 	}
 
 	public String getStreetNameFromMapId(int mapid) {
-		if (streetNames == null) //mcdb doesn't have streetNames
-			return null;
-		return streetNames.get(mapid);
+		return streetNames.get(Integer.valueOf(mapid));
 	}
 
 	public String getMapNameFromId(int mapid) {
-		return mapNames.get(mapid);
+		return mapNames.get(Integer.valueOf(mapid));
 	}
 
 	public String getMobNameFromId(int mobid) {
-		return mobNames.get(mobid);
+		return mobNames.get(Integer.valueOf(mobid));
 	}
 
 	public String getNpcNameFromId(int npcid) {
-		return npcNames.get(npcid);
+		return npcNames.get(Integer.valueOf(npcid));
 	}
 
 	public List<String> getSimilarNamedItems(String reference) {

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.loading.string;
+package argonms.loading.quest;
 
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
@@ -30,43 +30,54 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class McdbStringDataLoader extends StringDataLoader {
-	private static final Logger LOG = Logger.getLogger(McdbStringDataLoader.class.getName());
-
-	protected McdbStringDataLoader() {
-
-	}
+public class McdbQuestDataLoader extends QuestDataLoader {
+	private static final Logger LOG = Logger.getLogger(McdbQuestDataLoader.class.getName());
 
 	public boolean loadAll() {
+		if (!loadInfo())
+			return false;
+		if (!loadReq())
+			return false;
+		if (!loadAct())
+			return false;
+		return true;
+	}
+
+	protected boolean loadInfo() {
 		Connection con = DatabaseConnection.getWzConnection();
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `type`,`objectid`,`name` FROM `stringdata` WHERE `type` != 6");
+			PreparedStatement ps = con.prepareStatement("SELECT `objectid`,`name` FROM `stringdata` WHERE `type` = 6");
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				switch (rs.getShort(1)) {
-					case 1:
-						itemNames.put(Integer.valueOf(rs.getInt(2)), rs.getString(3));
-						break;
-					case 2:
-						skillNames.put(Integer.valueOf(rs.getInt(2)), rs.getString(3));
-						break;
-					case 3:
-						mapNames.put(Integer.valueOf(rs.getInt(2)), rs.getString(3));
-						break;
-					case 4:
-						mobNames.put(Integer.valueOf(rs.getInt(2)), rs.getString(3));
-						break;
-					case 5:
-						npcNames.put(Integer.valueOf(rs.getInt(2)), rs.getString(3));
-						break;
-				}
-			}
+			while (rs.next())
+				questNames.put(Short.valueOf(rs.getShort(1)), rs.getString(2));
 			rs.close();
 			ps.close();
 			return true;
 		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Error loading string data from the MCDB.", e);
+			LOG.log(Level.WARNING, "Error loading quest info data from the MCDB.", e);
 			return false;
 		}
+	}
+
+	protected boolean loadAct() {
+		/*Connection con = DatabaseConnection.getWzConnection();
+		try {
+			
+			return true;
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Error loading quest action data from the MCDB.", e);*/
+			return false;
+		//}
+	}
+
+	protected boolean loadReq() {
+		/*Connection con = DatabaseConnection.getWzConnection();
+		try {
+			
+			return true;
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Error loading quest check data from the MCDB.", e);*/
+			return false;
+		//}
 	}
 }

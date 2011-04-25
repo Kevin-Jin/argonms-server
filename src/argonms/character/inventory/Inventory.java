@@ -132,6 +132,8 @@ public class Inventory {
 
 	public boolean hasItem(int itemid, short minQty) {
 		short remaining = minQty;
+		if (remaining <= 0)
+			return true;
 		for (InventorySlot i : slots.values()) {
 			if (i.getDataId() == itemid) {
 				remaining -= i.getQuantity();
