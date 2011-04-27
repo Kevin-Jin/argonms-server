@@ -51,6 +51,7 @@ import argonms.net.external.CommonPackets;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableList;
 import argonms.tools.collections.LockableMap;
+import argonms.tools.collections.Pair;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -354,6 +355,8 @@ public class GameMap {
 	 */
 	private void drop(ItemDrop d) {
 		spawnEntity(d);
+		if (d.getDropType() == ItemDrop.ITEM)
+			checkForItemTriggeredReactors(d);
 		final Integer eid = Integer.valueOf(d.getId());
 		Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
@@ -406,6 +409,8 @@ public class GameMap {
 				dropPos.x = entX - delta;
 			drop.init(owner, calcDropPos(dropPos, entPos), entPos, entId, pickupAllow);
 			spawnEntity(drop);
+			if (drop.getDropType() == ItemDrop.ITEM)
+				checkForItemTriggeredReactors(drop);
 			dropped.add(Integer.valueOf(drop.getId()));
 		}
 		//expire every drop at once in the same Runnable rather than have a
@@ -536,14 +541,13 @@ public class GameMap {
 	}
 
 	public void destroyReactor(final Reactor r) {
-		r.setAlive(false);
 		destroyEntity(r);
 		if (r.getDelay() > 0) {
 			Timer.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					respawnReactor(r);
 				}
-			}, r.getDelay());
+			}, r.getDelay() * 1000);
 		}
 	}
 
@@ -571,13 +575,14 @@ public class GameMap {
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
+						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
+						p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 					}
+					p.gainedItem(itemid);
 				} else {
 					StatusEffectTools.useItem(p, itemid);
 				}
@@ -598,8 +603,7 @@ public class GameMap {
 	}
 
 	public void respawnReactor(Reactor r) {
-		r.setState((byte) 0);
-		r.setAlive(true);
+		r.reset();
 		spawnEntity(r);
 	}
 
@@ -626,6 +630,28 @@ public class GameMap {
 			}
 		} finally {
 			monsterSpawns.unlockRead();
+		}
+	}
+
+	private void checkForItemTriggeredReactors(ItemDrop d) {
+		Player p = (Player) getEntityById(EntityType.PLAYER, d.getOwner());
+		int itemId = d.getDataId();
+		short quantity = d.getItem().getQuantity();
+		Point pos = d.getPosition();
+		EntityPool reactors = entPools.get(EntityType.REACTOR);
+		reactors.lockRead();
+		try {
+			for (MapEntity ent : reactors.allEnts()) {
+				Reactor r = (Reactor) ent;
+				Pair<Integer, Short> itemTrigger = r.getItemTrigger();
+				if (itemTrigger != null
+						&& itemTrigger.left.intValue() == itemId
+						&& itemTrigger.right.shortValue() == quantity
+						&& r.getItemTriggerZone().contains(pos))
+					r.hit(p, (byte) 0);
+			}
+		} finally {
+			reactors.unlockRead();
 		}
 	}
 

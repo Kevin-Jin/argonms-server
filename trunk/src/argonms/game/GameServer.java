@@ -22,6 +22,7 @@ import argonms.LocalServer;
 import argonms.ServerType;
 import argonms.game.script.NpcScriptManager;
 import argonms.game.script.PortalScriptManager;
+import argonms.game.script.ReactorScriptManager;
 import argonms.loading.DataFileType;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.map.MapDataLoader;
@@ -159,6 +160,7 @@ public class GameServer implements LocalServer {
 		NpcShopDataLoader.setInstance(wzType, wzPath);
 		NpcScriptManager.setInstance(scriptsPath);
 		PortalScriptManager.setInstance(scriptsPath);
+		ReactorScriptManager.setInstance(scriptsPath);
 		long start, end;
 		start = System.nanoTime();
 		System.out.print("Loading String data...");

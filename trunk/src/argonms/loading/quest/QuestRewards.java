@@ -20,9 +20,15 @@ package argonms.loading.quest;
 
 import argonms.character.Player;
 import argonms.character.QuestEntry;
+import argonms.character.inventory.Inventory;
+import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
+import argonms.net.external.ClientSession;
+import argonms.net.external.CommonPackets;
 import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 import java.util.ArrayList;
@@ -116,13 +122,63 @@ public class QuestRewards {
 		//it takes too much effort to check in giveRewards. T.T
 	}
 
-	private boolean canGiveItem(Player p, QuestItemStats item) {
-		return p.getJob() == item.getJob() && p.getGender() == item.getGender()
-				&& System.currentTimeMillis() < item.getDateExpire()
-				&& (sumItemProbs == 0 || item.getProb() == 0
-				|| Rng.getGenerator().nextInt(sumItemProbs) < item.getProb());
+	protected SkillReward getSkillReward(int skillId) {
+		for (SkillReward sr : skillChanges)
+			if (sr.skillId == skillId)
+				return sr;
+		return null;
 	}
 
+	private boolean canGiveItem(Player p, QuestItemStats item) {
+		return item.jobMatch(p.getJob()) && item.genderMatch(p.getGender())
+				&& item.notExpired() && item.roll(sumItemProbs);
+	}
+
+	private void giveItem(Player p, int itemId, short quantity, int period) {
+		//TODO: set InventorySlot's expiration using item.getPeriod();
+		ClientSession ses = p.getClient().getSession();
+		InventoryType type = InventoryTools.getCategory(itemId);
+		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
+		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+		short pos;
+		InventorySlot slot;
+		for (Short s : changedSlots.modifiedSlots) {
+			pos = s.shortValue();
+			slot = inv.get(pos);
+			ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+		}
+		for (Short s : changedSlots.addedOrRemovedSlots) {
+			pos = s.shortValue();
+			slot = inv.get(pos);
+			ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
+		}
+		ses.send(CommonPackets.writeShowItemGainFromQuest(itemId, quantity));
+		p.gainedItem(itemId);
+	}
+
+	private void takeItem(Player p, int itemId, short quantity) {
+		ClientSession ses = p.getClient().getSession();
+		InventoryType type = InventoryTools.getCategory(itemId);
+		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
+		if (quantity == 0)
+			quantity = (short) -InventoryTools.getAmountOfItem(inv, itemId);
+		UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, (short) -quantity);
+		short pos;
+		InventorySlot slot;
+		for (Short s : changedSlots.modifiedSlots) {
+			pos = s.shortValue();
+			slot = inv.get(pos);
+			ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+		}
+		for (Short s : changedSlots.addedOrRemovedSlots) {
+			pos = s.shortValue();
+			slot = inv.get(pos);
+			ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
+		}
+		ses.send(CommonPackets.writeShowItemGainFromQuest(itemId, quantity));
+	}
+
+	//TODO: check if we can fit all items in the player's inventory.
 	private void awardItems(Player p) {
 		boolean awardedRandomItem = false;
 		for (QuestItemStats item : items) {
@@ -130,10 +186,9 @@ public class QuestRewards {
 				short quantity = item.getCount();
 				if (quantity > 0) {
 					if (item.getProb() == 0 || !awardedRandomItem)
-						//TODO: set InventorySlot's expiration using item.getPeriod();
-						InventoryTools.addToInventory(p, item.getItemId(), quantity);
+						giveItem(p, item.getItemId(), quantity, item.getPeriod());
 				} else {
-					InventoryTools.removeFromInventory(p, item.getItemId(), quantity);
+					takeItem(p, item.getItemId(), quantity);
 				}
 				if (item.getProb() != 0)
 					awardedRandomItem = true;
@@ -148,14 +203,14 @@ public class QuestRewards {
 				|| !jobs.isEmpty() && !jobs.contains(Short.valueOf(p.getJob())))
 			return -1; //Nexon fails. This should only be in Quest.wz/Check.img. T.T
 		awardItems(p);
-		Map<Short, QuestEntry> statuses = p.getAllQuests();
 		for (Entry<Short, Byte> entry : questChanges.entrySet()) {
-			QuestEntry status = statuses.get(entry.getKey());
-			if (status != null) {
-				status.updateState(entry.getValue().byteValue());
-			} else {
-				Map<Integer, Short> mobs = QuestDataLoader.getInstance().getAllRequiredMobKills(entry.getKey().shortValue());
-				status = new QuestEntry(entry.getValue().byteValue(), mobs);
+			switch (entry.getValue().byteValue()) {
+				case QuestEntry.STATE_STARTED:
+					p.localStartQuest(entry.getKey().shortValue());
+					break;
+				case QuestEntry.STATE_COMPLETED:
+					p.localCompleteQuest(entry.getKey().shortValue(), -1);
+					break;
 			}
 		}
 		for (SkillReward skill : skillChanges)

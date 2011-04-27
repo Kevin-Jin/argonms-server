@@ -63,12 +63,16 @@ public class State {
 		return type;
 	}
 
-	public int getNextState() {
+	public byte getNextState() {
 		return nextState;
 	}
 
-	public int[] getItem() {
-		return new int[] { itemid, quantity };
+	public int getItemId() {
+		return itemid;
+	}
+
+	public short getItemQuantity() {
+		return quantity;
 	}
 
 	public Point getLt() {

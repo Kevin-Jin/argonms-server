@@ -251,18 +251,17 @@ public class Mob extends MapEntity {
 	}
 
 	public void hurt(Player p, int damage) {
-		if (damages.getWhenSafe(p) == null)
-			for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
-				hooks.add(hook);
-
 		if (damage > remHp)
 			damage = remHp;
 		this.remHp -= damage;
 		PlayerDamage pd = damages.getWhenSafe(p);
-		if (pd != null)
+		if (pd != null) {
 			pd.addDamage(damage);
-		else
+		} else {
 			damages.putWhenSafe(p, new PlayerDamage(damage));
+			for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
+				hooks.add(hook);
+		}
 
 		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
 		if (stats.getHpTagColor() > 0) //boss

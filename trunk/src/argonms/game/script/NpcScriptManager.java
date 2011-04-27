@@ -60,7 +60,7 @@ public class NpcScriptManager {
 			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
-			Script script = cx.compileReader(reader, Integer.toString(npcId), 1, null);
+			Script script = cx.compileReader(reader, "n" + npcId, 1, null);
 			reader.close();
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();
@@ -88,7 +88,7 @@ public class NpcScriptManager {
 			convoMan = new QuestConversationActions(npcId, questId, client, cx, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
-			cx.evaluateReader(globalScope, reader, Integer.toString(questId), 1, null);
+			cx.evaluateReader(globalScope, reader, "q" + questId + fn, 1, null);
 			reader.close();
 			Object f = globalScope.get(fn, globalScope);
 			if (f != Scriptable.NOT_FOUND) {

@@ -33,13 +33,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Checking whether a Player is allowed to start or complete a quest is not a
- * necessity, since the client checks for us if the user meets the requirements
- * to perform a quest, but it is another method of determining whether a Player
- * hacks.
+ *
  * @author GoldenKevin
  */
 public class QuestChecks {
+	public enum QuestRequirementType {
+		MOB, ITEM, MESOS, PET, PET_TAMENESS, QUEST
+	}
+
 	private final short questId;
 	private final List<QuestItemStats> reqItems;
 	private final Map<Short, Byte> reqQuests;
@@ -215,5 +216,24 @@ public class QuestChecks {
 
 	public Map<Integer, Short> getReqMobCounts() {
 		return Collections.unmodifiableMap(reqMobs);
+	}
+
+	public Map<Integer, Short> getReqItems() {
+		Map<Integer, Short> reqItemCounts = new HashMap<Integer, Short>();
+		for (QuestItemStats qis : reqItems)
+			reqItemCounts.put(Integer.valueOf(qis.getItemId()), Short.valueOf(qis.getCount()));
+		return reqItemCounts;
+	}
+
+	public List<Integer> getReqPets() {
+		return reqPets;
+	}
+
+	public Map<Short, Byte> getReqQuests() {
+		return reqQuests;
+	}
+
+	public boolean requiresMesos() {
+		return minMesos != 0;
 	}
 }

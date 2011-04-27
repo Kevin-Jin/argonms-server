@@ -42,6 +42,9 @@ public class PacketSubHeaders {
 		STATUS_INFO_FAME = 4,
 		STATUS_INFO_MESOS = 5,
 		STATUS_INFO_GUILD_POINTS = 6,
+		INVENTORY_FULL = 0,
+		INVENTORY_CHANGE_SLOT = 1,
+		INVENTORY_SHIFT_QTY = 2,
 		//got these from Vana, I'm really interested in how they work! ^.^
 		GM_BLOCK = 4,
 		GM_INVALID_CHAR_NAME = 6,

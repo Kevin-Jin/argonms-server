@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+//TODO: quests take a full 6MB of memory on unconditional preloading. be more
+//efficient with memory usage in several of these structures?
 /**
  *
  * @author GoldenKevin
@@ -98,11 +100,8 @@ public abstract class QuestDataLoader {
 		return -1;
 	}
 
-	public Map<Integer, Short> getAllRequiredMobKills(short questId) {
-		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
-		if (qc != null)
-			return qc.getReqMobCounts();
-		return null;
+	public QuestChecks getCompleteReqs(short questId) {
+		return completeReqs.get(Short.valueOf(questId));
 	}
 
 	public String getStartScriptName(short questId) {

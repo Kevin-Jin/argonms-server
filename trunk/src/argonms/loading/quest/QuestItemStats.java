@@ -18,6 +18,7 @@
 
 package argonms.loading.quest;
 
+import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 
 /**
@@ -36,6 +37,8 @@ public class QuestItemStats {
 	protected QuestItemStats(int id, short count) {
 		this.itemId = id;
 		this.qty = count;
+		this.job = -1;
+		this.gender = 2;
 	}
 
 	protected int getItemId() {
@@ -54,28 +57,32 @@ public class QuestItemStats {
 		return prob;
 	}
 
+	protected boolean roll(int sum) {
+		return sum == 0 || prob == 0 || prob > Rng.getGenerator().nextInt(sum);
+	}
+
 	protected void setGender(byte gender) {
 		this.gender = gender;
 	}
 
-	protected byte getGender() {
-		return gender;
+	protected boolean genderMatch(byte pGender) {
+		return gender == 2 || gender == pGender;
 	}
 
 	protected void setJob(short job) {
 		this.job = job;
 	}
 
-	protected short getJob() {
-		return job;
+	protected boolean jobMatch(short pJob) {
+		return job == -1 || job == pJob;
 	}
 
 	protected void setDateExpire(int dateExpire) {
 		expireTime = TimeUtil.intDateToCalendar(dateExpire).getTimeInMillis();
 	}
 
-	protected long getDateExpire() {
-		return expireTime;
+	protected boolean notExpired() {
+		return expireTime == 0 || expireTime > System.currentTimeMillis();
 	}
 
 	protected void setPeriod(int period) {

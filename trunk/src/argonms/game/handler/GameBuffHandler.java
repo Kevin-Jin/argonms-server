@@ -68,7 +68,7 @@ public class GameBuffHandler {
 		//TODO: hacking if item's id at slot does not match itemId
 		InventorySlot changed = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), slot, (short) 1);
 		if (changed != null)
-			rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed, false, false));
+			rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
 		else
 			rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		StatusEffectTools.useItem(p, itemId);
