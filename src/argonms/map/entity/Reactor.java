@@ -18,16 +18,26 @@
 
 package argonms.map.entity;
 
+import argonms.character.Player;
+import argonms.game.GameClient;
+import argonms.game.script.ReactorScriptManager;
 import argonms.loading.reactor.ReactorStats;
 import argonms.loading.reactor.State;
 import argonms.map.MapEntity;
 import argonms.net.external.CommonPackets;
+import argonms.tools.collections.Pair;
+import java.awt.Point;
+import java.awt.Rectangle;
 
 /**
  *
  * @author GoldenKevin
  */
 public class Reactor extends MapEntity {
+	public static final byte
+		TYPE_ITEM_TRIGGERED = 100
+	;
+
 	private ReactorStats stats;
 	private String name;
 	private int delay;
@@ -36,8 +46,7 @@ public class Reactor extends MapEntity {
 
 	public Reactor(ReactorStats reactorStats) {
 		this.stats = reactorStats;
-		this.state = 0;
-		this.alive = true;
+		reset();
 	}
 
 	public int getDataId() {
@@ -50,10 +59,6 @@ public class Reactor extends MapEntity {
 
 	public void setDelay(int delay) {
 		this.delay = delay;
-	}
-
-	public void setState(byte state) {
-		this.state = state;
 	}
 
 	public String getName() {
@@ -72,12 +77,62 @@ public class Reactor extends MapEntity {
 		return stats.getStates().get(Byte.valueOf(state));
 	}
 
-	public EntityType getEntityType() {
-		return EntityType.REACTOR;
+	public Pair<Integer, Short> getItemTrigger() {
+		State s = getState();
+		if (s == null || s.getType() != TYPE_ITEM_TRIGGERED)
+			return null;
+		return new Pair<Integer, Short>(Integer.valueOf(s.getItemId()), Short.valueOf(s.getItemQuantity()));
 	}
 
-	public void setAlive(boolean alive) {
-		this.alive = alive;
+	//precondition: getItemTrigger() does not return null.
+	public Rectangle getItemTriggerZone() {
+		State s = getState();
+		Point rb = s.getRb();
+		Point lt = s.getLt();
+
+		Point center = getPosition();
+		int x = center.x + lt.x;
+		int y = center.y + lt.y;
+		int width = rb.x - lt.x;
+		int height = rb.y - lt.y;
+
+		return new Rectangle(x, y, width, height);
+	}
+
+	private void triggered(Player p) {
+		if (getState() != null) {
+			p.getMap().sendToAll(CommonPackets.writeTriggerReactor(this));
+		} else {
+			//TODO: if script does not exist and we are using MCDB, try loading
+			//from MCDB's drop table with the reactor's data id as the dropperid
+			ReactorScriptManager.getInstance().runScript(getDataId(), this, (GameClient) p.getClient());
+			alive = false;
+			p.getMap().destroyReactor(this);
+		}
+	}
+
+	public void hit(Player p, short stance) {
+		state = getState().getNextState();
+		triggered(p);
+	}
+
+	public void touched(Player p) {
+		state++;
+		triggered(p);
+	}
+
+	public void untouched(Player p) {
+		state--;
+		triggered(p);
+	}
+
+	public final void reset() {
+		state = 0;
+		alive = true;
+	}
+
+	public EntityType getEntityType() {
+		return EntityType.REACTOR;
 	}
 
 	public boolean isAlive() {

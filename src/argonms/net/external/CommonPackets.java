@@ -88,7 +88,7 @@ public class CommonPackets {
 	 * @param time The expiration time.
 	 * @param show Show the expiration time.
 	 */
-	private static void addItemExpire(LittleEndianWriter lew, long time, boolean show) {
+	private static void writeItemExpire(LittleEndianWriter lew, long time, boolean show) {
 		if (!show || time <= 0)
 			time = TimeUtil.NO_EXPIRATION;
 		lew.writeLong(TimeUtil.unixToWindowsTime(time));
@@ -173,13 +173,13 @@ public class CommonPackets {
 				p.getHair(), p.getInventory(InventoryType.EQUIPPED).getItemIds(), p.getPets());
 	}
 
-	private static void addItemInfo(LittleEndianWriter lew, short pos,
+	private static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item) {
-		addItemInfo(lew, pos, item, true, false, false);
+		writeItemInfo(lew, pos, item, true, false, false);
 	}
 
 	//it seems as though Vana's PlayerPacketHelper::addItemInfo is much simpler
-	private static void addItemInfo(LittleEndianWriter lew, short pos,
+	private static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item, boolean showExpire, boolean leaveOut,
 			boolean shopTransfer) {
 
@@ -202,7 +202,7 @@ public class CommonPackets {
 		lew.writeBool(cashItem);
 		if (cashItem)
 			lew.writeLong(item.getUniqueId());
-		addItemExpire(lew, item.getExpiration(), showExpire);
+		writeItemExpire(lew, item.getExpiration(), showExpire);
 
 		if (item.getType() == ItemType.PET) {
 			Pet pet = (Pet) item;
@@ -211,7 +211,7 @@ public class CommonPackets {
 			lew.writeShort(pet.getCloseness());
 			lew.writeByte(pet.getFullness());
 			//00 B8 D5 60 00 CE C8 01
-			addItemExpire(lew, item.getExpiration(), showExpire); //again?
+			writeItemExpire(lew, item.getExpiration(), showExpire); //again?
 			lew.writeLengthPrefixedString(item.getOwner());
 			lew.writeShort(item.getFlag());
 		} else if (item.getType() == ItemType.EQUIP || item.getType() == ItemType.RING) {
@@ -276,7 +276,7 @@ public class CommonPackets {
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet()) {
 				InventorySlot item = entry.getValue();
-				addItemInfo(lew, entry.getKey().shortValue(), item);
+				writeItemInfo(lew, entry.getKey().shortValue(), item);
 				if (item.getType() == ItemType.RING)
 					rings.put(entry.getKey(), (Ring) item);
 			}
@@ -287,35 +287,35 @@ public class CommonPackets {
 		iv = p.getInventory(InventoryType.EQUIP);
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				addItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 		}
 		lew.writeByte((byte) 0); //end of equip inventory
 
 		iv = p.getInventory(InventoryType.USE);
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				addItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 		}
 		lew.writeByte((byte) 0); //end of consume inventory
 
 		iv = p.getInventory(InventoryType.SETUP);
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				addItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 		}
 		lew.writeByte((byte) 0); //end of install inventory
 
 		iv = p.getInventory(InventoryType.ETC);
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				addItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 		}
 		lew.writeByte((byte) 0); //end of etc inventory
 
 		iv = p.getInventory(InventoryType.CASH);
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				addItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 		}
 		lew.writeByte((byte) 0); //end of cash inventory
 
@@ -736,26 +736,36 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 0);
+		lew.writeByte(PacketSubHeaders.INVENTORY_FULL);
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeInventorySlotUpdate(InventoryType type, short pos, InventorySlot item, boolean fromDrop, boolean add) {
+	public static byte[] writeInventoryAddSlot(InventoryType type, short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
+		lew.writeByte((byte) 0);
+		lew.writeByte(type.value());
+		lew.writeByte((byte) pos);
+		writeItemInfo(lew, (short) 0, item);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventorySlotUpdate(InventoryType type, short pos, InventorySlot item) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(fromDrop);
+		lew.writeBool(true);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 1);
-		lew.writeBool(!add);
 		lew.writeByte(type.value());
 		lew.writeByte((byte) pos);
-		if (!add) {
-			lew.writeBool(false);
-			lew.writeShort(item.getQuantity());
-		} else {
-			addItemInfo(lew, (short) 0, item);
-		}
+		lew.writeBool(false);
+		lew.writeShort(item.getQuantity());
 
 		return lew.getBytes();
 	}
@@ -765,7 +775,7 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 1);
 		lew.writeByte(type.value());
 		lew.writeShort(src);
@@ -779,7 +789,7 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 2);
 		lew.writeByte(type.value());
 		lew.writeShort(src);
@@ -795,7 +805,7 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 3);
 		lew.writeByte(type.value());
 		lew.writeShort(slot);
@@ -810,7 +820,7 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 2);
+		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
 		lew.writeByte((byte) 1);
 		lew.writeByte(type.value());
 		lew.writeShort(src);
@@ -828,7 +838,7 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
 		lew.writeBool(true);
-		lew.writeByte((byte) 2);
+		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
 		lew.writeByte((byte) 3);
 		lew.writeByte(type.value());
 		lew.writeShort(src);
@@ -1208,7 +1218,7 @@ public class CommonPackets {
 		}
 
 		if (drop.getDropType() == ItemDrop.ITEM)
-			addItemExpire(lew, drop.getItemExpire(), true);
+			writeItemExpire(lew, drop.getItemExpire(), true);
 		lew.writeBool(true); //allow pet item pickup?
 
 		return lew.getBytes();

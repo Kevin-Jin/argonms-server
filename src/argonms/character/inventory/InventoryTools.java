@@ -301,6 +301,13 @@ public class InventoryTools {
 		return true;
 	}
 
+	public static short getAmountOfItem(Inventory inv, int itemId) {
+		short total = 0;
+		for (Short slot : inv.getItemSlots(itemId))
+			total += inv.get(slot.shortValue()).getQuantity();
+		return total;
+	}
+
 	public static boolean hasItem(Player p, int itemId, short quantity) {
 		InventoryType type = getCategory(itemId);
 		return (p.getInventory(type).hasItem(itemId, quantity)

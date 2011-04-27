@@ -162,13 +162,14 @@ public class CommandProcessor {
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, false));
+					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, false, true));
+					p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 				}
+				p.gainedItem(itemId);
 			}
 		}, "Give yourself an item", UserPrivileges.GM));
 		definitions.put("!spawn", new SpawnCommandHandler());

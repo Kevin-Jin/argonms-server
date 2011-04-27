@@ -67,15 +67,16 @@ public abstract class PlayerScriptInteraction {
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				//sending false for fromDrop crashes the game for some reason...
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, false));
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
 				//sending false for fromDrop crashes the game for some reason...
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot, true, true));
+				ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 			}
 			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, quantity));
+			client.getPlayer().gainedItem(itemid);
 			return true;
 		}
 		return false;

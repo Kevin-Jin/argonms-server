@@ -18,10 +18,10 @@
 
 package argonms.character;
 
-import argonms.tools.collections.Pair;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  *
@@ -49,31 +49,28 @@ public class QuestEntry {
 	private final Map<Integer, Count> mobCount;
 	private long completionTime;
 
-	public QuestEntry(byte state, Map<Integer, Short> mobsToWatch) {
+	/**
+	 * Start quest with no mob kill progress.
+	 * @param state
+	 * @param mobsToWatch
+	 */
+	public QuestEntry(byte state, Set<Integer> mobsToWatch) {
 		this.state = state;
 		mobCount = new LinkedHashMap<Integer, Count>(mobsToWatch.size());
-		for (Entry<Integer, Short> mob : mobsToWatch.entrySet())
-			mobCount.put(mob.getKey(), new Count(mob.getValue().shortValue()));
+		for (Integer mobId : mobsToWatch)
+			mobCount.put(mobId, new Count());
 	}
 
-	//the boolean param is not even used. it's just there because Java's generic
-	//system is failure and won't distinguish between this and the previous
-	//constructor
-	public QuestEntry(byte state, Map<Integer, Pair<Short, Short>> mobKillsProgress, boolean includes) {
+	/**
+	 * Start quest with the given mob kill progress.
+	 * @param state
+	 * @param mobKillsProgress
+	 */
+	public QuestEntry(byte state, Map<Integer, Short> mobKillsProgress) {
 		this.state = state;
 		mobCount = new LinkedHashMap<Integer, Count>(mobKillsProgress.size());
-		for (Entry<Integer, Pair<Short, Short>> entry : mobKillsProgress.entrySet()) {
-			short progress = entry.getValue().left.shortValue();
-			short req = entry.getValue().right.shortValue();
-			mobCount.put(entry.getKey(), new Count(progress, req));
-		}
-	}
-
-	public boolean isWatching(int mobId) {
-		Count c = mobCount.get(Integer.valueOf(mobId));
-		if (c == null)
-			return false;
-		return (c.amount < c.needed);
+		for (Entry<Integer, Short> mob : mobKillsProgress.entrySet())
+			mobCount.put(mob.getKey(), new Count(mob.getValue().shortValue()));
 	}
 
 	public void updateState(byte newState) {
@@ -119,16 +116,13 @@ public class QuestEntry {
 	//A mutable short class basically.
 	private static class Count {
 		public short amount;
-		public short needed;
 
-		public Count(short needed) {
+		public Count() {
 			amount = 0;
-			this.needed = needed;
 		}
 
-		public Count(short initial, short needed) {
+		public Count(short initial) {
 			amount = initial;
-			this.needed = needed;
 		}
 
 		public String getEncodedString() {

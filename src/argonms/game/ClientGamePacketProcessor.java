@@ -130,6 +130,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.ITEM_PICKUP:
 				InventoryHandler.handleMapItemPickUp(reader, s);
 				break;
+			case ClientRecvOps.DAMAGE_REACTOR:
+				ReactorHandler.handleReactorTrigger(reader, s);
+				break;
+			case ClientRecvOps.TOUCH_REACTOR:
+				ReactorHandler.handleReactorTouch(reader, s);
+				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				((GameClient) s).getPlayer().saveCharacter();
 				break;

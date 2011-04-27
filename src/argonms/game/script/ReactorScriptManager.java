@@ -19,8 +19,8 @@
 package argonms.game.script;
 
 import argonms.GlobalConstants;
-import argonms.character.Player;
 import argonms.game.GameClient;
+import argonms.map.entity.Reactor;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -33,33 +33,33 @@ import org.mozilla.javascript.Scriptable;
  *
  * @author GoldenKevin
  */
-public class PortalScriptManager {
-	private static final Logger LOG = Logger.getLogger(PortalScriptManager.class.getName());
+public class ReactorScriptManager {
+	private static final Logger LOG = Logger.getLogger(ReactorScriptManager.class.getName());
 
-	private static PortalScriptManager singleton;
+	private static ReactorScriptManager singleton;
 
-	private String portalPath;
+	private final String reactorScriptPath;
 
-	private PortalScriptManager(String scriptPath) {
-		portalPath = scriptPath + "portals" + GlobalConstants.DIR_DELIMIT;
+	private ReactorScriptManager(String scriptsPath) {
+		reactorScriptPath = scriptsPath + "reactors" + GlobalConstants.DIR_DELIMIT;
 	}
 
-	public boolean runScript(String scriptName, Player p) {
+	public boolean runScript(int reactorId, Reactor reactor, GameClient client) {
 		Context cx = Context.enter();
 		try {
-			FileReader reader = new FileReader(portalPath + scriptName + ".js");
+			FileReader reader = new FileReader(reactorScriptPath + reactorId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
-			PortalActions portalManager = new PortalActions((GameClient) p.getClient());
-			globalScope.put("portal", globalScope, portalManager);
-			cx.evaluateReader(globalScope, reader, "p_" + scriptName, 1, null);
+			ReactorInteraction actions = new ReactorInteraction(reactorId, reactor, client, cx, globalScope);
+			globalScope.put("reactor", globalScope, actions);
+			cx.evaluateReader(globalScope, reader, "r" + reactorId, 1, null);
 			reader.close();
-			return portalManager.warped();
+			return true;
 		} catch (FileNotFoundException ex) {
-			//not like most of our portal scripts are implemented anyway...
-			LOG.log(Level.FINE, "Missing portal script {0}", scriptName);
+			//not like most of our reactor scripts are implemented anyway...
+			LOG.log(Level.FINE, "Missing reactor script {0}", reactorId);
 			return false;
 		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Error executing portal script " + scriptName, ex);
+			LOG.log(Level.WARNING, "Error executing reactor script " + reactorId, ex);
 			return false;
 		} finally {
 			Context.exit();
@@ -67,10 +67,11 @@ public class PortalScriptManager {
 	}
 
 	public static void setInstance(String scriptPath) {
-		singleton = new PortalScriptManager(scriptPath);
+		if (singleton == null)
+			singleton = new ReactorScriptManager(scriptPath);
 	}
 
-	public static PortalScriptManager getInstance() {
+	public static ReactorScriptManager getInstance() {
 		return singleton;
 	}
 }

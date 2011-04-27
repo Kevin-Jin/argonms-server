@@ -668,6 +668,29 @@
 	timestamp was in UTC time.
 	* Added quest scripts for Roger's Apple.
 
+2011-04-27  GoldenKevin  (revision 30)
+
+	* Fixed McdbItemDataLoader so that it works when using a clean MCDB 3.0.
+	Sorry, I forgot that my MCDB schema was customized to include additional
+	information that is not present in the clean dump.
+	* Refactored mob req stuff for quest status. No need to keep a copy of the
+	mob reqs in each quest entry... Every quest completion requirement is now
+	checked, and if the Player satisfies all of them, he will receive the proper
+	"Quest completed" notification. Implementation-wise, I'm basically doing a
+	two way mapping between quests and their requirements in the Player class.
+	* Item quest actions now function properly. Items can be given or taken away
+	with the right quantity and the right notifications are sent to the client.
+	* Implemented as much of McdbQuestDataLoader that I can. The clean MCDB
+	quest data tables don't give me much to work with.
+	* Implemented reactors. I tested it on several simple ones (such as 2000 in
+	Amherst for Pio's quest) but I haven't tried any item triggered or touch
+	triggered reactors yet. Also added reactor scripts in case you want to
+	perform some kind of specific action when a reactor is destroyed (or
+	triggered to the end).
+	* Split writeInventoryAddSlot from CommonPackets.writeInventorySlotUpdate as
+	the two actions are relatively unrelated and there's no reason to have them
+	combined in one method.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

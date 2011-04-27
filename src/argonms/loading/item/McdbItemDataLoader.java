@@ -142,9 +142,6 @@ public class McdbItemDataLoader extends ItemDataLoader {
 			incStats[StatEffect.Speed] = rs.getShort("speed");
 			incStats[StatEffect.Jump] = rs.getShort("jump");
 
-			if (rs.getInt("cash") != 0)
-				cash.add(oId);
-
 			tuc.put(oId, Byte.valueOf(rs.getByte("slots")));
 
 			if (InventoryTools.getCharCat(itemid).equals("TamingMob")) {
@@ -175,40 +172,11 @@ public class McdbItemDataLoader extends ItemDataLoader {
 					}
 					prs.close();
 					ps.close();
-
-					ps = con.prepareStatement("SELECT `evol`,`prob` FROM `petevolvedata` WHERE `petid` = ?");
-					ps.setInt(1, itemid);
-					prs = ps.executeQuery();
-					if (prs.next()) {
-						if (!evolveChoices.containsKey(oId))
-							evolveChoices.put(oId, new ArrayList<int[]>());
-						evolveChoices.get(oId).add(new int[] { prs.getInt(1), prs.getInt(2) });
-					}
-					prs.close();
-					ps.close();
 				} catch (SQLException e) {
 					LOG.log(Level.WARNING, "Could not load MCDB data for pet " + itemid, e);
 				}
 			}
-			if (cat.equals("Cash")) {
-				List<byte[]> hours = new ArrayList<byte[]>();
-				try {
-					PreparedStatement ps = con.prepareStatement("SELECT `time` FROM `itemexpdropcarddata` WHERE `itemid` = ?");
-					ps.setInt(1, itemid);
-					ResultSet crs = ps.executeQuery();
-					while (crs.next()) {
-						String[] time = crs.getString(1).split(":");
-						String[] startEnd = time[1].split("-");
-						hours.add(new byte[] { InventoryTools.getDayByteFromString(time[0]), Byte.parseByte(startEnd[0]), Byte.parseByte(startEnd[1]) });
-					}
-					crs.close();
-					ps.close();
-				} catch (SQLException e) {
-					LOG.log(Level.WARNING, "Could not load operating hours data of item " + itemid, e);
-				}
-				if (!hours.isEmpty())
-					operatingHours.put(oId, hours);
-			} else if (cat.equals("Consume")) {
+			if (cat.equals("Consume")) {
 				incStats[StatEffect.STR] = rs.getShort("istr");
 				incStats[StatEffect.DEX] = rs.getShort("idex");
 				incStats[StatEffect.INT] = rs.getShort("iint");
@@ -272,20 +240,6 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				} catch (SQLException e) {
 					LOG.log(Level.WARNING, "Could not load recharge data of item " + itemid, e);
 				}
-
-				try {
-					PreparedStatement ps = con.prepareStatement("SELECT `req` FROM `itemscrolltargets` WHERE `scrollid` = ?");
-					ps.setInt(1, itemid);
-					ResultSet rrs = ps.executeQuery();
-					while (rrs.next())
-						intList.add(Integer.valueOf(rrs.getInt("req")));
-					rrs.close();
-					ps.close();
-				} catch (SQLException e) {
-					LOG.log(Level.WARNING, "Could not get scroll requirements of " + itemid, e);
-				}
-				if (!intList.isEmpty())
-					scrollReqs.put(oId, intList);
 
 				//it would be a waste of memory if all these values were 0, hm...
 				ItemEffectsData effect = new ItemEffectsData(itemid);
@@ -382,8 +336,6 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				break;
 			}
 		}
-		if (rs.getInt("onlyone") != 0)
-			onlyOne.add(oId);
 		if (rs.getInt("notrade") != 0)
 			tradeBlocked.add(oId);
 		if (rs.getInt("quest") != 0)

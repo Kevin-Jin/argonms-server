@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//TODO: save delays of reactors in a similar way to those of mobs? if the
+//reactor has any item drops, it looks kinda unnatural to drop the items
+//immediately after it is destroyed (analagous to mobs dropping items with no
+//delay when using MCDB).
 /**
  *
  * @author GoldenKevin

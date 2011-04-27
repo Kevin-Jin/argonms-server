@@ -18,6 +18,7 @@
 
 package argonms.loading.quest;
 
+import argonms.loading.quest.QuestRewards.SkillReward;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -60,24 +61,100 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 	}
 
 	protected boolean loadAct() {
-		/*Connection con = DatabaseConnection.getWzConnection();
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
-			
+			PreparedStatement ps = con.prepareStatement("SELECT `questid`,`nextquest` FROM `questdata`");
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				short nextQuest = rs.getShort(2);
+				if (nextQuest != 0) {
+					QuestRewards qr = new QuestRewards();
+					qr.setRewardQuest(nextQuest);
+					completeRewards.put(Short.valueOf(rs.getShort(1)), qr);
+				}
+			}
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT * FROM `questrewarddata`");
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				Short questId = Short.valueOf(rs.getShort(2));
+				QuestRewards qr;
+				if (rs.getBoolean(3)) { //start
+					qr = startRewards.get(questId);
+					if (qr == null) {
+						qr = new QuestRewards();
+						startRewards.put(questId, qr);
+					}
+				} else {
+					qr = completeRewards.get(questId);
+					if (qr == null) {
+						qr = new QuestRewards();
+						completeRewards.put(questId, qr);
+					}
+				}
+				if (rs.getBoolean(4)) { //item
+					QuestItemStats qis = new QuestItemStats(rs.getInt(11), rs.getShort(12));
+					qis.setProb(rs.getInt(16));
+					byte gender = rs.getByte(14);
+					if (gender != -1)
+						qis.setGender(gender);
+					short job = rs.getShort(15);
+					if (job != -1)
+						qis.setJob(job);
+					qr.addRewardItem(qis);
+				} else if (rs.getBoolean(5)) { //exp
+					qr.setRewardExp(rs.getInt(11));
+				} else if (rs.getBoolean(6)) { //mesos
+					qr.setRewardMoney(rs.getInt(11));
+				} else if (rs.getBoolean(7)) { //fame
+					qr.setRewardFame(rs.getShort(11));
+				} else if (rs.getBoolean(8)) { //skill
+					int skillId = rs.getInt(11);
+					SkillReward sr = qr.getSkillReward(skillId);
+					if (sr == null) {
+						sr = new SkillReward(skillId, rs.getByte(12), rs.getByte(13), rs.getBoolean(9));
+						qr.addRewardSkill(sr);
+					}
+					sr.addApplicableJob(rs.getShort(15));
+				}
+			}
+			rs.close();
+			ps.close();
 			return true;
 		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Error loading quest action data from the MCDB.", e);*/
+			LOG.log(Level.WARNING, "Error loading quest action data from the MCDB.", e);
 			return false;
-		//}
+		}
 	}
 
 	protected boolean loadReq() {
-		/*Connection con = DatabaseConnection.getWzConnection();
+		Connection con = DatabaseConnection.getWzConnection();
 		try {
-			
+			PreparedStatement ps = con.prepareStatement("SELECT * FROM `questrequestdata`");
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				short questId = rs.getShort(2);
+				QuestChecks qc = completeReqs.get(Short.valueOf(questId));
+				if (qc == null) {
+					qc = new QuestChecks(questId);
+					completeReqs.put(Short.valueOf(questId), qc);
+				}
+				if (rs.getBoolean(3)) {
+					qc.addReqMobKills(rs.getInt(6), rs.getShort(7));
+				} else if (rs.getBoolean(4)) {
+					qc.addReqItem(new QuestItemStats(rs.getInt(6), rs.getShort(7)));
+				} else if (rs.getBoolean(5)) {
+					qc.addReqQuest(rs.getShort(6), rs.getByte(7));
+				}
+			}
+			rs.close();
+			ps.close();
 			return true;
 		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Error loading quest check data from the MCDB.", e);*/
+			LOG.log(Level.WARNING, "Error loading quest check data from the MCDB.", e);
 			return false;
-		//}
+		}
 	}
 }
