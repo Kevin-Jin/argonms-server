@@ -18,6 +18,25 @@
 
 package argonms.character.skill;
 
+import argonms.character.StatusEffectTools;
+import argonms.character.ClientUpdateKey;
+import argonms.character.Player;
+import argonms.character.inventory.Inventory;
+import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.InventoryTools.AmmoType;
+import argonms.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.loading.skill.PlayerSkillEffectsData;
+import argonms.loading.skill.SkillDataLoader;
+import argonms.net.external.ClientSession;
+import argonms.net.external.CommonPackets;
+import argonms.tools.Timer;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
 /**
  *
  * @author GoldenKevin
@@ -25,5 +44,174 @@ package argonms.character.skill;
 public class SkillTools {
 	public static boolean isFourthJob(int skillid) {
 		return ((skillid / 10000) % 10) == 2;
+	}
+
+	//TODO: IMPLEMENT HP/MP stuff for alchemist, heal, chakra
+	private static Map<ClientUpdateKey, Number> skillCastCosts(Player p, PlayerSkillEffectsData e) {
+		//might as well save ourself some bandwidth and don't send an individual
+		//packet for each changed stat
+		Map<ClientUpdateKey, Number> ret = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
+		if (e.getMpConsume() > 0) {
+			p.setLocalMp((short) (p.getMp() - e.getMpConsume()));
+			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
+		}
+		if (e.getHpConsume() > 0) {
+			p.setLocalHp((short) (p.getHp() - e.getHpConsume()));
+			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
+		}
+		if (e.getMoneyConsume() > 0) {
+			p.setLocalMesos(e.getMoneyConsume());
+			ret.put(ClientUpdateKey.MESO, Integer.valueOf(p.getMesos()));
+		}
+		int itemId = e.getItemConsume();
+		short quantity = e.getItemConsumeCount();
+		if (itemId != 0) {
+			ClientSession ses = p.getClient().getSession();
+			InventoryType type = InventoryTools.getCategory(itemId);
+			Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
+			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, quantity);
+			short pos;
+			for (Short s : changedSlots.modifiedSlots) {
+				pos = s.shortValue();
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
+			}
+			for (Short s : changedSlots.addedOrRemovedSlots) {
+				pos = s.shortValue();
+				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
+			}
+		}
+		if (e.getDuration() > 0)
+			buffSpecificCosts(p, e);
+		return ret;
+	}
+
+	private static void buffSpecificCosts(Player p, PlayerSkillEffectsData e) {
+		//for attack skills, ranged ammo (throwing stars, arrows, bullets)
+		//are removed in DealDamageHandler.handleRangedAttack, so don't
+		//worry about them here. only do buffs
+		int itemId;
+		short quantity = e.getBulletConsume();
+		if (quantity == 0)
+			quantity = e.getBulletCount();
+		if (quantity != 0) { //buff skill uses bullets
+			AmmoType ammoType = AmmoType.getForPlayer(p);
+			if (ammoType == null)
+				return; //TODO: hacking
+			InventorySlot slot;
+
+			//unlike attack skills, buff skills that use bullets can be cast
+			//even if one slot does not have the necessary quantity. as long
+			//as there is enough of one particular type of ammo (no matter
+			//how many slots it is spread across), then the client allows
+			//the skill. so we have to do some fancy stuff.
+			Map<Integer, Short> canUse = new HashMap<Integer, Short>();
+			int removeItemId = 0;
+			Inventory inv = p.getInventory(InventoryType.USE);
+			for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
+				slot = entry.getValue();
+				itemId = slot.getDataId();
+				if (ammoType.canUse(itemId)) {
+					Short amount = canUse.get(Integer.valueOf(itemId));
+					if (amount == null)
+						amount = Short.valueOf(slot.getQuantity());
+					else
+						amount = Short.valueOf((short) (amount.shortValue() + slot.getQuantity()));
+					canUse.put(Integer.valueOf(itemId), amount);
+					if (amount.shortValue() >= quantity) {
+						removeItemId = itemId;
+						break;
+					}
+				}
+			}
+			if (removeItemId != 0) {
+				short pos;
+				ClientSession ses = p.getClient().getSession();
+				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
+				for (Short s : changedSlots.modifiedSlots) {
+					pos = s.shortValue();
+					ses.send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
+				}
+				for (Short s : changedSlots.addedOrRemovedSlots) {
+					pos = s.shortValue();
+					ses.send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
+				}
+			}
+		}
+	}
+
+	/**
+	 * Cast a buff skill of the specified skill id with the specified skill
+	 * level.
+	 * @param p the Player that will cast the skill
+	 * @param skillId the identifier of the skill to use
+	 * @param skillLevel the amount of skill points the Player has in the skill
+	 */
+	public static void useBuffSkill(final Player p, final int skillId, final byte skillLevel) {
+		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(SkillTools.skillCastCosts(p, e), true));
+		StatusEffectTools.applyEffectsAndShowVisuals(p, e);
+		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				cancelBuffSkill(p, skillId, skillLevel);
+			}
+		}, e.getDuration()));
+	}
+
+	/**
+	 * Only recognize the stat increases of a buff skill on the server. Does not
+	 * send any notifications to the client or any other players in the same map
+	 * upon the use of a skill. Useful for resuming a skill when a player has
+	 * changed channels because we have to recognize stat increases locally.
+	 * @param p the Player that casted the skill
+	 * @param skillId the identifier of the skill that was used
+	 * @param skillLevel the amount of skill points the Player had in the skill
+	 * @param remainingTime the amount of time left before the skill expires
+	 */
+	public static void localUseBuffSkill(final Player p, final int skillId, final byte skillLevel, int remainingTime) {
+		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+		StatusEffectTools.applyEffects(p, e);
+		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				cancelBuffSkill(p, skillId, skillLevel);
+			}
+		}, remainingTime));
+	}
+
+	/**
+	 * Cast a buff skill of the specified skill id using the Player's current
+	 * level of that particular skill.
+	 * @param p the Player that will cast the skill
+	 * @param skillId the identifier of the skill to use
+	 * @return true if the Player has at least one skill point in the given
+	 * skill, false if the Player has no skill points in that skill and thus
+	 * could not cast it.
+	 */
+	public static boolean useBuffSkill(Player p, int skillId) {
+		byte skillLevel = p.getSkillLevel(skillId);
+		if (skillLevel != 0) {
+			useBuffSkill(p, skillId, skillLevel);
+			return true;
+		}
+		return false;
+	}
+
+	private static void cancelBuffSkill(Player p, int skillId, byte skillLevel) {
+		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+		StatusEffectTools.dispelEffectsAndShowVisuals(p, e);
+	}
+
+	public static void cancelBuffSkill(Player p, int skillId) {
+		//even if we cast the skill at an earlier level, the individual effects
+		//for each level should be the same. That's all we need to call
+		//Player.dispelEffect...
+		byte skillLevel = p.getSkillLevel(skillId);
+		if (skillLevel <= 0) //casted a skill if we don't have any levels in it
+			skillLevel = 1; //it happens!
+		cancelBuffSkill(p, skillId, skillLevel);
+	}
+
+	public static void useAttackSkill(Player p, int skillId, byte skillLevel) {
+		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(SkillTools.skillCastCosts(p, e), false));
 	}
 }

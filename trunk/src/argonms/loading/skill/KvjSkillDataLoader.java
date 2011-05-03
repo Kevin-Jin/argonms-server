@@ -60,7 +60,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	protected void loadMobSkill(int skillid) {
+	protected void loadMobSkill(short skillid) {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 			if (f.exists())
@@ -96,7 +96,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
 	public boolean canLoadPlayerSkill(int skillid) {
-		if (skillStats.containsKey(skillid))
+		if (skillStats.containsKey(Integer.valueOf(skillid)))
 			return true;
 		String id = String.format("%07d", skillid);
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
@@ -105,8 +105,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
-	public boolean canLoadMobSkill(int skillid) {
-		if (mobSkillStats.containsKey(skillid))
+	public boolean canLoadMobSkill(short skillid) {
+		if (mobSkillStats.containsKey(Short.valueOf(skillid)))
 			return true;
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 		return f.exists();
@@ -259,13 +259,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	private void doMobWork(LittleEndianReader reader) {
 		MobSkillStats stats = null;
 		byte level;
-		int skillid = -1;
+		short skillid = -1;
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case NEXT_SKILL:
 					stats = new MobSkillStats();
-					skillid = reader.readInt();
-					mobSkillStats.put(Integer.valueOf(skillid), stats);
+					skillid = (short) reader.readInt();
+					mobSkillStats.put(Short.valueOf(skillid), stats);
 					break;
 				case ELEM_ATTR:
 					stats.setElemAttr(reader.readNullTerminatedString());
@@ -287,7 +287,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	private MobSkillEffectsData processMobEffect(int skillid, byte level, LittleEndianReader reader) {
+	private MobSkillEffectsData processMobEffect(short skillid, byte level, LittleEndianReader reader) {
 		MobSkillEffectsData effect = new MobSkillEffectsData(skillid, level);
 		loop:
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {

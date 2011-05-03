@@ -19,8 +19,14 @@
 package argonms.game.handler;
 
 import argonms.character.Player;
+import argonms.character.inventory.Inventory.InventoryType;
+import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.InventoryTools;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
+import argonms.character.inventory.Inventory;
+import argonms.character.inventory.InventoryTools.AmmoType;
 import argonms.game.GameClient;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.skill.PlayerSkillEffectsData;
@@ -42,6 +48,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 
 /**
  *
@@ -51,16 +58,16 @@ public class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, RemoteClient rc) {
 		AttackInfo attack = parseDamage(packet, false);
 		Player p = ((GameClient) rc).getPlayer();
-		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack), p.getPosition(), p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		int attackCount = 1;
-		if (attack.skill != 0) {
+		if (e != null) {
 			attackCount = e.getAttackCount();
 			if (e.getCooltime() > 0) {
 				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
 				p.addCooldown(attack.skill, e.getCooltime());
 			}
 		}
+		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack), p.getPosition(), p);
 		applyAttack(attack, p, attackCount);
 	}
 
@@ -68,8 +75,87 @@ public class DealDamageHandler {
 	public static void handleRangedAttack(LittleEndianReader packet, RemoteClient rc) {
 		AttackInfo attack = parseDamage(packet, true);
 		Player p = ((GameClient) rc).getPlayer();
-		int visProj = 0;
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, visProj), p.getPosition(), p);
+		PlayerSkillEffectsData e = attack.getAttackEffect(p);
+		int attackCount = 1;
+		short useQty;
+		if (e == null) { //not a skill
+			useQty = 1;
+		} else { //skill
+			//check if it uses more than one piece of ammo
+			useQty = e.getBulletConsume();
+			if (useQty == 0)
+				useQty = e.getBulletCount();
+			if (useQty == 0)
+				useQty = 1; //skill uses same amount of ammo as regular attack
+
+			//do the usual skill stuff - cooldowns
+			attackCount = e.getAttackCount();
+			if (e.getCooltime() > 0) {
+				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
+				p.addCooldown(attack.skill, e.getCooltime());
+			}
+		}
+		if (p.isEffectActive(PlayerStatusEffect.SHADOWPARTNER))
+			useQty *= 2; //freakily enough, shadow partner doubles ALL ranged attacks
+		AmmoType ammoType = AmmoType.getForPlayer(p);
+		if (ammoType == null)
+			return; //TODO: hacking
+		int itemId;
+		if ((ammoType == AmmoType.BOW_ARROW || ammoType == AmmoType.XBOW_ARROW) && p.isEffectActive(PlayerStatusEffect.SOULARROW)) {
+			itemId = 0; //do not use any ammo
+		} else if (ammoType == AmmoType.STAR && p.isEffectActive(PlayerStatusEffect.SHADOW_CLAW)) {
+			//shadow claw requires at least one star (to determine watk)...
+			itemId = -1;
+			InventorySlot slot = null;
+			boolean found = false;
+			for (Entry<Short, InventorySlot> entry : p.getInventory(InventoryType.USE).getAll().entrySet()) {
+				slot = entry.getValue();
+				itemId = slot.getDataId();
+				if (ammoType.canUse(itemId)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) { //no matching ammo found
+				//TODO: hacking
+				return;
+			}
+		} else {
+			itemId = -1;
+			InventorySlot slot = null;
+			short pos = 0;
+			Inventory inv = p.getInventory(InventoryType.USE);
+			for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
+				slot = entry.getValue();
+				itemId = slot.getDataId();
+				short newQty = (short) (slot.getQuantity() - useQty);
+				if (newQty >= 0 && ammoType.canUse(itemId)) {
+					pos = entry.getKey().shortValue();
+					slot.setQuantity(newQty);
+					if (newQty == 0 && !InventoryTools.isRechargeable(itemId)) {
+						inv.remove(pos);
+						rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
+					} else {
+						rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, slot));
+					}
+					switch (attack.skill) {
+						case Skills.ARROW_RAIN:
+						case Skills.ARROW_ERUPTION:
+						case Skills.ENERGY_ORB:
+							//these skills show no visible projectile apparently
+							itemId = 0;
+							break;
+					}
+					break;
+				}
+			}
+			if (pos == 0) { //no matching ammo found
+				//TODO: hacking
+				return;
+			}
+		}
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, itemId), p.getPosition(), p);
+		applyAttack(attack, p, attackCount);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
@@ -177,7 +263,6 @@ public class DealDamageHandler {
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		double reqdamage = 20000;
 		final Point mobPos = monster.getPosition();
-		final int mobEntId = monster.getId();
 		final int pEntId = p.getId();
 		final GameMap tdmap = p.getMap();
 
@@ -191,7 +276,7 @@ public class DealDamageHandler {
 
 				Timer.getInstance().runAfterDelay(new Runnable() {
 					public void run() {
-						tdmap.drop(d, mobEntId, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
+						tdmap.drop(d, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
 					}
 				}, delay);
 
@@ -213,7 +298,7 @@ public class DealDamageHandler {
 				// heal is both an attack and a special move (healing)
 				// so we'll let the whole applying magic live in the special move part
 				if (player.isAlive())
-					player.applyEffect(attackEffect);
+					SkillTools.useAttackSkill(player, attackEffect.getDataId(), attackEffect.getLevel());
 				else
 					player.getClient().getSession().send(CommonPackets.writeEnableActions());
 			}
@@ -453,6 +538,8 @@ public class DealDamageHandler {
 		}
 
 		public PlayerSkillEffectsData getAttackEffect(Player p) {
+			if (skill == 0)
+				return null;
 			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(skill);
 			byte skillLevel = p.getSkillLevel(skill);
 			if (skillLevel == 0)

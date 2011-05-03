@@ -34,7 +34,8 @@ import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
-import argonms.character.skill.StatusEffectTools;
+import argonms.character.StatusEffectTools;
+import argonms.map.MobSkills;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mist;
@@ -401,10 +402,10 @@ public class CommonPackets {
 	 * @param itemReaction
 	 * @return
 	 */
-	public static byte[] writeUpdatePlayerStats(Map<ClientUpdateKey, ? extends Number> stats, boolean itemReaction) {
+	public static byte[] writeUpdatePlayerStats(Map<ClientUpdateKey, ? extends Number> stats, boolean is) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.PLAYER_STAT_UPDATE);
-		lew.writeBool(itemReaction);
+		lew.writeBool(is);
 		int updateMask = 0;
 		for (ClientUpdateKey key : stats.keySet())
 			updateMask |= key.getMask();
@@ -447,7 +448,7 @@ public class CommonPackets {
 	public static byte[] writeUseSkill(Player p, Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
-		lew.writeShort(ClientSendOps.SKILL_USE);
+		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats.keySet())
 			updateMask |= key.getMask();
@@ -465,20 +466,42 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeGiveDebuff(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, int duration) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			lew.writeShort(statupdate.getValue().shortValue());
+			lew.writeShort(skillId);
+			lew.writeShort(skillLevel);
+			lew.writeInt(duration);
+		}
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 900); //delay?
+		lew.writeByte((byte) 1);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeUseItem(Player p, Map<PlayerStatusEffect, Short> stats, int itemId, int duration) {
 		return writeUseSkill(p, stats, -itemId, duration);
 	}
 
-	public static byte[] writeCancelSkillOrItem(Player p, Set<PlayerStatusEffect> stats) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+	public static byte[] writeCancelStatusEffect(Set<PlayerStatusEffect> stats) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(19);
 
-		lew.writeShort(ClientSendOps.SKILL_CANCEL);
+		lew.writeShort(ClientSendOps.FIRST_PERSON_CANCEL_STATUS_EFFECT);
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats)
 			updateMask |= key.getMask();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		lew.writeByte((byte) 3);
+		lew.writeByte((byte) 0);
 
 		return lew.getBytes();
 	}
@@ -497,7 +520,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeBuffEffect(Player p, byte effectType, int skillId, byte skillLevel, byte direction) {
+	public static byte[] writeBuffMapVisualEffect(Player p, byte effectType, int skillId, byte skillLevel, byte direction) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(direction != 3 ? 13 : 12);
 
 		lew.writeShort(ClientSendOps.THIRD_PERSON_VISUAL_EFFECT);
@@ -529,6 +552,60 @@ public class CommonPackets {
 
 	public static byte[] writeShowQuestEffect(Player p) {
 		return writeShowThirdPersonEffect(p, StatusEffectTools.QUEST);
+	}
+
+	public static byte[] writeBuffMapEffect(Player p, Map<PlayerStatusEffect, Short> stats) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet())
+			lew.writeShort(statupdate.getValue());
+		lew.writeShort((short) 0);
+		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeDebuffMapEffect(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			if (skillId == MobSkills.MIST)
+				lew.writeShort(statupdate.getValue().shortValue());
+			lew.writeShort(skillId);
+			lew.writeShort(skillLevel);
+		}
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 900);//Delay
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeCancelStatusEffectMapEffect(Player p, Set<PlayerStatusEffect> stats) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_CANCEL_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats)
+			updateMask |= key.getMask();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+
+		return lew.getBytes();
 	}
 
 	public static byte[] writeShowItemGain(int itemid, int quantity) {
@@ -654,6 +731,17 @@ public class CommonPackets {
 
 		lew.writeShort(ClientSendOps.SHOW_QUEST_COMPLETION);
 		lew.writeShort(questId);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowSelfBuff(int skillId, byte skillLevel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte(StatusEffectTools.ACTIVE_BUFF);
+		lew.writeInt(skillId);
+		lew.writeByte(skillLevel);
 
 		return lew.getBytes();
 	}
@@ -1211,7 +1299,7 @@ public class CommonPackets {
 		lew.writeInt(drop.getOwner());
 		lew.writeByte(pickupAllow);
 		lew.writePos(drop.getPosition());
-		lew.writeInt(drop.getSourceEntityId());
+		lew.writeInt(0); //source mob entity id
 		if (animation != ItemDrop.SPAWN_ANIMATION_NONE) {
 			lew.writePos(drop.getSourcePos());
 			lew.writeShort((short) 0);

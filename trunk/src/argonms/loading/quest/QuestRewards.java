@@ -25,11 +25,10 @@ import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.character.skill.StatusEffectTools;
+import argonms.character.inventory.ItemTools;
 import argonms.game.GameServer;
 import argonms.net.external.ClientSession;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -172,7 +171,6 @@ public class QuestRewards {
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
-			slot = inv.get(pos);
 			ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 		}
 		ses.send(CommonPackets.writeShowItemGainFromQuest(itemId, quantity));
@@ -220,7 +218,7 @@ public class QuestRewards {
 		if (giveMesos != 0)
 			p.gainMesos(giveMesos * GameServer.getVariables().getMesoRate(), true);
 		if (giveBuff != 0)
-			StatusEffectTools.useItem(p, giveBuff);
+			ItemTools.useItem(p, giveBuff);
 		if (givePetTameness != 0) {
 			//TODO: WHICH PET DO WE APPLY THIS TO?
 		}

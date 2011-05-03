@@ -18,21 +18,20 @@
 
 package argonms.game.handler;
 
-import java.awt.Point;
-
+import argonms.character.DiseaseTools;
 import argonms.character.Player;
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.game.GameClient;
 import argonms.loading.mob.Attack;
 import argonms.loading.mob.MobDataLoader;
-import argonms.loading.skill.SkillDataLoader;
 import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.Mob;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
+import java.awt.Point;
 
 /**
  *
@@ -105,7 +104,7 @@ public class TakeDamageHandler {
 		}
 
 		if (diseaseSkill > 0)
-			p.applyEffect(SkillDataLoader.getInstance().getMobSkill(diseaseSkill).getLevel(diseaseLevel));
+			DiseaseTools.applyDebuff(p, diseaseSkill, diseaseLevel);
 
 		if (damage == -1) {
 			//TODO: no damage player skill

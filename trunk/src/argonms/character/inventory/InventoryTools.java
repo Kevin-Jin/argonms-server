@@ -38,6 +38,45 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class InventoryTools {
+	public enum AmmoType {
+		BOW_ARROW(2060), XBOW_ARROW(2061), STAR(2070), BULLET(2330);
+
+		private int ammoPrefix;
+
+		private AmmoType(int ammoPrefix) {
+			this.ammoPrefix = ammoPrefix;
+		}
+
+		public boolean canUse(int itemId) {
+			return ((itemId / 1000) == ammoPrefix);
+		}
+
+		public static AmmoType getForPlayer(Player p) {
+			AmmoType ammoType;
+			InventorySlot weapon = p.getInventory(InventoryType.EQUIPPED).get((short) -11);
+			if (weapon == null)
+				return null;
+			switch (InventoryTools.getWeaponType(weapon.getDataId())) {
+				case BOW:
+					ammoType = AmmoType.BOW_ARROW;
+					break;
+				case CROSSBOW:
+					ammoType = AmmoType.XBOW_ARROW;
+					break;
+				case CLAW:
+					ammoType = AmmoType.STAR;
+					break;
+				case GUN:
+					ammoType = AmmoType.BULLET;
+					break;
+				default:
+					ammoType = null;
+					break;
+			}
+			return ammoType;
+		}
+	}
+
 	private static Map<Integer, Equip> equipCache;
 
 	static {
@@ -76,17 +115,34 @@ public class InventoryTools {
 		return item;
 	}
 
+	/**
+	 * Distributes the given amount of the specified item to the given
+	 * inventory. Each slot that is used will conform to the correct amount of
+	 * maximum items per slot of the particular item and the minimum amount of
+	 * slots will be used. Either slots that have the same item id will have
+	 * their quantity increased or free slots will be populated when all other
+	 * slots with the same item id are full. If the inventory cannot
+	 * accommodate the given quantity of the given item, then as many items will
+	 * be placed in the inventory until it is full. The quantity of the given
+	 * InventorySlot will be ignored, and the object itself will be placed in
+	 * the first slot added once all other slots with the same item id are full.
+	 * @param inv
+	 * @param item
+	 * @param quantity
+	 * @return
+	 */
 	public static UpdatedSlots addToInventory(Inventory inv, InventorySlot item, short quantity) {
 		List<Short> modifiedSlots = new ArrayList<Short>();
 		List<Short> insertedSlots = new ArrayList<Short>();
 
+		int itemid = item.getDataId();
+		boolean rechargeable = isRechargeable(itemid);
 		if (quantity > 0) {
-			int itemid = item.getDataId();
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
 
 			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
-			if (!equip && !pet) {
+			if (!equip && !pet && !rechargeable) {
 				for (Short s : inv.getItemSlots(itemid)) {
 					InventorySlot slot = inv.get(s.shortValue());
 					if (slot.getQuantity() < slotMax) {
@@ -119,6 +175,14 @@ public class InventoryTools {
 							item.setUniqueId((long) (Math.random() * Long.MAX_VALUE));
 					}
 				}
+			}
+		} else if (rechargeable) {
+			//a fully exhausted rechargeable ammo item will have quantity 0, but
+			//we can still add it to our inventory.
+			List<Short> freeSlots = inv.getFreeSlots(1);
+			for (Short s : freeSlots) {
+				inv.put(s.shortValue(), item);
+				insertedSlots.add(s);
 			}
 		}
 		return new UpdatedSlots(modifiedSlots, insertedSlots);
@@ -258,6 +322,7 @@ public class InventoryTools {
 	}
 
 	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, short quantity) {
+		boolean rechargeable = isRechargeable(itemId);
 		List<Short> changed = new ArrayList<Short>();
 		List<Short> removed = new ArrayList<Short>();
 		int delta;
@@ -265,11 +330,12 @@ public class InventoryTools {
 			InventorySlot item = inv.get(slot.shortValue());
 			delta = Math.min(quantity, item.getQuantity());
 			quantity -= delta;
-			item.setQuantity((short) (item.getQuantity() - delta));
-			if (item.getQuantity() == 0) {
+			short newQty = (short) (item.getQuantity() - delta);
+			if (newQty == 0 && !rechargeable) {
 				inv.remove(slot);
 				removed.add(slot);
 			} else {
+				item.setQuantity(newQty);
 				changed.add(slot);
 			}
 		}
@@ -465,7 +531,7 @@ public class InventoryTools {
 		return (itemId >= 2330000 && itemId < 2340000);
 	}
 
-	public static boolean isRechargable(int itemId) {
+	public static boolean isRechargeable(int itemId) {
 		int cat = itemId / 10000;
 		return (cat == 233 || cat == 207);
 	}

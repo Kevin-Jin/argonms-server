@@ -22,8 +22,8 @@ import argonms.UserPrivileges;
 import argonms.character.KeyBinding;
 import argonms.character.Player;
 import argonms.character.SkillMacro;
+import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
-import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.WorldChannel;
@@ -91,7 +91,7 @@ public class GameEnterHandler {
 		}*/
 		client.getSession().send(writeEnterMap(player));
 		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
-			StatusEffectTools.useSkill(player, Skills.HIDE, ((byte) 1));
+			SkillTools.useBuffSkill(player, Skills.HIDE, ((byte) 1));
 		player.getMap().spawnPlayer(player);
 
 		/*try {

@@ -25,7 +25,7 @@ import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.character.skill.StatusEffectTools;
+import argonms.character.inventory.ItemTools;
 import argonms.game.GameServer;
 import argonms.game.script.PortalScriptManager;
 import argonms.loading.item.ItemDataLoader;
@@ -374,17 +374,17 @@ public class GameMap {
 		return ret != null ? ret : fallback;
 	}
 
-	public void drop(ItemDrop drop, int dropperEid, Point dropperPos, Point dropPos, byte pickupAllow, int owner) {
-		drop.init(owner, dropPos, dropperPos, dropperEid, pickupAllow);
+	public void drop(ItemDrop drop, Point dropperPos, Point dropPos, byte pickupAllow, int owner) {
+		drop.init(owner, dropPos, dropperPos, pickupAllow);
 		drop(drop);
 	}
 
-	public void drop(ItemDrop drop, MapEntity dropper, byte pickupAllow, int owner, boolean undroppable) {
+	public void drop(ItemDrop drop, Player dropper, byte pickupAllow, int owner, boolean undroppable) {
 		Point pos = dropper.getPosition();
-		drop.init(owner, calcDropPos(pos, pos), pos, dropper.getId(), pickupAllow);
+		drop.init(owner, calcDropPos(pos, pos), pos, pickupAllow);
 		if (!undroppable)
 			drop(drop);
-		else //sendToAll or just ((Player) dropper).getClient().getSession().send(...)?
+		else //sendToAll or just dropper.getClient().getSession().send(...)?
 			sendToAll(drop.getDisappearMessage());
 	}
 
@@ -395,7 +395,6 @@ public class GameMap {
 	//the fact we have the concurrency issues, not the performance).
 	public void drop(List<ItemDrop> drops, MapEntity ent, byte pickupAllow, int owner) {
 		Point entPos = ent.getPosition(), dropPos = new Point(entPos);
-		int entId = ent.getId();
 		int entX = entPos.x;
 		int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
 		int dropNum = 0, delta;
@@ -407,7 +406,7 @@ public class GameMap {
 				dropPos.x = entX + delta;
 			else //drop odd numbered drops left
 				dropPos.x = entX - delta;
-			drop.init(owner, calcDropPos(dropPos, entPos), entPos, entId, pickupAllow);
+			drop.init(owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
 			spawnEntity(drop);
 			if (drop.getDropType() == ItemDrop.ITEM)
 				checkForItemTriggeredReactors(drop);
@@ -584,7 +583,7 @@ public class GameMap {
 					}
 					p.gainedItem(itemid);
 				} else {
-					StatusEffectTools.useItem(p, itemid);
+					ItemTools.useItem(p, itemid);
 				}
 				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, qty));
 			} else {

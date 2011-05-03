@@ -33,7 +33,7 @@ import java.util.TreeMap;
  * @author GoldenKevin
  */
 public class MobSkillEffectsData implements StatusEffectsData {
-	private int skillid;
+	private short skillid;
 	private byte level;
 	private short mpCon;
 	private int duration;
@@ -50,7 +50,7 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	private byte summonEffect;
 	private final Map<Byte, Integer> summons;
 
-	protected MobSkillEffectsData(int skillid, byte level) {
+	protected MobSkillEffectsData(short skillid, byte level) {
 		this.maxHpPerc = 100;
 		this.summons = new TreeMap<Byte, Integer>();
 		this.skillid = skillid;

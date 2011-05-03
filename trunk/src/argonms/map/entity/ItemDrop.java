@@ -59,7 +59,6 @@ public class ItemDrop extends MapEntity {
 	private int id;
 	private int owner;
 	private Point dropFrom;
-	private int dropper;
 	private InventorySlot item;
 	private boolean gone;
 	private byte petLooter;
@@ -75,11 +74,10 @@ public class ItemDrop extends MapEntity {
 		this.id = amt;
 	}
 
-	public void init(int owner, Point dropTo, Point dropFrom, int dropper, byte allow) {
+	public void init(int owner, Point dropTo, Point dropFrom, byte allow) {
 		this.owner = owner;
 		this.setPosition(dropTo);
 		this.dropFrom = dropFrom;
-		this.dropper = dropper;
 		this.mod = allow;
 	}
 
@@ -101,10 +99,6 @@ public class ItemDrop extends MapEntity {
 
 	public Point getSourcePos() {
 		return dropFrom;
-	}
-
-	public int getSourceEntityId() {
-		return dropper;
 	}
 
 	public long getItemExpire() {
