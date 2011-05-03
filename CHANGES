@@ -691,6 +691,29 @@
 	the two actions are relatively unrelated and there's no reason to have them
 	combined in one method.
 
+2011-05-03  GoldenKevin  (revision 31)
+
+	* Skills and buff items should now expire properly.
+	* Refactored StatusEffectTools and the Player class' interface for applying
+	effects. StatusEffectTools now only contains common methods that all types
+	of status effects (i.e. buff skills, buff items, debuffs from monsters).
+	The specific behaviors for the aforementioned status effects are now split
+	into their own classes.
+	* Mob skill IDs are now represented internally as 2-bytes (short) instead of
+	4-bytes (int). In order to simplify compiling of Skill.wz in KvjCompiler,
+	mob skill IDs are still 4-bytes on the KVJ files (and are just downcasted).
+	* Fixed unable to warp bug following a skill cast.
+	* Fixed reactor and player drops being dropped from the wrong place if a mob
+	with the same entity ID was visible on the map.
+	* Added more definitions to PlayerJob.
+	* Made some progress on ranged attacks (still nothing on magic attacks yet).
+	* Rechargeable ammo (stars, bullets) are now a special case in the inventory
+	manipulation functions in InventoryTools. Adding rechargeable items to the
+	inventory will not change the quantity of non-full items that share the same
+	item ID, and removing rechargeable items will not clear the slot if the new
+	quantity equals 0.
+	* Quest requirement watching in Player should perform a bit better now.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

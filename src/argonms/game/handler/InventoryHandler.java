@@ -67,7 +67,7 @@ public class InventoryHandler {
 			}
 			InventorySlot toDrop;
 			short newQty = (short) (item.getQuantity() - qty);
-			if (newQty == 0) {
+			if (newQty == 0 || InventoryTools.isRechargeable(item.getDataId())) {
 				inv.remove(src);
 				toDrop = item;
 				rc.getSession().send(CommonPackets.writeInventoryClearSlot(type, src));

@@ -468,7 +468,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 		return attackCount;
 	}
 
-	public byte setBulletCount() {
+	public byte getBulletCount() {
 		return bulletCount;
 	}
 

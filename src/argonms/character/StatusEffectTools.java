@@ -16,18 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.skill;
+package argonms.character;
 
-import argonms.GlobalConstants;
-import argonms.character.Player;
+import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.character.skill.Skills;
 import argonms.loading.BuffsData;
 import argonms.loading.StatusEffectsData;
-import argonms.loading.item.ItemDataLoader;
-import argonms.loading.item.ItemEffectsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
-import argonms.loading.skill.SkillDataLoader;
 import argonms.net.external.CommonPackets;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -47,123 +47,114 @@ public class StatusEffectTools {
 	;
 
 	//TODO: IMPLEMENT
-	private static byte[] getThirdPersonCastEffect(Player p, BuffsData e) {
+	private static byte[] getFirstPersonCastVisualEffect(Player p, StatusEffectsData e) {
+		return null;
+	}
+
+	private static byte[] getFirstPersonCastEffect(Player p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				return CommonPackets.writeUseSkill(p, updatedStats, e.getDataId(), e.getDuration());
+			case ITEM:
+				return CommonPackets.writeUseItem(p, updatedStats, e.getDataId(), e.getDuration());
+			case MOB_SKILL:
+				return CommonPackets.writeGiveDebuff(p, updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration());
+		}
+		return null;
+	}
+
+	//TODO: IMPLEMENT (fully)
+	private static byte[] getThirdPersonCastVisualEffect(Player p, StatusEffectsData e) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
 					case Skills.FP_MP_EATER:
 					case Skills.IL_MP_EATER:
 					case Skills.CLERIC_MP_EATER:
-						return CommonPackets.writeBuffEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), (byte) 3);
+						return CommonPackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), (byte) 3);
 				}
 				break;
-			case ITEM:
-				break;
+		}
+		return null;
+	}
+
+	//TODO: IMPLEMENT (fully)
+	private static byte[] getThirdPersonCastEffect(Player p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				return CommonPackets.writeBuffMapEffect(p, updatedStats);
+			case MOB_SKILL:
+				return CommonPackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel());
 		}
 		return null;
 	}
 
 	//TODO: IMPLEMENT
-	private static byte[] getThirdPersonDispelEffect(Player p, BuffsData e) {
+	private static byte[] getFirstPersonDispelVisualEffect(Player p) {
 		return null;
 	}
 
-	/**
-	 * Cast a buff skill of the specified skill id with the specified skill
-	 * level.
-	 * @param p the Player that will cast the skill
-	 * @param skillId the identifier of the skill to use
-	 * @param skillLevel the amount of skill points the Player has in the skill
-	 */
-	public static void useSkill(Player p, int skillId, byte skillLevel) {
-		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(CommonPackets.writeUseSkill(p, p.applyEffect(e), skillId, e.getDuration()));
-		byte[] mapEffect = getThirdPersonCastEffect(p, e);
-		if (p.isVisible() && mapEffect != null) {
-			p.getMap().sendToAll(mapEffect, p);
-		}
+	private static byte[] getFirstPersonDispelEffect(Player p, StatusEffectsData e) {
+		return CommonPackets.writeCancelStatusEffect(e.getEffects());
 	}
 
-	/**
-	 * Cast a buff skill of the specified skill id using the Player's current
-	 * level of that particular skill.
-	 * @param p the Player that will cast the skill
-	 * @param skillId the identifier of the skill to use
-	 * @return true if the Player has at least one skill point in the given
-	 * skill, false if the Player has no skill points in that skill and thus
-	 * could not cast it.
-	 */
-	public static boolean useSkill(Player p, int skillId) {
-		byte skillLevel = p.getSkillLevel(skillId);
-		if (skillLevel != 0) {
-			useSkill(p, skillId, skillLevel);
-			return true;
-		}
-		return false;
+	//TODO: IMPLEMENT
+	private static byte[] getThirdPersonDispelVisualEffect(Player p) {
+		return null;
 	}
 
-	/**
-	 * Consume a item of the specified item id that gives a buff effect.
-	 * @param p the Player that will consume the item
-	 * @param itemId the identifier of the item to use
-	 */
-	public static void useItem(Player p, int itemId) {
-		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
-		p.getClient().getSession().send(CommonPackets.writeUseItem(p, p.applyEffect(e), itemId, e.getDuration()));
-		byte[] mapEffect = getThirdPersonCastEffect(p, e);
-		if (p.isVisible() && mapEffect != null) {
-			p.getMap().sendToAll(mapEffect, p);
-		}
-		if (e.getHpRecover() != 0)
-			p.gainHp(e.getHpRecover());
-		if (e.getHpRecoverPercent() != 0)
-			p.gainHp(Math.round(e.getHpRecoverPercent() * p.getHp() / 100f));
-		if (e.getMpRecover() != 0)
-			p.gainMp(e.getMpRecover());
-		if (e.getMpRecoverPercent() != 0)
-			p.gainMp(Math.round(e.getMpRecoverPercent() * p.getMp() / 100f));
-		if (e.getMoveTo() != 0) {
-			if (e.getMoveTo() == GlobalConstants.NULL_MAP)
-				p.changeMap(p.getMap().getReturnMap());
-			else
-				p.changeMap(e.getMoveTo());
-		}
-		//TODO: clear any debuff if e.curesXxx
+	private static byte[] getThirdPersonDispelEffect(Player p, StatusEffectsData e, Set<PlayerStatusEffect> updatedStats) {
+		return CommonPackets.writeCancelStatusEffectMapEffect(p, updatedStats);
 	}
 
-	public static void cancelSkill(Player p, int skillId, byte skillLevel) {
-		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.dispelEffect(e);
-		p.getClient().getSession().send(CommonPackets.writeCancelSkillOrItem(p, e.getEffects()));
-		byte[] mapEffect = getThirdPersonDispelEffect(p, e);
-		if (p.isVisible() && mapEffect != null) {
-			p.getMap().sendToAll(mapEffect, p);
+	public static Map<PlayerStatusEffect, Short> applyEffects(Player p, StatusEffectsData e) {
+		Map<PlayerStatusEffect, Short> updatedStats = new EnumMap<PlayerStatusEffect, Short>(PlayerStatusEffect.class);
+		for (PlayerStatusEffect buff : e.getEffects()) {
+			PlayerStatusEffectValues value = applyEffect(p, e, buff);
+			updatedStats.put(buff, Short.valueOf(value.getModifier()));
+			p.addToActiveEffects(buff, value);
 		}
+		return updatedStats;
 	}
 
-	public static void cancelSkill(Player p, int skillId) {
-		//even if we cast the skill at an earlier level, the individual effects
-		//for each level should be the same. That's all we need to call
-		//Player.dispelEffect...
-		byte skillLevel = p.getSkillLevel(skillId);
-		if (skillLevel <= 0) //casted a skill if we don't have any levels in it
-			skillLevel = 1; //it happens!
-		cancelSkill(p, skillId, skillLevel);
+	public static void applyEffectsAndShowVisuals(Player p, StatusEffectsData e) {
+		Map<PlayerStatusEffect, Short> updatedStats = applyEffects(p, e);
+		byte[] effect = getFirstPersonCastVisualEffect(p, e);
+		if (effect != null)
+			p.getClient().getSession().send(effect);
+		effect = getFirstPersonCastEffect(p, e, updatedStats);
+		if (effect != null)
+			p.getClient().getSession().send(effect);
+		effect = getThirdPersonCastVisualEffect(p, e);
+		if (p.isVisible() && effect != null)
+			p.getMap().sendToAll(effect, p);
+		effect = getThirdPersonCastEffect(p, e, updatedStats);
+		if (p.isVisible() && effect != null)
+			p.getMap().sendToAll(effect, p);
 	}
 
-	public static void cancelItem(Player p, int itemId) {
-		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
-		p.dispelEffect(e);
-		p.getClient().getSession().send(CommonPackets.writeCancelSkillOrItem(p, e.getEffects()));
-		byte[] mapEffect = getThirdPersonDispelEffect(p, e);
-		if (p.isVisible() && mapEffect != null) {
-			p.getMap().sendToAll(mapEffect, p);
+	public static void dispelEffectsAndShowVisuals(Player p, StatusEffectsData e) {
+		p.removeCancelEffectTask(e);
+		for (PlayerStatusEffect buff : e.getEffects()) {
+			PlayerStatusEffectValues v = p.removeFromActiveEffects(buff);
+			if (v != null)
+				dispelEffect(p, buff, v);
 		}
+		byte[] effect = getFirstPersonDispelVisualEffect(p);
+		if (effect != null)
+			p.getClient().getSession().send(effect);
+		effect = getFirstPersonDispelEffect(p, e);
+		if (effect != null)
+			p.getClient().getSession().send(effect);
+		effect = getThirdPersonDispelVisualEffect(p);
+		if (p.isVisible() && effect != null)
+			p.getMap().sendToAll(effect, p);
+		effect = getThirdPersonDispelEffect(p, e, e.getEffects());
+		if (p.isVisible() && effect != null)
+			p.getMap().sendToAll(effect, p);
 	}
 
-	//Helper method for Player. DO NOT CALL THIS FROM ANYWHERE ELSE UNLESS YOU
-	//HAVE A FIRM UNDERSTANDING OF WHAT IT DOES.
-	public static PlayerStatusEffectValues applyEffect(Player p, StatusEffectsData e, PlayerStatusEffect buff) {
+	private static PlayerStatusEffectValues applyEffect(Player p, StatusEffectsData e, PlayerStatusEffect buff) {
 		short mod = -1;
 		switch (buff) {
 			case SLOW:
@@ -313,9 +304,7 @@ public class StatusEffectTools {
 		return new PlayerStatusEffectValues(e, mod);
 	}
 
-	//Helper method for Player. DO NOT CALL THIS FROM ANYWHERE ELSE UNLESS YOU
-	//HAVE A FIRM UNDERSTANDING OF WHAT IT DOES.
-	public static void dispelEffect(Player p, PlayerStatusEffect key, PlayerStatusEffectValues value) {
+	private static void dispelEffect(Player p, PlayerStatusEffect key, PlayerStatusEffectValues value) {
 		switch (key) {
 			case SLOW:
 				break;

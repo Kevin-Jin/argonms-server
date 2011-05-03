@@ -57,7 +57,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		skillStats.put(Integer.valueOf(skillid), stats);
 	}
 
-	protected void loadMobSkill(int skillid) {
+	protected void loadMobSkill(short skillid) {
 		Connection con = DatabaseConnection.getWzConnection();
 		MobSkillStats stats = null;
 		try {
@@ -73,7 +73,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not read MCDB data for mob skill " + skillid, e);
 		}
-		mobSkillStats.put(Integer.valueOf(skillid), stats);
+		mobSkillStats.put(Short.valueOf(skillid), stats);
 	}
 
 	public boolean loadAll() {
@@ -93,7 +93,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				MobSkillStats stats = new MobSkillStats();
-				mobSkillStats.put(doMobWork(rs, stats, con), stats);
+				mobSkillStats.put(Short.valueOf(doMobWork(rs, stats, con)), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
@@ -112,7 +112,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 	}
 
 	public boolean canLoadPlayerSkill(int skillid) {
-		if (skillStats.containsKey(skillid))
+		if (skillStats.containsKey(Integer.valueOf(skillid)))
 			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
@@ -130,8 +130,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		return exists;
 	}
 
-	public boolean canLoadMobSkill(int skillid) {
-		if (mobSkillStats.containsKey(skillid))
+	public boolean canLoadMobSkill(short skillid) {
+		if (mobSkillStats.containsKey(Short.valueOf(skillid)))
 			return true;
 		Connection con = DatabaseConnection.getWzConnection();
 		boolean exists = false;
@@ -201,8 +201,8 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		return skillid;
 	}
 
-	private int doMobWork(ResultSet rs, MobSkillStats stats, Connection con) throws SQLException {
-		int skillid = rs.getInt(2);
+	private short doMobWork(ResultSet rs, MobSkillStats stats, Connection con) throws SQLException {
+		short skillid = rs.getShort(2);
 		//there's probably another set of buffs and charged for mob skills...
 		do {
 			byte level = rs.getByte(2);

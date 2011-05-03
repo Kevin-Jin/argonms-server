@@ -31,22 +31,22 @@ public abstract class SkillDataLoader {
 	private static SkillDataLoader instance;
 
 	protected Map<Integer, SkillStats> skillStats;
-	protected Map<Integer, MobSkillStats> mobSkillStats;
+	protected Map<Short, MobSkillStats> mobSkillStats;
 
 	protected SkillDataLoader() {
 		skillStats = new HashMap<Integer, SkillStats>();
-		mobSkillStats = new HashMap<Integer, MobSkillStats>();
+		mobSkillStats = new HashMap<Short, MobSkillStats>();
 	}
 
 	protected abstract void loadPlayerSkill(int skillid);
 
-	protected abstract void loadMobSkill(int skillid);
+	protected abstract void loadMobSkill(short skillid);
 
 	public abstract boolean loadAll();
 
 	public abstract boolean canLoadPlayerSkill(int skillid);
 
-	public abstract boolean canLoadMobSkill(int skillid);
+	public abstract boolean canLoadMobSkill(short skillid);
 
 	public SkillStats getSkill(int skillid) {
 		Integer oId = Integer.valueOf(skillid);
@@ -55,8 +55,8 @@ public abstract class SkillDataLoader {
 		return skillStats.get(oId);
 	}
 
-	public MobSkillStats getMobSkill(int skillid) {
-		Integer oId = Integer.valueOf(skillid);
+	public MobSkillStats getMobSkill(short skillid) {
+		Short oId = Short.valueOf(skillid);
 		if (!mobSkillStats.containsKey(oId))
 			loadMobSkill(skillid);
 		return mobSkillStats.get(oId);

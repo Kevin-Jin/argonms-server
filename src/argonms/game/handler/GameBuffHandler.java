@@ -22,8 +22,9 @@ import argonms.character.Player;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
+import argonms.character.inventory.ItemTools;
+import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
-import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameClient;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
@@ -57,7 +58,7 @@ public class GameBuffHandler {
 			Point summonPos = packet.readPos();
 			//TODO: summon skills
 		}
-		StatusEffectTools.useSkill(p, skillId, skillLevel);
+		SkillTools.useBuffSkill(p, skillId, skillLevel);
 	}
 
 	public static void handleUseItem(LittleEndianReader packet, RemoteClient rc) {
@@ -71,7 +72,7 @@ public class GameBuffHandler {
 			rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
 		else
 			rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
-		StatusEffectTools.useItem(p, itemId);
+		ItemTools.useItem(p, itemId);
 	}
 
 	public static void handleCancelSkill(LittleEndianReader packet, RemoteClient rc) {
@@ -80,15 +81,18 @@ public class GameBuffHandler {
 		switch (skillId) {
 			case Skills.HURRICANE:
 			case Skills.PIERCING_ARROW:
-				//TODO: special skills
+			case Skills.RAPID_FIRE:
+				//TODO: continuous fire skills
+				break;
+			default:
+				SkillTools.cancelBuffSkill(p, skillId);
 				break;
 		}
-		StatusEffectTools.cancelSkill(p, skillId);
 	}
 
 	public static void handleCancelItem(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		int itemId = -packet.readInt();
-		StatusEffectTools.cancelItem(p, itemId);
+		ItemTools.cancelBuffItem(p, itemId);
 	}
 }

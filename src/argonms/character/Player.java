@@ -34,7 +34,6 @@ import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.character.skill.Skills;
-import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
 import argonms.loading.StatusEffectsData;
 import argonms.loading.quest.QuestChecks;
@@ -52,10 +51,8 @@ import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
-import argonms.tools.Timer;
 import argonms.tools.collections.LockableList;
 import java.lang.ref.WeakReference;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -129,7 +126,7 @@ public class Player extends MapEntity {
 	private final List<Mob> controllingMobs;
 
 	private final Map<Short, QuestEntry> questStatuses;
-	private final Map<QuestRequirementType, Map<Integer, List<Short>>> questReqWatching;
+	private final Map<QuestRequirementType, Map<Number, List<Short>>> questReqWatching;
 
 	private int guild;
 	private Party party;
@@ -149,7 +146,7 @@ public class Player extends MapEntity {
 		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
 		questStatuses = new HashMap<Short, QuestEntry>();
-		questReqWatching = new EnumMap<QuestRequirementType, Map<Integer, List<Short>>>(QuestRequirementType.class);
+		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
 	}
 
 	public int getDataId() {
@@ -823,17 +820,15 @@ public class Player extends MapEntity {
 						QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 						Map<Integer, Short> mobReq = qc.getReqMobCounts();
 						Map<Integer, Short> itemReq = qc.getReqItems();
-						for (Entry<Integer, Short> mob : mobReq.entrySet()) {
-							int mobId = mob.getKey().intValue();
-							if (status.getMobCount(mobId) < mob.getValue().shortValue())
-								p.addToWatchedList(questId, QuestRequirementType.MOB, mobId);
-						}
+						for (Entry<Integer, Short> mob : mobReq.entrySet())
+							if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
+								p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
 						for (Integer itemId : itemReq.keySet())
-							p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId.intValue());
+							p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
 						for (Integer petId : qc.getReqPets())
-							p.addToWatchedList(questId, QuestRequirementType.PET, petId.intValue());
+							p.addToWatchedList(questId, QuestRequirementType.PET, petId);
 						for (Short reqQuestId : qc.getReqQuests().keySet())
-							p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId.intValue());
+							p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
 						if (qc.requiresMesos())
 							p.addToWatchedList(questId, QuestRequirementType.MESOS);
 					}
@@ -1000,6 +995,7 @@ public class Player extends MapEntity {
 
 	public void setJob(short newJob) {
 		this.job = newJob;
+		getMap().sendToAll(CommonPackets.writeShowJobChange(this));
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 	}
 
@@ -1059,13 +1055,17 @@ public class Player extends MapEntity {
 		return remHp;
 	}
 
-	public void setHp(short newHp) {
-		//TODO: send new hp to party mates (I think v0.62 supports it...)
+	public void setLocalHp(short newHp) {
 		if (newHp < 0)
 			newHp = 0;
 		else if (newHp > maxHp)
 			newHp = maxHp;
 		this.remHp = newHp;
+	}
+
+	public void setHp(short newHp) {
+		//TODO: send new hp to party mates (I think v0.62 supports it...)
+		setLocalHp(newHp);
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
 		if (remHp == 0)
 			died();
@@ -1131,12 +1131,16 @@ public class Player extends MapEntity {
 		return remMp;
 	}
 
-	public void setMp(short newMp) {
+	public void setLocalMp(short newMp) {
 		if (newMp < 0)
 			newMp = 0;
 		else if (newMp > maxMp)
 			newMp = maxMp;
 		this.remMp = newMp;
+	}
+
+	public void setMp(short newMp) {
+		setLocalMp(newMp);
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
 	}
 
@@ -1222,6 +1226,10 @@ public class Player extends MapEntity {
 
 	public int getMesos() {
 		return mesos;
+	}
+
+	public void setLocalMesos(int newValue) {
+		this.mesos = newValue;
 	}
 
 	public void setMesos(int newValue, boolean fromDrop) {
@@ -1462,38 +1470,30 @@ public class Player extends MapEntity {
 		return cooldowns;
 	}
 
-	public Map<PlayerStatusEffect, Short> applyEffect(final StatusEffectsData e) {
-		Map<PlayerStatusEffect, Short> updatedStats = new EnumMap<PlayerStatusEffect, Short>(PlayerStatusEffect.class);
+	public void addToActiveEffects(PlayerStatusEffect buff, PlayerStatusEffectValues value) {
 		synchronized (activeEffects) {
-			for (PlayerStatusEffect buff : e.getEffects()) {
-				PlayerStatusEffectValues value = StatusEffectTools.applyEffect(this, e, buff);
-				updatedStats.put(buff, Short.valueOf(value.getModifier()));
-				activeEffects.put(buff, value);
-			}
+			activeEffects.put(buff, value);
 		}
-		ScheduledFuture<?> cancelTask = Timer.getInstance().runAfterDelay(new Runnable() {
-			public void run() {
-				dispelEffect(e);
-			}
-		}, e.getDuration());
+	}
+
+	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask) {
 		switch (e.getSourceType()) {
 			case ITEM:
 				synchronized (itemEffectCancels) {
-					itemEffectCancels.put(e.getDataId(), cancelTask);
+					itemEffectCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
 				}
 				break;
 			case PLAYER_SKILL:
 				synchronized (skillCancels) {
-					skillCancels.put(e.getDataId(), cancelTask);
+					skillCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
 				}
 				break;
 			case MOB_SKILL:
 				synchronized (diseaseCancels) {
-					diseaseCancels.put(e.getDataId(), cancelTask);
+					diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
 				}
 				break;
 		}
-		return updatedStats;
 	}
 
 	public Map<PlayerStatusEffect, PlayerStatusEffectValues> getAllEffects() {
@@ -1504,28 +1504,36 @@ public class Player extends MapEntity {
 		return activeEffects.get(buff);
 	}
 
-	public void dispelEffect(StatusEffectsData e) {
+	public PlayerStatusEffectValues removeFromActiveEffects(PlayerStatusEffect e) {
 		synchronized (activeEffects) {
-			for (PlayerStatusEffect buff : e.getEffects())
-				StatusEffectTools.dispelEffect(this, buff, activeEffects.remove(buff));
+			return activeEffects.remove(e);
 		}
+	}
+
+	public void removeCancelEffectTask(StatusEffectsData e) {
+		ScheduledFuture<?> cancelTask;
 		switch (e.getSourceType()) {
 			case ITEM:
 				synchronized (itemEffectCancels) {
-					itemEffectCancels.remove(e.getDataId()).cancel(true);
+					cancelTask = itemEffectCancels.remove(Integer.valueOf(e.getDataId()));
 				}
 				break;
 			case PLAYER_SKILL:
 				synchronized (skillCancels) {
-					skillCancels.remove(e.getDataId()).cancel(true);
+					cancelTask = skillCancels.remove(Integer.valueOf(e.getDataId()));
 				}
 				break;
 			case MOB_SKILL:
 				synchronized (diseaseCancels) {
-					diseaseCancels.remove(e.getDataId()).cancel(true);
+					cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
 				}
 				break;
+			default:
+				cancelTask = null;
+				break;
 		}
+		if (cancelTask != null)
+			cancelTask.cancel(false);
 	}
 
 	public boolean isEffectActive(PlayerStatusEffect buff) {
@@ -1674,23 +1682,22 @@ public class Player extends MapEntity {
 		}
 	}
 
-	private void addToWatchedList(short questId, QuestRequirementType type, int id) {
-		Map<Integer, List<Short>> watched = questReqWatching.get(type);
+	private void addToWatchedList(short questId, QuestRequirementType type, Number id) {
+		Map<Number, List<Short>> watched = questReqWatching.get(type);
 		if (watched == null) {
-			watched = new HashMap<Integer, List<Short>>();
+			watched = new HashMap<Number, List<Short>>();
 			questReqWatching.put(type, watched);
 		}
-		Integer oId = Integer.valueOf(id);
-		List<Short> questList = watched.get(oId);
+		List<Short> questList = watched.get(id);
 		if (questList == null) {
 			questList = new ArrayList<Short>();
-			watched.put(oId, questList);
+			watched.put(id, questList);
 		}
 		questList.add(Short.valueOf(questId));
 	}
 
 	private void addToWatchedList(short questId, QuestRequirementType type) {
-		Map<Integer, List<Short>> watched = questReqWatching.get(type);
+		Map<Number, List<Short>> watched = questReqWatching.get(type);
 		List<Short> questList;
 		if (watched == null) {
 			questList = new ArrayList<Short>();
@@ -1702,15 +1709,14 @@ public class Player extends MapEntity {
 		questList.add(Short.valueOf(questId));
 	}
 
-	private void removeFromWatchedList(short questId, QuestRequirementType type, int id) {
-		Map<Integer, List<Short>> watched = questReqWatching.get(type);
+	private void removeFromWatchedList(short questId, QuestRequirementType type, Number id) {
+		Map<Number, List<Short>> watched = questReqWatching.get(type);
 		if (watched != null) {
-			Integer oId = Integer.valueOf(id);
-			List<Short> questList = watched.get(oId);
+			List<Short> questList = watched.get(id);
 			if (questList != null) {
 				questList.remove(Short.valueOf(questId));
 				if (questList.isEmpty())
-					watched.remove(oId);
+					watched.remove(id);
 			}
 			if (watched.isEmpty())
 				questReqWatching.remove(type);
@@ -1718,7 +1724,7 @@ public class Player extends MapEntity {
 	}
 
 	private void removeFromWatchedList(short questId, QuestRequirementType type) {
-		Map<Integer, List<Short>> watched = questReqWatching.get(type);
+		Map<Number, List<Short>> watched = questReqWatching.get(type);
 		if (watched != null) {
 			List<Short> questList = watched.get(null);
 			questList.remove(Short.valueOf(questId));
@@ -1748,13 +1754,13 @@ public class Player extends MapEntity {
 			status.updateState(QuestEntry.STATE_STARTED);
 		}
 		for (Integer mobId : reqMobs.keySet())
-			addToWatchedList(questId, QuestRequirementType.MOB, mobId.intValue());
+			addToWatchedList(questId, QuestRequirementType.MOB, mobId);
 		for (Integer itemId : reqItems.keySet())
-			addToWatchedList(questId, QuestRequirementType.ITEM, itemId.intValue());
+			addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
 		for (Integer petId : qc.getReqPets())
-			addToWatchedList(questId, QuestRequirementType.PET, petId.intValue());
+			addToWatchedList(questId, QuestRequirementType.PET, petId);
 		for (Short reqQuestId : qc.getReqQuests().keySet())
-			addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId.intValue());
+			addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
 		if (qc.requiresMesos())
 			addToWatchedList(questId, QuestRequirementType.MESOS);
 		QuestDataLoader.getInstance().startedQuest(this, questId);
@@ -1794,13 +1800,13 @@ public class Player extends MapEntity {
 			questStatuses.put(oId, status);
 		}
 		for (Integer itemId : reqItems.keySet())
-			removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId.intValue());
+			removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
 		for (Integer mobId : reqMobs.keySet())
-			removeFromWatchedList(questId, QuestRequirementType.MOB, mobId.intValue());
+			removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
 		for (Integer petId : qc.getReqPets())
-			removeFromWatchedList(questId, QuestRequirementType.PET, petId.intValue());
+			removeFromWatchedList(questId, QuestRequirementType.PET, petId);
 		for (Short reqQuestId : qc.getReqQuests().keySet())
-			removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId.shortValue());
+			removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
 		if (qc.requiresMesos())
 			removeFromWatchedList(questId, QuestRequirementType.MESOS);
 		status.setCompletionTime(System.currentTimeMillis());
@@ -1845,13 +1851,13 @@ public class Player extends MapEntity {
 			Map<Integer, Short> reqItems = qc.getReqMobCounts();
 			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs.keySet());
 			for (Integer itemId : reqItems.keySet())
-				removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId.intValue());
+				removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
 			for (Integer mobId : reqMobs.keySet())
-				removeFromWatchedList(questId, QuestRequirementType.MOB, mobId.intValue());
+				removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
 			for (Integer petId : qc.getReqPets())
-				removeFromWatchedList(questId, QuestRequirementType.PET, petId.intValue());
+				removeFromWatchedList(questId, QuestRequirementType.PET, petId);
 			for (Short reqQuestId : qc.getReqQuests().keySet())
-				removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId.shortValue());
+				removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
 			if (qc.requiresMesos())
 				removeFromWatchedList(questId, QuestRequirementType.MESOS);
 			questStatuses.put(oId, status);
@@ -1861,9 +1867,9 @@ public class Player extends MapEntity {
 
 	private void questStatusChanged(short questId, byte newStatus) {
 		Short oId = Short.valueOf(questId);
-		Map<Integer, List<Short>> watchedQuests = questReqWatching.get(QuestRequirementType.QUEST);
+		Map<Number, List<Short>> watchedQuests = questReqWatching.get(QuestRequirementType.QUEST);
 		if (watchedQuests != null) {
-			List<Short> watchingQuests = watchedQuests.get(Integer.valueOf(questId));
+			List<Short> watchingQuests = watchedQuests.get(Short.valueOf(questId));
 			if (watchingQuests != null) {
 				for (Short quest : watchingQuests) {
 					questId = quest.shortValue();
@@ -1877,14 +1883,15 @@ public class Player extends MapEntity {
 	}
 
 	public void gainedItem(int itemId) {
-		Map<Integer, List<Short>> watchedItems = questReqWatching.get(QuestRequirementType.ITEM);
+		Map<Number, List<Short>> watchedItems = questReqWatching.get(QuestRequirementType.ITEM);
 		if (watchedItems != null) {
-			List<Short> watchingQuests = watchedItems.get(Integer.valueOf(itemId));
+			Integer oId = Integer.valueOf(itemId);
+			List<Short> watchingQuests = watchedItems.get(oId);
 			if (watchingQuests != null) {
 				for (Short quest : watchingQuests) {
 					short questId = quest.shortValue();
 					Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
-					if (InventoryTools.hasItem(this, itemId, itemReq.get(Integer.valueOf(itemId)).shortValue()))
+					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).shortValue()))
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
 							getClient().getSession().send(CommonPackets.writeShowQuestReqsFulfilled(questId));
 				}
@@ -1893,7 +1900,7 @@ public class Player extends MapEntity {
 	}
 
 	public void equippedPet(int petItemId) {
-		Map<Integer, List<Short>> watchedPets = questReqWatching.get(QuestRequirementType.PET);
+		Map<Number, List<Short>> watchedPets = questReqWatching.get(QuestRequirementType.PET);
 		if (watchedPets != null) {
 			List<Short> watchingQuests = watchedPets.get(Integer.valueOf(petItemId));
 			if (watchingQuests != null)
@@ -1904,7 +1911,7 @@ public class Player extends MapEntity {
 	}
 
 	public void petGainedCloseness(int petItemId) {
-		Map<Integer, List<Short>> watchedPetTameness = questReqWatching.get(QuestRequirementType.PET_TAMENESS);
+		Map<Number, List<Short>> watchedPetTameness = questReqWatching.get(QuestRequirementType.PET_TAMENESS);
 		if (watchedPetTameness != null)
 			for (Short questId : watchedPetTameness.get(null))
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
@@ -1912,7 +1919,7 @@ public class Player extends MapEntity {
 	}
 
 	private void mesosChanged() {
-		Map<Integer, List<Short>> watchingMesos = questReqWatching.get(QuestRequirementType.MESOS);
+		Map<Number, List<Short>> watchingMesos = questReqWatching.get(QuestRequirementType.MESOS);
 		if (watchingMesos != null)
 			for (Short questId : watchingMesos.get(null))
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
@@ -1925,8 +1932,9 @@ public class Player extends MapEntity {
 			status.killedMob(mobId);
 			getClient().getSession().send(CommonPackets.writeQuestProgress(questId, status.getData()));
 			Map<Integer, Short> mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts();
-			if (status.getMobCount(mobId) >= mobReq.get(Integer.valueOf(mobId))) {
-				removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+			Integer oId = Integer.valueOf(mobId);
+			if (status.getMobCount(mobId) >= mobReq.get(oId)) {
+				removeFromWatchedList(questId, QuestRequirementType.MOB, oId);
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
 					getClient().getSession().send(CommonPackets.writeShowQuestReqsFulfilled(questId));
 			}
@@ -1937,7 +1945,7 @@ public class Player extends MapEntity {
 
 	public List<MobDeathHook> getMobDeathHooks(final int mobId) {
 		List<MobDeathHook> hooks = new ArrayList<MobDeathHook>();
-		Map<Integer, List<Short>> watchedMobs = questReqWatching.get(QuestRequirementType.MOB);
+		Map<Number, List<Short>> watchedMobs = questReqWatching.get(QuestRequirementType.MOB);
 		if (watchedMobs != null) {
 			List<Short> watchingQuests = watchedMobs.get(Integer.valueOf(mobId));
 			if (watchingQuests != null) {

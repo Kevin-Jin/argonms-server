@@ -19,30 +19,21 @@
 package argonms.map.entity;
 
 import argonms.GlobalConstants;
+import argonms.character.DiseaseTools;
 import argonms.character.Party;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ScheduledFuture;
-
 import argonms.character.Player;
+import argonms.character.StatusEffectTools;
 import argonms.character.inventory.InventorySlot;
+import argonms.character.inventory.ItemTools;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.character.skill.StatusEffectTools;
 import argonms.game.GameServer;
-import argonms.loading.item.ItemDataLoader;
 import argonms.loading.mob.MobDataLoader;
 import argonms.loading.mob.MobStats;
 import argonms.loading.mob.Skill;
 import argonms.loading.skill.MobSkillEffectsData;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
+import argonms.map.MapEntity.EntityType;
 import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffect;
 import argonms.net.external.ClientSendOps;
@@ -51,12 +42,21 @@ import argonms.tools.Rng;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableMap;
 import argonms.tools.output.LittleEndianByteArrayWriter;
-
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  *
@@ -200,8 +200,8 @@ public class Mob extends MapEntity {
 			cancelTask.cancel(true);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
-			killer.applyEffect(ItemDataLoader.getInstance().getEffect(deathBuff));
-			map.sendToAll(CommonPackets.writeBuffEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
+			ItemTools.useItem(killer, deathBuff);
+			map.sendToAll(CommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
 		}
 		Player highestDamage = giveExp(killer);
 		for (MobDeathHook hook : hooks)
@@ -422,7 +422,7 @@ public class Mob extends MapEntity {
 				break;
 			default:
 				if (!playerSkillEffect.getEffects().isEmpty())
-					player.applyEffect(playerSkillEffect);
+					DiseaseTools.applyDebuff(player, (short) playerSkillEffect.getDataId(), playerSkillEffect.getLevel());
 				if (playerSkillEffect.getBuff() != null)
 					applyEffect(playerSkillEffect.getBuff(), playerSkillEffect.getDuration());
 				break;
