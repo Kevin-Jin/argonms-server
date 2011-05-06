@@ -52,7 +52,7 @@ public enum MonsterStatusEffect {
 		this.mask = mask;
 	}
 
-	public int getMask() {
+	public int intValue() {
 		return mask;
 	}
 }

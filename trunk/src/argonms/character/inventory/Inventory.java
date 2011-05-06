@@ -19,6 +19,7 @@
 package argonms.character.inventory;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,30 +35,36 @@ import java.util.TreeSet;
  */
 public class Inventory {
 	public enum InventoryType {
-		EQUIPPED(-1),
-		EQUIP(1),
-		USE(2),
-		SETUP(3),
-		ETC(4),
-		CASH(5),
-		STORAGE(6),
-		CASH_SHOP(7);
+		EQUIPPED (-1),
+		EQUIP (1),
+		USE (2),
+		SETUP (3),
+		ETC (4),
+		CASH (5),
+		STORAGE (6),
+		CASH_SHOP (7);
+
+		private static final Map<Byte, InventoryType> lookup;
+
+		//initialize reverse lookup
+		static {
+			lookup = new HashMap<Byte, InventoryType>(values().length);
+			for (InventoryType type : values())
+				lookup.put(Byte.valueOf(type.byteValue()), type);
+		}
 
 		private final byte value;
 
-		InventoryType(int value) {
+		private InventoryType(int value) {
 			this.value = (byte) value;
 		}
 
-		public byte value() {
+		public byte byteValue() {
 			return value;
 		}
 
-		public static InventoryType get(byte type) {
-			for (InventoryType it : values())
-				if (it.value() == type)
-					return it;
-			return null;
+		public static InventoryType valueOf(byte type) {
+			return lookup.get(Byte.valueOf(type));
 		}
 	}
 

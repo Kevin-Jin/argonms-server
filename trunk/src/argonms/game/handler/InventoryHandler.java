@@ -40,7 +40,7 @@ import argonms.tools.input.LittleEndianReader;
 public class InventoryHandler {
 	public static void handleItemMove(LittleEndianReader packet, RemoteClient rc) {
 		packet.readInt();
-		InventoryType type = InventoryType.get(packet.readByte());
+		InventoryType type = InventoryType.valueOf(packet.readByte());
 		short src = packet.readShort();
 		short dst = packet.readShort();
 		short qty = packet.readShort();
@@ -49,6 +49,7 @@ public class InventoryHandler {
 			InventoryTools.unequip(p.getInventory(InventoryType.EQUIPPED), p.getInventory(InventoryType.EQUIP), src, dst);
 			rc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
 			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false);
+			p.getMap().sendToAll(CommonPackets.writeUpdateAvatar(p), p);
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
@@ -56,6 +57,7 @@ public class InventoryHandler {
 				if (result.length == 2)
 					rc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true);
+				p.getMap().sendToAll(CommonPackets.writeUpdateAvatar(p), p);
 			} else {
 				rc.getSession().send(CommonPackets.writeInventoryFull());
 			}

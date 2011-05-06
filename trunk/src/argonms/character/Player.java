@@ -253,15 +253,15 @@ public class Player extends MapEntity {
 		try {
 			String invUpdate = "DELETE FROM `inventoryitems` WHERE "
 					+ "`characterid` = ? AND `inventorytype` <= "
-					+ InventoryType.CASH.value();
+					+ InventoryType.CASH.byteValue();
 			boolean invUpdateSpecifyAccId = false;
 			if (inventories.containsKey(InventoryType.STORAGE)) { //game server
 				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
-						+ InventoryType.STORAGE.value();
+						+ InventoryType.STORAGE.byteValue();
 				invUpdateSpecifyAccId = true;
 			} else if (inventories.containsKey(InventoryType.CASH_SHOP)) { //shop server
 				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
-						+ InventoryType.CASH_SHOP.value();
+						+ InventoryType.CASH_SHOP.byteValue();
 				invUpdateSpecifyAccId = true;
 			}
 			PreparedStatement ps = con.prepareStatement(invUpdate);
@@ -290,7 +290,7 @@ public class Player extends MapEntity {
 						ps.setInt(1, getDataId());
 						break;
 				}
-				ps.setInt(3, ent.getKey().value());
+				ps.setInt(3, ent.getKey().byteValue());
 				for (Entry<Short, InventorySlot> e : ent.getValue().getAll().entrySet()) {
 					InventorySlot item = e.getValue();
 
@@ -434,8 +434,8 @@ public class Player extends MapEntity {
 					"(`characterid`,`skill`,`remaining`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
-				ps.setInt(1, cooling.getKey().intValue());
-				ps.setShort(2, cooling.getValue().getSecondsRemaining());
+				ps.setInt(2, cooling.getKey().intValue());
+				ps.setShort(3, cooling.getValue().getSecondsRemaining());
 				ps.addBatch();
 			}
 			ps.executeBatch();
@@ -617,7 +617,7 @@ public class Player extends MapEntity {
 			p.mesos = rs.getInt(26);
 
 			String invQuery = "SELECT * FROM `inventoryitems` WHERE `characterid` = ? "
-					+ "AND `inventorytype` <= " + InventoryType.CASH.value();
+					+ "AND `inventorytype` <= " + InventoryType.CASH.byteValue();
 			boolean invQuerySpecifyAccId = false;
 			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getByte(27)));
 			p.inventories.put(InventoryType.USE, new Inventory(rs.getByte(28)));
@@ -628,12 +628,12 @@ public class Player extends MapEntity {
 			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
 			if (gameServer) {
 				p.inventories.put(InventoryType.STORAGE, new Inventory(rs.getByte(32)));
-				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.value();
+				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.byteValue();
 				invQuerySpecifyAccId = true;
 			} else if (shopServer) {
 				//TODO: get real cash shop inventory size?
 				p.inventories.put(InventoryType.CASH_SHOP, new Inventory((byte) 0));
-				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.value();
+				invQuery += " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.byteValue();
 				invQuerySpecifyAccId = true;
 			}
 			p.buddies = new BuddyList(rs.getShort(33));
@@ -648,7 +648,7 @@ public class Player extends MapEntity {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				InventorySlot item;
-				InventoryType inventoryType = InventoryType.get(rs.getByte(4));
+				InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
 				short position = rs.getShort(5);
 				int itemid = rs.getInt(6);
 				int inventoryKey = rs.getInt(1);

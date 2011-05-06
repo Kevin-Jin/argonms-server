@@ -49,7 +49,7 @@ public enum ClientUpdateKey {
 		this.mask = mask;
 	}
 
-	public int getMask() {
+	public int intValue() {
 		return mask;
 	}
 }

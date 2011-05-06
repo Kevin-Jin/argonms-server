@@ -18,6 +18,7 @@
 
 package argonms.loading.skill;
 
+import argonms.character.skill.Skills;
 import argonms.map.MobSkills;
 import argonms.tools.DatabaseConnection;
 import java.sql.Connection;
@@ -154,11 +155,14 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		if (isBuff(skillid))
 			stats.setBuff();
 		switch (skillid) {
-			case 2121001:
-			case 2221001:
-			case 2321001:
-			case 5101004:
-			case 5201002:
+			case Skills.FP_BIG_BANG:
+			case Skills.IL_BIG_BANG:
+			case Skills.BISHOP_BIG_BANG:
+			case Skills.HURRICANE:
+			case Skills.PIERCING_ARROW:
+			case Skills.CORKSCREW_BLOW:
+			case Skills.GRENADE:
+			case Skills.RAPID_FIRE:
 				stats.setChargedSkill();
 				break;
 		}

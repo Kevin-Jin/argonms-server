@@ -41,7 +41,7 @@ public class InventoryTools {
 	public enum AmmoType {
 		BOW_ARROW(2060), XBOW_ARROW(2061), STAR(2070), BULLET(2330);
 
-		private int ammoPrefix;
+		private final int ammoPrefix;
 
 		private AmmoType(int ammoPrefix) {
 			this.ammoPrefix = ammoPrefix;

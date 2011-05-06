@@ -35,6 +35,7 @@ import argonms.character.inventory.InventoryTools;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
 import argonms.character.StatusEffectTools;
+import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.map.MobSkills;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
@@ -49,7 +50,10 @@ import argonms.tools.TimeUtil;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
 import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -408,7 +412,7 @@ public class CommonPackets {
 		lew.writeBool(is);
 		int updateMask = 0;
 		for (ClientUpdateKey key : stats.keySet())
-			updateMask |= key.getMask();
+			updateMask |= key.intValue();
 		lew.writeInt(updateMask);
 		for (Entry<ClientUpdateKey, ? extends Number> statupdate : stats.entrySet()) {
 			switch (statupdate.getKey()) {
@@ -451,7 +455,7 @@ public class CommonPackets {
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats.keySet())
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
@@ -472,7 +476,7 @@ public class CommonPackets {
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats.keySet())
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
@@ -498,7 +502,7 @@ public class CommonPackets {
 		lew.writeShort(ClientSendOps.FIRST_PERSON_CANCEL_STATUS_EFFECT);
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats)
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		lew.writeByte((byte) 0);
@@ -516,6 +520,36 @@ public class CommonPackets {
 		lew.writeInt(level);
 		lew.writeInt(masterlevel);
 		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateAvatar(Player p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.UPDATE_AVATAR);
+		lew.writeInt(p.getId());
+		lew.writeBool(true);
+		writeAvatar(lew, p, false);
+		Inventory inv = p.getInventory(InventoryType.EQUIPPED);
+		Collection<InventorySlot> equippedC = inv.getAll().values();
+		List<Ring> rings = new ArrayList<Ring>();
+		for (InventorySlot item : equippedC)
+			if (item.getType() == ItemType.RING)
+				rings.add((Ring) item);
+		Collections.sort(rings);
+		lew.writeByte((byte) 0);
+		if (rings.size() > 0) {
+			for (Ring ring : rings) {
+				lew.writeBool(true);
+				lew.writeLong(ring.getUniqueId());
+				lew.writeLong(ring.getPartnerRingId());
+				lew.writeInt(ring.getDataId());
+			}
+		} else {
+			lew.writeBool(false);
+		}
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 0);
 
 		return lew.getBytes();
 	}
@@ -561,11 +595,16 @@ public class CommonPackets {
 		lew.writeInt(p.getId());
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats.keySet())
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet())
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			if (statupdate.getKey() == PlayerStatusEffect.SHADOW_STARS) {
+				lew.writeShort((short) 0);
+				lew.writeByte((byte) 0);
+			}
 			lew.writeShort(statupdate.getValue());
+		}
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
 
@@ -579,7 +618,7 @@ public class CommonPackets {
 		lew.writeInt(p.getId());
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats.keySet())
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
@@ -601,7 +640,7 @@ public class CommonPackets {
 		lew.writeInt(p.getId());
 		long updateMask = 0;
 		for (PlayerStatusEffect key : stats)
-			updateMask |= key.getMask();
+			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 
@@ -836,7 +875,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 0);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeByte((byte) pos);
 		writeItemInfo(lew, (short) 0, item);
 
@@ -850,7 +889,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 1);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeByte((byte) pos);
 		lew.writeBool(false);
 		lew.writeShort(item.getQuantity());
@@ -865,7 +904,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 1);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(quantity);
 
@@ -879,7 +918,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 2);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(dst);
 		if (equipIndicator != -1)
@@ -895,7 +934,7 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
 		lew.writeByte((byte) 3);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(slot);
 		if (slot < 0)
 			lew.writeBool(true);
@@ -910,11 +949,11 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
 		lew.writeByte((byte) 1);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(srcQty);
 		lew.writeBool(true);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(dst);
 		lew.writeShort(dstQty);
 
@@ -928,10 +967,10 @@ public class CommonPackets {
 		lew.writeBool(true);
 		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
 		lew.writeByte((byte) 3);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeBool(true);
-		lew.writeByte(type.value());
+		lew.writeByte(type.byteValue());
 		lew.writeShort(dst);
 		lew.writeShort(total);
 
@@ -962,6 +1001,44 @@ public class CommonPackets {
 		lew.writeLong(questMask);
 
 		return lew.getBytes();
+	}
+
+	private static void writeMapEntryStatusEffectValue(LittleEndianWriter lew, PlayerStatusEffect key, PlayerStatusEffectValues v) {
+		//perhaps it would be more concise if we didn't use a switch-case, and just use some conditionals if there are patterns.
+		switch (key) {
+			default: //give no value at all
+				break;
+			case COMBO: //TODO: save (combo + 1) in v.mod!!
+			case JUMP:
+				lew.writeByte((byte) v.getModifier());
+				break;
+			case HOMING_BEACON: //all non-debuff 5th byte keys
+			case MORPH:
+			case RECOVERY:
+			case MAPLE_WARRIOR:
+			case STANCE:
+			case SHARP_EYES:
+			case MANA_REFLECTION:
+			case DRAGON_ROAR:
+				lew.writeShort(v.getModifier());
+				break;
+			case SEDUCE: //all debuffs besides slow (glitch in global, SLOW doesn't display properly and if you try, it error 38s)
+			case STUN:
+			case POISON:
+			case SEAL:
+			case DARKNESS:
+			case WEAKEN:
+			case CURSE:
+				lew.writeShort((short) v.getSource());
+				lew.writeShort(v.getModifier());
+				break;
+			case CHARGE:
+				lew.writeInt(0 /* p.getCharge() */);
+				break;
+			case SHADOW_STARS:
+				lew.writeInt(v.getModifier());
+				break;
+		}
 	}
 
 	public static byte[] writeShowPlayer(Player p) {
@@ -996,20 +1073,30 @@ public class CommonPackets {
 		lew.writeInt(0);
 		lew.writeInt(1);
 
-		//TODO: show current buffs to other map players
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0xF8);
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0);
+		long updateMask = 0;
+		Map<PlayerStatusEffect, PlayerStatusEffectValues> statusEffects = new TreeMap<PlayerStatusEffect, PlayerStatusEffectValues>(new Comparator<PlayerStatusEffect>() {
+			//sort by value order (i.e. 5,6,7,8,1,2,3,4), then by mask (i.e. enum order)
+			public int compare(PlayerStatusEffect k1, PlayerStatusEffect k2) {
+				int diff = k1.getValueOrder() - k2.getValueOrder();
+				if (diff == 0) //if k1 and k2 share the same value order
+					//sort by enum order (which should be smallest to biggest)
+					diff = k1.compareTo(k2); //also equivalent to ((int) (k1.longValue() - k2.longValue()))
+				return diff;
+			}
+		});
+		statusEffects.putAll(p.getAllEffects());
+		for (PlayerStatusEffect key : statusEffects.keySet())
+			updateMask |= key.longValue();
+		//no idea why we have to do it, but make the 4th byte (in a 64-bit little endian integer) = 0xF8
+		lew.writeLong(updateMask & 0xFFFFFFFF00FFFFFFL | 0x00000000F8000000L);
+		for (Entry<PlayerStatusEffect, PlayerStatusEffectValues> effect : statusEffects.entrySet())
+			writeMapEntryStatusEffectValue(lew, effect.getKey(), effect.getValue());
+		lew.writeInt(0);
+		//we write the 4th byte here. yeah. what the fuck Nexon.
+		lew.writeByte((byte) ((updateMask & 0x00000000FF000000L) >> 24));
 		lew.writeByte((byte) 0);
 		lew.writeInt(0);
 
-		lew.writeByte((byte) 0);
-		lew.writeByte((byte) 0);
-		lew.writeInt(0);
 		int CHAR_MAGIC_SPAWN = Rng.getGenerator().nextInt();
 		lew.writeInt(CHAR_MAGIC_SPAWN);
 		lew.writeShort((short) 0);

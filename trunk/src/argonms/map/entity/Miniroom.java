@@ -34,26 +34,27 @@ public abstract class Miniroom extends MapEntity {
 		PLAYER_SHOP (4),
 		HIRED_MERCHANT (5);
 
-		private final int id;
-
-		private static final Map<Integer, MiniroomType> lookup = new HashMap<Integer, MiniroomType>();
+		private static final Map<Byte, MiniroomType> lookup;
 
 		//initialize reverse lookup
 		static {
-			for(MiniroomType type : MiniroomType.values())
-				lookup.put(Integer.valueOf(type.getValue()), type);
+			lookup = new HashMap<Byte, MiniroomType>(values().length);
+			for(MiniroomType type : values())
+				lookup.put(Byte.valueOf(type.byteValue()), type);
 		}
+
+		private final byte id;
 
 		private MiniroomType(int clientVal) {
-			id = clientVal;
+			id = (byte) clientVal;
 		}
 
-		public int getValue() {
+		public byte byteValue() {
 			return id;
 		}
 
-		public static MiniroomType getByValue(int value) {
-			return lookup.get(Integer.valueOf(value));
+		public static MiniroomType valueOf(byte value) {
+			return lookup.get(Byte.valueOf(value));
 		}
 	}
 

@@ -714,6 +714,27 @@
 	quantity equals 0.
 	* Quest requirement watching in Player should perform a bit better now.
 
+2011-05-05  GoldenKevin  (revision 32)
+
+	* Messages are now sent to players on the same map when a player changes
+	their equipment.
+	* Added some sort of consistency to enum getValue/valueOf method names.
+	PlayerStatusEffect keys have been renamed for consistency and to match with
+	Java's standard naming convention for constants (i.e. underscores for names
+	with spaces), and some to match with the source skill's name.
+	* Every player on a map should be sent the buffs of a player that enters the
+	map once that player enters (CommonPackets.writeShowPlayer). This method,
+	like writeUseSkill, writeGiveDebuff, writeBuffMapEffect, and
+	writeDebuffMapEffect, is extremely buggy and will crash clients pretty
+	frequently. If you can reproduce any crashes resulting from buffs/debuffs,
+	just send me a report of what skills were being used.
+	* Fixed up attack skills A LOT. Meso explosion works perfectly fine, and I
+	perfected my procedures through Vana inspirations and extensive testing.
+	Note that this is only for ranged and melee attacks as of the moment, and
+	summons, magic, and energy charge are not yet handled properly.
+	* Fixed attacking when shadow stars is active.
+	* Fixed cooldown saving in Player giving errors.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
