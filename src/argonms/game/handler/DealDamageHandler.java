@@ -25,7 +25,6 @@ import argonms.character.inventory.InventoryTools;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
-import argonms.character.inventory.Inventory;
 import argonms.character.inventory.InventoryTools.AmmoType;
 import argonms.game.GameClient;
 import argonms.loading.skill.SkillDataLoader;
@@ -40,14 +39,13 @@ import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
 import argonms.tools.Rng;
 import argonms.tools.Timer;
-import argonms.tools.collections.Pair;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
 import java.awt.Point;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -55,9 +53,11 @@ import java.util.Map.Entry;
  * @author GoldenKevin
  */
 public class DealDamageHandler {
+	private enum AttackType { MELEE, RANGED, MAGIC, SUMMON, CHARGE }
+
 	public static void handleMeleeAttack(LittleEndianReader packet, RemoteClient rc) {
-		AttackInfo attack = parseDamage(packet, false);
 		Player p = ((GameClient) rc).getPlayer();
+		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		int attackCount = 1;
 		if (e != null) {
@@ -73,8 +73,8 @@ public class DealDamageHandler {
 
 	//bow/arrows, claw/stars, guns/bullets (projectiles)
 	public static void handleRangedAttack(LittleEndianReader packet, RemoteClient rc) {
-		AttackInfo attack = parseDamage(packet, true);
 		Player p = ((GameClient) rc).getPlayer();
+		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		int attackCount = 1;
 		short useQty;
@@ -95,170 +95,118 @@ public class DealDamageHandler {
 				p.addCooldown(attack.skill, e.getCooltime());
 			}
 		}
-		if (p.isEffectActive(PlayerStatusEffect.SHADOWPARTNER))
+		if (p.isEffectActive(PlayerStatusEffect.SHADOW_PARTNER))
 			useQty *= 2; //freakily enough, shadow partner doubles ALL ranged attacks
 		AmmoType ammoType = AmmoType.getForPlayer(p);
 		if (ammoType == null)
 			return; //TODO: hacking
-		int itemId;
-		if ((ammoType == AmmoType.BOW_ARROW || ammoType == AmmoType.XBOW_ARROW) && p.isEffectActive(PlayerStatusEffect.SOULARROW)) {
-			itemId = 0; //do not use any ammo
-		} else if (ammoType == AmmoType.STAR && p.isEffectActive(PlayerStatusEffect.SHADOW_CLAW)) {
-			//shadow claw requires at least one star (to determine watk)...
-			itemId = -1;
-			InventorySlot slot = null;
-			boolean found = false;
-			for (Entry<Short, InventorySlot> entry : p.getInventory(InventoryType.USE).getAll().entrySet()) {
-				slot = entry.getValue();
-				itemId = slot.getDataId();
-				if (ammoType.canUse(itemId)) {
-					found = true;
+		int itemId = 0;
+		boolean soulArrow = (ammoType == AmmoType.BOW_ARROW || ammoType == AmmoType.XBOW_ARROW) && p.isEffectActive(PlayerStatusEffect.SOUL_ARROW);
+		if (attack.cashAmmoSlot != 0 && !soulArrow) { //soul arrow always shows special effects even if we have a cash ammo.
+			InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
+			if (slot == null)
+				return; //TODO: hacking
+			itemId = slot.getDataId();
+		}
+		if (attack.ammoSlot != 0) {
+			InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
+			if (slot == null || slot.getQuantity() < useQty || !ammoType.canUse(itemId = slot.getDataId())) {
+				return; //TODO: hacking
+			}
+			slot.setQuantity((short) (slot.getQuantity() - useQty));
+			if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(itemId)) {
+				p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
+				rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
+			} else {
+				rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
+			}
+			switch (attack.skill) {
+				case Skills.ARROW_RAIN:
+				case Skills.ARROW_ERUPTION:
+				case Skills.ENERGY_ORB:
+					//these skills show no visible projectile apparently
+					itemId = 0;
 					break;
-				}
 			}
-			if (!found) { //no matching ammo found
-				//TODO: hacking
-				return;
-			}
-		} else {
-			itemId = -1;
-			InventorySlot slot = null;
-			short pos = 0;
-			Inventory inv = p.getInventory(InventoryType.USE);
-			for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
-				slot = entry.getValue();
-				itemId = slot.getDataId();
-				short newQty = (short) (slot.getQuantity() - useQty);
-				if (newQty >= 0 && ammoType.canUse(itemId)) {
-					pos = entry.getKey().shortValue();
-					slot.setQuantity(newQty);
-					if (newQty == 0 && !InventoryTools.isRechargeable(itemId)) {
-						inv.remove(pos);
-						rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
-					} else {
-						rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, slot));
-					}
-					switch (attack.skill) {
-						case Skills.ARROW_RAIN:
-						case Skills.ARROW_ERUPTION:
-						case Skills.ENERGY_ORB:
-							//these skills show no visible projectile apparently
-							itemId = 0;
-							break;
-					}
-					break;
-				}
-			}
-			if (pos == 0) { //no matching ammo found
-				//TODO: hacking
-				return;
-			}
+		} else if (!(ammoType == AmmoType.STAR && p.isEffectActive(PlayerStatusEffect.SHADOW_STARS))
+				&& !soulArrow) {
+			//TODO: hacking
+			return;
 		}
 		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, itemId), p.getPosition(), p);
 		applyAttack(attack, p, attackCount);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
-		AttackInfo attack = parseDamage(packet, false);
 		Player p = ((GameClient) rc).getPlayer();
+		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p.getPosition(), p);
 	}
 
-	private static AttackInfo parseMesoExplosion(LittleEndianReader packet, AttackInfo ret) {
-		if (ret.numAttacked == 0 && ret.numDamage == 0) {
-			packet.skip(10);
-			int bullets = packet.readByte();
-			for (int j = 0; j < bullets; j++) {
-				int mesoid = packet.readInt();
-				packet.skip(1);
-				ret.allDamage.add(new Pair<Integer, List<Integer>>(Integer.valueOf(mesoid), null));
-			}
-			return ret;
-		} else {
-			packet.skip(6);
-		}
-
-		for (int i = 0; i < ret.numAttacked + 1; i++) {
-			int eid = packet.readInt();
-			if (i < ret.numAttacked) {
-				packet.skip(12);
-				int bullets = packet.readByte();
-				List<Integer> allDamageNumbers = new ArrayList<Integer>();
-				for (int j = 0; j < bullets; j++) {
-					int damage = packet.readInt();
-					allDamageNumbers.add(Integer.valueOf(damage));
-				}
-				ret.allDamage.add(new Pair<Integer, List<Integer>>(Integer.valueOf(eid), allDamageNumbers));
-				packet.skip(4);
-			} else {
-				int bullets = packet.readByte();
-				for (int j = 0; j < bullets; j++) {
-					int mesoid = packet.readInt();
-					packet.skip(1);
-					ret.allDamage.add(new Pair<Integer, List<Integer>>(Integer.valueOf(mesoid), null));
-				}
-			}
-		}
-		return ret;
-	}
-
-	private static AttackInfo parseDamage(LittleEndianReader packet, boolean ranged) {
+	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, Player p) {
 		AttackInfo ret = new AttackInfo();
 
-		packet.readByte();
-		ret.setNumAttackedAndDamage(packet.readByte());
-		ret.allDamage = new ArrayList<Pair<Integer, List<Integer>>>();
-		ret.skill = packet.readInt();
-		SkillStats skillStats = SkillDataLoader.getInstance().getSkill(ret.skill);
-		ret.charge = skillStats != null && skillStats.isChargedSkill() ? packet.readInt() : 0;
-
-		/*ret.display = */packet.readByte();
-		ret.stance = packet.readByte();
-
-		if (ret.skill == Skills.MESO_EXPLOSION)
-			return parseMesoExplosion(packet, ret);
-
-		if (ranged) {
-			packet.readByte();
+		if (type != AttackType.SUMMON) {
+			/*portals = */packet.readByte();
+			ret.setNumAttackedAndDamage(packet.readByte() & 0xFF);
+			ret.skill = packet.readInt();
+			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(ret.skill);
+			ret.charge = skillStats != null && skillStats.isChargedSkill() ? packet.readInt() : 0;
+			/*display = */packet.readByte();
+			ret.stance = packet.readByte();
+			/*weaponClass = */packet.readByte();
 			ret.speed = packet.readByte();
-			packet.readByte();
-			byte direction = packet.readByte();
-			packet.skip(7);
-			switch (ret.skill) {
-				case Skills.HURRICANE:
-				case Skills.PIERCING_ARROW:
-				case Skills.RAPID_FIRE:
-					packet.skip(4);
-					ret.stance = direction;
-					break;
-				default:
-					break;
-			}
+			/*int tickCount = */packet.readInt();
 		} else {
-			packet.readByte();
-			ret.speed = packet.readByte();
-			packet.skip(4);
+			/*summonId = */packet.readInt();
+			/*tickCount = */packet.readInt();
+			ret.stance = packet.readByte();
+			ret.numAttacked = packet.readByte();
+			ret.numDamage = 1;
+		}
+		if (type == AttackType.RANGED) {
+			ret.ammoSlot = packet.readShort();
+			ret.cashAmmoSlot = packet.readShort();
+			packet.skip(1); //0x00 = AoE?
+
+			if (p.isEffectActive(PlayerStatusEffect.SHADOW_STARS))
+				ret.ammoItemId = packet.readInt();
 		}
 
+		byte numDamaged = ret.numDamage;
 		for (int i = 0; i < ret.numAttacked; i++) {
-			int eid = packet.readInt();
-			packet.skip(14); // seems to contain some position info
+			int mobEid = packet.readInt();
+			packet.skip(4);
+			/*mobPos = */packet.readPos();
+			/*damagePos = */packet.readPos();
+			if (ret.skill != Skills.MESO_EXPLOSION)
+				/*distance = */packet.readShort();
+			else
+				numDamaged = packet.readByte();
 
-			List<Integer> allDamageNumbers = new ArrayList<Integer>();
-			for (int j = 0; j < ret.numDamage; j++) {
-				int damage = packet.readInt();
-				if (ret.skill == Skills.SNIPE) //setting the most significant bit signifies critical damage...
-					damage += 0x80000000;
-				allDamageNumbers.add(Integer.valueOf(damage));
-			}
-			if (ret.skill != Skills.RAPID_FIRE)
+			int[] allDamageNumbers = new int[numDamaged];
+			for (int j = 0; j < numDamaged; j++)
+				allDamageNumbers[j] = packet.readInt();
+			if (type != AttackType.SUMMON)
 				packet.skip(4);
-			ret.allDamage.add(new Pair<Integer, List<Integer>>(Integer.valueOf(eid), allDamageNumbers));
+			ret.allDamage.put(Integer.valueOf(mobEid), allDamageNumbers);
 		}
+		/*playerPos = */packet.readPos();
+		if (ret.skill == Skills.MESO_EXPLOSION) {
+			byte mesoExplodeCount = packet.readByte();
+			ret.mesoExplosion = new int[mesoExplodeCount];
+			for (int i = 0; i < mesoExplodeCount; i++) {
+				int mesoEid = packet.readInt();
+				/*monstersKilled = */packet.readByte();
+				ret.mesoExplosion[i] = mesoEid;
+			}
+			packet.readShort();
+		}
+
 		return ret;
 	}
 
-	private static void handlePickPocket(Player p, Mob monster, Pair<Integer, List<Integer>> oned) {
+	private static void doPickPocketDrops(Player p, Mob monster, Entry<Integer, int[]> oned) {
 		int delay = 0;
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		double reqdamage = 20000;
@@ -266,9 +214,9 @@ public class DealDamageHandler {
 		final int pEntId = p.getId();
 		final GameMap tdmap = p.getMap();
 
-		for (Integer eachd : oned.right) {
+		for (int eachd : oned.getValue()) {
 			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(4211003)).shouldPerform()) {
-				double perc = eachd.doubleValue() / reqdamage;
+				double perc = (double) eachd / reqdamage;
 
 				int dropAmt = Math.min(Math.max((int) (perc * maxmeso), 1), maxmeso);
 				final Point tdpos = new Point(mobPos.x + Rng.getGenerator().nextInt(100) - 50, mobPos.y);
@@ -307,9 +255,9 @@ public class DealDamageHandler {
 		final GameMap map = player.getMap();
 		if (attack.skill == Skills.MESO_EXPLOSION) {
 			int delay = 0;
-			for (Pair<Integer, List<Integer>> oned : attack.allDamage) {
-				final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, oned.left.intValue());
-				if (drop != null && drop.getDataId() >= 10) {
+			for (int meso : attack.mesoExplosion) {
+				final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
+				if (drop != null) {
 					Timer.getInstance().runAfterDelay(new Runnable() {
 						public void run() {
 							synchronized (drop) {
@@ -323,27 +271,26 @@ public class DealDamageHandler {
 			}
 		}
 
-		for (Pair<Integer, List<Integer>> oned : attack.allDamage) {
+		for (Entry<Integer, int[]> oned : attack.allDamage.entrySet()) {
 			//TODO: Synchronize on the monster for aggro and hp stuffs
-			Mob monster = (Mob) map.getEntityById(EntityType.MONSTER, oned.left.intValue());
+			Mob monster = (Mob) map.getEntityById(EntityType.MONSTER, oned.getKey().intValue());
 
 			if (monster != null) {
 				int totDamageToOneMonster = 0;
-				for (Integer eachd : oned.right)
-					totDamageToOneMonster += eachd.intValue();
+				for (int eachd : oned.getValue())
+					totDamageToOneMonster += eachd;
 				totDamage += totDamageToOneMonster;
 
 				player.checkMonsterAggro(monster);
 
-				if (attack.skill == Skills.ENERGY_DRAIN) { // Energy Drain
-					int addHp;
-					addHp = (int) ((double) totDamage * (double) SkillDataLoader.getInstance().getSkill(Skills.ENERGY_DRAIN).getLevel(player.getSkillLevel(Skills.ENERGY_DRAIN)).getX() / 100.0);
+				if (attack.skill == Skills.ENERGY_DRAIN) {
+					int addHp = (int) ((double) totDamage * (double) SkillDataLoader.getInstance().getSkill(Skills.ENERGY_DRAIN).getLevel(player.getSkillLevel(Skills.ENERGY_DRAIN)).getX() / 100.0);
 					addHp = Math.min(monster.getMaxHp(), Math.min(addHp, player.getCurrentMaxHp() / 2));
 					player.gainHp(addHp);
 				}
 
 				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {
-					switch (attack.skill) {
+					switch (attack.skill) { //TODO: this is probably not an exhaustive list...
 						case 0:
 						case Skills.DOUBLE_STAB:
 						case Skills.SAVAGE_BLOW:
@@ -352,7 +299,7 @@ public class DealDamageHandler {
 						case Skills.CHAKRA:
 						case Skills.SHADOWER_TAUNT:
 						case Skills.BOOMERANG_STEP:
-							handlePickPocket(player, monster, oned);
+							doPickPocketDrops(player, monster, oned);
 							break;
 					}
 				}
@@ -444,26 +391,23 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void writeMesoExplosion(LittleEndianWriter lew, int cid, AttackInfo info, int projectile) {
+	private static void writeMesoExplosion(LittleEndianWriter lew, int cid, AttackInfo info) {
 		lew.writeInt(cid);
 		lew.writeByte(info.getNumAttackedAndDamage());
-		lew.writeByte((byte) 0x1E);
+		lew.writeByte((byte) 0xFF);
 		lew.writeInt(info.skill);
 		lew.writeByte((byte) 0);
 		lew.writeByte(info.stance);
 		lew.writeByte(info.speed);
 		lew.writeByte((byte) 0x0A);
-		lew.writeInt(projectile);
+		lew.writeInt(0);
 
-		for (Pair<Integer, List<Integer>> oned : info.allDamage) {
-			if (oned.right != null) {
-				lew.writeInt(oned.left.intValue());
-				lew.writeByte((byte) 0xFF);
-				lew.writeByte((byte) oned.right.size());
-				for (Integer eachd : oned.right)
-					// highest bit set = crit
-					lew.writeInt(eachd.intValue());
-			}
+		for (Entry<Integer, int[]> oned : info.allDamage.entrySet()) {
+			lew.writeInt(oned.getKey().intValue());
+			lew.writeByte((byte) 0xFF);
+			lew.writeByte((byte) oned.getValue().length);
+			for (int eachd : oned.getValue())
+				lew.writeInt(eachd);
 		}
 	}
 
@@ -482,13 +426,11 @@ public class DealDamageHandler {
 		lew.writeByte((byte) 0x0A);
 		lew.writeInt(projectile);
 
-		for (Pair<Integer, List<Integer>> oned : info.allDamage) {
-			if (oned.right != null) {
-				lew.writeInt(oned.left.intValue());
-				lew.writeByte((byte) 0xFF);
-				for (Integer eachd : oned.right)
-					lew.writeInt(eachd.intValue());
-			}
+		for (Entry<Integer, int[]> oned : info.allDamage.entrySet()) {
+			lew.writeInt(oned.getKey().intValue());
+			lew.writeByte((byte) 0xFF);
+			for (int eachd : oned.getValue())
+				lew.writeInt(eachd);
 		}
 	}
 
@@ -496,7 +438,7 @@ public class DealDamageHandler {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MELEE_ATTACK);
 		if (info.skill == Skills.MESO_EXPLOSION)
-			writeMesoExplosion(lew, cid, info, 0);
+			writeMesoExplosion(lew, cid, info);
 		else
 			writeAttackData(lew, cid, info, 0);
 		return lew.getBytes();
@@ -527,14 +469,17 @@ public class DealDamageHandler {
 	}
 
 	private static class AttackInfo {
-		public int skill, charge;
+		public short ammoSlot, cashAmmoSlot;
+		public int skill, charge, ammoItemId;
 		public byte numAttacked, numDamage;
 		public byte stance;
-		public List<Pair<Integer, List<Integer>>> allDamage;
+		public Map<Integer, int[]> allDamage;
+		public int[] mesoExplosion;
 		public byte speed;
 
 		public AttackInfo() {
 			this.speed = 4;
+			this.allDamage = new HashMap<Integer, int[]>();
 		}
 
 		public PlayerSkillEffectsData getAttackEffect(Player p) {
@@ -547,15 +492,13 @@ public class DealDamageHandler {
 			return skillStats.getLevel(skillLevel);
 		}
 
-		//numAttacked are the 4 bits that are most significant and
-		//numDamage are the 4 bits in that are least significant
-		public void setNumAttackedAndDamage(byte combined) {
-			numAttacked = (byte) ((combined >>> 4) & 0xF);
-			numDamage = (byte) (combined & 0xF);
+		public void setNumAttackedAndDamage(int combined) {
+			numAttacked = (byte) (combined / 0x10); //4 bits that are most significant
+			numDamage = (byte) (combined % 0x10); //4 bits in that are least significant
 		}
 
 		public byte getNumAttackedAndDamage() {
-			return (byte) (numAttacked << 4 | numDamage);
+			return (byte) (numAttacked * 0x10 | numDamage);
 		}
 	}
 }

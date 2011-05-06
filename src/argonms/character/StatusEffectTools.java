@@ -177,7 +177,7 @@ public class StatusEffectTools {
 				break;
 			case DRAGON_ROAR:
 				break;
-			case SHADOW_CLAW:
+			case SHADOW_STARS:
 				break;
 			case INFINITY:
 				break;
@@ -199,7 +199,7 @@ public class StatusEffectTools {
 				break;
 			case MONSTER_RIDING:
 				break;
-			case FINALATTACK:
+			case FINAL_ATTACK:
 				break;
 			case WATK:
 				mod = ((BuffsData) e).getWatk();
@@ -251,7 +251,7 @@ public class StatusEffectTools {
 				break;
 			case BOOSTER:
 				break;
-			case POWERGUARD:
+			case POWER_GUARD:
 				break;
 			case HYPER_BODY_HP:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
@@ -265,7 +265,7 @@ public class StatusEffectTools {
 				break;
 			case SPEED_INFUSION:
 				break;
-			case SOULARROW:
+			case SOUL_ARROW:
 				break;
 			case STUN:
 				break;
@@ -279,22 +279,22 @@ public class StatusEffectTools {
 				break;
 			case SUMMON:
 				break;
-			case WK_CHARGE:
+			case CHARGE:
 				break;
-			case DRAGONBLOOD:
+			case DRAGON_BLOOD:
 				break;
 			case HOLY_SYMBOL:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
-			case MESOUP:
+			case MESO_UP:
 				break;
-			case SHADOWPARTNER:
+			case SHADOW_PARTNER:
 				break;
 			case PICKPOCKET:
 				break;
 			case PUPPET:
 				break;
-			case MESOGUARD:
+			case MESO_GUARD:
 				break;
 			case WEAKEN:
 				break;
@@ -326,7 +326,7 @@ public class StatusEffectTools {
 				break;
 			case DRAGON_ROAR:
 				break;
-			case SHADOW_CLAW:
+			case SHADOW_STARS:
 				break;
 			case INFINITY:
 				break;
@@ -348,7 +348,7 @@ public class StatusEffectTools {
 				break;
 			case MONSTER_RIDING:
 				break;
-			case FINALATTACK:
+			case FINAL_ATTACK:
 				break;
 			case WATK:
 				p.addWatk(-value.getModifier());
@@ -389,7 +389,7 @@ public class StatusEffectTools {
 				break;
 			case BOOSTER:
 				break;
-			case POWERGUARD:
+			case POWER_GUARD:
 				break;
 			case HYPER_BODY_HP:
 				p.recalculateMaxHp((short) 0);
@@ -403,7 +403,7 @@ public class StatusEffectTools {
 				break;
 			case SPEED_INFUSION:
 				break;
-			case SOULARROW:
+			case SOUL_ARROW:
 				break;
 			case STUN:
 				break;
@@ -417,21 +417,21 @@ public class StatusEffectTools {
 				break;
 			case SUMMON:
 				break;
-			case WK_CHARGE:
+			case CHARGE:
 				break;
-			case DRAGONBLOOD:
+			case DRAGON_BLOOD:
 				break;
 			case HOLY_SYMBOL:
 				break;
-			case MESOUP:
+			case MESO_UP:
 				break;
-			case SHADOWPARTNER:
+			case SHADOW_PARTNER:
 				break;
 			case PICKPOCKET:
 				break;
 			case PUPPET:
 				break;
-			case MESOGUARD:
+			case MESO_GUARD:
 				break;
 			case WEAKEN:
 				break;

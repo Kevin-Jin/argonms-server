@@ -595,7 +595,6 @@ public class GameMap {
 
 	public void mesoExplosion(ItemDrop d, Player p) {
 		if (d.getDropType() == ItemDrop.MESOS) {
-			p.gainMesos(d.getDataId(), false);
 			d.explode();
 			destroyEntity(d);
 		}

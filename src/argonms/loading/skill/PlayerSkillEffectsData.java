@@ -99,18 +99,18 @@ public class PlayerSkillEffectsData extends BuffsData {
 					effects.add(PlayerStatusEffect.PICKPOCKET);
 					break;
 				case Skills.MESO_GUARD:
-					effects.add(PlayerStatusEffect.MESOGUARD);
+					effects.add(PlayerStatusEffect.MESO_GUARD);
 					break;
 				case Skills.MESO_UP:
-					effects.add(PlayerStatusEffect.MESOUP);
+					effects.add(PlayerStatusEffect.MESO_UP);
 					break;
 				case Skills.SHADOW_PARTNER:
-					effects.add(PlayerStatusEffect.SHADOWPARTNER);
+					effects.add(PlayerStatusEffect.SHADOW_PARTNER);
 					break;
 				case Skills.BOW_SOUL_ARROW:
 				case Skills.XBOW_SOUL_ARROW:
 				case Skills.MYSTIC_DOOR: // hacked buff icon
-					effects.add(PlayerStatusEffect.SOULARROW);
+					effects.add(PlayerStatusEffect.SOUL_ARROW);
 					break;
 				case Skills.SWORD_FIRE_CHARGE:
 				case Skills.BW_FLAME_CHARGE:
@@ -120,7 +120,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 				case Skills.BW_LIGHTNING_CHARGE:
 				case Skills.SWORD_HOLY_CHARGE:
 				case Skills.BW_DIVINE_CHARGE:
-					effects.add(PlayerStatusEffect.WK_CHARGE);
+					effects.add(PlayerStatusEffect.CHARGE);
 					break;
 				case Skills.CRUSADER_SWORD_BOOSTER:
 				case Skills.AXE_BOOSTER:
@@ -149,7 +149,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 					break;
 				case Skills.FIGHTER_POWER_GUARD:
 				case Skills.PAGE_POWER_GUARD:
-					effects.add(PlayerStatusEffect.POWERGUARD);
+					effects.add(PlayerStatusEffect.POWER_GUARD);
 					break;
 				case Skills.SPEARMAN_HYPER_BODY:
 				case Skills.GM_HYPER_BODY:
@@ -166,7 +166,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 					effects.add(PlayerStatusEffect.MONSTER_RIDING);
 					break;
 				case Skills.DRAGON_BLOOD:
-					effects.add(PlayerStatusEffect.DRAGONBLOOD);
+					effects.add(PlayerStatusEffect.DRAGON_BLOOD);
 					break;
 				case Skills.HERO_MAPLE_WARRIOR:
 				case Skills.PALADIN_MAPLE_WARRIOR:
@@ -201,7 +201,7 @@ public class PlayerSkillEffectsData extends BuffsData {
 					effects.add(PlayerStatusEffect.HOLY_SYMBOL);
 					break;
 				case Skills.SHADOW_STARS:
-					effects.add(PlayerStatusEffect.SHADOW_CLAW);
+					effects.add(PlayerStatusEffect.SHADOW_STARS);
 					break;
 				case Skills.FP_INFINITY:
 				case Skills.IL_INFINITY:
