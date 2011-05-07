@@ -124,7 +124,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					skillStats.put(Integer.valueOf(skillid), stats);
 					break;
 				case ELEM_ATTR:
-					stats.setElemAttr(reader.readNullTerminatedString());
+					stats.setElementalAttribute(reader.readNullTerminatedString());
 					break;
 				case IS_BUFF:
 					stats.setBuff();
@@ -266,9 +266,6 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					stats = new MobSkillStats();
 					skillid = (short) reader.readInt();
 					mobSkillStats.put(Short.valueOf(skillid), stats);
-					break;
-				case ELEM_ATTR:
-					stats.setElemAttr(reader.readNullTerminatedString());
 					break;
 				case IS_BUFF:
 					//wtf? IMPOSSIBLE!

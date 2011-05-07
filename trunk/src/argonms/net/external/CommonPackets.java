@@ -37,6 +37,7 @@ import argonms.character.inventory.Ring;
 import argonms.character.StatusEffectTools;
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.map.MobSkills;
+import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
 import argonms.map.entity.Mist;
@@ -458,8 +459,8 @@ public class CommonPackets {
 			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
-			lew.writeShort(statupdate.getValue().shortValue());
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
 			lew.writeInt(skillId);
 			lew.writeInt(duration);
 		}
@@ -470,7 +471,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeGiveDebuff(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, int duration) {
+	public static byte[] writeGiveDebuff(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, int duration, short delay) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
@@ -479,15 +480,15 @@ public class CommonPackets {
 			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
-			lew.writeShort(statupdate.getValue().shortValue());
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
 			lew.writeShort(skillId);
 			lew.writeShort(skillLevel);
 			lew.writeInt(duration);
 		}
 		lew.writeShort((short) 0);
-		lew.writeShort((short) 900); //delay?
-		lew.writeByte((byte) 1);
+		lew.writeShort(delay);
+		lew.writeByte((byte) 1); //# of times skill was cast
 
 		return lew.getBytes();
 	}
@@ -603,7 +604,7 @@ public class CommonPackets {
 				lew.writeShort((short) 0);
 				lew.writeByte((byte) 0);
 			}
-			lew.writeShort(statupdate.getValue());
+			lew.writeShort(statupdate.getValue().shortValue());
 		}
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
@@ -611,7 +612,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeDebuffMapEffect(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel) {
+	public static byte[] writeDebuffMapEffect(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, short delay) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
@@ -621,14 +622,14 @@ public class CommonPackets {
 			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+		for (Short statupdate : stats.values()) {
 			if (skillId == MobSkills.MIST)
-				lew.writeShort(statupdate.getValue().shortValue());
+				lew.writeShort(statupdate.shortValue());
 			lew.writeShort(skillId);
 			lew.writeShort(skillLevel);
 		}
 		lew.writeShort((short) 0);
-		lew.writeShort((short) 900);//Delay
+		lew.writeShort(delay);
 
 		return lew.getBytes();
 	}
@@ -1308,6 +1309,64 @@ public class CommonPackets {
 		lew.writeShort(ClientSendOps.CONTROL_MONSTER);
 		lew.writeByte((byte) 0);
 		lew.writeInt(monster.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeMonsterBuff(Mob monster, Map<MonsterStatusEffect, Short> stats, short skillId, short skillLevel, short delay) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.APPLY_MONSTER_STATUS_EFFECT);
+		lew.writeInt(monster.getId());
+		int updateMask = 0;
+		for (MonsterStatusEffect key : stats.keySet())
+			updateMask |= key.intValue();
+
+		lew.writeInt(updateMask);
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
+			lew.writeShort(skillId);
+			lew.writeShort(skillLevel);
+			lew.writeShort((short) 0);
+		}
+		lew.writeShort(delay); //delay in ms
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeMonsterDebuff(Mob monster, Map<MonsterStatusEffect, Short> stats, int skillId, short delay) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.APPLY_MONSTER_STATUS_EFFECT);
+		lew.writeInt(monster.getId());
+		int updateMask = 0;
+		for (MonsterStatusEffect key : stats.keySet())
+			updateMask |= key.intValue();
+
+		lew.writeInt(updateMask);
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
+			lew.writeInt(skillId);
+			lew.writeShort((short) 0);
+		}
+		lew.writeShort(delay); //delay in ms
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeMonsterCancelStatusEffect(Mob monster, Set<MonsterStatusEffect> stats) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.CANCEL_MONSTER_STATUS_EFFECT);
+		lew.writeInt(monster.getId());
+		int updateMask = 0;
+		for (MonsterStatusEffect key : stats)
+			updateMask |= key.intValue();
+
+		lew.writeInt(updateMask);
+		lew.writeBool(true);
+
 		return lew.getBytes();
 	}
 

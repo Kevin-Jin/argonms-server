@@ -111,7 +111,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 		stats.setExp(rs.getInt(8));
 		if (rs.getInt(13) != 0)
 			stats.setUndead();
-		stats.setElementAttribute(rs.getString(20));
+		stats.setElementalAttribute(rs.getString(20));
 		stats.setRemoveAfter(rs.getInt(11));
 		stats.setHpTagColor(rs.getByte(18));
 		stats.setHpTagBgColor(rs.getByte(19));

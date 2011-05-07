@@ -18,6 +18,7 @@
 
 package argonms.loading.skill;
 
+import argonms.map.Element;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +27,8 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class SkillStats {
-	private Map<Byte, PlayerSkillEffectsData> levels;
-	private String elemAttr;
+	private final Map<Byte, PlayerSkillEffectsData> levels;
+	private Element elemAttr;
 	private boolean isBuff, isCharged;
 	private int animationTime;
 
@@ -39,8 +40,8 @@ public class SkillStats {
 		levels.put(Byte.valueOf(level), effect);
 	}
 
-	protected void setElemAttr(String attr) {
-		elemAttr = attr;
+	protected void setElementalAttribute(String attr) {
+		elemAttr = Element.valueOf(attr.charAt(0));
 	}
 
 	protected void setBuff() {
@@ -59,7 +60,7 @@ public class SkillStats {
 		return levels.get(Byte.valueOf(level));
 	}
 
-	public String getElemAttr() {
+	public Element getElement() {
 		return elemAttr;
 	}
 

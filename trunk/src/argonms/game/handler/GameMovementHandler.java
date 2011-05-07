@@ -25,6 +25,7 @@ import argonms.loading.skill.MobSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.map.MapEntity;
 import argonms.map.MapEntity.EntityType;
+import argonms.map.MonsterStatusEffectTools;
 import argonms.map.movement.AbsoluteLifeMovement;
 import argonms.map.movement.ChairMovement;
 import argonms.map.movement.ChangeEquipSpecialAwesome;
@@ -105,8 +106,8 @@ public class GameMovementHandler {
 
 		if ((skillId >= 100 && skillId <= 200) && monster.hasSkill(skillId, skillLevel)) {
 			MobSkillEffectsData playerSkillEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
-			if (playerSkillEffect != null && monster.canUseSkill(playerSkillEffect))
-				monster.applyEffect(playerSkillEffect, player, true);
+			if (playerSkillEffect != null && playerSkillEffect.shouldPerform() && monster.canUseSkill(playerSkillEffect))
+				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
 		}
 
 		packet.readByte();

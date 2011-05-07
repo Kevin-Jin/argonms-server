@@ -19,7 +19,6 @@
 package argonms.map.entity;
 
 import argonms.GlobalConstants;
-import argonms.character.DiseaseTools;
 import argonms.character.Party;
 import argonms.character.Player;
 import argonms.character.StatusEffectTools;
@@ -27,34 +26,29 @@ import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.ItemTools;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.game.GameServer;
-import argonms.loading.mob.MobDataLoader;
+import argonms.loading.StatusEffectsData;
 import argonms.loading.mob.MobStats;
 import argonms.loading.mob.Skill;
 import argonms.loading.skill.MobSkillEffectsData;
+import argonms.map.Element;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
 import argonms.map.MapEntity.EntityType;
-import argonms.map.MobSkills;
-import argonms.map.MonsterStatusEffect;
+import argonms.map.MonsterStatusEffectValues;
+import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Rng;
 import argonms.tools.Timer;
 import argonms.tools.collections.LockableMap;
 import argonms.tools.output.LittleEndianByteArrayWriter;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ScheduledFuture;
 
@@ -77,10 +71,12 @@ public class Mob extends MapEntity {
 	private final LockableMap<Player, PlayerDamage> damages;
 	private WeakReference<Player> controller;
 	private boolean aggroAware, hasAggro;
-	private final Set<MonsterStatusEffect> buffs;
-	private final Map<MonsterStatusEffect, ScheduledFuture<?>> skillCancels;
+	private final Map<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
+	private final Map<Short, ScheduledFuture<?>> skillCancels;
+	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
 	private int spawnedSummons;
 	private byte spawnEffect, deathEffect;
+	private byte venomUseCount;
 
 	public Mob(MobStats stats, GameMap map) {
 		this.stats = stats;
@@ -90,8 +86,9 @@ public class Mob extends MapEntity {
 		this.hooks = new ArrayList<MobDeathHook>();
 		this.damages = new LockableMap<Player, PlayerDamage>(new WeakHashMap<Player, PlayerDamage>());
 		this.controller = new WeakReference<Player>(null);
-		this.buffs = EnumSet.noneOf(MonsterStatusEffect.class);
-		this.skillCancels = new EnumMap<MonsterStatusEffect, ScheduledFuture<?>>(MonsterStatusEffect.class);
+		this.activeEffects = new EnumMap<MonsterStatusEffect, MonsterStatusEffectValues>(MonsterStatusEffect.class);
+		this.skillCancels = new HashMap<Short, ScheduledFuture<?>>();
+		this.diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		this.deathEffect = DESTROY_ANIMATION_NORMAL;
 		setStance((byte) 5);
 	}
@@ -198,6 +195,8 @@ public class Mob extends MapEntity {
 	public void died(Player killer) {
 		for (ScheduledFuture<?> cancelTask : skillCancels.values())
 			cancelTask.cancel(true);
+		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+			cancelTask.cancel(true);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
@@ -292,141 +291,96 @@ public class Mob extends MapEntity {
 		return false;
 	}
 
-	private void applyEffect(final MonsterStatusEffect b, int duration) {
-		//TODO: IMPLEMENT
-		synchronized (buffs) {
-			buffs.add(b);
-		}
-		synchronized (skillCancels) {
-			skillCancels.put(b, Timer.getInstance().runAfterDelay(new Runnable() {
-				public void run() {
-					dispelEffect(b);
-				}
-			}, duration));
+	public byte getElementalResistance(Element elem) {
+		return stats.getElementalResistance(elem);
+	}
+
+	public byte getVenomCount() {
+		return venomUseCount;
+	}
+
+	public void addToVenomCount() {
+		venomUseCount++;
+	}
+
+	public void addToActiveEffects(MonsterStatusEffect buff, MonsterStatusEffectValues value) {
+		synchronized (activeEffects) {
+			activeEffects.put(buff, value);
 		}
 	}
 
-	private void dispelEffect(MonsterStatusEffect b) {
-		synchronized (buffs) {
-			buffs.remove(b);
+	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask) {
+		switch (e.getSourceType()) {
+			case MOB_SKILL:
+				synchronized (skillCancels) {
+					skillCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
+				}
+				break;
+			case PLAYER_SKILL:
+				synchronized (diseaseCancels) {
+					diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
+				}
+				break;
 		}
-		synchronized (skillCancels) {
-			skillCancels.remove(b).cancel(true);
+	}
+
+	public Map<MonsterStatusEffect, MonsterStatusEffectValues> getAllEffects() {
+		return activeEffects;
+	}
+
+	public MonsterStatusEffectValues getEffectValue(MonsterStatusEffect buff) {
+		return activeEffects.get(buff);
+	}
+
+	public MonsterStatusEffectValues removeFromActiveEffects(MonsterStatusEffect e) {
+		synchronized (activeEffects) {
+			return activeEffects.remove(e);
 		}
+	}
+
+	public void removeCancelEffectTask(StatusEffectsData e) {
+		ScheduledFuture<?> cancelTask;
+		switch (e.getSourceType()) {
+			case MOB_SKILL:
+				synchronized (skillCancels) {
+					cancelTask = skillCancels.remove(Short.valueOf((short) e.getDataId()));
+				}
+				break;
+			case PLAYER_SKILL:
+				synchronized (diseaseCancels) {
+					cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
+				}
+				break;
+			default:
+				cancelTask = null;
+				break;
+		}
+		if (cancelTask != null)
+			cancelTask.cancel(false);
 	}
 
 	public boolean isEffectActive(MonsterStatusEffect b) {
-		return buffs.contains(b);
+		return activeEffects.containsKey(b);
+	}
+
+	public boolean isSkillActive(short skillid) {
+		return skillCancels.containsKey(Short.valueOf(skillid));
+	}
+
+	public boolean isDebuffActive(int mobSkillId) {
+		return diseaseCancels.containsKey(Integer.valueOf(mobSkillId));
+	}
+
+	public int getSpawnedSummons() {
+		return spawnedSummons;
+	}
+
+	public void addToSpawnedSummons() {
+		spawnedSummons++;
 	}
 
 	public void setSpawnEffect(byte effect) {
 		this.spawnEffect = effect;
-	}
-
-	private Rectangle calculateBoundingBox(Point posFrom, Point lt, Point rb, boolean facingLeft) {
-		int ltx, lty, rbx, rby;
-		if (facingLeft) {
-			ltx = lt.x + posFrom.x;
-			lty = lt.y + posFrom.y;
-			rbx = rb.x + posFrom.x;
-			rby = rb.y + posFrom.y;
-		} else {
-			ltx = rb.x * -1 + posFrom.x;
-			lty = lt.y + posFrom.y;
-			rbx = lt.x * -1 + posFrom.x;
-			rby = rb.y + posFrom.y;
-		}
-		return new Rectangle(ltx, lty, rbx - ltx, rby - lty);
-	}
-
-	public void applyEffect(MobSkillEffectsData playerSkillEffect, Player player, boolean b) {
-		switch (playerSkillEffect.getDataId()) {
-			//TODO: IMPLEMENT HEAL, DISPEL, SEDUCE, BANISH
-			/*case MobSkills.HEAL:
-				heal = true;
-				break;
-			case MobSkills.DISPEL:
-				dispel = true;
-				break;
-			case MobSkills.SEDUCE: // Seduce
-				seduce = true;
-				break;
-			case MobSkills.BANISH: // Banish
-				banish = true;
-				break;*/
-			case MobSkills.MIST: // Mist
-				Rectangle bounds = calculateBoundingBox(getPosition(), playerSkillEffect.getLt(), playerSkillEffect.getRb(), true);
-				Mist mist = new Mist(bounds, this, playerSkillEffect);
-				player.getMap().spawnMist(mist, playerSkillEffect.getX() * 10);
-				break;
-			case MobSkills.PHYSICAL_IMMUNITY:
-				if (playerSkillEffect.shouldPerform() && !isEffectActive(MonsterStatusEffect.MAGIC_IMMUNITY))
-					applyEffect(MonsterStatusEffect.WEAPON_IMMUNITY, playerSkillEffect.getDuration());
-				break;
-			case MobSkills.MAGIC_IMMUNITY:
-				if (playerSkillEffect.shouldPerform() && !isEffectActive(MonsterStatusEffect.WEAPON_IMMUNITY))
-					applyEffect(MonsterStatusEffect.MAGIC_IMMUNITY, playerSkillEffect.getDuration());
-				break;
-			case MobSkills.SUMMON:
-				short limit = playerSkillEffect.getSummonLimit();
-				if (limit == 5000)
-					limit = (short) (30 + player.getMap().getPlayerCount() * 2);
-				if (spawnedSummons < limit) {
-					Random generator = Rng.getGenerator();
-					for (Integer oMobId : playerSkillEffect.getSummons().values()) {
-						int mobId = oMobId.intValue();
-						Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map);
-						int ypos, xpos;
-						xpos = getPosition().x;
-						ypos = getPosition().y;
-						switch (mobId) {
-							case 8500003: // Pap bomb high
-								summon.setFoothold((short)Math.ceil(generator.nextDouble() * 19.0));
-								ypos = -590; //no break?
-							case 8500004: // Pap bomb
-								//Spawn between -500 and 500 from the monsters X position
-								xpos = (int)(getPosition().x + Math.ceil(generator.nextDouble() * 1000.0) - 500);
-								if (ypos != -590)
-									ypos = getPosition().y;
-								break;
-							case 8510100: //Pianus bomb
-								if (Math.ceil(generator.nextDouble() * 5) == 1) {
-									ypos = 78;
-									xpos = (int)(0 + Math.ceil(generator.nextDouble() * 5)) + ((Math.ceil(generator.nextDouble() * 2) == 1) ? 180 : 0);
-								} else
-									xpos = (int)(getPosition().x + Math.ceil(generator.nextDouble() * 1000.0) - 500);
-								break;
-						}
-						// Get spawn coordinates (This fixes monster lock)
-						// TODO get map left and right wall. Any suggestions?
-						switch (map.getDataId()) {
-							case 220080001: //Pap map
-								if (xpos < -890)
-									xpos = (int)(-890 + Math.ceil(generator.nextDouble() * 150));
-								else if (xpos > 230)
-									xpos = (int)(230 - Math.ceil(generator.nextDouble() * 150));
-								break;
-							case 230040420: // Pianus map
-								if (xpos < -239)
-									xpos = (int)(-239 + Math.ceil(generator.nextDouble() * 150));
-								else if (xpos > 371)
-									xpos = (int)(371 - Math.ceil(generator.nextDouble() * 150));
-								break;
-						}
-						summon.setPosition(new Point(xpos, ypos));
-						summon.setSpawnEffect(playerSkillEffect.getSummonEffect());
-						player.getMap().spawnMonster(summon);
-						spawnedSummons++;
-					}
-				}
-				break;
-			default:
-				if (!playerSkillEffect.getEffects().isEmpty())
-					DiseaseTools.applyDebuff(player, (short) playerSkillEffect.getDataId(), playerSkillEffect.getLevel());
-				if (playerSkillEffect.getBuff() != null)
-					applyEffect(playerSkillEffect.getBuff(), playerSkillEffect.getDuration());
-				break;
-		}
 	}
 
 	public boolean wasAttackedBy(Player player) {

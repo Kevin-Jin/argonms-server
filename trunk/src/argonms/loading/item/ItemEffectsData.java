@@ -18,7 +18,7 @@
 
 package argonms.loading.item;
 
-import argonms.loading.BuffsData;
+import argonms.loading.StatusEffectsData.BuffsData;
 import java.util.ArrayList;
 import java.util.List;
 

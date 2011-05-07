@@ -138,17 +138,21 @@ public class Inventory {
 	}
 
 	public boolean hasItem(int itemid, short minQty) {
+		if (minQty < 0)
+			throw new IllegalArgumentException("Domain error. Quantity must be >= 0");
 		short remaining = minQty;
-		if (remaining <= 0)
-			return true;
 		for (InventorySlot i : slots.values()) {
 			if (i.getDataId() == itemid) {
 				remaining -= i.getQuantity();
 				if (remaining <= 0)
-					return true;
+					//true if our purpose was to find it we have enough of the item.
+					//false if our purpose was to find if we have none of the item.
+					return minQty != 0;
 			}
 		}
-		return false;
+		//false if our purpose was to find it we have enough of the item.
+		//true if our purpose was to find if we have none of the item.
+		return minQty == 0;
 	}
 
 	public short getMaxSlots() {

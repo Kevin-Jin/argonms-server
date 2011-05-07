@@ -129,7 +129,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 					stats.setUndead();
 					break;
 				case ELEM_ATTR:
-					stats.setElementAttribute(reader.readNullTerminatedString());
+					stats.setElementalAttribute(reader.readNullTerminatedString());
 					break;
 				case REMOVE_AFTER:
 					stats.setRemoveAfter(reader.readInt());
