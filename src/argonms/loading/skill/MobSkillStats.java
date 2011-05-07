@@ -26,8 +26,7 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class MobSkillStats {
-	private Map<Byte, MobSkillEffectsData> levels;
-	private String elemAttr;
+	private final Map<Byte, MobSkillEffectsData> levels;
 	private int animationTime;
 
 	protected MobSkillStats() {
@@ -38,20 +37,12 @@ public class MobSkillStats {
 		levels.put(Byte.valueOf(level), effect);
 	}
 
-	protected void setElemAttr(String attr) {
-		elemAttr = attr;
-	}
-
 	protected void setDelay(int delay) {
 		animationTime = delay;
 	}
 
 	public MobSkillEffectsData getLevel(byte level) {
 		return levels.get(Byte.valueOf(level));
-	}
-
-	public String getElemAttr() {
-		return elemAttr;
 	}
 
 	public int getDelay() {

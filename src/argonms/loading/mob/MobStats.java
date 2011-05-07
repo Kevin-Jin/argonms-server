@@ -23,9 +23,11 @@ import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventorySlot.ItemType;
 import argonms.character.inventory.InventoryTools;
 import argonms.game.GameServer;
+import argonms.map.Element;
 import argonms.tools.Rng;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,7 @@ public class MobStats {
 	private int pad;
 	private int exp;
 	private boolean undead;
-	private String elemAttr;
+	private final Map<Element, Byte> elemAttr;
 	private int removeAfter;
 	private boolean hideHp;
 	private boolean hideName;
@@ -52,19 +54,20 @@ public class MobStats {
 	private byte hpTagBgColor;
 	private boolean boss;
 	private int sd;
-	private List<Integer> loseItems;
+	private final List<Integer> loseItems;
 	private boolean invincible;
-	private List<Integer> summons;
+	private final List<Integer> summons;
 	private boolean firstAttack;
-	private Map<Byte, Attack> attacks;
-	private List<Skill> skills;
+	private final Map<Byte, Attack> attacks;
+	private final List<Skill> skills;
 	private int buff;
-	private Map<String, Integer> delays;
-	private Map<Integer, Integer> itemDrops;
+	private final Map<String, Integer> delays;
+	private final Map<Integer, Integer> itemDrops;
 	private MesoDropChance mesoDrop;
 
 	protected MobStats(int mobid) {
 		this.mobid = mobid;
+		this.elemAttr = new EnumMap<Element, Byte>(Element.class);
 		this.loseItems = new ArrayList<Integer>();
 		this.summons = new ArrayList<Integer>();
 		this.attacks = new HashMap<Byte, Attack>();
@@ -97,8 +100,11 @@ public class MobStats {
 		this.undead = true;
 	}
 
-	protected void setElementAttribute(String attr) {
-		this.elemAttr = attr;
+	protected void setElementalAttribute(String attr) {
+		for (int i = 0; i < attr.length(); i += 2) {
+			Element e = Element.valueOf(attr.charAt(i));
+			elemAttr.put(e, Byte.valueOf((byte) (attr.charAt(i + 1) - '0')));
+		}
 	}
 
 	protected void setRemoveAfter(int time) {
@@ -197,8 +203,9 @@ public class MobStats {
 		return undead;
 	}
 
-	public String getElementAttribute() {
-		return elemAttr;
+	public byte getElementalResistance(Element elem) {
+		Byte res = elemAttr.get(elem);
+		return res != null ? res.byteValue() : 0;
 	}
 
 	public int getRemoveAfter() {

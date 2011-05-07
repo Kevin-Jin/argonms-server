@@ -20,7 +20,9 @@ package argonms.loading.skill;
 
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.loading.StatusEffectsData;
-import argonms.map.MonsterStatusEffect;
+import argonms.loading.StatusEffectsData.MonsterStatusEffectsData;
+import argonms.map.MobSkills;
+import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.tools.Rng;
 import java.awt.Point;
 import java.util.EnumSet;
@@ -32,7 +34,7 @@ import java.util.TreeMap;
  *
  * @author GoldenKevin
  */
-public class MobSkillEffectsData implements StatusEffectsData {
+public class MobSkillEffectsData implements MonsterStatusEffectsData {
 	private short skillid;
 	private byte level;
 	private short mpCon;
@@ -44,8 +46,8 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	private short prop;
 	private short cooltime;
 	private short maxHpPerc;
-	private MonsterStatusEffect buff;
-	private PlayerStatusEffect disease;
+	private MonsterStatusEffect monsterBuff;
+	private PlayerStatusEffect playerDisease;
 	private short summonLimit;
 	private byte summonEffect;
 	private final Map<Byte, Integer> summons;
@@ -55,44 +57,52 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		this.summons = new TreeMap<Byte, Integer>();
 		this.skillid = skillid;
 		this.level = level;
+		this.prop = 100;
 		switch (skillid) {
 			case 100:
 			case 110:
-				buff = MonsterStatusEffect.WEAPON_ATTACK_UP;
+				monsterBuff = MonsterStatusEffect.WEAPON_ATTACK_UP;
 				break;
 			case 101:
 			case 111:
-				buff = MonsterStatusEffect.MAGIC_ATTACK_UP;
+				monsterBuff = MonsterStatusEffect.MAGIC_ATTACK_UP;
 				break;
 			case 102:
 			case 112:
-				buff = MonsterStatusEffect.WEAPON_DEFENSE_UP;
+				monsterBuff = MonsterStatusEffect.WEAPON_DEFENSE_UP;
 				break;
 			case 103:
 			case 113:
-				buff = MonsterStatusEffect.MAGIC_DEFENSE_UP;
+				monsterBuff = MonsterStatusEffect.MAGIC_DEFENSE_UP;
 				break;
 
 			case 120:
-				disease = PlayerStatusEffect.SEAL;
+				playerDisease = PlayerStatusEffect.SEAL;
 				break;
 			case 121:
-				disease = PlayerStatusEffect.DARKNESS;
+				playerDisease = PlayerStatusEffect.DARKNESS;
 				break;
 			case 122:
-				disease = PlayerStatusEffect.WEAKEN;
+				playerDisease = PlayerStatusEffect.WEAKEN;
 				break;
 			case 123:
-				disease = PlayerStatusEffect.STUN;
+				playerDisease = PlayerStatusEffect.STUN;
 				break;
 			case 124:
-				disease = PlayerStatusEffect.CURSE;
+				playerDisease = PlayerStatusEffect.CURSE;
 				break;
 			case 125:
-				disease = PlayerStatusEffect.POISON;
+				playerDisease = PlayerStatusEffect.POISON;
 				break;
 			case 126:
-				disease = PlayerStatusEffect.SLOW;
+				playerDisease = PlayerStatusEffect.SLOW;
+				break;
+
+			case MobSkills.PHYSICAL_IMMUNITY:
+				monsterBuff = MonsterStatusEffect.WEAPON_IMMUNITY;
+				break;
+			case MobSkills.MAGIC_IMMUNITY:
+				monsterBuff = MonsterStatusEffect.MAGIC_IMMUNITY;
 				break;
 		}
 	}
@@ -205,8 +215,8 @@ public class MobSkillEffectsData implements StatusEffectsData {
 		return level;
 	}
 
-	public MonsterStatusEffect getBuff() {
-		return buff;
+	public MonsterStatusEffect getMonsterEffect() {
+		return monsterBuff;
 	}
 
 	public EffectSource getSourceType() {
@@ -214,8 +224,8 @@ public class MobSkillEffectsData implements StatusEffectsData {
 	}
 
 	public Set<PlayerStatusEffect> getEffects() {
-		if (disease != null)
-			return EnumSet.of(disease);
+		if (playerDisease != null)
+			return EnumSet.of(playerDisease);
 		return EnumSet.noneOf(PlayerStatusEffect.class);
 	}
 }

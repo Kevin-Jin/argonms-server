@@ -21,8 +21,8 @@ package argonms.character;
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.Skills;
-import argonms.loading.BuffsData;
 import argonms.loading.StatusEffectsData;
+import argonms.loading.StatusEffectsData.BuffsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.net.external.CommonPackets;
 import java.util.EnumMap;
@@ -58,7 +58,7 @@ public class StatusEffectTools {
 			case ITEM:
 				return CommonPackets.writeUseItem(p, updatedStats, e.getDataId(), e.getDuration());
 			case MOB_SKILL:
-				return CommonPackets.writeGiveDebuff(p, updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration());
+				return CommonPackets.writeGiveDebuff(p, updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
 		}
 		return null;
 	}
@@ -84,7 +84,7 @@ public class StatusEffectTools {
 			case PLAYER_SKILL:
 				return CommonPackets.writeBuffMapEffect(p, updatedStats);
 			case MOB_SKILL:
-				return CommonPackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel());
+				return CommonPackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
 		}
 		return null;
 	}

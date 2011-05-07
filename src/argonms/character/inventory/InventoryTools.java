@@ -38,42 +38,67 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class InventoryTools {
-	public enum AmmoType {
-		BOW_ARROW(2060), XBOW_ARROW(2061), STAR(2070), BULLET(2330);
+	public enum WeaponClass {
+		ONE_HANDED_MELEE(1),
+		SPEAR_POLEARM	(2),
+		BOW				(3),
+		CROSSBOW		(4),
+		TWO_HANDED_MELEE(5),
+		WAND_STAFF		(6),
+		CLAW			(7),
+		KNUCKLE			(8),
+		GUN				(9);
 
-		private final int ammoPrefix;
+		private static final Map<Byte, WeaponClass> lookup;
 
-		private AmmoType(int ammoPrefix) {
-			this.ammoPrefix = ammoPrefix;
+		//initialize reverse lookup
+		static {
+			lookup = new HashMap<Byte, WeaponClass>(values().length);
+			for (WeaponClass type : values())
+				lookup.put(Byte.valueOf(type.byteValue()), type);
 		}
 
-		public boolean canUse(int itemId) {
-			return ((itemId / 1000) == ammoPrefix);
+		private final byte value;
+
+		private WeaponClass(int value) {
+			this.value = (byte) value;
 		}
 
-		public static AmmoType getForPlayer(Player p) {
-			AmmoType ammoType;
+		public byte byteValue() {
+			return value;
+		}
+
+		public static WeaponClass valueOf(byte value) {
+			return lookup.get(Byte.valueOf(value));
+		}
+
+		public static WeaponClass getForPlayer(Player p) {
+			WeaponClass wClass;
 			InventorySlot weapon = p.getInventory(InventoryType.EQUIPPED).get((short) -11);
 			if (weapon == null)
 				return null;
-			switch (InventoryTools.getWeaponType(weapon.getDataId())) {
-				case BOW:
-					ammoType = AmmoType.BOW_ARROW;
-					break;
-				case CROSSBOW:
-					ammoType = AmmoType.XBOW_ARROW;
-					break;
-				case CLAW:
-					ammoType = AmmoType.STAR;
-					break;
-				case GUN:
-					ammoType = AmmoType.BULLET;
-					break;
-				default:
-					ammoType = null;
-					break;
-			}
-			return ammoType;
+			int itemId = weapon.getDataId();
+			if (itemId >= 1300000 && itemId < 1340000)
+				wClass = WeaponClass.ONE_HANDED_MELEE;
+			else if (itemId >= 1370000 && itemId < 1390000)
+				wClass = WeaponClass.WAND_STAFF;
+			else if (itemId >= 1400000 && itemId < 1430000)
+				wClass = WeaponClass.TWO_HANDED_MELEE;
+			else if (itemId >= 1430000 && itemId < 1450000)
+				wClass = WeaponClass.SPEAR_POLEARM;
+			else if (itemId >= 1450000 && itemId < 1460000)
+				wClass = WeaponClass.BOW;
+			else if (itemId >= 1460000 && itemId < 1470000)
+				wClass = WeaponClass.CROSSBOW;
+			else if (itemId >= 1470000 && itemId < 1480000)
+				wClass = WeaponClass.CLAW;
+			else if (itemId >= 1480000 && itemId < 1490000)
+				wClass = WeaponClass.KNUCKLE;
+			else if (itemId >= 1490000 && itemId < 1500000)
+				wClass = WeaponClass.GUN;
+			else
+				wClass = null;
+			return wClass;
 		}
 	}
 
@@ -376,9 +401,17 @@ public class InventoryTools {
 
 	public static boolean hasItem(Player p, int itemId, short quantity) {
 		InventoryType type = getCategory(itemId);
-		return (p.getInventory(type).hasItem(itemId, quantity)
-				|| type == InventoryType.EQUIP
-				&& p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity));
+		if (quantity > 0) {
+			return (p.getInventory(type).hasItem(itemId, quantity)
+					|| (type == InventoryType.EQUIP
+					&& p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity)));
+		} else if (quantity == 0) {
+			return (p.getInventory(type).hasItem(itemId, quantity)
+					&& (type != InventoryType.EQUIP
+					|| p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity)));
+		} else {
+			throw new IllegalArgumentException("Domain error. Quantity must be >= 0");
+		}
 	}
 
 	public static Equip getCleanEquip(int itemId) {

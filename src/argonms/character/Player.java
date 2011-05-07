@@ -120,7 +120,7 @@ public class Player extends MapEntity {
 	private final Map<PlayerStatusEffect, PlayerStatusEffectValues> activeEffects;
 	private final Map<Integer, ScheduledFuture<?>> skillCancels;
 	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
-	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
+	private final Map<Short, ScheduledFuture<?>> diseaseCancels;
 
 	private final LockableList<MapEntity> visibleEntities;
 	private final List<Mob> controllingMobs;
@@ -142,7 +142,7 @@ public class Player extends MapEntity {
 		activeEffects = new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class);
 		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
-		diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
+		diseaseCancels = new HashMap<Short, ScheduledFuture<?>>();
 		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
 		questStatuses = new HashMap<Short, QuestEntry>();
@@ -1490,7 +1490,7 @@ public class Player extends MapEntity {
 				break;
 			case MOB_SKILL:
 				synchronized (diseaseCancels) {
-					diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
+					diseaseCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
 				}
 				break;
 		}
@@ -1525,7 +1525,7 @@ public class Player extends MapEntity {
 				break;
 			case MOB_SKILL:
 				synchronized (diseaseCancels) {
-					cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
+					cancelTask = diseaseCancels.remove(Short.valueOf((short) e.getDataId()));
 				}
 				break;
 			default:
@@ -1548,8 +1548,8 @@ public class Player extends MapEntity {
 		return itemEffectCancels.containsKey(Integer.valueOf(itemid));
 	}
 
-	public boolean isDebuffActive(int mobSkillId) {
-		return diseaseCancels.containsKey(Integer.valueOf(mobSkillId));
+	public boolean isDebuffActive(short mobSkillId) {
+		return diseaseCancels.containsKey(Short.valueOf(mobSkillId));
 	}
 
 	public int getItemEffect() {

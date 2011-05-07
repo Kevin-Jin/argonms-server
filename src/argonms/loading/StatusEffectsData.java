@@ -21,6 +21,8 @@ package argonms.loading;
 import java.util.Set;
 
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
+import java.util.EnumSet;
 
 /**
  *
@@ -35,4 +37,158 @@ public interface StatusEffectsData {
 	public int hashCode();
 	public byte getLevel();
 	public int getDuration();
+
+	public abstract class BuffsData implements StatusEffectsData {
+		private int duration;
+		private short watk;
+		private short wdef;
+		private short matk;
+		private short mdef;
+		private short acc;
+		private short avoid;
+		private short hands;
+		private short speed;
+		private short jump;
+		private int morph;
+		private int sourceid;
+		protected Set<PlayerStatusEffect> effects;
+
+		public BuffsData(int sourceid) {
+			this.sourceid = sourceid;
+			this.effects = EnumSet.noneOf(PlayerStatusEffect.class);
+		}
+
+		public void setDuration(int time) {
+			if (time != 0) //the only buff with time of 0 is HIDE as far as I know.
+				this.duration = time;
+		}
+
+		public void setWatk(short pad) {
+			if (pad != 0) {
+				effects.add(PlayerStatusEffect.WATK);
+				this.watk = pad;
+			}
+		}
+
+		public void setWdef(short pdd) {
+			if (pdd != 0) {
+				effects.add(PlayerStatusEffect.WDEF);
+				this.wdef = pdd;
+			}
+		}
+
+		public void setMatk(short mad) {
+			if (mad != 0) {
+				effects.add(PlayerStatusEffect.MATK);
+				this.matk = mad;
+			}
+		}
+
+		public void setMdef(short mdd) {
+			if (mdd != 0) {
+				effects.add(PlayerStatusEffect.MDEF);
+				this.mdef = mdd;
+			}
+		}
+
+		public void setAcc(short acc) {
+			if (acc != 0) {
+				effects.add(PlayerStatusEffect.ACC);
+				this.acc = acc;
+			}
+		}
+
+		public void setAvoid(short eva) {
+			if (eva != 0) {
+				effects.add(PlayerStatusEffect.AVOID);
+				this.avoid = eva;
+			}
+		}
+
+		public void setHands(short hands) {
+			if (hands != 0) {
+				effects.add(PlayerStatusEffect.HANDS);
+				this.hands = hands;
+			}
+		}
+
+		public void setSpeed(short speed) {
+			if (speed != 0) {
+				effects.add(PlayerStatusEffect.SPEED);
+				this.speed = speed;
+			}
+		}
+
+		public void setJump(short jump) {
+			if (jump != 0) {
+				effects.add(PlayerStatusEffect.JUMP);
+				this.jump = jump;
+			}
+		}
+
+		public void setMorph(int id) {
+			if (id != 0) {
+				effects.add(PlayerStatusEffect.MORPH);
+				this.morph = id;
+			}
+		}
+
+		public int getDuration() {
+			return duration;
+		}
+
+		public short getWatk() {
+			return watk;
+		}
+
+		public short getWdef() {
+			return wdef;
+		}
+
+		public short getMatk() {
+			return matk;
+		}
+
+		public short getMdef() {
+			return mdef;
+		}
+
+		public short getAcc() {
+			return acc;
+		}
+
+		public short getAvoid() {
+			return avoid;
+		}
+
+		public short getHands() {
+			return hands;
+		}
+
+		public short getSpeed() {
+			return speed;
+		}
+
+		public short getJump() {
+			return jump;
+		}
+
+		public int getMorph() {
+			return morph;
+		}
+
+		public int getDataId() {
+			return sourceid;
+		}
+
+		public Set<PlayerStatusEffect> getEffects() {
+			return effects;
+		}
+	}
+
+	public interface MonsterStatusEffectsData extends StatusEffectsData {
+		public MonsterStatusEffect getMonsterEffect();
+		public int getX();
+		public int getY();
+	}
 }

@@ -58,7 +58,7 @@ public class GameBuffHandler {
 			Point summonPos = packet.readPos();
 			//TODO: summon skills
 		}
-		SkillTools.useBuffSkill(p, skillId, skillLevel);
+		SkillTools.useCastSkill(p, skillId, skillLevel);
 	}
 
 	public static void handleUseItem(LittleEndianReader packet, RemoteClient rc) {

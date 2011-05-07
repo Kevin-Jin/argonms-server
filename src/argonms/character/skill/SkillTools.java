@@ -25,8 +25,8 @@ import argonms.character.inventory.Inventory;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
-import argonms.character.inventory.InventoryTools.AmmoType;
 import argonms.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.character.inventory.InventoryTools.WeaponClass;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.net.external.ClientSession;
@@ -94,9 +94,24 @@ public class SkillTools {
 		if (quantity == 0)
 			quantity = e.getBulletCount();
 		if (quantity != 0) { //buff skill uses bullets
-			AmmoType ammoType = AmmoType.getForPlayer(p);
-			if (ammoType == null)
-				return; //TODO: hacking
+			int ammoPrefix;
+			switch (WeaponClass.getForPlayer(p)) {
+				case BOW:
+					ammoPrefix = 2060;
+					break;
+				case CROSSBOW:
+					ammoPrefix = 2061;
+					break;
+				case CLAW:
+					ammoPrefix = 2070;
+					break;
+				case GUN:
+					ammoPrefix = 2330;
+					break;
+				default:
+					//TODO: hacking
+					return;
+			}
 			InventorySlot slot;
 
 			//unlike attack skills, buff skills that use bullets can be cast
@@ -110,7 +125,7 @@ public class SkillTools {
 			for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
 				slot = entry.getValue();
 				itemId = slot.getDataId();
-				if (ammoType.canUse(itemId)) {
+				if ((itemId / 1000) == ammoPrefix) {
 					Short amount = canUse.get(Integer.valueOf(itemId));
 					if (amount == null)
 						amount = Short.valueOf(slot.getQuantity());
@@ -146,15 +161,17 @@ public class SkillTools {
 	 * @param skillId the identifier of the skill to use
 	 * @param skillLevel the amount of skill points the Player has in the skill
 	 */
-	public static void useBuffSkill(final Player p, final int skillId, final byte skillLevel) {
+	public static void useCastSkill(final Player p, final int skillId, final byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(SkillTools.skillCastCosts(p, e), true));
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e);
-		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
-			public void run() {
-				cancelBuffSkill(p, skillId, skillLevel);
-			}
-		}, e.getDuration()));
+		if (e.getDuration() > 0) {
+			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+				public void run() {
+					cancelBuffSkill(p, skillId, skillLevel);
+				}
+			}, e.getDuration()));
+		}
 	}
 
 	/**
@@ -189,7 +206,7 @@ public class SkillTools {
 	public static boolean useBuffSkill(Player p, int skillId) {
 		byte skillLevel = p.getSkillLevel(skillId);
 		if (skillLevel != 0) {
-			useBuffSkill(p, skillId, skillLevel);
+			useCastSkill(p, skillId, skillLevel);
 			return true;
 		}
 		return false;
