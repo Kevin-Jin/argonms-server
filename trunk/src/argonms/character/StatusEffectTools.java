@@ -20,7 +20,6 @@ package argonms.character;
 
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.character.skill.Skills;
 import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.BuffsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
@@ -54,27 +53,17 @@ public class StatusEffectTools {
 	private static byte[] getFirstPersonCastEffect(Player p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return CommonPackets.writeUseSkill(p, updatedStats, e.getDataId(), e.getDuration());
+				return CommonPackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
 			case ITEM:
-				return CommonPackets.writeUseItem(p, updatedStats, e.getDataId(), e.getDuration());
+				return CommonPackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());
 			case MOB_SKILL:
-				return CommonPackets.writeGiveDebuff(p, updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
+				return CommonPackets.writeGiveDebuff(updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
 		}
 		return null;
 	}
 
-	//TODO: IMPLEMENT (fully)
+	//TODO: IMPLEMENT
 	private static byte[] getThirdPersonCastVisualEffect(Player p, StatusEffectsData e) {
-		switch (e.getSourceType()) {
-			case PLAYER_SKILL:
-				switch (e.getDataId()) {
-					case Skills.FP_MP_EATER:
-					case Skills.IL_MP_EATER:
-					case Skills.CLERIC_MP_EATER:
-						return CommonPackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), (byte) 3);
-				}
-				break;
-		}
 		return null;
 	}
 
@@ -133,13 +122,17 @@ public class StatusEffectTools {
 			p.getMap().sendToAll(effect, p);
 	}
 
-	public static void dispelEffectsAndShowVisuals(Player p, StatusEffectsData e) {
+	public static void dispelEffects(Player p, StatusEffectsData e) {
 		p.removeCancelEffectTask(e);
 		for (PlayerStatusEffect buff : e.getEffects()) {
 			PlayerStatusEffectValues v = p.removeFromActiveEffects(buff);
 			if (v != null)
 				dispelEffect(p, buff, v);
 		}
+	}
+
+	public static void dispelEffectsAndShowVisuals(Player p, StatusEffectsData e) {
+		dispelEffects(p, e);
 		byte[] effect = getFirstPersonDispelVisualEffect(p);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
@@ -193,7 +186,7 @@ public class StatusEffectTools {
 				break;
 			case GHOST_MORPH:
 				break;
-			case BERSERK_FURY:
+			case ENERGY_CHARGE:
 				break;
 			case DIVINE_BODY:
 				break;
@@ -342,7 +335,7 @@ public class StatusEffectTools {
 				break;
 			case GHOST_MORPH:
 				break;
-			case BERSERK_FURY:
+			case ENERGY_CHARGE:
 				break;
 			case DIVINE_BODY:
 				break;

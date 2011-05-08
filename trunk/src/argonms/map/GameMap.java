@@ -581,7 +581,7 @@ public class GameMap {
 						slot = inv.get(pos);
 						p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 					}
-					p.gainedItem(itemid);
+					p.itemCountChanged(itemid);
 				} else {
 					ItemTools.useItem(p, itemid);
 				}

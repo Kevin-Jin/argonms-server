@@ -735,6 +735,37 @@
 	* Fixed attacking when shadow stars is active.
 	* Fixed cooldown saving in Player giving errors.
 
+2011-05-07  GoldenKevin  (revision 33)
+
+	* Merged BuffsData file into StatusEffectsData, while preserving the
+	BuffsData class itself as an inner class for better organization.
+	* Made some progress with mob status effects (player skills that give mobs
+	debuffs, and mob skills that give the mob buffs). Still far from complete.
+	* Renamed SkillTools.useBuffSkill to useCastSkill and readded duration check
+	because not all skills that pass through GameBuffHandler.handleUseSkill is a
+	buff (e.g. heal).
+	* Cleaned up DealDamageHandler. Removed AmmoType enum and replaced it with a
+	WeaponClass enum to match with the packet. Had to remove some ammo checks,
+	but it is better designed and is less redundant (use info that client gave).
+	* Removed unnecessary things from mob skill stats.
+
+2011-05-08  GoldenKevin  (revision 34)
+
+	* Fixed Roger's Apple giving the completion message at the wrong time.
+	* Support for the various flavors of MP Eater.
+	* Support for magic attacks. Much easier than I anticipated.
+	* Support for !skill command to set a skill level to 0 (remove the skill).
+	* Support for energy charge. It works for all weapons and jobs, so if
+	somebody ever adds in a rebirth system, you better consider that.
+	* DealDamageHandler now reports the correct mastery level of a player when
+	sending attack packets to the map.
+	* Supposedly added support for summon attacks, but I have no idea if it
+	works since I didn't even implement summons yet. =P Nonetheless, that should
+	make DealDamageHandler *nearly* feature complete.
+	* Fixed stars/bullets being removed from inventory when exhausted. Stars
+	show properly to other players on map.
+	* Fixed MCDB loaded skills and quests.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -200,7 +200,8 @@ public class Mob extends MapEntity {
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
-			map.sendToAll(CommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
+			killer.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3));
+			map.sendToAll(CommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) 3), killer);
 		}
 		Player highestDamage = giveExp(killer);
 		for (MobDeathHook hook : hooks)
@@ -274,6 +275,10 @@ public class Mob extends MapEntity {
 			remHp = 0;
 			deathEffect = DESTROY_ANIMATION_EXPLODE;
 		}
+	}
+
+	public void loseMp(int loss) {
+		this.remMp -= loss;
 	}
 
 	public List<Skill> getSkills() {

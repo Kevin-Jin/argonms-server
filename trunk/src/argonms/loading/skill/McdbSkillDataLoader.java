@@ -171,7 +171,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			PlayerSkillEffectsData effect = new PlayerSkillEffectsData(skillid, level);
 			effect.setMpConsume(rs.getShort(6));
 			effect.setHpConsume(rs.getShort(7));
-			effect.setDuration(rs.getInt(5));
+			effect.setDuration(rs.getInt(5) * 1000);
 			effect.setX(rs.getInt(13));
 			effect.setY(rs.getInt(14));
 			effect.setDamage(rs.getShort(8));
@@ -201,12 +201,12 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setMoneyConsume(rs.getShort(12));
 			effect.setMorph(rs.getInt(26));
 			stats.addLevel(level, effect);
-		} while (rs.next() && rs.getInt(2) == skillid);
+		} while (rs.next() && rs.getInt(1) == skillid);
 		return skillid;
 	}
 
 	private short doMobWork(ResultSet rs, MobSkillStats stats, Connection con) throws SQLException {
-		short skillid = rs.getShort(2);
+		short skillid = rs.getShort(1);
 		//there's probably another set of buffs and charged for mob skills...
 		do {
 			byte level = rs.getByte(2);
@@ -232,7 +232,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 			effect.setLimit(rs.getShort(15));
 			effect.setSummonEffect(rs.getByte(16));
 			stats.addLevel(level, effect);
-		} while (rs.next() && rs.getInt(2) == skillid);
+		} while (rs.next() && rs.getShort(1) == skillid);
 		return skillid;
 	}
 

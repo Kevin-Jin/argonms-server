@@ -69,7 +69,7 @@ public class SkillTools {
 			ClientSession ses = p.getClient().getSession();
 			InventoryType type = InventoryTools.getCategory(itemId);
 			Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
-			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, quantity);
+			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemId, quantity);
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
@@ -79,6 +79,7 @@ public class SkillTools {
 				pos = s.shortValue();
 				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 			}
+			p.itemCountChanged(itemId);
 		}
 		if (e.getDuration() > 0)
 			buffSpecificCosts(p, e);
@@ -150,6 +151,7 @@ public class SkillTools {
 					pos = s.shortValue();
 					ses.send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
 				}
+				p.itemCountChanged(removeItemId);
 			}
 		}
 	}

@@ -57,26 +57,48 @@ public abstract class PlayerScriptInteraction {
 
 	public boolean giveItem(int itemid, short quantity) {
 		InventoryType type = InventoryTools.getCategory(itemid);
-		Inventory inv = getClient().getPlayer().getInventory(type);
+		Inventory inv = client.getPlayer().getInventory(type);
 		if (InventoryTools.canFitEntirely(inv, itemid, quantity)) {
-			ClientSession ses = getClient().getSession();
+			ClientSession ses = client.getSession();
 			UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemid, quantity);
 			short pos;
 			InventorySlot slot;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				//sending false for fromDrop crashes the game for some reason...
 				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				//sending false for fromDrop crashes the game for some reason...
 				ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 			}
 			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, quantity));
-			client.getPlayer().gainedItem(itemid);
+			client.getPlayer().itemCountChanged(itemid);
+			return true;
+		}
+		return false;
+	}
+
+	public boolean takeItem(int itemid, short quantity) {
+		if (InventoryTools.hasItem(client.getPlayer(), itemid, quantity)) {
+			InventoryType type = InventoryTools.getCategory(itemid);
+			Inventory inv = client.getPlayer().getInventory(type);
+			ClientSession ses = client.getSession();
+			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemid, quantity);
+			short pos;
+			InventorySlot slot;
+			for (Short s : changedSlots.modifiedSlots) {
+				pos = s.shortValue();
+				slot = inv.get(pos);
+				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+			}
+			for (Short s : changedSlots.addedOrRemovedSlots) {
+				pos = s.shortValue();
+				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
+			}
+			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, -quantity));
+			client.getPlayer().itemCountChanged(itemid);
 			return true;
 		}
 		return false;

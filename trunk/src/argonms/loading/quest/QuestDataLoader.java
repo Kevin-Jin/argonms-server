@@ -77,7 +77,9 @@ public abstract class QuestDataLoader {
 		QuestChecks qc = startReqs.get(Short.valueOf(questId));
 		if (qc != null)
 			return qc.passesRequirements(p);
-		return false;
+		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements
+		//hope that questId is a real quest because we can't check if it is.
+		return true;
 	}
 
 	public void startedQuest(Player p, short questId) {
@@ -90,14 +92,16 @@ public abstract class QuestDataLoader {
 		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
 		if (qc != null)
 			return qc.passesRequirements(p);
-		return false;
+		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements
+		//hope that questId is a real quest because we can't check if it is.
+		return true;
 	}
 
 	public short finishedQuest(Player p, short questId, int selection) {
 		QuestRewards qr = completeRewards.get(Short.valueOf(questId));
 		if (qr != null)
 			return qr.giveRewards(p, selection);
-		return -1;
+		return 0;
 	}
 
 	public QuestChecks getCompleteReqs(short questId) {

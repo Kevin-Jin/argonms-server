@@ -18,7 +18,6 @@
 
 package argonms.map;
 
-import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.EffectSource;
 import argonms.loading.StatusEffectsData.MonsterStatusEffectsData;
 

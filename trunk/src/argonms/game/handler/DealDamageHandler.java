@@ -19,6 +19,8 @@
 package argonms.game.handler;
 
 import argonms.character.Player;
+import argonms.character.PlayerJob;
+import argonms.character.StatusEffectTools;
 import argonms.character.inventory.Inventory.InventoryType;
 import argonms.character.inventory.InventorySlot;
 import argonms.character.inventory.InventoryTools;
@@ -46,6 +48,7 @@ import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
 import java.awt.Point;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -69,7 +72,7 @@ public class DealDamageHandler {
 				p.addCooldown(attack.skill, e.getCooltime());
 			}
 		}
-		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack), p.getPosition(), p);
+		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
 		applyAttack(attack, p, attackCount);
 	}
 
@@ -121,6 +124,7 @@ public class DealDamageHandler {
 				InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
 				if (slot == null || slot.getQuantity() < useQty)
 					return; //TODO: hacking
+				itemId = slot.getDataId();
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
 				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(itemId)) {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
@@ -136,16 +140,51 @@ public class DealDamageHandler {
 						itemId = 0;
 						break;
 				}
+			} else if (shadowStars) {
+				itemId = attack.ammoItemId;
 			}
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, itemId), p.getPosition(), p);
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, itemId, getMasteryLevel(p)), p.getPosition(), p);
 		applyAttack(attack, p, attackCount);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
+		PlayerSkillEffectsData e = attack.getAttackEffect(p);
+		int attackCount = 1;
+		if (e != null) {
+			attackCount = e.getAttackCount();
+			if (e.getCooltime() > 0) {
+				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
+				p.addCooldown(attack.skill, e.getCooltime());
+			}
+		}
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p.getPosition(), p);
+		applyAttack(attack, p, attackCount);
+	}
+
+	public static void handleEnergyChargeAttack(LittleEndianReader packet, RemoteClient rc) {
+		Player p = ((GameClient) rc).getPlayer();
+		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
+		PlayerSkillEffectsData e = attack.getAttackEffect(p);
+		int attackCount = 1;
+		if (e != null) {
+			attackCount = e.getAttackCount();
+			if (e.getCooltime() > 0) {
+				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
+				p.addCooldown(attack.skill, e.getCooltime());
+			}
+		}
+		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
+		applyAttack(attack, p, attackCount);
+	}
+
+	public static void handleSummonAttack(LittleEndianReader packet, RemoteClient rc) {
+		Player p = ((GameClient) rc).getPlayer();
+		AttackInfo attack = parseDamage(packet, AttackType.SUMMON, p);
+		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack), p.getPosition(), p);
+		applyAttack(attack, p, 1);
 	}
 
 	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, Player p) {
@@ -163,7 +202,7 @@ public class DealDamageHandler {
 			ret.speed = packet.readByte();
 			/*int tickCount = */packet.readInt();
 		} else {
-			/*summonId = */packet.readInt();
+			ret.summonId = packet.readInt();
 			/*tickCount = */packet.readInt();
 			ret.stance = packet.readByte();
 			ret.numAttacked = packet.readByte();
@@ -239,21 +278,19 @@ public class DealDamageHandler {
 	}
 
 	private static void giveMonsterDiseasesFromActiveBuffs(Player player, Mob monster) {
-		PlayerStatusEffectValues v = player.getEffectValue(PlayerStatusEffect.BLIND);
+		PlayerStatusEffectValues v;
 		PlayerSkillEffectsData e;
-		if (v != null) {
+		if ((v = player.getEffectValue(PlayerStatusEffect.BLIND)) != null) {
 			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(player.getSkillLevel(v.getLevelWhenCast()));
 			if (e.shouldPerform())
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
-		v = player.getEffectValue(PlayerStatusEffect.HAMSTRING);
-		if (v != null) {
+		if ((v = player.getEffectValue(PlayerStatusEffect.HAMSTRING)) != null) {
 			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(player.getSkillLevel(v.getLevelWhenCast()));
 			if (e.shouldPerform())
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
-		v = player.getEffectValue(PlayerStatusEffect.CHARGE);
-		if (v != null) {
+		if ((v = player.getEffectValue(PlayerStatusEffect.CHARGE)) != null) {
 			switch (v.getSource()) {
 				case Skills.SWORD_ICE_CHARGE:
 				case Skills.BW_BLIZZARD_CHARGE:
@@ -265,13 +302,14 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void giveMonsterDiseasesFromPassiveSkills(Player player, Mob monster, WeaponClass weaponClass, int attackCount) {
+	private static void giveMonsterDiseasesFromPassiveSkills(final Player player, Mob monster, WeaponClass weaponClass, int attackCount) {
+		byte level;
 		PlayerSkillEffectsData e;
 		//(when the client says "Usable up to 3 times against each monster", do
 		//they mean 3 per player or 3 max for the mob? I'll assume that it's 3
 		//max per mob. I guess this is why post-BB venom is not stackable...)
-		if (weaponClass == WeaponClass.CLAW && player.getSkillLevel(Skills.VENOMOUS_STAR) > 0) {
-			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAR).getLevel(player.getSkillLevel(Skills.VENOMOUS_STAR));
+		if (weaponClass == WeaponClass.CLAW && (level = player.getSkillLevel(Skills.VENOMOUS_STAR)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAR).getLevel(level);
 			for (int i = 0; i < attackCount; i++) {
 				if (monster.getVenomCount() < 3 && e.shouldPerform()) {
 					monster.addToVenomCount();
@@ -279,13 +317,81 @@ public class DealDamageHandler {
 				}
 			}
 		}
-		if (weaponClass == WeaponClass.ONE_HANDED_MELEE && player.getSkillLevel(Skills.VENOMOUS_STAB) > 0) {
-			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAB).getLevel(player.getSkillLevel(Skills.VENOMOUS_STAB));
+		if (weaponClass == WeaponClass.ONE_HANDED_MELEE && (level = player.getSkillLevel(Skills.VENOMOUS_STAB)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAB).getLevel(level);
 			for (int i = 0; i < attackCount; i++) {
 				if (monster.getVenomCount() < 3 && e.shouldPerform()) {
 					monster.addToVenomCount();
 					MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 				}
+			}
+		}
+
+		//MP Eater - just stack them until the monster has no MP if we leveled more than one of them!
+		if ((level = player.getSkillLevel(Skills.FP_MP_EATER)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.FP_MP_EATER).getLevel(level);
+			if (e.shouldPerform()) {
+				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
+				if (absorbMp > 0) {
+					monster.loseMp(absorbMp);
+					player.gainMp(absorbMp);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) 3));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) 3), player);
+				}
+			}
+		}
+		if ((level = player.getSkillLevel(Skills.IL_MP_EATER)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.IL_MP_EATER).getLevel(level);
+			if (e.shouldPerform()) {
+				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
+				if (absorbMp > 0) {
+					monster.loseMp(absorbMp);
+					player.gainMp(absorbMp);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) 3));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) 3), player);
+				}
+			}
+		}
+		if ((level = player.getSkillLevel(Skills.CLERIC_MP_EATER)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.CLERIC_MP_EATER).getLevel(level);
+			if (e.shouldPerform()) {
+				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
+				if (absorbMp > 0) {
+					monster.loseMp(absorbMp);
+					player.gainMp(absorbMp);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) 3));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) 3), player);
+				}
+			}
+		}
+
+		if ((level = player.getSkillLevel(Skills.ENERGY_CHARGE)) > 0) {
+			e = SkillDataLoader.getInstance().getSkill(Skills.ENERGY_CHARGE).getLevel(level);
+			PlayerStatusEffectValues v = player.getEffectValue(PlayerStatusEffect.ENERGY_CHARGE);
+			if (v == null || v.getModifier() != 10000) {
+				if (v == null) {
+					v = new PlayerStatusEffectValues(e, (short) e.getX());
+					player.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, v);
+				} else {
+					v.changeMod((short) Math.min(v.getModifier() + e.getX(), 10000));
+					if (v.getModifier() == 10000) {
+						final PlayerSkillEffectsData effects = e;
+						player.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+							public void run() {
+								player.removeCancelEffectTask(effects);
+								player.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
+								Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
+								player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+								player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
+							}
+						}, e.getDuration()));
+					}
+				}
+				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(v.getModifier()));
+				player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+				player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
+				player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) 3));
+				player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) 3), player);
 			}
 		}
 	}
@@ -399,7 +505,52 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, int projectile) {
+	private static byte getMasteryLevel(Player p) {
+		switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
+			case SWORD1H:
+			case SWORD2H:
+				switch (p.getJob()) {
+					case PlayerJob.JOB_FIGHTER:
+					case PlayerJob.JOB_CRUSADER:
+					case PlayerJob.JOB_HERO:
+						return p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY);
+					case PlayerJob.JOB_PAGE:
+					case PlayerJob.JOB_WHITE_KNIGHT:
+					case PlayerJob.JOB_PALADIN:
+						return p.getSkillLevel(Skills.PAGE_SWORD_MASTERY);
+					default:
+						return (byte) Math.max(p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY), p.getSkillLevel(Skills.PAGE_SWORD_MASTERY));
+				}
+			case AXE1H:
+			case AXE2H:
+				return p.getSkillLevel(Skills.AXE_MASTERY);
+			case BLUNT1H:
+			case BLUNT2H:
+				return p.getSkillLevel(Skills.BW_MASTERY);
+			case DAGGER:
+				return p.getSkillLevel(Skills.DAGGER_MASTERY);
+			case SPEAR:
+				return p.getSkillLevel(Skills.SPEAR_MASTERY);
+			case POLE_ARM:
+				return p.getSkillLevel(Skills.POLE_ARM_MASTERY);
+			case BOW:
+				return p.getSkillLevel(Skills.BOW_MASTERY);
+			case CROSSBOW:
+				return p.getSkillLevel(Skills.XBOW_MASTERY);
+			case CLAW:
+				return p.getSkillLevel(Skills.CLAW_MASTERY);
+			case KNUCKLE:
+				return p.getSkillLevel(Skills.KNUCKLER_MASTERY);
+			case GUN:
+				return p.getSkillLevel(Skills.GUN_MASTERY);
+			case WAND:
+			case STAFF:
+			default:
+				return 0;
+		}
+	}
+
+	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, int projectile, byte mastery) {
 		lew.writeInt(cid);
 		lew.writeByte(info.getNumAttackedAndDamage());
 		if (info.skill > 0) {
@@ -411,7 +562,7 @@ public class DealDamageHandler {
 		lew.writeByte((byte) 0);
 		lew.writeByte(info.stance);
 		lew.writeByte(info.speed);
-		lew.writeByte((byte) 0x0A);
+		lew.writeByte(mastery);
 		lew.writeInt(projectile);
 
 		for (Entry<Integer, int[]> oned : info.allDamage.entrySet()) {
@@ -422,36 +573,51 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static byte[] writeMeleeAttack(int cid, AttackInfo info) {
+	private static byte[] writeMeleeAttack(int cid, AttackInfo info, byte mastery) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MELEE_ATTACK);
 		if (info.skill == Skills.MESO_EXPLOSION)
 			writeMesoExplosion(lew, cid, info);
 		else
-			writeAttackData(lew, cid, info, 0);
+			writeAttackData(lew, cid, info, 0, mastery);
 		return lew.getBytes();
 	}
 
-	private static byte[] writeRangedAttack(int cid, AttackInfo info, int projectile) {
+	private static byte[] writeRangedAttack(int cid, AttackInfo info, int projectile, byte mastery) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.RANGED_ATTACK);
-		writeAttackData(lew, cid, info, projectile);
+		writeAttackData(lew, cid, info, projectile, mastery);
 		return lew.getBytes();
 	}
 
 	private static byte[] writeMagicAttack(int cid, AttackInfo info) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MAGIC_ATTACK);
-		writeAttackData(lew, cid, info, 0);
-		switch (info.skill) {
-			case Skills.FP_BIG_BANG:
-			case Skills.IL_BIG_BANG:
-			case Skills.BISHOP_BIG_BANG:
-				lew.writeInt(info.charge);
-				break;
-			default:
-				lew.writeInt(-1);
-				break;
+		writeAttackData(lew, cid, info, 0, (byte) 0);
+		if (info.charge != 0)
+			lew.writeInt(info.charge);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeEnergyChargeAttack(int cid, AttackInfo info, byte mastery) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.ENERGY_CHARGE_ATTACK);
+		writeAttackData(lew, cid, info, 0, mastery);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeSummonAttack(int cid, AttackInfo info) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.SUMMON_ATTACK);
+		lew.writeInt(cid);
+		lew.writeInt(info.summonId);
+		lew.writeByte(info.stance);
+		lew.writeByte(info.numAttacked);
+		for (Entry<Integer, int[]> oned : info.allDamage.entrySet()) {
+			lew.writeInt(oned.getKey().intValue());
+			lew.writeByte((byte) 0xFF);
+			for (int eachd : oned.getValue())
+				lew.writeInt(eachd);
 		}
 		return lew.getBytes();
 	}
@@ -465,6 +631,7 @@ public class DealDamageHandler {
 		public int[] mesoExplosion;
 		public byte speed;
 		public WeaponClass weaponClass;
+		public int summonId;
 
 		public AttackInfo() {
 			this.speed = 4;
