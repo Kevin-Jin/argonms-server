@@ -81,6 +81,10 @@ public class SkillTools {
 			}
 			p.itemCountChanged(itemId);
 		}
+		if (e.getCooltime() > 0) {
+			p.getClient().getSession().send(CommonPackets.writeCooldown(e.getDataId(), e.getCooltime()));
+			p.addCooldown(e.getDataId(), e.getCooltime());
+		}
 		if (e.getDuration() > 0)
 			buffSpecificCosts(p, e);
 		return ret;
@@ -165,7 +169,7 @@ public class SkillTools {
 	 */
 	public static void useCastSkill(final Player p, final int skillId, final byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(SkillTools.skillCastCosts(p, e), true));
+		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
@@ -205,7 +209,7 @@ public class SkillTools {
 	 * skill, false if the Player has no skill points in that skill and thus
 	 * could not cast it.
 	 */
-	public static boolean useBuffSkill(Player p, int skillId) {
+	public static boolean useCastSkill(Player p, int skillId) {
 		byte skillLevel = p.getSkillLevel(skillId);
 		if (skillLevel != 0) {
 			useCastSkill(p, skillId, skillLevel);
@@ -231,6 +235,6 @@ public class SkillTools {
 
 	public static void useAttackSkill(Player p, int skillId, byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(SkillTools.skillCastCosts(p, e), false));
+		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
 	}
 }

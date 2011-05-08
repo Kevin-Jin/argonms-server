@@ -84,6 +84,7 @@ public class CommandProcessor {
 				warpee.changeMap(map.getDataId(), map.nearestSpawnPoint(warpTo.getPosition()));
 			}
 		}, "Teleport a player on this channel to another on this channel", UserPrivileges.GM));
+		definitions.put("!town", new TownCommandHandler());
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !skill [skillid] [level] <master level>";
