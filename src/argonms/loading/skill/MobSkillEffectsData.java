@@ -19,7 +19,6 @@
 package argonms.loading.skill;
 
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;

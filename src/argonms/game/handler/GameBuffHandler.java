@@ -73,6 +73,7 @@ public class GameBuffHandler {
 		else
 			rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		ItemTools.useItem(p, itemId);
+		p.itemCountChanged(itemId);
 	}
 
 	public static void handleCancelSkill(LittleEndianReader packet, RemoteClient rc) {

@@ -76,6 +76,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.MAGIC_ATTACK:
 				DealDamageHandler.handleMagicAttack(reader, s);
 				break;
+			case ClientRecvOps.ENERGY_CHARGE_ATTACK:
+				DealDamageHandler.handleEnergyChargeAttack(reader, s);
+				break;
 			case ClientRecvOps.TAKE_DAMAGE:
 				TakeDamageHandler.handleTakeDamage(reader, s);
 				break;
@@ -120,6 +123,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				break;
 			case ClientRecvOps.CHANGE_BINDING:
 				GamePlayerMiscHandler.handleBindingChange(reader, s);
+				break;
+			case ClientRecvOps.SUMMON_ATTACK:
+				DealDamageHandler.handleSummonAttack(reader, s);
 				break;
 			case ClientRecvOps.MOVE_MOB:
 				GameMovementHandler.handleMoveMob(reader, s);

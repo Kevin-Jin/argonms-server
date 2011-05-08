@@ -152,7 +152,7 @@ public class QuestRewards {
 			ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 		}
 		ses.send(CommonPackets.writeShowItemGainFromQuest(itemId, quantity));
-		p.gainedItem(itemId);
+		p.itemCountChanged(itemId);
 	}
 
 	private void takeItem(Player p, int itemId, short quantity) {
@@ -174,6 +174,7 @@ public class QuestRewards {
 			ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 		}
 		ses.send(CommonPackets.writeShowItemGainFromQuest(itemId, quantity));
+		p.itemCountChanged(itemId);
 	}
 
 	//TODO: check if we can fit all items in the player's inventory.

@@ -450,7 +450,7 @@ public class CommonPackets {
 		return writeUpdatePlayerStats(EMPTY_STATUPDATE, true);
 	}
 
-	public static byte[] writeUseSkill(Player p, Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+	public static byte[] writeUseSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
@@ -471,7 +471,31 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeGiveDebuff(Player p, Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, int duration, short delay) {
+	public static byte[] writeUsePirateSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.longValue();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		lew.writeShort((short) 0);
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
+			lew.writeShort((short) 0);
+			lew.writeInt(skillId);
+			lew.writeInt(0);
+			lew.writeByte((byte) 0);
+			lew.writeShort((short) duration);
+		}
+		lew.writeShort((short) 0);
+		lew.writeByte((byte) 0); //# of times skill was cast
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGiveDebuff(Map<PlayerStatusEffect, Short> stats, short skillId, short skillLevel, int duration, short delay) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
@@ -493,8 +517,8 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeUseItem(Player p, Map<PlayerStatusEffect, Short> stats, int itemId, int duration) {
-		return writeUseSkill(p, stats, -itemId, duration);
+	public static byte[] writeUseItem(Map<PlayerStatusEffect, Short> stats, int itemId, int duration) {
+		return writeUseSkill(stats, -itemId, duration);
 	}
 
 	public static byte[] writeCancelStatusEffect(Set<PlayerStatusEffect> stats) {
@@ -608,6 +632,30 @@ public class CommonPackets {
 		}
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuffMapPirateEffect(Player p, Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.longValue();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		lew.writeShort((short) 0);
+		for (Short statupdate : stats.values()) {
+			lew.writeShort(statupdate.shortValue());
+			lew.writeShort((short) 0);
+			lew.writeInt(skillId);
+			lew.writeInt(0);
+			lew.writeByte((byte) 0);
+			lew.writeShort((short) duration);
+		}
+		lew.writeShort((short) 0);
 
 		return lew.getBytes();
 	}
@@ -775,17 +823,6 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowSelfBuff(int skillId, byte skillLevel) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
-
-		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
-		lew.writeByte(StatusEffectTools.ACTIVE_BUFF);
-		lew.writeInt(skillId);
-		lew.writeByte(skillLevel);
-
-		return lew.getBytes();
-	}
-
 	public static byte[] writeShowItemGainFromQuest(int itemid, int quantity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 
@@ -805,12 +842,15 @@ public class CommonPackets {
 	 * @param skillId
 	 * @return
 	 */
-	public static byte[] writeShowSelfEffect(Player p, byte effectType, int skillId) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+	public static byte[] writeSelfVisualEffect(byte effectType, int skillId, byte skillLevel, byte direction) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
 		lew.writeByte(effectType);
 		lew.writeInt(skillId);
+		lew.writeByte(skillLevel);
+		if (direction != 3)
+			lew.writeByte(direction);
 
 		return lew.getBytes();
 	}

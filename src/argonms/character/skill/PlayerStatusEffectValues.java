@@ -54,7 +54,7 @@ public class PlayerStatusEffectValues {
 		GHOST_MORPH		(0x0000000000020000L, (byte) 7),
 
 		//byte 4
-		BERSERK_FURY	(0x0000000008000000L, (byte) 8),
+		ENERGY_CHARGE	(0x0000000008000000L, (byte) 8),
 		DIVINE_BODY		(0x0000000010000000L, (byte) 8),
 		//DASH			(0x0000000030000000L, (byte) 8),
 		MONSTER_RIDING	(0x0000000040000000L, (byte) 8),
@@ -139,11 +139,15 @@ public class PlayerStatusEffectValues {
 	}
 
 	private final StatusEffectsData e;
-	private final short mod;
+	private short mod;
 
 	public PlayerStatusEffectValues(StatusEffectsData e, short mod) {
 		this.e = e;
 		this.mod = mod;
+	}
+
+	public void changeMod(short newMod) {
+		this.mod = newMod;
 	}
 
 	public int getSource() {

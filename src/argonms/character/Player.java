@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -818,19 +819,19 @@ public class Player extends MapEntity {
 					p.questStatuses.put(Short.valueOf(questId), status);
 					if (status.getState() == QuestEntry.STATE_STARTED) {
 						QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-						Map<Integer, Short> mobReq = qc.getReqMobCounts();
-						Map<Integer, Short> itemReq = qc.getReqItems();
-						for (Entry<Integer, Short> mob : mobReq.entrySet())
-							if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
-								p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
-						for (Integer itemId : itemReq.keySet())
-							p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
-						for (Integer petId : qc.getReqPets())
-							p.addToWatchedList(questId, QuestRequirementType.PET, petId);
-						for (Short reqQuestId : qc.getReqQuests().keySet())
-							p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-						if (qc.requiresMesos())
-							p.addToWatchedList(questId, QuestRequirementType.MESOS);
+						if (qc != null) {
+							for (Entry<Integer, Short> mob : qc.getReqMobCounts().entrySet())
+								if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
+									p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
+							for (Integer itemId : qc.getReqItems().keySet())
+								p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
+							for (Integer petId : qc.getReqPets())
+								p.addToWatchedList(questId, QuestRequirementType.PET, petId);
+							for (Short reqQuestId : qc.getReqQuests().keySet())
+								p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+							if (qc.requiresMesos())
+								p.addToWatchedList(questId, QuestRequirementType.MESOS);
+						}
 					}
 				}
 				rs.close();
@@ -1438,6 +1439,8 @@ public class Player extends MapEntity {
 	 * @param masterLevel set to -1 if you do not wish to change the max level
 	 */
 	public void setSkillLevel(int skill, byte level, byte masterLevel) {
+		if (level == 0)
+			skillEntries.remove(Integer.valueOf(skill));
 		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
 		if (skillLevel == null) {
 			if (masterLevel == -1)
@@ -1745,24 +1748,30 @@ public class Player extends MapEntity {
 		Short oId = Short.valueOf(questId);
 		QuestEntry status = questStatuses.get(oId);
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-		Map<Integer, Short> reqMobs = qc.getReqMobCounts();
-		Map<Integer, Short> reqItems = qc.getReqItems();
+		Set<Integer> reqMobs;
+		if (qc != null) {
+			Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
+			Map<Integer, Short> reqItems = qc.getReqItems();
+			reqMobs = reqMobCounts.keySet();
+			for (Integer mobId : reqMobCounts.keySet())
+				addToWatchedList(questId, QuestRequirementType.MOB, mobId);
+			for (Integer itemId : reqItems.keySet())
+				addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
+			for (Integer petId : qc.getReqPets())
+				addToWatchedList(questId, QuestRequirementType.PET, petId);
+			for (Short reqQuestId : qc.getReqQuests().keySet())
+				addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+			if (qc.requiresMesos())
+				addToWatchedList(questId, QuestRequirementType.MESOS);
+		} else {
+			reqMobs = Collections.emptySet();
+		}
 		if (status == null) { //first time touching this quest
-			status = new QuestEntry(QuestEntry.STATE_STARTED, reqMobs.keySet());
+			status = new QuestEntry(QuestEntry.STATE_STARTED, reqMobs);
 			questStatuses.put(oId, status);
 		} else { //if we previously forfeited this quest
 			status.updateState(QuestEntry.STATE_STARTED);
 		}
-		for (Integer mobId : reqMobs.keySet())
-			addToWatchedList(questId, QuestRequirementType.MOB, mobId);
-		for (Integer itemId : reqItems.keySet())
-			addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
-		for (Integer petId : qc.getReqPets())
-			addToWatchedList(questId, QuestRequirementType.PET, petId);
-		for (Short reqQuestId : qc.getReqQuests().keySet())
-			addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-		if (qc.requiresMesos())
-			addToWatchedList(questId, QuestRequirementType.MESOS);
 		QuestDataLoader.getInstance().startedQuest(this, questId);
 
 		//see if one req of another quest was starting this one...
@@ -1791,24 +1800,30 @@ public class Player extends MapEntity {
 		Short oId = Short.valueOf(questId);
 		QuestEntry status = questStatuses.get(oId);
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-		Map<Integer, Short> reqMobs = qc.getReqMobCounts();
-		Map<Integer, Short> reqItems = qc.getReqItems();
+		Set<Integer> reqMobs;
+		if (qc != null) {
+			Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
+			Map<Integer, Short> reqItems = qc.getReqItems();
+			reqMobs = reqMobCounts.keySet();
+			for (Integer itemId : reqItems.keySet())
+				removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
+			for (Integer mobId : reqMobCounts.keySet())
+				removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+			for (Integer petId : qc.getReqPets())
+				removeFromWatchedList(questId, QuestRequirementType.PET, petId);
+			for (Short reqQuestId : qc.getReqQuests().keySet())
+				removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+			if (qc.requiresMesos())
+				removeFromWatchedList(questId, QuestRequirementType.MESOS);
+		} else {
+			reqMobs = Collections.emptySet();
+		}
 		if (status != null) {
 			status.updateState(QuestEntry.STATE_COMPLETED);
 		} else { //shouldn't ever happen...
 			status = new QuestEntry(QuestEntry.STATE_COMPLETED, reqMobs);
 			questStatuses.put(oId, status);
 		}
-		for (Integer itemId : reqItems.keySet())
-			removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
-		for (Integer mobId : reqMobs.keySet())
-			removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
-		for (Integer petId : qc.getReqPets())
-			removeFromWatchedList(questId, QuestRequirementType.PET, petId);
-		for (Short reqQuestId : qc.getReqQuests().keySet())
-			removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-		if (qc.requiresMesos())
-			removeFromWatchedList(questId, QuestRequirementType.MESOS);
 		status.setCompletionTime(System.currentTimeMillis());
 		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
 		if (next != 0)
@@ -1847,19 +1862,25 @@ public class Player extends MapEntity {
 			status.updateState(QuestEntry.STATE_NOT_STARTED);
 		} else { //shouldn't ever happen
 			QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-			Map<Integer, Short> reqMobs = qc.getReqMobCounts();
-			Map<Integer, Short> reqItems = qc.getReqMobCounts();
-			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs.keySet());
-			for (Integer itemId : reqItems.keySet())
-				removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
-			for (Integer mobId : reqMobs.keySet())
-				removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
-			for (Integer petId : qc.getReqPets())
-				removeFromWatchedList(questId, QuestRequirementType.PET, petId);
-			for (Short reqQuestId : qc.getReqQuests().keySet())
-				removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-			if (qc.requiresMesos())
-				removeFromWatchedList(questId, QuestRequirementType.MESOS);
+			Set<Integer> reqMobs;
+			if (qc != null) {
+				Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
+				Map<Integer, Short> reqItems = qc.getReqMobCounts();
+				reqMobs = reqMobCounts.keySet();
+				for (Integer itemId : reqItems.keySet())
+					removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
+				for (Integer mobId : reqMobCounts.keySet())
+					removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+				for (Integer petId : qc.getReqPets())
+					removeFromWatchedList(questId, QuestRequirementType.PET, petId);
+				for (Short reqQuestId : qc.getReqQuests().keySet())
+					removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+				if (qc.requiresMesos())
+					removeFromWatchedList(questId, QuestRequirementType.MESOS);
+			} else {
+				reqMobs = Collections.emptySet();
+			}
+			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
 			questStatuses.put(oId, status);
 		}
 		getClient().getSession().send(CommonPackets.writeQuestForfeit(questId));
@@ -1873,6 +1894,8 @@ public class Player extends MapEntity {
 			if (watchingQuests != null) {
 				for (Short quest : watchingQuests) {
 					questId = quest.shortValue();
+					//completeReqs can never be null because in order for us to
+					//add something to questReqWatching, it had to be not null
 					Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
 					if (questReq.get(oId).byteValue() == newStatus)
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
@@ -1882,7 +1905,7 @@ public class Player extends MapEntity {
 		}
 	}
 
-	public void gainedItem(int itemId) {
+	public void itemCountChanged(int itemId) {
 		Map<Number, List<Short>> watchedItems = questReqWatching.get(QuestRequirementType.ITEM);
 		if (watchedItems != null) {
 			Integer oId = Integer.valueOf(itemId);
@@ -1890,6 +1913,8 @@ public class Player extends MapEntity {
 			if (watchingQuests != null) {
 				for (Short quest : watchingQuests) {
 					short questId = quest.shortValue();
+					//completeReqs can never be null because in order for us to
+					//add something to questReqWatching, it had to be not null
 					Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
 					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).shortValue()))
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
@@ -1931,6 +1956,8 @@ public class Player extends MapEntity {
 		if (status != null) {
 			status.killedMob(mobId);
 			getClient().getSession().send(CommonPackets.writeQuestProgress(questId, status.getData()));
+			//completeReqs can never be null because in order for us to add
+			//something to questReqWatching, it had to be not null
 			Map<Integer, Short> mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts();
 			Integer oId = Integer.valueOf(mobId);
 			if (status.getMobCount(mobId) >= mobReq.get(oId)) {

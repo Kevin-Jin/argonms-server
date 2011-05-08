@@ -108,7 +108,7 @@ public class CommandProcessor {
 				}
 				try {
 					skillLevel = Byte.parseByte(args[2]);
-					if (s.getLevel(skillLevel) == null)
+					if (skillLevel != 0 && s.getLevel(skillLevel) == null)
 						throw new NumberFormatException();
 				} catch (NumberFormatException e) {
 					resp.printErr(args[2] + " is not a valid level of skill " + skillId + ". " + getUsage());
@@ -117,7 +117,7 @@ public class CommandProcessor {
 				if (args.length > 3) {
 					try {
 						masterLevel = Byte.parseByte(args[3]);
-						if (s.getLevel(masterLevel) == null)
+						if (masterLevel != 0 && s.getLevel(masterLevel) == null)
 							throw new NumberFormatException();
 					} catch (NumberFormatException e) {
 						resp.printErr(args[3] + " is not a valid master level of skill " + skillId + ". " + getUsage());
@@ -169,7 +169,7 @@ public class CommandProcessor {
 					slot = inv.get(pos);
 					p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 				}
-				p.gainedItem(itemId);
+				p.itemCountChanged(itemId);
 			}
 		}, "Give yourself an item", UserPrivileges.GM));
 		definitions.put("!spawn", new SpawnCommandHandler());
