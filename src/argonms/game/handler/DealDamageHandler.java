@@ -64,16 +64,8 @@ public class DealDamageHandler {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
-		int attackCount = 1;
-		if (e != null) {
-			attackCount = e.getAttackCount();
-			if (e.getCooltime() > 0) {
-				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
-				p.addCooldown(attack.skill, e.getCooltime());
-			}
-		}
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
-		applyAttack(attack, p, attackCount);
+		applyAttack(attack, p);
 	}
 
 	//bow/arrows, claw/stars, guns/bullets (projectiles)
@@ -81,7 +73,6 @@ public class DealDamageHandler {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
-		int attackCount = 1;
 		short useQty;
 		if (e == null) { //not a skill
 			useQty = 1;
@@ -92,99 +83,67 @@ public class DealDamageHandler {
 				useQty = e.getBulletCount();
 			if (useQty == 0)
 				useQty = 1; //skill uses same amount of ammo as regular attack
+		}
+		if (p.isEffectActive(PlayerStatusEffect.SHADOW_PARTNER))
+			useQty *= 2; //freakily enough, shadow partner doubles ALL ranged attacks
 
-			//do the usual skill stuff - cooldowns
-			attackCount = e.getAttackCount();
-			if (e.getCooltime() > 0) {
-				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
-				p.addCooldown(attack.skill, e.getCooltime());
-			}
-		}
-		if (p.isEffectActive(PlayerStatusEffect.SHADOW_PARTNER)) {
-			//freakily enough, shadow partner doubles ALL ranged attacks
-			useQty *= 2;
-			attackCount *= 2;
-		}
-		int itemId = 0;
 		boolean soulArrow = (attack.weaponClass == WeaponClass.BOW || attack.weaponClass == WeaponClass.CROSSBOW) && p.isEffectActive(PlayerStatusEffect.SOUL_ARROW);
 		if (!soulArrow) {
-			if (attack.cashAmmoSlot != 0) {
-				InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
-				if (slot == null)
-					return; //TODO: hacking
-				itemId = slot.getDataId();
-			}
-			//soul arrow has some funky behaviors if you switch off the bow with
-			//a claw or gun... ammoSlot will be 0, and the client will think we
-			//can still shoot if we run out of stars or bullets. so we really
-			//can't check if the client is hacking here, because using guns and
-			//claws with no shadow stars can still have ammoSlot == 0
 			boolean shadowStars = attack.weaponClass == WeaponClass.CLAW && p.isEffectActive(PlayerStatusEffect.SHADOW_STARS);
-			if (attack.ammoSlot != 0 && !shadowStars) {
+			if (!shadowStars) { //consume ammo if shadow claw is not active
 				InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
 				if (slot == null || slot.getQuantity() < useQty)
 					return; //TODO: hacking
-				itemId = slot.getDataId();
+				attack.ammoItemId = slot.getDataId();
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
-				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(itemId)) {
+				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(attack.ammoItemId)) {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
 					rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
 				} else {
 					rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
 				}
-				switch (attack.skill) {
-					case Skills.ARROW_RAIN:
-					case Skills.ARROW_ERUPTION:
-					case Skills.ENERGY_ORB:
-						//these skills show no visible projectile apparently
-						itemId = 0;
-						break;
-				}
-			} else if (shadowStars) {
-				itemId = attack.ammoItemId;
 			}
+			if (attack.cashAmmoSlot != 0) { //NX throwing stars
+				InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
+				if (slot == null)
+					return; //TODO: hacking
+				attack.ammoItemId = slot.getDataId();
+			}
+			switch (attack.skill) { //skills that do not show visible projectiles
+				case Skills.ARROW_RAIN:
+				case Skills.ARROW_ERUPTION:
+				case Skills.ENERGY_ORB:
+					attack.ammoItemId = 0;
+					break;
+			}
+		} else { //soul arrow sends no visible projectile either.
+			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, itemId, getMasteryLevel(p)), p.getPosition(), p);
-		applyAttack(attack, p, attackCount);
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
+		applyAttack(attack, p);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
-		int attackCount = 1;
-		if (e != null) {
-			attackCount = e.getAttackCount();
-			if (e.getCooltime() > 0) {
-				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
-				p.addCooldown(attack.skill, e.getCooltime());
-			}
-		}
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p.getPosition(), p);
-		applyAttack(attack, p, attackCount);
+		applyAttack(attack, p);
 	}
 
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
-		int attackCount = 1;
-		if (e != null) {
-			attackCount = e.getAttackCount();
-			if (e.getCooltime() > 0) {
-				rc.getSession().send(CommonPackets.writeCooldown(attack.skill, e.getCooltime()));
-				p.addCooldown(attack.skill, e.getCooltime());
-			}
-		}
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
-		applyAttack(attack, p, attackCount);
+		applyAttack(attack, p);
 	}
 
 	public static void handleSummonAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.SUMMON, p);
 		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack), p.getPosition(), p);
-		applyAttack(attack, p, 1);
+		applyAttack(attack, p);
 	}
 
 	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, Player p) {
@@ -397,7 +356,7 @@ public class DealDamageHandler {
 	}
 
 	//TODO: handle skills
-	private static void applyAttack(AttackInfo attack, final Player player, int attackCount) {
+	private static void applyAttack(AttackInfo attack, final Player player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();
 		if (attackEffect != null) { //attack skills
@@ -478,7 +437,7 @@ public class DealDamageHandler {
 				//see if any active player buffs can give the monster a disease
 				giveMonsterDiseasesFromActiveBuffs(player, monster);
 				//see if any passive player skills can give the monster a disease
-				giveMonsterDiseasesFromPassiveSkills(player, monster, attack.weaponClass, attackCount);
+				giveMonsterDiseasesFromPassiveSkills(player, monster, attack.weaponClass, attack.numDamage);
 
 				player.getMap().damageMonster(player, monster, totDamageToOneMonster);
 			}
@@ -550,7 +509,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, int projectile, byte mastery) {
+	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, byte mastery) {
 		lew.writeInt(cid);
 		lew.writeByte(info.getNumAttackedAndDamage());
 		if (info.skill > 0) {
@@ -563,7 +522,7 @@ public class DealDamageHandler {
 		lew.writeByte(info.stance);
 		lew.writeByte(info.speed);
 		lew.writeByte(mastery);
-		lew.writeInt(projectile);
+		lew.writeInt(info.ammoItemId);
 
 		for (Entry<Integer, int[]> oned : info.allDamage.entrySet()) {
 			lew.writeInt(oned.getKey().intValue());
@@ -579,21 +538,21 @@ public class DealDamageHandler {
 		if (info.skill == Skills.MESO_EXPLOSION)
 			writeMesoExplosion(lew, cid, info);
 		else
-			writeAttackData(lew, cid, info, 0, mastery);
+			writeAttackData(lew, cid, info, mastery);
 		return lew.getBytes();
 	}
 
-	private static byte[] writeRangedAttack(int cid, AttackInfo info, int projectile, byte mastery) {
+	private static byte[] writeRangedAttack(int cid, AttackInfo info, byte mastery) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.RANGED_ATTACK);
-		writeAttackData(lew, cid, info, projectile, mastery);
+		writeAttackData(lew, cid, info, mastery);
 		return lew.getBytes();
 	}
 
 	private static byte[] writeMagicAttack(int cid, AttackInfo info) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MAGIC_ATTACK);
-		writeAttackData(lew, cid, info, 0, (byte) 0);
+		writeAttackData(lew, cid, info, (byte) 0);
 		if (info.charge != 0)
 			lew.writeInt(info.charge);
 		return lew.getBytes();
@@ -602,7 +561,7 @@ public class DealDamageHandler {
 	private static byte[] writeEnergyChargeAttack(int cid, AttackInfo info, byte mastery) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.ENERGY_CHARGE_ATTACK);
-		writeAttackData(lew, cid, info, 0, mastery);
+		writeAttackData(lew, cid, info, mastery);
 		return lew.getBytes();
 	}
 

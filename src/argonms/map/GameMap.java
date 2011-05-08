@@ -605,7 +605,6 @@ public class GameMap {
 		spawnEntity(r);
 	}
 
-	//FIXME: I think all mobs spawn only on the top spawnpoint. o.O
 	public void respawnMobs() {
 		if (entPools.get(EntityType.PLAYER).getSizeSafely() == 0)
 			return;
@@ -614,7 +613,7 @@ public class GameMap {
 			if (monsterSpawns.isEmpty())
 				return;
 			Collections.sort(monsterSpawns);
-			int numShouldSpawn = (monsterSpawns.size() - monsters.get()) * Math.round(stats.getMobRate());
+			int numShouldSpawn = Math.round((monsterSpawns.size() - monsters.get()) * stats.getMobRate());
 			if (numShouldSpawn > 0) {
 				int spawned = 0;
 				for (MonsterSpawn spawnPoint : monsterSpawns) {

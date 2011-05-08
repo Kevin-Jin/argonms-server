@@ -432,7 +432,7 @@ public class Player extends MapEntity {
 			ps.close();
 
 			ps = con.prepareStatement("INSERT INTO `cooldowns`" +
-					"(`characterid`,`skill`,`remaining`) VALUES (?,?,?)");
+					"(`characterid`,`skillid`,`remaining`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
 				ps.setInt(2, cooling.getKey().intValue());
@@ -1459,8 +1459,8 @@ public class Player extends MapEntity {
 	public void addCooldown(final int skill, short time) {
 		cooldowns.put(Integer.valueOf(skill), new Cooldown(time * 1000, new Runnable() {
 			public void run() {
-				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
 				removeCooldown(skill);
+				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
 			}
 		}));
 	}

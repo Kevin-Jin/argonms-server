@@ -766,6 +766,21 @@
 	show properly to other players on map.
 	* Fixed MCDB loaded skills and quests.
 
+2011-05-08  GoldenKevin  (revision 35)
+
+	* Fixed quests not starting if they required the Player to have not started
+	a different quest, and that Player did not forfeit it.
+	* Fixed no mob respawns occurring in a map with few mob spawn points.
+	* Added a !town command for quick access to some maps without having to look
+	up the map id for it.
+	* Support for cooldowns. Moved cooldown stuff to SkillTools.skillCastCosts
+	as cooldowns are common for both attack skills and castable skills.
+	* Cleaned up DealDamageHandler. We are given attackCount in the packet, so
+	no need to recalculate that. Also, just store projectile item id in the
+	AttackInfo structure so we don't have to pass it to the packet methods. Cash
+	stars had precedence over the actual stars, so we should check the item IDs
+	for cash stars after we check the regular ones.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
