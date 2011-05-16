@@ -22,11 +22,13 @@ import argonms.character.DiseaseTools;
 import argonms.character.Player;
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.character.skill.SkillTools;
 import argonms.game.GameClient;
 import argonms.loading.mob.Attack;
 import argonms.loading.mob.MobDataLoader;
 import argonms.map.MapEntity.EntityType;
 import argonms.map.entity.Mob;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
@@ -128,6 +130,35 @@ public class TakeDamageHandler {
 		}
 		if (p.isVisible())
 			p.getMap().sendToAll(writeHurtPlayer(p, attack, damage, pgmr, mobid, direction, stance, noDamageId), p);
+	}
+
+	public static void handlePuppetTakeDamage(LittleEndianReader packet, RemoteClient rc) {
+		Player p = ((GameClient) rc).getPlayer();
+		int summonEntId = packet.readInt();
+		byte misc = packet.readByte();
+		int damage = packet.readInt();
+		int mobEid = packet.readInt();
+		packet.readByte();
+
+		/*int skillId = p.getEffectValue(PlayerStatusEffect.PUPPET).getSource();
+		PlayerSkillSummon puppet = p.getSummonBySkill(skillId);*/
+		PlayerSkillSummon puppet = (PlayerSkillSummon) p.getMap().getEntityById(EntityType.SUMMON, summonEntId);
+		int skillId = puppet.getSkillId();
+		if (puppet.hurt(damage)) //died
+			SkillTools.cancelBuffSkill(p, skillId);
+		p.getMap().sendToAll(writeHurtPuppet(p, puppet, misc, damage, mobEid), puppet.getPosition(), null);
+	}
+
+	private static byte[] writeHurtPuppet(Player p, PlayerSkillSummon puppet, byte misc, int damage, int mobEid) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.DAMAGE_SUMMON);
+		lew.writeInt(p.getId());
+		lew.writeInt(puppet.getSkillId());
+		lew.writeByte(misc);
+		lew.writeInt(damage);
+		lew.writeInt(mobEid);
+		lew.writeByte((byte) 0);
+		return lew.getBytes();
 	}
 
 	private static byte[] writeHurtPlayer(Player p, byte mobAttack, int damage, MobReturnDamage pgmr, int mobId, byte direction, byte stance, int noDamageSkill) {

@@ -46,6 +46,7 @@ import argonms.map.GameMap;
 import argonms.map.entity.Mob;
 import argonms.map.entity.Miniroom;
 import argonms.map.entity.Mob.MobDeathHook;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
@@ -59,6 +60,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -122,6 +124,8 @@ public class Player extends MapEntity {
 	private final Map<Integer, ScheduledFuture<?>> skillCancels;
 	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
 	private final Map<Short, ScheduledFuture<?>> diseaseCancels;
+	private final Map<Integer, PlayerSkillSummon> summons;
+	private short energyCharge;
 
 	private final LockableList<MapEntity> visibleEntities;
 	private final List<Mob> controllingMobs;
@@ -144,6 +148,7 @@ public class Player extends MapEntity {
 		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		diseaseCancels = new HashMap<Short, ScheduledFuture<?>>();
+		summons = new HashMap<Integer, PlayerSkillSummon>();
 		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
 		questStatuses = new HashMap<Short, QuestEntry>();
@@ -1553,6 +1558,50 @@ public class Player extends MapEntity {
 
 	public boolean isDebuffActive(short mobSkillId) {
 		return diseaseCancels.containsKey(Short.valueOf(mobSkillId));
+	}
+
+	public boolean areEffectsActive(StatusEffectsData e) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				return skillCancels.containsKey(Integer.valueOf(e.getDataId()));
+			case ITEM:
+				return itemEffectCancels.containsKey(Integer.valueOf(e.getDataId()));
+			case MOB_SKILL:
+				return diseaseCancels.containsKey(Short.valueOf((short) e.getDataId()));
+			default:
+				return false;
+		}
+	}
+
+	public void addToEnergyCharge(int gain) {
+		energyCharge = (short) Math.min(energyCharge + gain, 10000);
+	}
+
+	public void resetEnergyCharge() {
+		energyCharge = 0;
+	}
+
+	public short getEnergyCharge() {
+		return energyCharge;
+	}
+
+	public List<PlayerSkillSummon> getAllSummons() {
+		List<PlayerSkillSummon> summonsCopy = new ArrayList<PlayerSkillSummon>();
+		for (PlayerSkillSummon s : summons.values())
+			summonsCopy.add(s);
+		return summonsCopy;
+	}
+
+	public void addToSummons(int skillId, PlayerSkillSummon summon) {
+		summons.put(Integer.valueOf(skillId), summon);
+	}
+
+	public PlayerSkillSummon getSummonBySkill(int skillId) {
+		return summons.get(Integer.valueOf(skillId));
+	}
+
+	public void removeFromSummons(int skillId) {
+		summons.remove(Integer.valueOf(skillId));
 	}
 
 	public int getItemEffect() {

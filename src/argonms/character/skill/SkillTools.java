@@ -167,10 +167,10 @@ public class SkillTools {
 	 * @param skillId the identifier of the skill to use
 	 * @param skillLevel the amount of skill points the Player has in the skill
 	 */
-	public static void useCastSkill(final Player p, final int skillId, final byte skillLevel) {
+	public static void useCastSkill(final Player p, final int skillId, final byte skillLevel, byte stance) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
-		StatusEffectTools.applyEffectsAndShowVisuals(p, e);
+		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
@@ -212,7 +212,7 @@ public class SkillTools {
 	public static boolean useCastSkill(Player p, int skillId) {
 		byte skillLevel = p.getSkillLevel(skillId);
 		if (skillLevel != 0) {
-			useCastSkill(p, skillId, skillLevel);
+			useCastSkill(p, skillId, skillLevel, (byte) -1);
 			return true;
 		}
 		return false;

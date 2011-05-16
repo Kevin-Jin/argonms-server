@@ -781,6 +781,24 @@
 	stars had precedence over the actual stars, so we should check the item IDs
 	for cash stars after we check the regular ones.
 
+2011-05-15  GoldenKevin  (revision 36)
+
+	* KvjBin updated to r24.
+	* Support for prepared skills, which include every keydown attack skills, as
+	well as non-attacking skills like monster magnet and Chakra, and non-keydown
+	attack skill like explosion (FP mage skill). All keydown skills are prepared
+	but not all prepared skills are keydown? I don't understand the difference
+	between them, but the game apparently does since only keydown skills give a
+	charge integer in the attack packet (DealDamageHandler).
+	* Some skill cast visual effects (like the eye that appears when a player
+	casts Focus) that previously did not show now show.
+	* Full support for Monster Magnet, Chakra, and Dash.
+	* Fixed players that just entered a map seeing full Energy Charge on players
+	with only a partial charge. Energy charge is not stored in Player's
+	activeEffects until it reaches full charge.
+	* Process summon types for summon skills in SkillDataLoader. Full support
+	for summons and puppets.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

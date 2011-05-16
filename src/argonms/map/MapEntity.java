@@ -26,7 +26,7 @@ import java.awt.Point;
  */
 public abstract class MapEntity {
 	public enum EntityType {
-		MONSTER, DROP, NPC, PLAYER, REACTOR, MINI_ROOM, DOOR, MIST
+		MONSTER, DROP, NPC, PLAYER, REACTOR, MINI_ROOM, DOOR, SUMMON, MIST
 	}
 
 	private int entityid;

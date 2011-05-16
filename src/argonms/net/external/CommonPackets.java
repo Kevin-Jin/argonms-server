@@ -45,6 +45,7 @@ import argonms.map.entity.Mob;
 import argonms.map.entity.MysticDoor;
 import argonms.map.entity.Npc;
 import argonms.map.entity.PlayerNpc;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.map.entity.Reactor;
 import argonms.tools.Rng;
 import argonms.tools.TimeUtil;
@@ -481,12 +482,19 @@ public class CommonPackets {
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		lew.writeShort((short) 0);
-		for (Short statupdate : stats.values()) {
-			lew.writeShort(statupdate.shortValue());
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			lew.writeShort(statupdate.getValue().shortValue());
 			lew.writeShort((short) 0);
 			lew.writeInt(skillId);
 			lew.writeInt(0);
-			lew.writeByte((byte) 0);
+			switch (statupdate.getKey()) {
+				case DASH_SPEED:
+				case DASH_JUMP:
+					break;
+				default:
+					lew.writeByte((byte) 0);
+					break;
+			}
 			lew.writeShort((short) duration);
 		}
 		lew.writeShort((short) 0);
@@ -587,7 +595,7 @@ public class CommonPackets {
 		lew.writeByte(effectType);
 		lew.writeInt(skillId);
 		lew.writeByte(skillLevel);
-		if (direction != 3)
+		if (direction != -1)
 			lew.writeByte(direction);
 
 		return lew.getBytes();
@@ -647,12 +655,19 @@ public class CommonPackets {
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		lew.writeShort((short) 0);
-		for (Short statupdate : stats.values()) {
-			lew.writeShort(statupdate.shortValue());
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			lew.writeShort(statupdate.getValue().shortValue());
 			lew.writeShort((short) 0);
 			lew.writeInt(skillId);
 			lew.writeInt(0);
-			lew.writeByte((byte) 0);
+			switch (statupdate.getKey()) {
+				case DASH_SPEED:
+				case DASH_JUMP:
+					break;
+				default:
+					lew.writeByte((byte) 0);
+					break;
+			}
 			lew.writeShort((short) duration);
 		}
 		lew.writeShort((short) 0);
@@ -849,7 +864,7 @@ public class CommonPackets {
 		lew.writeByte(effectType);
 		lew.writeInt(skillId);
 		lew.writeByte(skillLevel);
-		if (direction != 3)
+		if (direction != -1)
 			lew.writeByte(direction);
 
 		return lew.getBytes();
@@ -1269,6 +1284,36 @@ public class CommonPackets {
 		lew.writeLengthPrefixedString(pnpc.getPlayerName());
 		writeAvatar(lew, pnpc.getGender(), pnpc.getSkinColor(), pnpc.getEyes(),
 				true, pnpc.getHair(), pnpc.getEquips(), new Pet[3]);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowSummon(PlayerSkillSummon summon, byte animation) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(25);
+
+		lew.writeShort(ClientSendOps.SHOW_SUMMON);
+		lew.writeInt(summon.getOwner());
+		lew.writeInt(summon.getId());
+		lew.writeInt(summon.getSkillId());
+		lew.writeByte(summon.getSkillLevel());
+		lew.writePos(summon.getPosition());
+		lew.writeByte((byte) 3); //perhaps one of these are health? stance?
+		lew.writeByte((byte) 0);
+		lew.writeByte((byte) 0);
+		lew.writeByte(summon.getSummonType());
+		lew.writeBool(!summon.isPuppet());
+		lew.writeByte(animation);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemoveSummon(PlayerSkillSummon summon, byte animation) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+
+		lew.writeShort(ClientSendOps.REMOVE_SUMMON);
+		lew.writeInt(summon.getOwner());
+		lew.writeInt(summon.getId());
+		lew.writeByte(animation);
+
 		return lew.getBytes();
 	}
 

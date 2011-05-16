@@ -55,8 +55,8 @@ public class PlayerStatusEffectValues {
 
 		//byte 4
 		ENERGY_CHARGE	(0x0000000008000000L, (byte) 8),
-		DIVINE_BODY		(0x0000000010000000L, (byte) 8),
-		//DASH			(0x0000000030000000L, (byte) 8),
+		DASH_SPEED		(0x0000000010000000L, (byte) 8),
+		DASH_JUMP		(0x0000000020000000L, (byte) 8),
 		MONSTER_RIDING	(0x0000000040000000L, (byte) 8),
 		FINAL_ATTACK	(0x0000000080000000L, (byte) 8),
 
@@ -68,7 +68,6 @@ public class PlayerStatusEffectValues {
 		ACC				(0x0000001000000000L, (byte) 1),
 		AVOID			(0x0000002000000000L, (byte) 1),
 		HANDS			(0x0000004000000000L, (byte) 1),
-		DASH			(0x0000006000000000L, (byte) 1),
 		SPEED			(0x0000008000000000L, (byte) 1),
 
 		//byte 6
@@ -90,7 +89,6 @@ public class PlayerStatusEffectValues {
 		SEAL			(0x0008000000000000L, (byte) 3),
 		DARKNESS		(0x0010000000000000L, (byte) 3),
 		COMBO			(0x0020000000000000L, (byte) 3),
-		SUMMON			(0x0020000000000000L, (byte) 3),
 		CHARGE			(0x0040000000000000L, (byte) 3),
 		DRAGON_BLOOD	(0x0080000000000000L, (byte) 3),
 
@@ -98,8 +96,9 @@ public class PlayerStatusEffectValues {
 		HOLY_SYMBOL		(0x0100000000000000L, (byte) 4),
 		MESO_UP			(0x0200000000000000L, (byte) 4),
 		SHADOW_PARTNER	(0x0400000000000000L, (byte) 4),
+		PUPPET			(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
+		SUMMON			(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
 		PICKPOCKET		(0x0800000000000000L, (byte) 4),
-		PUPPET			(0x0800000000000000L, (byte) 4),
 		MESO_GUARD		(0x1000000000000000L, (byte) 4),
 		WEAKEN			(0x4000000000000000L, (byte) 4),
 		CURSE			(0x8000000000000000L, (byte) 4)
@@ -139,15 +138,11 @@ public class PlayerStatusEffectValues {
 	}
 
 	private final StatusEffectsData e;
-	private short mod;
+	private final short mod;
 
 	public PlayerStatusEffectValues(StatusEffectsData e, short mod) {
 		this.e = e;
 		this.mod = mod;
-	}
-
-	public void changeMod(short newMod) {
-		this.mod = newMod;
 	}
 
 	public int getSource() {

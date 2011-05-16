@@ -20,9 +20,11 @@ package argonms.character;
 
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.character.skill.Skills;
 import argonms.loading.StatusEffectsData;
 import argonms.loading.StatusEffectsData.BuffsData;
 import argonms.loading.skill.PlayerSkillEffectsData;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.CommonPackets;
 import java.util.EnumMap;
 import java.util.Map;
@@ -45,15 +47,21 @@ public class StatusEffectTools {
 		MOB_BUFF = 11
 	;
 
-	//TODO: IMPLEMENT
-	private static byte[] getFirstPersonCastVisualEffect(Player p, StatusEffectsData e) {
+	private static byte[] getFirstPersonCastVisualEffect(Player p, StatusEffectsData e, byte stance) {
 		return null;
 	}
 
 	private static byte[] getFirstPersonCastEffect(Player p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return CommonPackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
+				switch (e.getDataId()) {
+					case Skills.CHAKRA:
+						break;
+					case Skills.DASH:
+						return CommonPackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration());
+					default:
+						return CommonPackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
+				}
 			case ITEM:
 				return CommonPackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());
 			case MOB_SKILL:
@@ -62,23 +70,32 @@ public class StatusEffectTools {
 		return null;
 	}
 
-	//TODO: IMPLEMENT
-	private static byte[] getThirdPersonCastVisualEffect(Player p, StatusEffectsData e) {
+	private static byte[] getThirdPersonCastVisualEffect(Player p, StatusEffectsData e, byte stance) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				return CommonPackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), stance);
+		}
 		return null;
 	}
 
-	//TODO: IMPLEMENT (fully)
 	private static byte[] getThirdPersonCastEffect(Player p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return CommonPackets.writeBuffMapEffect(p, updatedStats);
+				switch (e.getDataId()) {
+					case Skills.CHAKRA:
+						break;
+					case Skills.DASH:
+						return CommonPackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), e.getDuration());
+					default:
+						if (e.getDuration() > 0)
+							return CommonPackets.writeBuffMapEffect(p, updatedStats);
+				}
 			case MOB_SKILL:
 				return CommonPackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
 		}
 		return null;
 	}
 
-	//TODO: IMPLEMENT
 	private static byte[] getFirstPersonDispelVisualEffect(Player p) {
 		return null;
 	}
@@ -87,7 +104,6 @@ public class StatusEffectTools {
 		return CommonPackets.writeCancelStatusEffect(e.getEffects());
 	}
 
-	//TODO: IMPLEMENT
 	private static byte[] getThirdPersonDispelVisualEffect(Player p) {
 		return null;
 	}
@@ -98,7 +114,12 @@ public class StatusEffectTools {
 
 	public static Map<PlayerStatusEffect, Short> applyEffects(Player p, StatusEffectsData e) {
 		Map<PlayerStatusEffect, Short> updatedStats = new EnumMap<PlayerStatusEffect, Short>(PlayerStatusEffect.class);
+		if (p.areEffectsActive(e))
+			p.removeCancelEffectTask(e);
 		for (PlayerStatusEffect buff : e.getEffects()) {
+			PlayerStatusEffectValues v = p.getEffectValue(buff);
+			if (v != null)
+				dispelEffect(p, buff, v);
 			PlayerStatusEffectValues value = applyEffect(p, e, buff);
 			updatedStats.put(buff, Short.valueOf(value.getModifier()));
 			p.addToActiveEffects(buff, value);
@@ -106,15 +127,15 @@ public class StatusEffectTools {
 		return updatedStats;
 	}
 
-	public static void applyEffectsAndShowVisuals(Player p, StatusEffectsData e) {
+	public static void applyEffectsAndShowVisuals(Player p, StatusEffectsData e, byte stance) {
 		Map<PlayerStatusEffect, Short> updatedStats = applyEffects(p, e);
-		byte[] effect = getFirstPersonCastVisualEffect(p, e);
+		byte[] effect = getFirstPersonCastVisualEffect(p, e, stance);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
 		effect = getFirstPersonCastEffect(p, e, updatedStats);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
-		effect = getThirdPersonCastVisualEffect(p, e);
+		effect = getThirdPersonCastVisualEffect(p, e, stance);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
 		effect = getThirdPersonCastEffect(p, e, updatedStats);
@@ -150,6 +171,17 @@ public class StatusEffectTools {
 	private static PlayerStatusEffectValues applyEffect(Player p, StatusEffectsData e, PlayerStatusEffect buff) {
 		short mod = -1;
 		switch (buff) {
+			case SUMMON: {
+				PlayerSkillSummon summon = p.getSummonBySkill(e.getDataId());
+				p.getMap().spawnEntity(summon);
+				break;
+			}
+			case PUPPET: {
+				PlayerSkillSummon summon = p.getSummonBySkill(e.getDataId());
+				p.getMap().spawnEntity(summon);
+				summon.setHp((short) ((PlayerSkillEffectsData) e).getX());
+				break;
+			}
 			case SLOW:
 				break;
 			case HOMING_BEACON:
@@ -188,7 +220,13 @@ public class StatusEffectTools {
 				break;
 			case ENERGY_CHARGE:
 				break;
-			case DIVINE_BODY:
+			case DASH_SPEED:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
+				p.addSpeed(mod);
+				break;
+			case DASH_JUMP:
+				mod = (short) ((PlayerSkillEffectsData) e).getY();
+				p.addJump(mod);
 				break;
 			case MONSTER_RIDING:
 				break;
@@ -221,8 +259,6 @@ public class StatusEffectTools {
 			case HANDS:
 				mod = ((BuffsData) e).getHands();
 				p.addHands(mod);
-				break;
-			case DASH:
 				break;
 			case SPEED:
 				mod = ((PlayerSkillEffectsData) e).getSpeed();
@@ -270,8 +306,6 @@ public class StatusEffectTools {
 				break;
 			case COMBO:
 				break;
-			case SUMMON:
-				break;
 			case CHARGE:
 				break;
 			case DRAGON_BLOOD:
@@ -285,8 +319,6 @@ public class StatusEffectTools {
 				break;
 			case PICKPOCKET:
 				break;
-			case PUPPET:
-				break;
 			case MESO_GUARD:
 				break;
 			case WEAKEN:
@@ -299,6 +331,11 @@ public class StatusEffectTools {
 
 	private static void dispelEffect(Player p, PlayerStatusEffect key, PlayerStatusEffectValues value) {
 		switch (key) {
+			case SUMMON:
+			case PUPPET:
+				p.getMap().destroyEntity(p.getSummonBySkill(value.getSource()));
+				p.removeFromSummons(value.getSource());
+				break;
 			case SLOW:
 				break;
 			case HOMING_BEACON:
@@ -337,7 +374,11 @@ public class StatusEffectTools {
 				break;
 			case ENERGY_CHARGE:
 				break;
-			case DIVINE_BODY:
+			case DASH_SPEED:
+				p.addSpeed(-value.getModifier());
+				break;
+			case DASH_JUMP:
+				p.addJump(-value.getModifier());
 				break;
 			case MONSTER_RIDING:
 				break;
@@ -363,8 +404,6 @@ public class StatusEffectTools {
 				break;
 			case HANDS:
 				p.addHands(-value.getModifier());
-				break;
-			case DASH:
 				break;
 			case SPEED:
 				p.addSpeed(-value.getModifier());
@@ -408,8 +447,6 @@ public class StatusEffectTools {
 				break;
 			case COMBO:
 				break;
-			case SUMMON:
-				break;
 			case CHARGE:
 				break;
 			case DRAGON_BLOOD:
@@ -421,8 +458,6 @@ public class StatusEffectTools {
 			case SHADOW_PARTNER:
 				break;
 			case PICKPOCKET:
-				break;
-			case PUPPET:
 				break;
 			case MESO_GUARD:
 				break;
