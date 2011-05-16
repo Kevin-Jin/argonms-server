@@ -91,7 +91,7 @@ public class GameEnterHandler {
 		}*/
 		client.getSession().send(writeEnterMap(player));
 		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
-			SkillTools.useCastSkill(player, Skills.HIDE, ((byte) 1));
+			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
 
 		/*try {

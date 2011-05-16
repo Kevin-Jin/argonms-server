@@ -104,7 +104,7 @@ public class ItemTools {
 		if (!statChanges.isEmpty())
 			p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(statChanges, false));
 		if (e.getDuration() > 0) { //buff item
-			StatusEffectTools.applyEffectsAndShowVisuals(p, e);
+			StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
 			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					cancelBuffItem(p, itemId);

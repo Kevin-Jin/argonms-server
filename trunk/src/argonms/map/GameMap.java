@@ -45,6 +45,7 @@ import argonms.map.entity.Mob;
 import argonms.map.entity.Mob.MobDeathHook;
 import argonms.map.entity.Npc;
 import argonms.map.entity.PlayerNpc;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.map.entity.Reactor;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
@@ -705,7 +706,7 @@ public class GameMap {
 		}
 	}
 
-	private void rangedEntityMoved(MapEntity ent) {
+	private void rangedEntityMoved(MapEntity ent, Player source) {
 		EntityPool players = entPools.get(EntityType.PLAYER);
 		byte[] showPacket = ent.getShowEntityMessage();
 		byte[] removePacket = ent.getDestructionMessage();
@@ -713,15 +714,17 @@ public class GameMap {
 		try {
 			for (MapEntity pEnt : players.allEnts()) {
 				Player p = (Player) pEnt;
-				if (entityInRange(ent, p)) {
-					if (!p.seesEntity(p)) {
-						p.addToVisibleMapEntities(ent);
-						p.getClient().getSession().send(showPacket);
-					}
-				} else {
-					if (p.seesEntity(p)) {
-						p.removeVisibleMapEntity(ent);
-						p.getClient().getSession().send(removePacket);
+				if (!p.equals(source)) {
+					if (entityInRange(ent, p)) {
+						if (!p.seesEntity(p)) {
+							p.addToVisibleMapEntities(ent);
+							p.getClient().getSession().send(showPacket);
+						}
+					} else {
+						if (p.seesEntity(p)) {
+							p.removeVisibleMapEntity(ent);
+							p.getClient().getSession().send(removePacket);
+						}
 					}
 				}
 			}
@@ -730,9 +733,13 @@ public class GameMap {
 		}
 	}
 
+	public void summonMoved(Player p, PlayerSkillSummon s, List<LifeMovementFragment> moves, Point startPos) {
+		sendToAll(writeSummonMovement(p, s, moves, startPos), s.getPosition(), p);
+	}
+
 	public void monsterMoved(Player p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
-		rangedEntityMoved(m);
-		sendToAll(writeMonsterMovement(useSkill, skill, skillId, s2, s3, s4, m.getId(), startPos, moves), m.getPosition(), p);
+		rangedEntityMoved(m, null);
+		sendToAll(writeMonsterMovement(m, useSkill, skill, skillId, s2, s3, s4, startPos, moves), m.getPosition(), p);
 	}
 
 	public void damageMonster(Player p, Mob m, int damage) {
@@ -956,10 +963,20 @@ public class GameMap {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeMonsterMovement(boolean useSkill, byte skill, short skillId, byte skillLevel, byte s3, byte s4, int eid, Point startPos, List<LifeMovementFragment> moves) {
+	private static byte[] writeSummonMovement(Player p, PlayerSkillSummon s, List<LifeMovementFragment> moves, Point startPos) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MOVE_SUMMON);
+		lew.writeInt(p.getId());
+		lew.writeInt(s.getId());
+		lew.writePos(startPos);
+		CommonPackets.writeSerializedMovements(lew, moves);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeMonsterMovement(Mob m, boolean useSkill, byte skill, short skillId, byte skillLevel, byte s3, byte s4, Point startPos, List<LifeMovementFragment> moves) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MOVE_MONSTER);
-		lew.writeInt(eid);
+		lew.writeInt(m.getId());
 		lew.writeBool(useSkill);
 		lew.writeByte(skill);
 		lew.writeByte((byte) skillId);

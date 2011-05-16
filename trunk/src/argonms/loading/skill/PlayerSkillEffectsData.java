@@ -60,6 +60,15 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		this.level = level;
 		this.prop = 100;
 		switch (skillid) { //for them skills that don't have x or y
+			case Skills.BEHOLDER:
+			case Skills.IFRIT:
+			case Skills.SUMMON_DRAGON:
+			case Skills.BAHAMUT:
+			case Skills.OCTOPUS:
+			case Skills.GAVIOTA:
+			case Skills.WRATH_OF_THE_OCTOPI:
+				effects.add(PlayerStatusEffect.SUMMON);
+				break;
 			case Skills.HIDE:
 				effects.add(PlayerStatusEffect.HIDE);
 				//kinda hacky, but hide doesn't have a duration
@@ -144,7 +153,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					effects.add(PlayerStatusEffect.CONCENTRATE);
 					break;
 				case Skills.DASH:
-					effects.add(PlayerStatusEffect.DASH);
+					effects.add(PlayerStatusEffect.DASH_SPEED);
 					break;
 				case Skills.FIGHTER_POWER_GUARD:
 				case Skills.PAGE_POWER_GUARD:
@@ -185,14 +194,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.XBOW_MASTER_SHARP_EYES:
 					effects.add(PlayerStatusEffect.SHARP_EYES);
 					break;
-				case Skills.BEHOLDER:
-				case Skills.IFRIT:
-				case Skills.SUMMON_DRAGON:
-				case Skills.BAHAMUT:
 				case Skills.PHOENIX:
-				case Skills.OCTOPUS:
-				case Skills.GAVIOTA:
-				case Skills.WRATH_OF_THE_OCTOPI:
 					effects.add(PlayerStatusEffect.SUMMON);
 					break;
 				case Skills.CLERIC_HOLY_SYMBOL:
@@ -317,6 +319,9 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.SPEARMAN_HYPER_BODY:
 				case Skills.GM_HYPER_BODY:
 					effects.add(PlayerStatusEffect.HYPER_BODY_MP);
+					break;
+				case Skills.DASH:
+					effects.add(PlayerStatusEffect.DASH_JUMP);
 					break;
 				case Skills.BOW_MASTER_SHARP_EYES:
 				case Skills.XBOW_MASTER_SHARP_EYES:

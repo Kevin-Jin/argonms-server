@@ -29,11 +29,13 @@ import java.util.Map;
 public class SkillStats {
 	private final Map<Byte, PlayerSkillEffectsData> levels;
 	private Element elemAttr;
-	private boolean isBuff, isCharged;
+	private byte summon;
+	private boolean prepared, keydown, keydownend;
 	private int animationTime;
 
 	protected SkillStats() {
 		levels = new HashMap<Byte, PlayerSkillEffectsData>();
+		summon = -1;
 	}
 
 	protected void addLevel(byte level, PlayerSkillEffectsData effect) {
@@ -44,12 +46,20 @@ public class SkillStats {
 		elemAttr = Element.valueOf(attr.charAt(0));
 	}
 
-	protected void setBuff() {
-		isBuff = true;
+	protected void setSummonType(byte type) {
+		summon = type;
 	}
 
-	protected void setChargedSkill() {
-		isCharged = true;
+	protected void setPrepared() {
+		prepared = true;
+	}
+
+	protected void setKeydown() {
+		keydown = true;
+	}
+
+	protected void setKeydownEnd() {
+		keydownend = true;
 	}
 
 	protected void setDelay(int delay) {
@@ -64,12 +74,24 @@ public class SkillStats {
 		return elemAttr;
 	}
 
-	public boolean isBuff() {
-		return isBuff;
+	public boolean isSummon() {
+		return summon != -1;
 	}
 
-	public boolean isChargedSkill() {
-		return isCharged;
+	public byte getSummonType() {
+		return summon;
+	}
+
+	public boolean isPrepared() {
+		return prepared;
+	}
+
+	public boolean isKeydown() {
+		return keydown;
+	}
+
+	public boolean isKeydownEnd() {
+		return keydownend;
 	}
 
 	public int getDelay() {

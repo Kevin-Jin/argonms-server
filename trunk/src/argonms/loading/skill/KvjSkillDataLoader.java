@@ -36,10 +36,12 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	private static final byte //skill props
 		NEXT_SKILL = 1,
 		ELEM_ATTR = 2,
-		IS_BUFF = 3,
-		DELAY = 4,
-		IS_CHARGE = 5,
-		NEXT_LEVEL = 6
+		DELAY = 3,
+		SUMMON = 4,
+		PREPARED = 5,
+		KEY_DOWN = 6,
+		KEY_DOWN_END = 7,
+		NEXT_LEVEL = 8
 	;
 
 	private String dataPath;
@@ -126,14 +128,20 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 				case ELEM_ATTR:
 					stats.setElementalAttribute(reader.readNullTerminatedString());
 					break;
-				case IS_BUFF:
-					stats.setBuff();
-					break;
 				case DELAY:
 					stats.setDelay(reader.readInt());
 					break;
-				case IS_CHARGE:
-					stats.setChargedSkill();
+				case SUMMON:
+					stats.setSummonType(reader.readByte());
+					break;
+				case PREPARED:
+					stats.setPrepared();
+					break;
+				case KEY_DOWN:
+					stats.setKeydown();
+					break;
+				case KEY_DOWN_END:
+					stats.setKeydownEnd();
 					break;
 				case NEXT_LEVEL:
 					level = reader.readByte();
@@ -267,14 +275,8 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					skillid = (short) reader.readInt();
 					mobSkillStats.put(Short.valueOf(skillid), stats);
 					break;
-				case IS_BUFF:
-					//wtf? IMPOSSIBLE!
-					break;
 				case DELAY:
 					stats.setDelay(reader.readInt());
-					break;
-				case IS_CHARGE:
-					//wtf? IMPOSSIBLE!
 					break;
 				case NEXT_LEVEL:
 					level = reader.readByte();

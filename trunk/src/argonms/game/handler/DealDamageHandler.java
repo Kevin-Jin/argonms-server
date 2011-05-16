@@ -146,6 +146,30 @@ public class DealDamageHandler {
 		applyAttack(attack, p);
 	}
 
+	public static void handlePreparedSkill(LittleEndianReader packet, RemoteClient rc) {
+		Player p = ((GameClient) rc).getPlayer();
+		int skillId = packet.readInt();
+		byte skillLevel = packet.readByte();
+		byte flags = packet.readByte();
+		byte speed = packet.readByte();
+
+		if (SkillDataLoader.getInstance().getSkill(skillId).isPrepared()) {
+			if (skillId != Skills.CHAKRA) {
+				p.getMap().sendToAll(writePreparedSkillEffect(p.getId(), skillId, skillLevel, flags, speed), p);
+			} else {
+				int dex = p.getCurrentDex();
+				int luk = p.getCurrentLuk();
+				int recovery = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel).getY();
+				int maximum = (int) ((luk * 6.6 + dex) * 0.2 * (recovery / 100.0 + 1));
+				int minimum = (int) ((luk * 3.3 + dex) * 0.2 * (recovery / 100.0 + 1));
+				p.gainHp(Rng.getGenerator().nextInt(maximum - minimum + 1) + minimum);
+				//apparently chakra does not show a prepared skill effect to the map.
+			}
+		} else {
+			//TODO: hacking
+		}
+	}
+
 	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, Player p) {
 		AttackInfo ret = new AttackInfo();
 
@@ -154,7 +178,7 @@ public class DealDamageHandler {
 			ret.setNumAttackedAndDamage(packet.readByte() & 0xFF);
 			ret.skill = packet.readInt();
 			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(ret.skill);
-			ret.charge = skillStats != null && skillStats.isChargedSkill() ? packet.readInt() : 0;
+			ret.charge = skillStats != null && skillStats.isKeydown() ? packet.readInt() : 0;
 			/*display = */packet.readByte();
 			ret.stance = packet.readByte();
 			ret.setWeaponClass(packet.readByte());
@@ -294,8 +318,8 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) 3));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) 3), player);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -306,8 +330,8 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) 3));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) 3), player);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -318,39 +342,36 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) 3));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) 3), player);
+					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
 
+		//energy charge
 		if ((level = player.getSkillLevel(Skills.ENERGY_CHARGE)) > 0) {
-			e = SkillDataLoader.getInstance().getSkill(Skills.ENERGY_CHARGE).getLevel(level);
-			PlayerStatusEffectValues v = player.getEffectValue(PlayerStatusEffect.ENERGY_CHARGE);
-			if (v == null || v.getModifier() != 10000) {
-				if (v == null) {
-					v = new PlayerStatusEffectValues(e, (short) e.getX());
-					player.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, v);
-				} else {
-					v.changeMod((short) Math.min(v.getModifier() + e.getX(), 10000));
-					if (v.getModifier() == 10000) {
-						final PlayerSkillEffectsData effects = e;
-						player.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
-							public void run() {
-								player.removeCancelEffectTask(effects);
-								player.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
-								Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
-								player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
-								player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
-							}
-						}, e.getDuration()));
-					}
+			if (player.getEnergyCharge() != 10000) {
+				e = SkillDataLoader.getInstance().getSkill(Skills.ENERGY_CHARGE).getLevel(level);
+				player.addToEnergyCharge(e.getX());
+				if (player.getEnergyCharge() == 10000) {
+					player.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, new PlayerStatusEffectValues(e, (short) 10000));
+					final PlayerSkillEffectsData effects = e;
+					player.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+						public void run() {
+							player.resetEnergyCharge();
+							player.removeCancelEffectTask(effects);
+							player.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
+							Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
+							player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+							player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
+						}
+					}, e.getDuration()));
 				}
-				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(v.getModifier()));
+				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(player.getEnergyCharge()));
 				player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
 				player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
-				player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) 3));
-				player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) 3), player);
+				player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
+				player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
 			}
 		}
 	}
@@ -578,6 +599,17 @@ public class DealDamageHandler {
 			for (int eachd : oned.getValue())
 				lew.writeInt(eachd);
 		}
+		return lew.getBytes();
+	}
+
+	private static byte[] writePreparedSkillEffect(int cid, int skillId, byte level, byte flags, byte speed) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+		lew.writeShort(ClientSendOps.PREPARED_SKILL);
+		lew.writeInt(cid);
+		lew.writeInt(skillId);
+		lew.writeByte(level);
+		lew.writeByte(flags);
+		lew.writeByte(speed);
 		return lew.getBytes();
 	}
 

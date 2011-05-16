@@ -112,6 +112,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.CANCEL_SKILL:
 				GameBuffHandler.handleCancelSkill(reader, s);
 				break;
+			case ClientRecvOps.PREPARED_SKILL:
+				DealDamageHandler.handlePreparedSkill(reader, s);
+				break;
 			case ClientRecvOps.MESO_DROP:
 				InventoryHandler.handleMesoDrop(reader, s);
 				break;
@@ -124,8 +127,14 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.CHANGE_BINDING:
 				GamePlayerMiscHandler.handleBindingChange(reader, s);
 				break;
+			case ClientRecvOps.MOVE_SUMMON:
+				GameMovementHandler.handleMoveSummon(reader, s);
+				break;
 			case ClientRecvOps.SUMMON_ATTACK:
 				DealDamageHandler.handleSummonAttack(reader, s);
+				break;
+			case ClientRecvOps.DAMAGE_SUMMON:
+				TakeDamageHandler.handlePuppetTakeDamage(reader, s);
 				break;
 			case ClientRecvOps.MOVE_MOB:
 				GameMovementHandler.handleMoveMob(reader, s);

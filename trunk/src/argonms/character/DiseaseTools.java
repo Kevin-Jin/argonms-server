@@ -29,7 +29,7 @@ import argonms.tools.Timer;
 public class DiseaseTools {
 	public static void applyDebuff(final Player p, final short mobSkillId, final byte skillLevel) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
-		StatusEffectTools.applyEffectsAndShowVisuals(p, e);
+		StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
 		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				cancelDebuff(p, mobSkillId, skillLevel);
