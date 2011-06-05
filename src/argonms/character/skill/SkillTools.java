@@ -46,6 +46,10 @@ public class SkillTools {
 		return ((skillid / 10000) % 10) == 2;
 	}
 
+	public static boolean isBeginnerSkill(int skillid) {
+		return (skillid / 10000) == 0;
+	}
+
 	//TODO: IMPLEMENT HP/MP stuff for alchemist, heal, chakra
 	private static Map<ClientUpdateKey, Number> skillCastCosts(Player p, PlayerSkillEffectsData e) {
 		//might as well save ourself some bandwidth and don't send an individual

@@ -70,6 +70,14 @@ public class SkillStats {
 		return levels.get(Byte.valueOf(level));
 	}
 
+	public byte maxLevel() {
+		byte highest = 0;
+		for (Byte level : levels.keySet())
+			if (level.byteValue() > highest)
+				highest = level.byteValue();
+		return highest;
+	}
+
 	public Element getElement() {
 		return elemAttr;
 	}

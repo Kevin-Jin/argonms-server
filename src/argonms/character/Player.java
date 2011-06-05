@@ -33,6 +33,7 @@ import argonms.character.inventory.Item;
 import argonms.character.inventory.TamingMob;
 import argonms.character.inventory.Pet;
 import argonms.character.inventory.Ring;
+import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
 import argonms.game.GameServer;
 import argonms.loading.StatusEffectsData;
@@ -60,7 +61,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -1013,6 +1013,10 @@ public class Player extends MapEntity {
 		return baseStr + addStr;
 	}
 
+	public short incrementLocalStr() {
+		return ++this.baseStr;
+	}
+
 	public void setStr(short newStr) {
 		this.baseStr = newStr;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
@@ -1024,6 +1028,10 @@ public class Player extends MapEntity {
 
 	public int getCurrentDex() {
 		return baseDex + addDex;
+	}
+
+	public short incrementLocalDex() {
+		return ++this.baseDex;
 	}
 
 	public void setDex(short newDex) {
@@ -1039,6 +1047,10 @@ public class Player extends MapEntity {
 		return baseInt + addInt;
 	}
 
+	public short incrementLocalInt() {
+		return ++this.baseInt;
+	}
+
 	public void setInt(short newInt) {
 		this.baseInt = newInt;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
@@ -1050,6 +1062,10 @@ public class Player extends MapEntity {
 
 	public int getCurrentLuk() {
 		return baseLuk + addLuk;
+	}
+
+	public short incrementLocalLuk() {
+		return ++this.baseLuk;
 	}
 
 	public void setLuk(short newLuk) {
@@ -1105,6 +1121,11 @@ public class Player extends MapEntity {
 		if (remHp > maxHp)
 			remHp = maxHp;
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp)), false));
+	}
+
+	public short incrementMaxHp(int gain) {
+		updateMaxHp((short) Math.min(baseMaxHp + gain, 30000));
+		return baseMaxHp;
 	}
 
 	public void recalculateMaxHp(short hhbPerc) {
@@ -1175,6 +1196,11 @@ public class Player extends MapEntity {
 		getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(baseMaxMp)), false));
 	}
 
+	public short incrementMaxMp(int gain) {
+		updateMaxMp((short) Math.min(baseMaxMp + gain, 30000));
+		return baseMaxMp;
+	}
+
 	/**
 	 *
 	 * @param mhbPerc Mana hyper body percent.
@@ -1195,6 +1221,10 @@ public class Player extends MapEntity {
 
 	public short getAp() {
 		return remAp;
+	}
+
+	public short decrementLocalAp() {
+		return --this.remAp;
 	}
 
 	public void setAp(short newAp) {
@@ -1435,6 +1465,13 @@ public class Player extends MapEntity {
 	public byte getSkillLevel(int skill) {
 		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
 		return skillLevel != null ? skillLevel.getLevel() : 0;
+	}
+
+	public byte getMasterSkillLevel(int skill) {
+		if (!SkillTools.isFourthJob(skill))
+			return SkillDataLoader.getInstance().getSkill(skill).maxLevel();
+		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
+		return skillLevel != null ? skillLevel.getMasterLevel() : 0;
 	}
 
 	/**

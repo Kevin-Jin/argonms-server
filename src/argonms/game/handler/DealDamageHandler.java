@@ -63,7 +63,6 @@ public class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
-		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
 		applyAttack(attack, p);
 	}
@@ -126,7 +125,6 @@ public class DealDamageHandler {
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
-		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p.getPosition(), p);
 		applyAttack(attack, p);
 	}
@@ -134,7 +132,6 @@ public class DealDamageHandler {
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
-		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p.getPosition(), p);
 		applyAttack(attack, p);
 	}

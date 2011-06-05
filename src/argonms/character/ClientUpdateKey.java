@@ -18,6 +18,9 @@
 
 package argonms.character;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  *
  * @author GoldenKevin
@@ -51,5 +54,13 @@ public enum ClientUpdateKey {
 
 	public int intValue() {
 		return mask;
+	}
+
+	public static Set<ClientUpdateKey> valueOf(int mask) {
+		EnumSet<ClientUpdateKey> included = EnumSet.noneOf(ClientUpdateKey.class);
+		for (ClientUpdateKey key : values())
+			if ((mask & key.intValue()) == key.intValue())
+				included.add(key);
+		return included;
 	}
 }
