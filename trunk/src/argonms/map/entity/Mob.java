@@ -33,7 +33,6 @@ import argonms.loading.skill.MobSkillEffectsData;
 import argonms.map.Element;
 import argonms.map.GameMap;
 import argonms.map.MapEntity;
-import argonms.map.MapEntity.EntityType;
 import argonms.map.MonsterStatusEffectValues;
 import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.net.external.ClientSendOps;

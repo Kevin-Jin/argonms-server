@@ -19,7 +19,6 @@
 package argonms.map.entity;
 
 import argonms.character.Player;
-import argonms.character.skill.Skills;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.map.MapEntity;
