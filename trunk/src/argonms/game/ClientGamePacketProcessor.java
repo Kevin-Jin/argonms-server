@@ -130,6 +130,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, s);
 				break;
+			case ClientRecvOps.MINIROOM_ACT:
+				MiniroomHandler.handleAction(reader, s);
+				break;
 			case ClientRecvOps.CHANGE_BINDING:
 				GamePlayerMiscHandler.handleBindingChange(reader, s);
 				break;

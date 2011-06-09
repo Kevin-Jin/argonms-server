@@ -46,6 +46,7 @@ public final class ClientSendOps {
 		SKILL_ENTRY_UPDATE = 0x21,
 		SHOW_STATUS_INFO = 0x24,
 		SHOW_QUEST_COMPLETION = 0x2E,
+		SHOW_HIRED_MERCHANT_AGREEMENT = 0x2F,
 		SPAWN_PORTAL = 0x40,
 		SERVER_MESSAGE = 0x41,
 		TIP_MESSAGE = 0x4A,
@@ -64,6 +65,7 @@ public final class ClientSendOps {
 		SHOW_PLAYER = 0x78,
 		REMOVE_PLAYER = 0x79,
 		MAP_CHAT = 0x7A,
+		MINIROOM_BOX = 0x7C,
 		SHOW_PET = 0x7F,
 		SHOW_SUMMON = 0x86,
 		REMOVE_SUMMON = 0x87,
@@ -100,6 +102,9 @@ public final class ClientSendOps {
 		REMOVE_NPC = 0xC3,
 		CONTROL_NPC = 0xC4,
 		MOVE_NPC = 0xC5,
+		SHOW_HIRED_MERCHANT = 0xCA,
+		REMOVE_HIRED_MERCHANT = 0xCB,
+		HIRED_MERCHANT_BOX = 0xCC,
 		SHOW_ITEM_DROP = 0xCD,
 		REMOVE_ITEM_DROP = 0xCE,
 		SHOW_MIST = 0xD2,
@@ -111,6 +116,7 @@ public final class ClientSendOps {
 		REMOVE_REACTOR = 0xD9,
 		NPC_TALK = 0xED,
 		NPC_SHOP = 0xEE,
+		MINIROOM_ACT = 0xF5,
 		KEYMAP = 0x107
 	;
 	

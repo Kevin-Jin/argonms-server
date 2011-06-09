@@ -44,8 +44,10 @@ import argonms.loading.skill.SkillDataLoader;
 import argonms.login.LoginClient;
 import argonms.map.MapEntity;
 import argonms.map.GameMap;
+import argonms.map.entity.Minigame.MinigameResult;
 import argonms.map.entity.Mob;
 import argonms.map.entity.Miniroom;
+import argonms.map.entity.Miniroom.MiniroomType;
 import argonms.map.entity.Mob.MobDeathHook;
 import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.CommonPackets;
@@ -135,7 +137,9 @@ public class Player extends MapEntity {
 
 	private int guild;
 	private Party party;
+
 	private Miniroom miniroom;
+	private final Map<MiniroomType, Map<MinigameResult, Integer>> minigameStats;
 
 	private Player () {
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
@@ -153,6 +157,7 @@ public class Player extends MapEntity {
 		controllingMobs = new ArrayList<Mob>();
 		questStatuses = new HashMap<Short, QuestEntry>();
 		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
+		minigameStats = new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class);
 	}
 
 	public int getDataId() {
@@ -175,6 +180,7 @@ public class Player extends MapEntity {
 				updateDbCooldowns(con);
 				updateDbBindings(con);
 				updateDbQuests(con);
+				updateDbMinigameStats(con);
 			}
 			con.commit();
 		} catch (SQLException ex) {
@@ -538,9 +544,35 @@ public class Player extends MapEntity {
 				mps.close();
 			}
 			ps.close();
-
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not save quest states of character "
+					+ name, ex);
+		}
+	}
+
+	public void updateDbMinigameStats(Connection con) {
+		try {
+			PreparedStatement ps = con.prepareStatement("DELETE FROM "
+					+ "`minigamescores` WHERE `characterid` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `minigamescores` "
+					+ "(`characterid`,`gametype`,`wins`,`ties`,`losses`) "
+					+ "VALUES (?, ?, ?, ?, ?)");
+			ps.setInt(1, getDataId());
+			for (Entry<MiniroomType, Map<MinigameResult, Integer>> stats : minigameStats.entrySet()) {
+				ps.setByte(2, stats.getKey().byteValue());
+				ps.setInt(3, stats.getValue().get(MinigameResult.WIN).intValue());
+				ps.setInt(4, stats.getValue().get(MinigameResult.TIE).intValue());
+				ps.setInt(5, stats.getValue().get(MinigameResult.LOSS).intValue());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+			ps.close();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not save minigame stats of character "
 					+ name, ex);
 		}
 	}
@@ -838,6 +870,20 @@ public class Player extends MapEntity {
 								p.addToWatchedList(questId, QuestRequirementType.MESOS);
 						}
 					}
+				}
+				rs.close();
+				ps.close();
+
+				ps = con.prepareStatement("SELECT * FROM `minigamescores` "
+						+ "WHERE `characterid` = ?");
+				ps.setInt(1, id);
+				rs = ps.executeQuery();
+				while (rs.next()) {
+					Map<MinigameResult, Integer> stats = new EnumMap<MinigameResult, Integer>(MinigameResult.class);
+					stats.put(MinigameResult.WIN, rs.getInt(4));
+					stats.put(MinigameResult.TIE, rs.getInt(5));
+					stats.put(MinigameResult.LOSS, rs.getInt(6));
+					p.minigameStats.put(MiniroomType.valueOf(rs.getByte(3)), stats);
 				}
 				rs.close();
 				ps.close();
@@ -1653,7 +1699,15 @@ public class Player extends MapEntity {
 		return changeMap(mapid, (byte) 0);
 	}
 
+	public void leaveMapRoutines() {
+		if (miniroom != null) {
+			miniroom.leaveRoom(this);
+			miniroom = null;
+		}
+	}
+
 	public boolean changeMap(int mapid, byte initialPortal) {
+		leaveMapRoutines();
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
 			map.removePlayer(this);
@@ -1669,6 +1723,7 @@ public class Player extends MapEntity {
 	}
 
 	public void prepareChannelChange() {
+		leaveMapRoutines();
 		GameServer.getChannel(client.getChannel()).removePlayer(this);
 		if (map != null)
 			map.removePlayer(this);
@@ -1698,6 +1753,7 @@ public class Player extends MapEntity {
 			cancelTask.cancel(true);
 		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
 			cancelTask.cancel(true);
+		leaveMapRoutines();
 		if (map != null)
 			map.removePlayer(this);
 		saveCharacter();
@@ -2097,6 +2153,23 @@ public class Player extends MapEntity {
 		QuestEntry status = questStatuses.get(Short.valueOf(questId));
 		return status != null && status.getState() == QuestEntry.STATE_STARTED
 				&& !QuestDataLoader.getInstance().canCompleteQuest(this, questId);
+	}
+
+	public int getMinigamePoints(MiniroomType game, MinigameResult stat) {
+		Map<MinigameResult, Integer> stats = minigameStats.get(game);
+		return stats != null ? stats.get(stat).intValue() : 0;
+	}
+
+	public void setMinigamePoints(MiniroomType game, MinigameResult stat, int newValue) {
+		Map<MinigameResult, Integer> stats = minigameStats.get(game);
+		if (stats == null) {
+			stats = new EnumMap<MinigameResult, Integer>(MinigameResult.class);
+			stats.put(MinigameResult.WIN, Integer.valueOf(0));
+			stats.put(MinigameResult.TIE, Integer.valueOf(0));
+			stats.put(MinigameResult.LOSS, Integer.valueOf(0));
+			minigameStats.put(game, stats);
+		}
+		stats.put(stat, Integer.valueOf(newValue));
 	}
 
 	public EntityType getEntityType() {
