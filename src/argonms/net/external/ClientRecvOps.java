@@ -96,7 +96,7 @@ public final class ClientRecvOps {
 		USE_INNER_PORTAL = 0x5D,
 		TROCK_ADD_MAP = 0x5E,
 		QUEST_ACTION = 0x62,
-		//Special skills and buff items? 0x63 (Concentrate, Maple Warrior, summons) when casted and canceled, or when player gets diseased
+		//certain (repeatable) skill effects and buff items? 0x63 (Concentrate, Maple Warrior, summons) when casted and canceled, or when player gets diseased
 		SKILL_MACRO = 0x65,
 		REPORT = 0x68,
 		USE_TREASURE_BOX = 0x69,
@@ -104,8 +104,7 @@ public final class ClientRecvOps {
 		WHISPER = 0x6C,
 		SPOUSECHAT = 0x6D,
 		MESSENGER = 0x6E,
-		PLAYER_SHOP = 0x6F,
-		PLAYER_INTERACTION = 0x6F,
+		MINIROOM_ACT = 0x6F,
 		PARTY_OPERATION = 0x70,
 		DENY_PARTY_REQUEST = 0x71,
 		GUILD_OPERATION = 0x72,

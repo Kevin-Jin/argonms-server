@@ -799,6 +799,17 @@
 	* Process summon types for summon skills in SkillDataLoader. Full support
 	for summons and puppets.
 
+2011-06-05  GoldenKevin  (revision 37)
+	* You may now allocate ability (stat) points and skill points.
+	* Code cleanup - removal of unused imports and variables/function calls.
+
+2011-06-09  GoldenKevin  (revision 38)
+	* Full support for minigames (i.e. omok and match cards).
+	* Added new database table for recording minigame scores - update your SQL.
+	* Full support for player trades.
+	* Progress on all sorts of minirooms. Player shops are partially functional
+	and hired merchants are still totally nonfunctional.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -40,6 +40,8 @@ import argonms.map.MobSkills;
 import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.map.movement.LifeMovementFragment;
 import argonms.map.entity.ItemDrop;
+import argonms.map.entity.Miniroom;
+import argonms.map.entity.Miniroom.MiniroomType;
 import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
 import argonms.map.entity.MysticDoor;
@@ -186,7 +188,7 @@ public class CommonPackets {
 	}
 
 	//it seems as though Vana's PlayerPacketHelper::addItemInfo is much simpler
-	private static void writeItemInfo(LittleEndianWriter lew, short pos,
+	public static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item, boolean showExpire, boolean leaveOut,
 			boolean shopTransfer) {
 
@@ -1208,13 +1210,17 @@ public class CommonPackets {
 				lew.writeInt(pet.getFoothold());
 			}
 		}
-		/*PlayerInteractionRoom room = p.getInteractionRoom();
-		if (room != null && room.isOwner(p))
-			addAnnounceBox(lew, room);
-		else
-			lew.writeByte((byte) 0);
-
+		lew.writeByte((byte) 0);
+		lew.writeShort((short) 1);
+		lew.writeInt(0);
+		lew.writeInt(0);
 		lew.writeShort((short) 0);
+		Miniroom room = p.getMiniRoom();
+		if (room != null && room.isVisible() && room.positionOf(p) == 0)
+			writeMiniroomMapBox(lew, room);
+		else
+			lew.writeByte(MiniroomType.NONE.byteValue());
+		/*lew.writeShort((short) 0);
 		Map<Short, InventorySlot> equippedC = p.getInventory(InventoryType.EQUIPPED).getAll();
 		List<Ring> rings = new ArrayList<Ring>();
 		for (Entry<Short, InventorySlot> slot : equippedC.entrySet()) {
@@ -1235,10 +1241,6 @@ public class CommonPackets {
 			lew.writeInt(0);
 		}*/
 		lew.writeByte((byte) 0);
-		lew.writeShort((short) 1);
-		lew.writeInt(0);
-		lew.writeInt(0);
-		lew.writeInt(0);
 		lew.writeInt(0);
 		lew.writeInt(0);
 		return lew.getBytes();
@@ -1712,6 +1714,19 @@ public class CommonPackets {
 		lew.writeByte((byte) 0xFF);
 		lew.writeLengthPrefixedString(message);
 		return lew.getBytes();
+	}
+
+	public static void writeMiniroomMapBox(LittleEndianWriter lew, Miniroom room) {
+		lew.writeByte(room.getMiniroomType().byteValue());
+		lew.writeInt(room.getId());
+		lew.writeLengthPrefixedString(room.getMessage());
+		if (room.getMiniroomType() != MiniroomType.HIRED_MERCHANT)
+			lew.writeBool(room.getPassword() != null);
+		lew.writeByte(room.getStyle());
+		lew.writeByte(room.getAmountOfPlayers());
+		lew.writeByte(room.getMaxPlayers());
+		if (room.getMiniroomType() != MiniroomType.HIRED_MERCHANT)
+			lew.writeBool(room.gameInProgress());
 	}
 
 	/*public static byte[] writeEnterCs(Player p) {

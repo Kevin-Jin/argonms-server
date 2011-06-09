@@ -180,6 +180,19 @@ CREATE TABLE `keymaps` (
   CONSTRAINT `keymaps_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `minigamescores`;
+CREATE TABLE `minigamescores` (
+  `entryid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` int(11) NOT NULL,
+  `gametype` tinyint(3) NOT NULL,
+  `wins` int(11) NOT NULL DEFAULT 0,
+  `ties` int(11) NOT NULL DEFAULT 0,
+  `losses` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY(`entryid`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `minigamescores_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `skillmacros`;
 CREATE TABLE `skillmacros` (
   `entryid` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
