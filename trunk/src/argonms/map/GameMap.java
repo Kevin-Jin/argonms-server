@@ -187,17 +187,15 @@ public class GameMap {
 				return;
 			else
 				controller = null;
-		int minControlled = Integer.MAX_VALUE;
+		int minControlled = Integer.MAX_VALUE, count;
 		EntityPool players = entPools.get(EntityType.PLAYER);
 		players.lockRead();
 		try {
 			for (MapEntity ent : players.allEnts()) {
 				Player p = (Player) ent;
-				int count = p.getControlledMobs().size();
-				if (p.isVisible() && count < minControlled) {
+				if (p.isVisible() && (count = p.getControlledMobs().getSizeWhenSafe()) < minControlled) {
 					minControlled = count;
 					controller = p;
-					break;
 				}
 			}
 		} finally {
@@ -207,10 +205,8 @@ public class GameMap {
 			monster.setController(controller);
 			controller.controlMonster(monster);
 			boolean aggro = monster.isFirstAttack();
-			if (aggro) {
-				monster.setControllerHasAggro(true);
-				monster.setControllerKnowsAboutAggro(true);
-			}
+			monster.setControllerHasAggro(aggro);
+			monster.setControllerKnowsAboutAggro(aggro);
 			controller.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, aggro));
 		}
 	}
@@ -449,13 +445,19 @@ public class GameMap {
 
 	public void removePlayer(Player p) {
 		destroyEntity(p);
-		for (Mob m : p.getControlledMobs()) {
-			m.setController(null);
-			m.setControllerHasAggro(false);
-			m.setControllerKnowsAboutAggro(false);
-			updateMonsterController(m);
+		LockableList<Mob> controlledMobs = p.getControlledMobs();
+		controlledMobs.lockWrite();
+		try {
+			for (Mob m : controlledMobs) {
+				m.setController(null);
+				m.setControllerHasAggro(false);
+				m.setControllerKnowsAboutAggro(false);
+				updateMonsterController(m);
+			}
+			controlledMobs.clear();
+		} finally {
+			controlledMobs.unlockWrite();
 		}
-		p.clearControlledMobs();
 		if (timeLimitTasks != null) {
 			ScheduledFuture<?> future = timeLimitTasks.remove(p);
 			if (future != null)
@@ -494,6 +496,7 @@ public class GameMap {
 				destroyEntity(d);
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
+				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
 			}
 		} else {
 			InventorySlot pickedUp = d.getItem();
@@ -610,11 +613,11 @@ public class GameMap {
 	}
 
 	public void summonMoved(Player p, PlayerSkillSummon s, List<LifeMovementFragment> moves, Point startPos) {
-		sendToAll(writeSummonMovement(p, s, moves, startPos));
+		sendToAll(writeSummonMovement(p, s, moves, startPos), p);
 	}
 
 	public void monsterMoved(Player p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
-		sendToAll(writeMonsterMovement(m, useSkill, skill, skillId, s2, s3, s4, startPos, moves));
+		sendToAll(writeMonsterMovement(m, useSkill, skill, skillId, s2, s3, s4, startPos, moves), p);
 	}
 
 	public void damageMonster(Player p, Mob m, int damage) {

@@ -55,6 +55,7 @@ import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
+import argonms.tools.collections.LockableList;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -128,7 +129,7 @@ public class Player extends MapEntity {
 	private final Map<Integer, PlayerSkillSummon> summons;
 	private short energyCharge;
 
-	private final List<Mob> controllingMobs;
+	private final LockableList<Mob> controllingMobs;
 
 	private final Map<Short, QuestEntry> questStatuses;
 	private final Map<QuestRequirementType, Map<Number, List<Short>>> questReqWatching;
@@ -151,7 +152,7 @@ public class Player extends MapEntity {
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		diseaseCancels = new HashMap<Short, ScheduledFuture<?>>();
 		summons = new HashMap<Integer, PlayerSkillSummon>();
-		controllingMobs = new ArrayList<Mob>();
+		controllingMobs = new LockableList<Mob>(new ArrayList<Mob>());
 		questStatuses = new HashMap<Short, QuestEntry>();
 		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
 		minigameStats = new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class);
@@ -1759,20 +1760,16 @@ public class Player extends MapEntity {
 		client = null;
 	}
 
-	public List<Mob> getControlledMobs() {
-		return Collections.unmodifiableList(controllingMobs);
+	public LockableList<Mob> getControlledMobs() {
+		return controllingMobs;
 	}
 
 	public void controlMonster(Mob m) {
-		controllingMobs.add(m);
+		controllingMobs.addWhenSafe(m);
 	}
 
 	public void uncontrolMonster(Mob m) {
-		controllingMobs.remove(m);
-	}
-
-	public void clearControlledMobs() {
-		controllingMobs.clear();
+		controllingMobs.removeWhenSafe(m);
 	}
 
 	public void checkMonsterAggro(Mob monster) {

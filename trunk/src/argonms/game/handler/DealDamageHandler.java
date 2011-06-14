@@ -63,7 +63,7 @@ public class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
-		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)));
+		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p);
 		applyAttack(attack, p);
 	}
 
@@ -118,28 +118,28 @@ public class DealDamageHandler {
 		} else { //soul arrow sends no visible projectile either.
 			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p)));
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p)), p);
 		applyAttack(attack, p);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
-		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack));
+		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p);
 		applyAttack(attack, p);
 	}
 
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
-		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)));
+		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p);
 		applyAttack(attack, p);
 	}
 
 	public static void handleSummonAttack(LittleEndianReader packet, RemoteClient rc) {
 		Player p = ((GameClient) rc).getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.SUMMON, p);
-		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack));
+		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack), p);
 		applyAttack(attack, p);
 	}
 

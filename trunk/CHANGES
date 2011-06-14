@@ -836,6 +836,22 @@
 	* When the entity id counter of a entity pool in a map overflows,
 	EntityPool.nextEntId() skips over entities that are still alive.
 
+2011-06-14  GoldenKevin  (revision 40)
+	* Fixed monsters being uncontrolled by a client immediately after the
+	controlling client is echoed back the monster's first move.
+	* Revised various other calls to sendToAll that used the ranged entity
+	no-echo overload pre-r39, so that a message isn't echoed back to the client
+	that sent the message when it is unnecessary and a waste of a bandwidth.
+	* Player's controlled mobs list is now thread safe (possibility of
+	concurrent access since the mob respawn thread and various packet handler
+	threads can access a player at the same time).
+	* GameMap.updateMonsterController() now will actually go through the entire
+	player entity pool to find the most suitable candidate for a mob controller
+	instead of just assigning the job to the first non-hidden player in the pool
+	* An inventory full message is now shown when a player tries to pick up more
+	mesos than technical limits would allow.
+	* Fixed some things regarding monster aggro.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

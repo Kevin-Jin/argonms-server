@@ -69,9 +69,7 @@ public class GameBuffHandler {
 						}
 						m.setController(p);
 						p.controlMonster(m);
-						p.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(m, true));
-						if (m.controllerHasAggro())
-							m.setControllerHasAggro(true);
+						p.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(m, m.controllerHasAggro()));
 						m.setControllerKnowsAboutAggro(false);
 					}
 				}
