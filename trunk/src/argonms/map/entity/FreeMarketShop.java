@@ -221,7 +221,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
-		public byte[] getCreationMessage() {
+		public byte[] getShowNewSpawnMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 			lew.writeShort(ClientSendOps.SHOW_HIRED_MERCHANT);
 			lew.writeInt(ownerId);

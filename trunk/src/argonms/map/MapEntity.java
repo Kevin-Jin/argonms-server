@@ -43,9 +43,8 @@ public abstract class MapEntity {
 	public abstract boolean isAlive();
 	public abstract boolean isVisible();
 
-	public abstract byte[] getCreationMessage();
-	public abstract byte[] getShowEntityMessage(); //for nonranged types, make this call getCreationMessage().
-	public abstract byte[] getOutOfViewMessage(); //nonranged types can return null
+	public abstract byte[] getShowNewSpawnMessage();
+	public abstract byte[] getShowExistingSpawnMessage();
 	public abstract byte[] getDestructionMessage();
 
 	public int getId() {
@@ -79,6 +78,4 @@ public abstract class MapEntity {
 	public void setFoothold(short newFh) {
 		foothold = newFh;
 	}
-
-	public abstract boolean isNonRangedType();
 }

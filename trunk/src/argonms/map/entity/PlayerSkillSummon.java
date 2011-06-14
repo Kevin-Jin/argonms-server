@@ -87,23 +87,15 @@ public class PlayerSkillSummon extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowSummon(this, (byte) 0);
 	}
 
-	public byte[] getShowEntityMessage() {
+	public byte[] getShowExistingSpawnMessage() {
 		return CommonPackets.writeShowSummon(this, (byte) 1);
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveSummon(this, (byte) 1);
-	}
-
-	public boolean isNonRangedType() {
-		return true;
 	}
 }

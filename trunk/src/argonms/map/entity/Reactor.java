@@ -143,23 +143,15 @@ public class Reactor extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowReactor(this);
 	}
 
-	public byte[] getShowEntityMessage() { //I guess there is nothing else...?
+	public byte[] getShowExistingSpawnMessage() { //I guess there is nothing else...?
 		return CommonPackets.writeShowReactor(this);
-	}
-
-	public byte[] getOutOfViewMessage() { //I guess there is nothing else...?
-		return CommonPackets.writeRemoveReactor(this);
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveReactor(this);
-	}
-
-	public boolean isNonRangedType() {
-		return false;
 	}
 }

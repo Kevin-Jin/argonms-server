@@ -79,23 +79,15 @@ public class Npc extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowAndControlNpc(this);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
+	public byte[] getShowExistingSpawnMessage() {
+		return getShowNewSpawnMessage();
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeStopControlAndRemoveNpc(this);
-	}
-
-	public boolean isNonRangedType() {
-		return true;
 	}
 }

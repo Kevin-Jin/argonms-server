@@ -243,7 +243,7 @@ public class Trade extends Miniroom {
 		return lew.getBytes();
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		throw new UnsupportedOperationException("Trades do not show up on the map");
 	}
 
