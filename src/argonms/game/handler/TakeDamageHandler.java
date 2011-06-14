@@ -146,7 +146,7 @@ public class TakeDamageHandler {
 		int skillId = puppet.getSkillId();
 		if (puppet.hurt(damage)) //died
 			SkillTools.cancelBuffSkill(p, skillId);
-		p.getMap().sendToAll(writeHurtPuppet(p, puppet, misc, damage, mobEid), puppet.getPosition(), null);
+		p.getMap().sendToAll(writeHurtPuppet(p, puppet, misc, damage, mobEid));
 	}
 
 	private static byte[] writeHurtPuppet(Player p, PlayerSkillSummon puppet, byte misc, int damage, int mobEid) {

@@ -142,11 +142,11 @@ public class ItemDrop extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_DROP, mod);
 	}
 
-	public byte[] getShowEntityMessage() {
+	public byte[] getShowExistingSpawnMessage() {
 		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_NONE, mod);
 	}
 
@@ -154,15 +154,7 @@ public class ItemDrop extends MapEntity {
 		return CommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_FADE, mod);
 	}
 
-	public byte[] getOutOfViewMessage() {
-		return CommonPackets.writeRemoveItemDrop(this, DESTROY_ANIMATION_NONE);
-	}
-
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveItemDrop(this, mod);
-	}
-
-	public boolean isNonRangedType() {
-		return false;
 	}
 }

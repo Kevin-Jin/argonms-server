@@ -48,23 +48,15 @@ public class MysticDoor extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowMysticDoor(this);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return null; //TODO: return something... it is ranged after all
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
+	public byte[] getShowExistingSpawnMessage() {
+		return getShowNewSpawnMessage();
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveMysticDoor(this);
-	}
-
-	public boolean isNonRangedType() {
-		return false;
 	}
 }

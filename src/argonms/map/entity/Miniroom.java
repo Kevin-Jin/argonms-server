@@ -265,7 +265,7 @@ public abstract class Miniroom extends MapEntity {
 		openToMap = true;
 		//miniroom should already be in map's entities list - so just make it
 		//visible to the players
-		map.sendToAll(getCreationMessage());
+		map.sendToAll(getShowNewSpawnMessage());
 	}
 
 	public void tempCloseRoom(GameMap map) {
@@ -318,7 +318,7 @@ public abstract class Miniroom extends MapEntity {
 		return openToMap;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_BOX);
 		lew.writeInt(occupants[0].getId());
@@ -326,8 +326,8 @@ public abstract class Miniroom extends MapEntity {
 		return lew.getBytes();
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
+	public byte[] getShowExistingSpawnMessage() {
+		return getShowNewSpawnMessage();
 	}
 
 	public byte[] getDestructionMessage() {
@@ -336,14 +336,6 @@ public abstract class Miniroom extends MapEntity {
 		lew.writeInt(occupants[0].getId());
 		lew.writeByte((byte) 0);
 		return lew.getBytes();
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
-	}
-
-	public boolean isNonRangedType() {
-		return true;
 	}
 
 	protected static void writeMiniroomAvatar(LittleEndianWriter lew, Player p, byte pos) {

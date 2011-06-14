@@ -55,7 +55,6 @@ import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
-import argonms.tools.collections.LockableList;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -129,7 +128,6 @@ public class Player extends MapEntity {
 	private final Map<Integer, PlayerSkillSummon> summons;
 	private short energyCharge;
 
-	private final LockableList<MapEntity> visibleEntities;
 	private final List<Mob> controllingMobs;
 
 	private final Map<Short, QuestEntry> questStatuses;
@@ -153,7 +151,6 @@ public class Player extends MapEntity {
 		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
 		diseaseCancels = new HashMap<Short, ScheduledFuture<?>>();
 		summons = new HashMap<Integer, PlayerSkillSummon>();
-		visibleEntities = new LockableList<MapEntity>(new ArrayList<MapEntity>());
 		controllingMobs = new ArrayList<Mob>();
 		questStatuses = new HashMap<Short, QuestEntry>();
 		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
@@ -1762,36 +1759,6 @@ public class Player extends MapEntity {
 		client = null;
 	}
 
-	public boolean seesEntity(MapEntity o) {
-		visibleEntities.lockRead();
-		try {
-			return visibleEntities.contains(o);
-		} finally {
-			visibleEntities.unlockRead();
-		}
-	}
-
-	public void addToVisibleMapEntities(MapEntity o) {
-		visibleEntities.addWhenSafe(o);
-	}
-
-	public LockableList<MapEntity> getVisibleMapEntities() {
-		return visibleEntities;
-	}
-
-	public void removeVisibleMapEntity(MapEntity o) {
-		visibleEntities.removeWhenSafe(o);
-	}
-
-	public void clearVisibleEntities() {
-		visibleEntities.lockWrite();
-		try {
-			visibleEntities.clear();
-		} finally {
-			visibleEntities.unlockWrite();
-		}
-	}
-
 	public List<Mob> getControlledMobs() {
 		return Collections.unmodifiableList(controllingMobs);
 	}
@@ -2184,24 +2151,16 @@ public class Player extends MapEntity {
 		return !isEffectActive(PlayerStatusEffect.HIDE);
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowPlayer(this);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
+	public byte[] getShowExistingSpawnMessage() {
+		return getShowNewSpawnMessage();
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemovePlayer(this);
-	}
-
-	public boolean isNonRangedType() {
-		return true;
 	}
 
 	public String toString() {

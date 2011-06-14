@@ -424,24 +424,16 @@ public class Mob extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowMonster(this, true, spawnEffect);
 	}
 
-	public byte[] getShowEntityMessage() {
+	public byte[] getShowExistingSpawnMessage() {
 		return CommonPackets.writeShowMonster(this, false, spawnEffect);
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return CommonPackets.writeRemoveMonster(this, DESTROY_ANIMATION_NONE);
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveMonster(this, deathEffect);
-	}
-
-	public boolean isNonRangedType() {
-		return false;
 	}
 
 	public interface MobDeathHook {

@@ -115,23 +115,15 @@ public class Mist extends MapEntity {
 		return true;
 	}
 
-	public byte[] getCreationMessage() {
+	public byte[] getShowNewSpawnMessage() {
 		return CommonPackets.writeShowMist(this);
 	}
 
-	public byte[] getShowEntityMessage() {
-		return getCreationMessage();
-	}
-
-	public byte[] getOutOfViewMessage() {
-		return null;
+	public byte[] getShowExistingSpawnMessage() {
+		return getShowNewSpawnMessage();
 	}
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemoveMist(this);
-	}
-
-	public boolean isNonRangedType() {
-		return true;
 	}
 }

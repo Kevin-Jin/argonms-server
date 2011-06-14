@@ -810,6 +810,32 @@
 	* Progress on all sorts of minirooms. Player shops are partially functional
 	and hired merchants are still totally nonfunctional.
 
+2011-06-14  GoldenKevin  (revision 39)
+	* No more ranged map entities. Rationale:
+		* Bandwidth of repeated packets used to show and hide entities as they
+		went in and out of range for a player was costlier than sending each
+		player the spawn packet for every entity on the map only once
+		(especially the relatively huge spawn packet for mobs).
+		* Saves memory server side since it no longer has to keep track of every
+		mob/drop/etc. that is in range of a player.
+		* Spares precious server CPU cycles that are used to check if a ranged
+		entity is in range every time either a player moves or that ranged
+		entity moves. No more CPU cycles wasted on costly thread safe operations
+		with each player's "visibleEntities" pool.
+		* Fixes ranged entities disappearing when a player jumps down. Concept
+		of ranged entities became obsolete when players were able to jump down,
+		allowing them to move from one point to another much faster than through
+		any other kind of movement. The speed of the server and network latency
+		became responsible for whether the server could update a client with its
+		new set of visible ranged entities fast enough so that they were spawned
+		before the player could view that part of the map.
+		* Makes GameMap code cleaner, clearer, and concise with less redundancy.
+	* Renamed MapEntity.getCreationMessage to getShowNewSpawnMessage and
+	getShowEntityMessage to getShowExistingSpawnMessage.
+	* Dead monsters are now removed from a player's controlled mobs list
+	* When the entity id counter of a entity pool in a map overflows,
+	EntityPool.nextEntId() skips over entities that are still alive.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
