@@ -49,7 +49,7 @@ import argonms.map.entity.PlayerSkillSummon;
 import argonms.map.entity.Reactor;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import argonms.tools.collections.LockableList;
 import argonms.tools.collections.LockableMap;
 import argonms.tools.collections.Pair;
@@ -211,7 +211,7 @@ public class GameMap {
 		}
 	}
 
-	public final void spawnEntity(MapEntity ent) {
+	private void spawnEntityInternal(MapEntity ent, boolean newSpawn) {
 		EntityPool pool = entPools.get(ent.getEntityType());
 		pool.lockWrite();
 		try {
@@ -221,7 +221,15 @@ public class GameMap {
 			pool.unlockWrite();
 		}
 		if (ent.isVisible())
-			sendToAll(ent.getShowNewSpawnMessage());
+			sendToAll(newSpawn ? ent.getShowNewSpawnMessage() : ent.getShowExistingSpawnMessage());
+	}
+
+	public final void spawnEntity(MapEntity ent) {
+		spawnEntityInternal(ent, true);
+	}
+
+	public void spawnExistingEntity(MapEntity ent) {
+		spawnEntityInternal(ent, false);
 	}
 
 	private void sendEntityData(MapEntity ent, Player p) {
@@ -259,10 +267,12 @@ public class GameMap {
 		} finally {
 			players.unlockWrite();
 		}
+		for (PlayerSkillSummon summon : p.summonsList())
+			spawnExistingEntity(summon);
 		if (timeLimitTasks != null) {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
 			//when canceled, so should we just use a WeakReference to player?
-			ScheduledFuture<?> future = Timer.getInstance().runAfterDelay(new Runnable() {
+			ScheduledFuture<?> future = Scheduler.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					p.changeMap(stats.getForcedReturn());
 					p.getClient().getSession().send(writeShowTimeLimit(0));
@@ -272,7 +282,7 @@ public class GameMap {
 			timeLimitTasks.put(p, future);
 		}
 		if (decHpTasks != null) {
-			ScheduledFuture<?> future = Timer.getInstance().runRepeatedly(new Runnable() {
+			ScheduledFuture<?> future = Scheduler.getInstance().runRepeatedly(new Runnable() {
 				public void run() {
 					p.doDecHp(stats.getProtectItem(), stats.getDecHp());
 				}
@@ -308,7 +318,7 @@ public class GameMap {
 		if (d.getDropType() == ItemDrop.ITEM)
 			checkForItemTriggeredReactors(d);
 		final Integer eid = Integer.valueOf(d.getId());
-		Timer.getInstance().runAfterDelay(new Runnable() {
+		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				ItemDrop d = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eid);
 				if (d != null) {
@@ -364,7 +374,7 @@ public class GameMap {
 		}
 		//expire every drop at once in the same Runnable rather than have a
 		//separate Runnable job for each drop running in parallel.
-		Timer.getInstance().runAfterDelay(new Runnable() {
+		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				for (Integer eId : dropped) {
 					ItemDrop drop = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eId.intValue());
@@ -395,7 +405,7 @@ public class GameMap {
 
 	public void spawnMist(final Mist mist, final int duration) {
 		spawnEntity(mist);
-		Timer tMan = Timer.getInstance();
+		Scheduler tMan = Scheduler.getInstance();
 		final ScheduledFuture<?> poisonSchedule;
 		if (mist.getMistType() == Mist.POISON_MIST) {
 			Runnable poisonTask = new Runnable() {
@@ -444,6 +454,8 @@ public class GameMap {
 	}
 
 	public void removePlayer(Player p) {
+		for (PlayerSkillSummon summon : p.summonsList())
+			destroyEntity(summon);
 		destroyEntity(p);
 		LockableList<Mob> controlledMobs = p.getControlledMobs();
 		controlledMobs.lockWrite();
@@ -481,7 +493,7 @@ public class GameMap {
 	public void destroyReactor(final Reactor r) {
 		destroyEntity(r);
 		if (r.getDelay() > 0) {
-			Timer.getInstance().runAfterDelay(new Runnable() {
+			Scheduler.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					respawnReactor(r);
 				}
@@ -593,7 +605,7 @@ public class GameMap {
 	}
 
 	public void unhidePlayer(Player p) {
-		sendToAll(p.getShowExistingSpawnMessage());
+		sendToAll(p.getShowExistingSpawnMessage(), p);
 		EntityPool mobs = entPools.get(EntityType.MONSTER);
 		mobs.lockRead();
 		try {
@@ -602,6 +614,8 @@ public class GameMap {
 		} finally {
 			mobs.unlockRead();
 		}
+		for (PlayerSkillSummon summon : p.summonsList())
+			sendToAll(summon.getShowExistingSpawnMessage(), p);
 	}
 
 	public void hidePlayer(Player p) {

@@ -16,34 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.character.skill;
+package argonms.tools;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-
-import argonms.tools.Scheduler;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Cooldown {
-	private long endTime;
-	private ScheduledFuture<?> expiration;
+public class Scheduler {
+	private static Scheduler instance;
+	private ScheduledExecutorService timer;
 
-	public Cooldown(int remaining, Runnable expireTask) {
-		this.endTime = System.currentTimeMillis() + remaining;
-		this.expiration = Scheduler.getInstance().runAfterDelay(expireTask, remaining);
+	private Scheduler() {
+		timer = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
-	public int getMillisecondsRemaining() {
-		return (int) (endTime - System.currentTimeMillis());
+	public ScheduledFuture<?> runAfterDelay(Runnable r, long delay) {
+		return timer.schedule(r, delay, TimeUnit.MILLISECONDS);
 	}
 
-	public short getSecondsRemaining() {
-		return (short) ((endTime - System.currentTimeMillis()) / 1000);
+	public ScheduledFuture<?> runRepeatedly(Runnable r, long delay, long period) {
+		return timer.scheduleAtFixedRate(r, delay, period, TimeUnit.MILLISECONDS);
 	}
 
-	public void cancel() {
-		expiration.cancel(true);
+	public void shutdown() {
+		timer.shutdown();
+	}
+
+	public static void enable() {
+		instance = new Scheduler();
+	}
+
+	public static Scheduler getInstance() {
+		return instance;
 	}
 }

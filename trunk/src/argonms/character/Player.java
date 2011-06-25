@@ -21,6 +21,9 @@ package argonms.character;
 import argonms.GlobalConstants;
 import argonms.character.skill.SkillEntry;
 import argonms.ServerType;
+import argonms.character.BuffState.ItemState;
+import argonms.character.BuffState.MobSkillState;
+import argonms.character.BuffState.SkillState;
 import argonms.character.skill.PlayerStatusEffectValues;
 import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.Cooldown;
@@ -56,6 +59,7 @@ import argonms.net.external.RemoteClient;
 import argonms.tools.DatabaseConnection;
 import argonms.tools.Rng;
 import argonms.tools.collections.LockableList;
+import argonms.tools.collections.Pair;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -63,6 +67,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -123,9 +128,9 @@ public class Player extends MapEntity {
 	private final Map<Integer, SkillEntry> skillEntries;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<PlayerStatusEffect, PlayerStatusEffectValues> activeEffects;
-	private final Map<Integer, ScheduledFuture<?>> skillCancels;
-	private final Map<Integer, ScheduledFuture<?>> itemEffectCancels;
-	private final Map<Short, ScheduledFuture<?>> diseaseCancels;
+	private final Map<Integer, Pair<SkillState, ScheduledFuture<?>>> skillFutures;
+	private final Map<Integer, Pair<ItemState, ScheduledFuture<?>>> itemEffectFutures;
+	private final Map<Short, Pair<MobSkillState, ScheduledFuture<?>>> diseaseFutures;
 	private final Map<Integer, PlayerSkillSummon> summons;
 	private short energyCharge;
 
@@ -148,9 +153,9 @@ public class Player extends MapEntity {
 		skillEntries = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		activeEffects = new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class);
-		skillCancels = new HashMap<Integer, ScheduledFuture<?>>();
-		itemEffectCancels = new HashMap<Integer, ScheduledFuture<?>>();
-		diseaseCancels = new HashMap<Short, ScheduledFuture<?>>();
+		skillFutures = new HashMap<Integer, Pair<SkillState, ScheduledFuture<?>>>();
+		itemEffectFutures = new HashMap<Integer, Pair<ItemState, ScheduledFuture<?>>>();
+		diseaseFutures = new HashMap<Short, Pair<MobSkillState, ScheduledFuture<?>>>();
 		summons = new HashMap<Integer, PlayerSkillSummon>();
 		controllingMobs = new LockableList<Mob>(new ArrayList<Mob>());
 		questStatuses = new HashMap<Short, QuestEntry>();
@@ -1565,21 +1570,21 @@ public class Player extends MapEntity {
 		}
 	}
 
-	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask) {
+	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask, byte level, long endTime) {
 		switch (e.getSourceType()) {
 			case ITEM:
-				synchronized (itemEffectCancels) {
-					itemEffectCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
+				synchronized (itemEffectFutures) {
+					itemEffectFutures.put(Integer.valueOf(e.getDataId()), new Pair<ItemState, ScheduledFuture<?>>(new ItemState(endTime), cancelTask));
 				}
 				break;
 			case PLAYER_SKILL:
-				synchronized (skillCancels) {
-					skillCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
+				synchronized (skillFutures) {
+					skillFutures.put(Integer.valueOf(e.getDataId()), new Pair<SkillState, ScheduledFuture<?>>(new SkillState(level, endTime), cancelTask));
 				}
 				break;
 			case MOB_SKILL:
-				synchronized (diseaseCancels) {
-					diseaseCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
+				synchronized (diseaseFutures) {
+					diseaseFutures.put(Short.valueOf((short) e.getDataId()), new Pair<MobSkillState, ScheduledFuture<?>>(new MobSkillState(level, endTime), cancelTask));
 				}
 				break;
 		}
@@ -1600,21 +1605,21 @@ public class Player extends MapEntity {
 	}
 
 	public void removeCancelEffectTask(StatusEffectsData e) {
-		ScheduledFuture<?> cancelTask;
+		Pair<? extends BuffState, ScheduledFuture<?>> cancelTask;
 		switch (e.getSourceType()) {
 			case ITEM:
-				synchronized (itemEffectCancels) {
-					cancelTask = itemEffectCancels.remove(Integer.valueOf(e.getDataId()));
+				synchronized (itemEffectFutures) {
+					cancelTask = itemEffectFutures.remove(Integer.valueOf(e.getDataId()));
 				}
 				break;
 			case PLAYER_SKILL:
-				synchronized (skillCancels) {
-					cancelTask = skillCancels.remove(Integer.valueOf(e.getDataId()));
+				synchronized (skillFutures) {
+					cancelTask = skillFutures.remove(Integer.valueOf(e.getDataId()));
 				}
 				break;
 			case MOB_SKILL:
-				synchronized (diseaseCancels) {
-					cancelTask = diseaseCancels.remove(Short.valueOf((short) e.getDataId()));
+				synchronized (diseaseFutures) {
+					cancelTask = diseaseFutures.remove(Short.valueOf((short) e.getDataId()));
 				}
 				break;
 			default:
@@ -1622,7 +1627,7 @@ public class Player extends MapEntity {
 				break;
 		}
 		if (cancelTask != null)
-			cancelTask.cancel(false);
+			cancelTask.right.cancel(false);
 	}
 
 	public boolean isEffectActive(PlayerStatusEffect buff) {
@@ -1630,28 +1635,49 @@ public class Player extends MapEntity {
 	}
 
 	public boolean isSkillActive(int skillid) {
-		return skillCancels.containsKey(Integer.valueOf(skillid));
+		return skillFutures.containsKey(Integer.valueOf(skillid));
 	}
 
 	public boolean isItemEffectActive(int itemid) {
-		return itemEffectCancels.containsKey(Integer.valueOf(itemid));
+		return itemEffectFutures.containsKey(Integer.valueOf(itemid));
 	}
 
 	public boolean isDebuffActive(short mobSkillId) {
-		return diseaseCancels.containsKey(Short.valueOf(mobSkillId));
+		return diseaseFutures.containsKey(Short.valueOf(mobSkillId));
 	}
 
 	public boolean areEffectsActive(StatusEffectsData e) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return skillCancels.containsKey(Integer.valueOf(e.getDataId()));
+				return skillFutures.containsKey(Integer.valueOf(e.getDataId()));
 			case ITEM:
-				return itemEffectCancels.containsKey(Integer.valueOf(e.getDataId()));
+				return itemEffectFutures.containsKey(Integer.valueOf(e.getDataId()));
 			case MOB_SKILL:
-				return diseaseCancels.containsKey(Short.valueOf((short) e.getDataId()));
+				return diseaseFutures.containsKey(Short.valueOf((short) e.getDataId()));
 			default:
 				return false;
 		}
+	}
+
+	public Map<Integer, SkillState> activeSkillsList() {
+		Map<Integer, SkillState> list = new HashMap<Integer, SkillState>();
+		for (Entry<Integer, Pair<SkillState, ScheduledFuture<?>>> activeSkill : skillFutures.entrySet())
+			list.put(activeSkill.getKey(), activeSkill.getValue().left);
+		return list;
+	}
+
+	public Map<Integer, ItemState> activeItemsList() {
+		Map<Integer, ItemState> list = new HashMap<Integer, ItemState>();
+		for (Entry<Integer, Pair<ItemState, ScheduledFuture<?>>> activeItem : itemEffectFutures.entrySet())
+			list.put(activeItem.getKey(), activeItem.getValue().left);
+		return list;
+	}
+
+	public Map<Short, MobSkillState> activeMobSkillsList() {
+		Map<Short, MobSkillState> list = new HashMap<Short, MobSkillState>();
+		for (Entry<Short, Pair<MobSkillState, ScheduledFuture<?>>> activeMobSkill : diseaseFutures.entrySet())
+			list.put(activeMobSkill.getKey(), activeMobSkill.getValue().left);
+		return list;
 	}
 
 	public void addToEnergyCharge(int gain) {
@@ -1666,11 +1692,12 @@ public class Player extends MapEntity {
 		return energyCharge;
 	}
 
-	public List<PlayerSkillSummon> getAllSummons() {
-		List<PlayerSkillSummon> summonsCopy = new ArrayList<PlayerSkillSummon>();
-		for (PlayerSkillSummon s : summons.values())
-			summonsCopy.add(s);
-		return summonsCopy;
+	public Collection<PlayerSkillSummon> summonsList() {
+		return summons.values();
+	}
+
+	public Map<Integer, PlayerSkillSummon> getAllSummons() {
+		return summons;
 	}
 
 	public void addToSummons(int skillId, PlayerSkillSummon summon) {
@@ -1702,6 +1729,9 @@ public class Player extends MapEntity {
 			miniroom.leaveRoom(this);
 			miniroom = null;
 		}
+		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
+		if (v != null)
+			SkillTools.cancelBuffSkill(this, v.getSource());
 	}
 
 	public boolean changeMap(int mapid, byte initialPortal) {
@@ -1745,12 +1775,12 @@ public class Player extends MapEntity {
 	}
 
 	public void close() {
-		for (ScheduledFuture<?> cancelTask : skillCancels.values())
-			cancelTask.cancel(true);
-		for (ScheduledFuture<?> cancelTask : itemEffectCancels.values())
-			cancelTask.cancel(true);
-		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
-			cancelTask.cancel(true);
+		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
+			cancelTask.right.cancel(true);
+		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
+			cancelTask.right.cancel(true);
+		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
+			cancelTask.right.cancel(true);
 		leaveMapRoutines();
 		if (map != null)
 			map.removePlayer(this);

@@ -19,13 +19,21 @@
 package argonms.game;
 
 import argonms.character.Player;
+import argonms.character.PlayerContinuation;
 import argonms.map.GameMap;
 import argonms.map.MapFactory;
 import argonms.net.external.ClientListener;
+import argonms.net.external.ClientSendOps;
+import argonms.net.external.CommonPackets;
 import argonms.net.external.PlayerLog;
 import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
+import argonms.tools.collections.Pair;
 import argonms.tools.output.LittleEndianByteArrayWriter;
+import java.net.UnknownHostException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,7 +43,10 @@ import java.util.logging.Logger;
  */
 public class WorldChannel {
 	private static final Logger LOG = Logger.getLogger(WorldChannel.class.getName());
+	private static final int CHANNEL_CHANGE_TIMEOUT = 5000;
 
+	private final Map<Integer, PlayerContinuation> channelChangeData;
+	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
 	private ClientListener handler;
 	private byte world, channel;
 	private int port;
@@ -44,6 +55,8 @@ public class WorldChannel {
 	private InterChannelCommunication worldComm;
 
 	protected WorldChannel(byte world, byte channel, int port) {
+		this.channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
+		this.queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
@@ -52,7 +65,7 @@ public class WorldChannel {
 	}
 
 	public void listen(boolean useNio) {
-		Timer.getInstance().runRepeatedly(new Runnable() {
+		Scheduler.getInstance().runRepeatedly(new Runnable() {
 			public void run() {
 				for (GameMap map : mapFactory.getMaps().values())
 					map.respawnMobs();
@@ -63,6 +76,10 @@ public class WorldChannel {
 			LOG.log(Level.INFO, "Channel {0} is online.", channel);
 		else
 			shutdown();
+	}
+
+	public byte getChannelId() {
+		return channel;
 	}
 
 	public void addPlayer(Player p) {
@@ -85,6 +102,54 @@ public class WorldChannel {
 
 	public boolean isPlayerConnected(int characterid) {
 		return storage.getPlayer(characterid) != null;
+	}
+
+	private void channelChangeError(Player p) {
+		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
+		p.getClient().getSession().send(CommonPackets.writeEnableActions());
+	}
+
+	public void requestChannelChange(final Player p, byte destCh) {
+		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
+			public void run() {
+				channelChangeError(p);
+			}
+		}, CHANNEL_CHANGE_TIMEOUT)));
+		worldComm.sendChannelChangeRequest(destCh, p);
+	}
+
+	public void performChannelChange(int playerId) {
+		Pair<Byte, ScheduledFuture<?>> channelChangeState = queuedChannelChanges.remove(Integer.valueOf(playerId));
+		channelChangeState.right.cancel(false);
+		byte[] destHost;
+		int destPort;
+		try {
+			Pair<byte[], Integer> hostAndPort = worldComm.getChannelHost(channelChangeState.left.byteValue());
+			destHost = hostAndPort.left;
+			destPort = hostAndPort.right.intValue();
+		} catch (UnknownHostException e) {
+			destHost = null;
+			destPort = -1;
+		}
+		Player p = storage.getPlayer(playerId);
+		if (destHost != null && destPort != -1) {
+			p.prepareChannelChange();
+			p.getClient().getSession().send(writeNewGameHost(destHost, destPort));
+		} else {
+			channelChangeError(p);
+		}
+	}
+
+	public void storePlayerBuffs(int playerId, PlayerContinuation context) {
+		channelChangeData.put(Integer.valueOf(playerId), context);
+	}
+
+	public boolean applyBuffsFromLastChannel(Player p) {
+		PlayerContinuation context = channelChangeData.remove(Integer.valueOf(p.getId()));
+		if (context == null)
+			return false;
+		context.applyTo(p);
+		return true;
 	}
 
 	private void sendNewLoad(short now) {
@@ -133,5 +198,14 @@ public class WorldChannel {
 
 	public InterChannelCommunication getInterChannelInterface() {
 		return worldComm;
+	}
+
+	private static byte[] writeNewGameHost(byte[] host, int port) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		lew.writeShort(ClientSendOps.GAME_HOST_ADDRESS);
+		lew.writeBool(true);
+		lew.writeBytes(host);
+		lew.writeShort((short) port);
+		return lew.getBytes();
 	}
 }

@@ -37,7 +37,7 @@ import argonms.map.MonsterStatusEffectValues;
 import argonms.map.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import argonms.tools.collections.LockableMap;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.lang.ref.WeakReference;
@@ -114,7 +114,7 @@ public class Mob extends MapEntity {
 	}
 
 	private void makeDrops(final int owner, final byte pickupAllow) {
-		Timer.getInstance().runAfterDelay(new Runnable() {
+		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				map.drop(getDrops(), Mob.this, pickupAllow, owner);
 			}

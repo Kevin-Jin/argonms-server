@@ -23,7 +23,7 @@ import argonms.character.inventory.InventorySlot;
 import argonms.map.GameMap;
 import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
 import java.util.ArrayList;
@@ -133,7 +133,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			ownerName = owner.getName();
 			ownerId = owner.getId();
 			final GameMap map = owner.getMap();
-			expireSchedule = Timer.getInstance().runAfterDelay(new Runnable() {
+			expireSchedule = Scheduler.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					closeRoom(map);
 				}

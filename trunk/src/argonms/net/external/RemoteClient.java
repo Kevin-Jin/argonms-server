@@ -19,7 +19,7 @@
 package argonms.net.external;
 
 import argonms.tools.DatabaseConnection;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -156,7 +156,7 @@ public abstract class RemoteClient {
 		}
 
 		public void waitForPong() {
-			future = Timer.getInstance().runAfterDelay(this, TIMEOUT);
+			future = Scheduler.getInstance().runAfterDelay(this, TIMEOUT);
 		}
 
 		public void run() {

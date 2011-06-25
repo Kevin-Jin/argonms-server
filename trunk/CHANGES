@@ -852,6 +852,18 @@
 	mesos than technical limits would allow.
 	* Fixed some things regarding monster aggro.
 
+2011-06-25  GoldenKevin  (revision 41)
+	* Renamed Timer to Scheduler to avoid any ambiguity/confusion with
+	java.util.Timer (plus, makes auto import much less annoying).
+	* When a player changes channels, their buffs are sent to the receiving
+	channel so that buff expires are synced up and buff effects are recognized.
+	* Summons now are removed from the map when the owner player leaves, and
+	spawn when the owner player enters into a new map.
+	* Fixed integer overflow causing LittleEndianReader.readLong to return
+	incorrect values.
+	* Summons/puppets now removed from map when changing maps/channels, or when
+	logging off. Summons are respawned on the new map if changing maps/channels.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

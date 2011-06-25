@@ -21,6 +21,7 @@ package argonms.map.entity;
 import argonms.character.Player;
 import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
+import argonms.loading.skill.SkillStats;
 import argonms.map.MapEntity;
 import argonms.net.external.CommonPackets;
 import java.awt.Point;
@@ -44,6 +45,17 @@ public class PlayerSkillSummon extends MapEntity {
 		skillLevel = skill.getLevel();
 		remHp = -1;
 		summonType = SkillDataLoader.getInstance().getSkill(skillId).getSummonType();
+	}
+
+	public PlayerSkillSummon(int pId, int skillId, byte skillLevel, Point pos, byte stance) {
+		setPosition(pos);
+		setStance(stance);
+		SkillStats skill = SkillDataLoader.getInstance().getSkill(skillId);
+		ownerEid = pId;
+		this.skillId = skillId;
+		this.skillLevel = skillLevel;
+		remHp = -1;
+		summonType = skill.getSummonType();
 	}
 
 	public byte getSummonType() {

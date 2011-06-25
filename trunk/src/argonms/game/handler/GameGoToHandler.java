@@ -22,13 +22,9 @@ import argonms.UserPrivileges;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
-import argonms.tools.collections.Pair;
 import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
-import java.net.UnknownHostException;
 
 /**
  *
@@ -38,23 +34,7 @@ public class GameGoToHandler {
 	public static void handleChangeChannel(LittleEndianReader packet, RemoteClient rc) {
 		byte destCh = (byte) (packet.readByte() + 1);
 		byte curCh = rc.getChannel();
-		byte[] host;
-		int port;
-		try {
-			Pair<byte[], Integer> hostAndPort = GameServer.getChannel(curCh).getInterChannelInterface().getChannelHost(destCh);
-			host = hostAndPort.left;
-			port = hostAndPort.right.intValue();
-		} catch (UnknownHostException e) {
-			host = null;
-			port = -1;
-		}
-		if (host != null && port != -1) {
-			((GameClient) rc).getPlayer().prepareChannelChange();
-			rc.getSession().send(writeNewHost(host, port));
-			rc.getSession().close();
-		} else {
-			//send them an error!
-		}
+		GameServer.getChannel(curCh).requestChannelChange(((GameClient) rc).getPlayer(), destCh);
 	}
 
 	public static void handleMapChange(LittleEndianReader packet, RemoteClient rc) {
@@ -89,14 +69,5 @@ public class GameGoToHandler {
 
 	public static void handleWarpCs(LittleEndianReader packet, RemoteClient rc) {
 		
-	}
-
-	private static byte[] writeNewHost(byte[] host, int port) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
-		lew.writeShort(ClientSendOps.GAME_HOST_ADDRESS);
-		lew.writeBool(true);
-		lew.writeBytes(host);
-		lew.writeShort((short) port);
-		return lew.getBytes();
 	}
 }
