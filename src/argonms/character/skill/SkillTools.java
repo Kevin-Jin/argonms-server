@@ -31,7 +31,7 @@ import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.net.external.ClientSession;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -176,11 +176,11 @@ public class SkillTools {
 		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
 		if (e.getDuration() > 0) {
-			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					cancelBuffSkill(p, skillId, skillLevel);
 				}
-			}, e.getDuration()));
+			}, e.getDuration()), skillLevel, System.currentTimeMillis() + e.getDuration());
 		}
 	}
 
@@ -194,14 +194,14 @@ public class SkillTools {
 	 * @param skillLevel the amount of skill points the Player had in the skill
 	 * @param remainingTime the amount of time left before the skill expires
 	 */
-	public static void localUseBuffSkill(final Player p, final int skillId, final byte skillLevel, int remainingTime) {
+	public static void localUseBuffSkill(final Player p, final int skillId, final byte skillLevel, long endTime) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffects(p, e);
-		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				cancelBuffSkill(p, skillId, skillLevel);
 			}
-		}, remainingTime));
+		}, endTime - System.currentTimeMillis()), skillLevel, endTime);
 	}
 
 	/**

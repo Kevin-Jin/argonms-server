@@ -70,27 +70,9 @@ public class GameEnterHandler {
 
 		WorldChannel cserv = GameServer.getChannel(client.getChannel());
 		cserv.addPlayer(player);
-		/*if (cserv.useBuffCooldownStorage()) {
-			try {
-				WorldChannelInterface wci = ChannelServer.getInstance(c.getChannel()).getWorldInterface();
-				if (ChannelServer.useCooldown()) {
-					List<PlayerCoolDownValueHolder> cooldowns = wci.getCooldownsFromStorage(cid);
-					if (cooldowns != null) {
-						player.giveCoolDowns(cooldowns);
-					}
-				}
-				//List<PlayerBuffValueHolder> buffs = wci.getBuffsFromStorage(cid);
-				List<PlayerBuffSourceValueHolder> buffs = wci.getBuffSourcesFromStorage(cid);
-				if (buffs != null) {
-					//player.silentGiveBuffs(buffs);
-					player.silentGiveBuffSources(buffs);
-				}
-			} catch (RemoteException e) {
-				c.getChannelServer().reconnectWorld();
-			}
-		}*/
 		client.getSession().send(writeEnterMap(player));
-		if (player.getPrivilegeLevel() > UserPrivileges.USER) //hide
+		cserv.applyBuffsFromLastChannel(player);
+		if (player.isVisible() && player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
 

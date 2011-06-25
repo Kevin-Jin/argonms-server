@@ -18,7 +18,12 @@
 
 package argonms.game;
 
+import argonms.character.BuffState.ItemState;
+import argonms.character.BuffState.MobSkillState;
+import argonms.character.BuffState.SkillState;
 import argonms.character.Player;
+import argonms.character.PlayerContinuation;
+import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.CommonPackets;
 import argonms.net.internal.RemoteCenterOps;
 import argonms.tools.collections.Pair;
@@ -29,6 +34,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -37,8 +43,10 @@ import java.util.Set;
  */
 public class InterChannelCommunication {
 	private static final byte //network opcodes (for remote server communications)
-		MULTI_CHAT = 1,
-		SPOUSE_CHAT = 2
+		INBOUND_PLAYER = 1,
+		INBOUND_PLAYER_ACCEPTED = 2,
+		MULTI_CHAT = 3,
+		SPOUSE_CHAT = 4
 	;
 
 	private byte[] localChannels;
@@ -79,6 +87,16 @@ public class InterChannelCommunication {
 		}
 		Integer port = remoteChannelPorts.get(Byte.valueOf(ch));
 		return new Pair<byte[], Integer>(remoteChannelAddresses.get(Byte.valueOf(ch)), port != null ? port : Integer.valueOf(-1));
+	}
+
+	public void sendChannelChangeRequest(byte destCh, Player p) {
+		for (int i = 0; i < localChannels.length; i++) {
+			if (destCh == localChannels[i]) {
+				GameServer.getChannel(destCh).getInterChannelInterface().receivedInboundPlayer(self.getChannelId(), p.getId(), new PlayerContinuation(p));
+				return;
+			}
+		}
+		getCenterComm().send(writePlayerContext(getCenterComm().getWorld(), destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, Player p, String message) {
@@ -122,6 +140,22 @@ public class InterChannelCommunication {
 		}
 	}
 
+	public void receivedInboundPlayer(byte fromCh, int playerId, PlayerContinuation context) {
+		self.storePlayerBuffs(playerId, context);
+
+		for (int i = 0; i < localChannels.length; i++) {
+			if (fromCh == localChannels[i]) {
+				GameServer.getChannel(fromCh).getInterChannelInterface().acceptedInboundPlayer(playerId);
+				return;
+			}
+		}
+		getCenterComm().send(writePlayerContextAccepted(getCenterComm().getWorld(), fromCh, playerId));
+	}
+
+	public void acceptedInboundPlayer(int playerId) {
+		self.performChannelChange(playerId);
+	}
+
 	public void receivedPrivateChat(byte type, int[] recipients, String name, String message) {
 		Player p;
 		for (int i = 0; i < recipients.length; i++) {
@@ -141,6 +175,53 @@ public class InterChannelCommunication {
 		lew.writeByte(RemoteCenterOps.INTER_CHANNEL);
 		lew.writeByte(world);
 		lew.writeByte(channel);
+	}
+
+	private static byte[] writePlayerContext(byte world, byte channel, byte src, int playerId, PlayerContinuation context) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		writeHeader(lew, world, channel);
+		lew.writeByte(INBOUND_PLAYER);
+		lew.writeByte(src);
+		lew.writeInt(playerId);
+		Map<Integer, ItemState> activeItems = context.getActiveItems();
+		lew.writeByte((byte) activeItems.size());
+		for (Entry<Integer, ItemState> item : activeItems.entrySet()) {
+			lew.writeInt(item.getKey().intValue());
+			lew.writeLong(item.getValue().endTime);
+		}
+		Map<Integer, SkillState> activeSkills = context.getActiveSkills();
+		lew.writeByte((byte) activeSkills.size());
+		for (Entry<Integer, SkillState> skill : activeSkills.entrySet()) {
+			SkillState skillState = skill.getValue();
+			lew.writeInt(skill.getKey().intValue());
+			lew.writeByte(skillState.level);
+			lew.writeLong(skillState.endTime);
+		}
+		Map<Short, MobSkillState> activeDebuffs = context.getActiveDebuffs();
+		lew.writeByte((byte) activeDebuffs.size());
+		for (Entry<Short, MobSkillState> debuff : activeDebuffs.entrySet()) {
+			MobSkillState debuffState = debuff.getValue();
+			lew.writeShort(debuff.getKey().shortValue());
+			lew.writeByte(debuffState.level);
+			lew.writeLong(debuffState.endTime);
+		}
+		Map<Integer, PlayerSkillSummon> activeSummons = context.getActiveSummons();
+		lew.writeByte((byte) activeSummons.size());
+		for (Entry<Integer, PlayerSkillSummon> summon : activeSummons.entrySet()) {
+			PlayerSkillSummon summonState = summon.getValue();
+			lew.writeInt(summon.getKey().intValue());
+			lew.writePos(summonState.getPosition());
+			lew.writeByte(summonState.getStance());
+		}
+		return lew.getBytes();
+	}
+
+	private static byte[] writePlayerContextAccepted(byte world, byte channel, int playerId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+		writeHeader(lew, world, channel);
+		lew.writeByte(INBOUND_PLAYER_ACCEPTED);
+		lew.writeInt(playerId);
+		return lew.getBytes();
 	}
 
 	private static byte[] writePrivateChatMessage(byte world, byte channel, byte type, int[] recipients, String name, String message) {
@@ -170,7 +251,29 @@ public class InterChannelCommunication {
 
 	public void receivedPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
-			case MULTI_CHAT: {
+			case INBOUND_PLAYER: {
+				PlayerContinuation context = new PlayerContinuation();
+				byte channel = packet.readByte();
+				int playerId = packet.readInt();
+				byte count = packet.readByte();
+				for (int i = 0; i < count; i++)
+					context.addItemBuff(packet.readInt(), packet.readLong());
+				count = packet.readByte();
+				for (int i = 0; i < count; i++)
+					context.addSkillBuff(packet.readInt(), packet.readByte(), packet.readLong());
+				count = packet.readByte();
+				for (int i = 0; i < count; i++)
+					context.addMonsterDebuff(packet.readShort(), packet.readByte(), packet.readLong());
+				count = packet.readByte();
+				for (int i = 0; i < count; i++)
+					context.addActiveSummon(packet.readInt(), playerId, packet.readPos(), packet.readByte());
+				receivedInboundPlayer(channel, playerId, context);
+				break;
+			} case INBOUND_PLAYER_ACCEPTED: {
+				int playerId = packet.readInt();
+				acceptedInboundPlayer(playerId);
+				break;
+			} case MULTI_CHAT: {
 				byte type = packet.readByte();
 				byte amount = packet.readByte();
 				int[] recipients = new int[amount];

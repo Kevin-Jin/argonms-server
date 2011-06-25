@@ -20,7 +20,7 @@ package argonms.character;
 
 import argonms.loading.skill.MobSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 
 /**
  *
@@ -30,21 +30,21 @@ public class DiseaseTools {
 	public static void applyDebuff(final Player p, final short mobSkillId, final byte skillLevel) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
-		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				cancelDebuff(p, mobSkillId, skillLevel);
 			}
-		}, e.getDuration()));
+		}, e.getDuration()), skillLevel, System.currentTimeMillis() + e.getDuration());
 	}
 
-	public static void localApplyDebuff(final Player p, final short mobSkillId, final byte skillLevel) {
+	public static void localApplyDebuff(final Player p, final short mobSkillId, final byte skillLevel, long endTime) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffects(p, e);
-		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				cancelDebuff(p, mobSkillId, skillLevel);
 			}
-		}, e.getDuration()));
+		}, endTime - System.currentTimeMillis()), skillLevel, endTime);
 	}
 
 	public static void cancelDebuff(Player p, short mobSkillId, byte skillLevel) {

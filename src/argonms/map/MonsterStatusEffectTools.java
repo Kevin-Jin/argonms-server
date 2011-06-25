@@ -29,7 +29,7 @@ import argonms.map.entity.Mist;
 import argonms.map.entity.Mob;
 import argonms.net.external.CommonPackets;
 import argonms.tools.Rng;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.EnumMap;
@@ -176,7 +176,7 @@ public class MonsterStatusEffectTools {
 		byte[] effect = getCastEffect(m, e, updatedStats);
 		if (m.isVisible() && effect != null)
 			p.getMap().sendToAll(effect);
-		m.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+		m.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				dispelEffectsAndShowVisuals(m, p, e);
 			}

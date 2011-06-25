@@ -28,7 +28,7 @@ import argonms.login.LoginWorld;
 import argonms.net.external.ClientListener;
 import argonms.net.external.PlayerLog;
 import argonms.tools.DatabaseConnection;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -123,7 +123,7 @@ public class ShopServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
-		Timer.enable();
+		Scheduler.enable();
 		handler = new ClientListener(ServerType.SHOP, (byte) -1, useNio);
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Shop Server is online.");

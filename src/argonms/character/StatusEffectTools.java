@@ -171,17 +171,12 @@ public class StatusEffectTools {
 	private static PlayerStatusEffectValues applyEffect(Player p, StatusEffectsData e, PlayerStatusEffect buff) {
 		short mod = -1;
 		switch (buff) {
-			case SUMMON: {
-				PlayerSkillSummon summon = p.getSummonBySkill(e.getDataId());
-				p.getMap().spawnEntity(summon);
+			case SUMMON:
 				break;
-			}
-			case PUPPET: {
+			case PUPPET:
 				PlayerSkillSummon summon = p.getSummonBySkill(e.getDataId());
-				p.getMap().spawnEntity(summon);
 				summon.setHp((short) ((PlayerSkillEffectsData) e).getX());
 				break;
-			}
 			case SLOW:
 				break;
 			case HOMING_BEACON:

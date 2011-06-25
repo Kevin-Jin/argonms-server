@@ -43,7 +43,7 @@ import argonms.net.external.ClientSendOps;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
 import argonms.tools.Rng;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import argonms.tools.input.LittleEndianReader;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import argonms.tools.output.LittleEndianWriter;
@@ -246,7 +246,7 @@ public class DealDamageHandler {
 				final Point tdpos = new Point(mobPos.x + Rng.getGenerator().nextInt(100) - 50, mobPos.y);
 				final ItemDrop d = new ItemDrop(dropAmt);
 
-				Timer.getInstance().runAfterDelay(new Runnable() {
+				Scheduler.getInstance().runAfterDelay(new Runnable() {
 					public void run() {
 						tdmap.drop(d, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
 					}
@@ -353,7 +353,7 @@ public class DealDamageHandler {
 				if (player.getEnergyCharge() == 10000) {
 					player.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, new PlayerStatusEffectValues(e, (short) 10000));
 					final PlayerSkillEffectsData effects = e;
-					player.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+					player.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 						public void run() {
 							player.resetEnergyCharge();
 							player.removeCancelEffectTask(effects);
@@ -362,7 +362,7 @@ public class DealDamageHandler {
 							player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
 							player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
 						}
-					}, e.getDuration()));
+					}, e.getDuration()), level, System.currentTimeMillis() + e.getDuration());
 				}
 				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(player.getEnergyCharge()));
 				player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
@@ -393,7 +393,7 @@ public class DealDamageHandler {
 				for (int meso : attack.mesoExplosion) {
 					final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
 					if (drop != null) {
-						Timer.getInstance().runAfterDelay(new Runnable() {
+						Scheduler.getInstance().runAfterDelay(new Runnable() {
 							public void run() {
 								synchronized (drop) {
 									if (drop.isAlive())

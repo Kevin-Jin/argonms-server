@@ -33,7 +33,7 @@ import argonms.loading.shop.NpcShopDataLoader;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.string.StringDataLoader;
 import argonms.tools.DatabaseConnection;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -197,7 +197,7 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
-		Timer.enable();
+		Scheduler.enable();
 		for (WorldChannel ch : channels.values())
 			ch.listen(useNio);
 		gci.serverReady();

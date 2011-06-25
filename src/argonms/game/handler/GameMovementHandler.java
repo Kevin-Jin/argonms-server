@@ -76,10 +76,14 @@ public class GameMovementHandler {
 	}
 
 	public static void handleMoveSummon(LittleEndianReader packet, RemoteClient rc) {
+		int entId = packet.readInt();
+
 		Player player = ((GameClient) rc).getPlayer();
-		int summonEntId = packet.readInt();
 		//PlayerSkillSummon summon = p.getSummonBySkill(p.getEffectValue(PlayerStatusEffect.SUMMON).getSource());
-		PlayerSkillSummon summon = (PlayerSkillSummon) player.getMap().getEntityById(EntityType.SUMMON, summonEntId);
+		PlayerSkillSummon summon = (PlayerSkillSummon) player.getMap().getEntityById(EntityType.SUMMON, entId);
+		if (summon == null)
+			return;
+
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
 		updatePosition(res, summon, 0);

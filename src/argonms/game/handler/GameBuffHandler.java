@@ -93,7 +93,9 @@ public class GameBuffHandler {
 					}
 					if (v != null) //we can only keep track of one PUPPET and one SUMMON at once =/
 						SkillTools.cancelBuffSkill(p, v.getSource());
-					p.addToSummons(skillId, new PlayerSkillSummon(p, skill.getLevel(p.getSkillLevel(skillId)), summonPos, stance));
+					PlayerSkillSummon summon = new PlayerSkillSummon(p, skill.getLevel(p.getSkillLevel(skillId)), summonPos, stance);
+					p.addToSummons(skillId, summon);
+					p.getMap().spawnEntity(summon);
 				}
 				break;
 		}

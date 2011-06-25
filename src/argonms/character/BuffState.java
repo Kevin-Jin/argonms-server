@@ -16,41 +16,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.tools;
-
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+package argonms.character;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Timer {
-	private static Timer instance;
-	private ScheduledThreadPoolExecutor timer;
+public abstract class BuffState {
+	public final long endTime;
 
-	private Timer() {
-		timer = new ScheduledThreadPoolExecutor(4);
+	protected BuffState(long endTime) {
+		this.endTime = endTime;
 	}
 
-	public ScheduledFuture<?> runAfterDelay(Runnable r, long delay) {
-		return timer.schedule(r, delay, TimeUnit.MILLISECONDS);
+	public static class SkillState extends BuffState {
+		public final byte level;
+
+		protected SkillState(byte level, long endTime) {
+			super(endTime);
+			this.level = level;
+		}
 	}
 
-	public ScheduledFuture<?> runRepeatedly(Runnable r, long delay, long period) {
-		return timer.scheduleAtFixedRate(r, delay, period, TimeUnit.MILLISECONDS);
+	public static class ItemState extends BuffState {
+		protected ItemState(long endTime) {
+			super(endTime);
+		}
 	}
 
-	public void shutdown() {
-		timer.shutdown();
-	}
+	public static class MobSkillState extends BuffState {
+		public final byte level;
 
-	public static void enable() {
-		instance = new Timer();
-	}
-
-	public static Timer getInstance() {
-		return instance;
+		protected MobSkillState(byte level, long endTime) {
+			super(endTime);
+			this.level = level;
+		}
 	}
 }

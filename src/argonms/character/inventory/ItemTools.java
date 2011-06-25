@@ -28,7 +28,7 @@ import argonms.character.StatusEffectTools;
 import argonms.loading.item.ItemDataLoader;
 import argonms.loading.item.ItemEffectsData;
 import argonms.net.external.CommonPackets;
-import argonms.tools.Timer;
+import argonms.tools.Scheduler;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -105,11 +105,11 @@ public class ItemTools {
 			p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(statChanges, false));
 		if (e.getDuration() > 0) { //buff item
 			StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
-			p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 				public void run() {
 					cancelBuffItem(p, itemId);
 				}
-			}, e.getDuration()));
+			}, e.getDuration()), (byte) 0, System.currentTimeMillis() + e.getDuration());
 		}
 	}
 
@@ -122,14 +122,14 @@ public class ItemTools {
 	 * @param itemId the identifier of the item that was used
 	 * @param remainingTime the amount of time left before the item expires
 	 */
-	public static void localUseBuffItem(final Player p, final int itemId, int remainingTime) {
+	public static void localUseBuffItem(final Player p, final int itemId, long endTime) {
 		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
 		StatusEffectTools.applyEffects(p, e);
-		p.addCancelEffectTask(e, Timer.getInstance().runAfterDelay(new Runnable() {
+		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				cancelBuffItem(p, itemId);
 			}
-		}, remainingTime));
+		}, endTime - System.currentTimeMillis()), (byte) 0, endTime);
 	}
 
 	public static void cancelBuffItem(Player p, int itemId) {
