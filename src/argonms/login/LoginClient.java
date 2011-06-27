@@ -21,7 +21,8 @@ package argonms.login;
 import argonms.ServerType;
 import argonms.net.HashFunctions;
 import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -63,11 +64,14 @@ public class LoginClient extends RemoteClient {
 	public byte loginResult(String pwd) {
 		boolean hashUpdate = false;
 		byte result = 0;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`banexpire`,`banreason`,`gm` FROM `accounts` WHERE `name` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`banexpire`,`banreason`,`gm` FROM `accounts` WHERE `name` = ?");
 			ps.setString(1, getAccountName());
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next()) {
 				setAccountId(rs.getInt(1));
 				String passhash = rs.getString(2);
@@ -84,8 +88,6 @@ public class LoginClient extends RemoteClient {
 				banExpire = rs.getInt(9);
 				banReason = rs.getByte(10);
 				gm = rs.getByte(11);
-				rs.close();
-				ps.close();
 				if ((salt == null || salt.length() == 0) && (passhash.equals(pwd) || HashFunctions.checkSha1Hash(passhash, pwd))) {
 					hashUpdate = true;
 				} else if (!HashFunctions.checkSaltedSha512Hash(passhash, pwd, salt)) {
@@ -101,6 +103,8 @@ public class LoginClient extends RemoteClient {
 				}
 
 				if (result == 0) {
+					rs.close();
+					ps.close();
 					if (hashUpdate) {
 						salt = HashFunctions.makeSalt();
 						passhash = HashFunctions.makeSaltedSha512Hash(pwd, salt);
@@ -115,14 +119,15 @@ public class LoginClient extends RemoteClient {
 						ps.setInt(2, getAccountId());
 					}
 					ps.executeUpdate();
-					ps.close();
 				}
 			} else {
 				result = 5;
 			}
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not fetch login information of account " + getAccountName(), ex);
+			LOG.log(Level.SEVERE, "Could not fetch login information of account " + getAccountName(), ex);
 			result = 8;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return result;
 	}
@@ -153,29 +158,35 @@ public class LoginClient extends RemoteClient {
 
 	public void setGender(byte gender) {
 		this.gender = gender;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `gender` = ? WHERE `id` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("UPDATE `accounts` SET `gender` = ? WHERE `id` = ?");
 			ps.setByte(1, gender);
 			ps.setInt(2, getAccountId());
 			ps.executeUpdate();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not set gender of account " + getAccountId(), ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 	}
 
 	public void setPin(String pin) {
 		this.pin = pin;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `pin` = ? WHERE `id` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("UPDATE `accounts` SET `pin` = ? WHERE `id` = ?");
 			ps.setString(1, pin);
 			ps.setInt(2, getAccountId());
 			ps.executeUpdate();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not set pin of account " + getAccountId(), ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 	}
 
@@ -183,12 +194,13 @@ public class LoginClient extends RemoteClient {
 	public byte deleteCharacter(int characterid, int enteredBirthday) {
 		byte status = 18;
 		if (birthday == 0 || birthday == enteredBirthday) {
-			Connection con = DatabaseConnection.getConnection();
+			Connection con = null;
+			PreparedStatement ps = null;
 			try {
-				PreparedStatement ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
+				con = DatabaseManager.getConnection(DatabaseType.STATE);
+				ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
 				ps.setInt(1, characterid);
 				int rowsUpdated = ps.executeUpdate();
-				ps.close();
 				if (rowsUpdated != 0)
 					status = 0;
 				else
@@ -196,6 +208,8 @@ public class LoginClient extends RemoteClient {
 			} catch (SQLException ex) {
 				LOG.log(Level.WARNING, "Could not delete character " + characterid + " of account " + getAccountId(), ex);
 				status = 1;
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 			}
 		}
 		return status;
@@ -209,10 +223,11 @@ public class LoginClient extends RemoteClient {
 		for (int i = 0; i < macAddresses.length; i++)
 			query.append("?, ");
 
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			ps = con.prepareStatement(query.replace(query.length() - 2, query.length(), ")").toString());
 			for (int i = 0; i < macAddresses.length; i++)
 				ps.setString(i + 1, macAddresses[i]);
@@ -222,14 +237,7 @@ public class LoginClient extends RemoteClient {
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not update MAC addresses of account " + getAccountId(), e);
 		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if (ps != null)
-					ps.close();
-			} catch (SQLException ex) {
-				//nothing we can do...
-			}
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return false;
 	}

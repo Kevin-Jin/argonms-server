@@ -20,7 +20,8 @@ package argonms.net.remoteadmin;
 
 import argonms.UserPrivileges;
 import argonms.net.HashFunctions;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -126,11 +127,14 @@ public class TelnetSession {
 	}
 
 	private void authenticate(String pwd) {
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `password`,`salt`,`banexpire`,`gm` FROM `accounts` WHERE `name` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `password`,`salt`,`banexpire`,`gm` FROM `accounts` WHERE `name` = ?");
 			ps.setString(1, username);
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next()) {
 				String passhash = rs.getString(1);
 				String salt = rs.getString(2);
@@ -168,13 +172,13 @@ public class TelnetSession {
 				ch.write("That in-game account does not exist. Try again.\r\n\r\n");
 				ch.write("Login: ");
 			}
-			rs.close();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not fetch login information for telnet user of account " + username, ex);
 			this.state = State.LOGIN;
 			ch.write("Internal server error. Try again.\r\n");
 			ch.write("Login: ");
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 	}
 

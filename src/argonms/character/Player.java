@@ -56,7 +56,8 @@ import argonms.map.entity.PlayerSkillSummon;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.PacketSubHeaders;
 import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import argonms.tools.Rng;
 import argonms.tools.collections.LockableList;
 import argonms.tools.collections.Pair;
@@ -170,8 +171,9 @@ public class Player extends MapEntity {
 	public void saveCharacter() {
 		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 		boolean prevAutoCommit = true;
-		Connection con = DatabaseConnection.getConnection();
-		try { //this speeds up saving by a lot
+		Connection con = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			prevTransactionIsolation = con.getTransactionIsolation();
 			prevAutoCommit = con.getAutoCommit();
 			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
@@ -202,12 +204,14 @@ public class Player extends MapEntity {
 				LOG.log(Level.WARNING, "Could not reset Connection config "
 						+ "after saving character " + getDataId(), ex);
 			}
+			DatabaseManager.cleanup(DatabaseType.STATE, null, null, con);
 		}
 	}
 
-	public void updateDbStats(Connection con) {
+	public void updateDbStats(Connection con) throws SQLException {
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("UPDATE `characters` "
+			ps = con.prepareStatement("UPDATE `characters` "
 					+ "SET `accountid` = ?, `world` = ?, `name` = ?, "
 					+ "`gender` = ?, `skin` = ?, `eyes` = ?, `hair` = ?, "
 					+ "`level` = ?, `job` = ?, `str` = ?, `dex` = ?, "
@@ -256,30 +260,31 @@ public class Player extends MapEntity {
 				LOG.log(Level.WARNING, "Updating a deleted character with name "
 						+ "{0} of account {1}.", new Object[] { name,
 						client.getAccountId() });
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save character '" + name
-					+ "' of account " + client.getAccountId()
-					+ " to database.", ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save stats of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public void updateDbInventory(Connection con) {
+	public void updateDbInventory(Connection con) throws SQLException {
+		String invUpdate = "DELETE FROM `inventoryitems` WHERE "
+				+ "`characterid` = ? AND `inventorytype` <= "
+				+ InventoryType.CASH.byteValue();
+		boolean invUpdateSpecifyAccId = false;
+		if (inventories.containsKey(InventoryType.STORAGE)) { //game server
+			invUpdate += " OR `accountid` = ? AND `inventorytype` = "
+					+ InventoryType.STORAGE.byteValue();
+			invUpdateSpecifyAccId = true;
+		} else if (inventories.containsKey(InventoryType.CASH_SHOP)) { //shop server
+			invUpdate += " OR `accountid` = ? AND `inventorytype` = "
+					+ InventoryType.CASH_SHOP.byteValue();
+			invUpdateSpecifyAccId = true;
+		}
+		PreparedStatement ps = null, ips = null;
+		ResultSet rs = null;
 		try {
-			String invUpdate = "DELETE FROM `inventoryitems` WHERE "
-					+ "`characterid` = ? AND `inventorytype` <= "
-					+ InventoryType.CASH.byteValue();
-			boolean invUpdateSpecifyAccId = false;
-			if (inventories.containsKey(InventoryType.STORAGE)) { //game server
-				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
-						+ InventoryType.STORAGE.byteValue();
-				invUpdateSpecifyAccId = true;
-			} else if (inventories.containsKey(InventoryType.CASH_SHOP)) { //shop server
-				invUpdate += " OR `accountid` = ? AND `inventorytype` = "
-						+ InventoryType.CASH_SHOP.byteValue();
-				invUpdateSpecifyAccId = true;
-			}
-			PreparedStatement ps = con.prepareStatement(invUpdate);
+			ps = con.prepareStatement(invUpdate);
 			ps.setInt(1, getDataId());
 			if (invUpdateSpecifyAccId)
 				ps.setInt(2, client.getAccountId());
@@ -320,22 +325,22 @@ public class Player extends MapEntity {
 					//after executeBatch to get generated keys for each item
 					//in iteration order...
 					ps.executeUpdate(); //need the generated keys, so no batch
-					ResultSet rs = ps.getGeneratedKeys();
+					rs = ps.getGeneratedKeys();
 					int inventoryKey = rs.next() ? rs.getInt(1) : -1;
 					rs.close();
 
 					switch (item.getType()) {
 						case RING:
 							Ring ring = (Ring) item;
-							PreparedStatement rps = con.prepareStatement(
+							ips = con.prepareStatement(
 									"INSERT INTO `inventoryrings` ("
 									+ "`inventoryitemid`,`partnerchrid`,"
 									+ "`partnerringid`) VALUES(?,?,?)");
-							rps.setInt(1, inventoryKey);
-							rps.setInt(2, ring.getPartnerCharId());
-							rps.setLong(3, ring.getPartnerRingId());
-							rps.executeUpdate();
-							rps.close();
+							ips.setInt(1, inventoryKey);
+							ips.setInt(2, ring.getPartnerCharId());
+							ips.setLong(3, ring.getPartnerRingId());
+							ips.executeUpdate();
+							ips.close();
 							insertEquipIntoDb(ring, inventoryKey, con);
 							break;
 						case EQUIP:
@@ -343,77 +348,82 @@ public class Player extends MapEntity {
 							break;
 						case PET:
 							Pet pet = (Pet) item;
-							PreparedStatement pps = con.prepareStatement(
+							ips = con.prepareStatement(
 									"INSERT INTO `inventorypets` ("
 									+ "`inventoryitemid`,`position`,`name`,"
 									+ "`level`,`closeness`,`fullness`,`expired`) "
 									+ "VALUES (?,?,?,?,?,?,?)");
-							pps.setInt(1, inventoryKey);
-							pps.setByte(2, getPetPosition(pet));
-							pps.setString(3, pet.getName());
-							pps.setByte(4, pet.getLevel());
-							pps.setShort(5, pet.getCloseness());
-							pps.setByte(6, pet.getFullness());
-							pps.setBoolean(7, pet.isExpired());
-							pps.executeUpdate();
-							pps.close();
+							ips.setInt(1, inventoryKey);
+							ips.setByte(2, getPetPosition(pet));
+							ips.setString(3, pet.getName());
+							ips.setByte(4, pet.getLevel());
+							ips.setShort(5, pet.getCloseness());
+							ips.setByte(6, pet.getFullness());
+							ips.setBoolean(7, pet.isExpired());
+							ips.executeUpdate();
 							break;
 						case MOUNT:
 							TamingMob mount = (TamingMob) item;
-							PreparedStatement mps = con.prepareStatement(
+							ips = con.prepareStatement(
 									"INSERT INTO `inventorymounts` ("
 									+ "`inventoryitemid`,`level`,`exp`,"
 									+ "`tiredness`) VALUES (?,?,?,?)");
-							mps.setInt(1, inventoryKey);
-							mps.setByte(2, mount.getMountLevel());
-							mps.setShort(3, mount.getExp());
-							mps.setByte(4, mount.getTiredness());
-							mps.executeUpdate();
-							mps.close();
+							ips.setInt(1, inventoryKey);
+							ips.setByte(2, mount.getMountLevel());
+							ips.setShort(3, mount.getExp());
+							ips.setByte(4, mount.getTiredness());
+							ips.executeUpdate();
+							ips.close();
 							insertEquipIntoDb(mount, inventoryKey, con);
 							break;
 					}
 				}
 			}
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save inventory of character '"
-					+ name + "' of account " + client.getAccountId(), ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save inventory of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 		}
 	}
 
 	private void insertEquipIntoDb(Equip equip, int inventoryKey,
 			Connection con) throws SQLException {
-		PreparedStatement eps = con.prepareStatement(
-				"INSERT INTO `inventoryequipment` ("
-				+ "`inventoryitemid`,`str`,`dex`,`int`,"
-				+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
-				+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
-				+ "`upgradeslots`) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-		eps.setInt(1, inventoryKey);
-		eps.setShort(2, equip.getStr());
-		eps.setShort(3, equip.getDex());
-		eps.setShort(4, equip.getInt());
-		eps.setShort(5, equip.getLuk());
-		eps.setShort(6, equip.getHp());
-		eps.setShort(7, equip.getMp());
-		eps.setShort(8, equip.getWatk());
-		eps.setShort(9, equip.getMatk());
-		eps.setShort(10, equip.getWdef());
-		eps.setShort(11, equip.getMdef());
-		eps.setShort(12, equip.getAcc());
-		eps.setShort(13, equip.getAvoid());
-		eps.setShort(14, equip.getSpeed());
-		eps.setShort(15, equip.getJump());
-		eps.setByte(16, equip.getUpgradeSlots());
-		eps.executeUpdate();
-		eps.close();
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement(
+					"INSERT INTO `inventoryequipment` ("
+					+ "`inventoryitemid`,`str`,`dex`,`int`,"
+					+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
+					+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
+					+ "`upgradeslots`) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			ps.setInt(1, inventoryKey);
+			ps.setShort(2, equip.getStr());
+			ps.setShort(3, equip.getDex());
+			ps.setShort(4, equip.getInt());
+			ps.setShort(5, equip.getLuk());
+			ps.setShort(6, equip.getHp());
+			ps.setShort(7, equip.getMp());
+			ps.setShort(8, equip.getWatk());
+			ps.setShort(9, equip.getMatk());
+			ps.setShort(10, equip.getWdef());
+			ps.setShort(11, equip.getMdef());
+			ps.setShort(12, equip.getAcc());
+			ps.setShort(13, equip.getAvoid());
+			ps.setShort(14, equip.getSpeed());
+			ps.setShort(15, equip.getJump());
+			ps.setByte(16, equip.getUpgradeSlots());
+			ps.executeUpdate();
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
 	}
 
-	public void updateDbSkills(Connection con) {
+	public void updateDbSkills(Connection con) throws SQLException {
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("DELETE FROM `skills` "
+			ps = con.prepareStatement("DELETE FROM `skills` "
 					+ "WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
@@ -430,16 +440,17 @@ public class Player extends MapEntity {
 				ps.addBatch();
 			}
 			ps.executeBatch();
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save skill levels of "
-					+ "character " + name, ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save skill levels of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public void updateDbCooldowns(Connection con) {
+	public void updateDbCooldowns(Connection con) throws SQLException {
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("DELETE FROM `cooldowns` "
+			ps = con.prepareStatement("DELETE FROM `cooldowns` "
 					+ "WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
@@ -454,23 +465,22 @@ public class Player extends MapEntity {
 				ps.addBatch();
 			}
 			ps.executeBatch();
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save cooldowns of "
-					+ "character " + name, ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save cooldowns of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public void updateDbBindings(Connection con) {
+	public void updateDbBindings(Connection con) throws SQLException {
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("DELETE FROM `keymaps` "
+			ps = con.prepareStatement("DELETE FROM `keymaps` "
 					+ "WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			//thank goodness for Connection.setAutoCommit(false) and
-			//rewriteBatchedStatements=true or else this would take over 2 secs!
 			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
 					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
@@ -505,17 +515,18 @@ public class Player extends MapEntity {
 				ps.addBatch();
 			}
 			ps.executeBatch();
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save keymap and skill macros of "
-					+ "character " + name, ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save keymap/macros of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public void updateDbQuests(Connection con) {
+	public void updateDbQuests(Connection con) throws SQLException {
+		PreparedStatement ps = null, mps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("DELETE FROM "
-					+ "`queststatuses` WHERE `characterid` = ?"), mps;
+			ps = con.prepareStatement("DELETE FROM "
+					+ "`queststatuses` WHERE `characterid` = ?");
 			ResultSet rs;
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
@@ -546,16 +557,18 @@ public class Player extends MapEntity {
 				mps.executeBatch();
 				mps.close();
 			}
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save quest states of character "
-					+ name, ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save quest states of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public void updateDbMinigameStats(Connection con) {
+	public void updateDbMinigameStats(Connection con) throws SQLException {
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("DELETE FROM "
+			ps = con.prepareStatement("DELETE FROM "
 					+ "`minigamescores` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
@@ -573,20 +586,21 @@ public class Player extends MapEntity {
 				ps.addBatch();
 			}
 			ps.executeBatch();
-			ps.close();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save minigame stats of character "
-					+ name, ex);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save minigame stats of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
 	public static Player loadPlayer(RemoteClient c, int id) {
-		Connection con = DatabaseConnection.getConnection();
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+		Connection con = null;
+		PreparedStatement ps = null, ips = null;
+		ResultSet rs = null, irs = null;
 		boolean gameServer = ServerType.isGame(c.getServerId());
 		boolean shopServer = ServerType.isShop(c.getServerId());
 		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			ps = con.prepareStatement("SELECT * FROM `characters` WHERE `id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
@@ -694,88 +708,86 @@ public class Player extends MapEntity {
 				int itemid = rs.getInt(6);
 				int inventoryKey = rs.getInt(1);
 				if (inventoryType == InventoryType.EQUIP || inventoryType == InventoryType.EQUIPPED) {
-					PreparedStatement eps;
-					ResultSet ers;
 					Equip e;
 					if (InventoryTools.isRing(itemid)) {
 						e = new Ring(itemid);
-						eps = con.prepareStatement("SELECT * FROM "
+						ips = con.prepareStatement("SELECT * FROM "
 								+ "`inventoryrings` WHERE "
 								+ "`inventoryitemid` = ?");
-						eps.setInt(1, inventoryKey);
-						ers = eps.executeQuery();
-						if (ers.next()) {
-							((Ring) e).setPartnerCharId(ers.getInt(3));
-							((Ring) e).setPartnerRingId(ers.getLong(4));
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							((Ring) e).setPartnerCharId(irs.getInt(3));
+							((Ring) e).setPartnerRingId(irs.getLong(4));
 						}
-						ers.close();
-						eps.close();
+						irs.close();
+						ips.close();
 					} else if (InventoryTools.isMount(itemid)) {
 						e = new TamingMob(itemid);
-						eps = con.prepareStatement("SELECT * FROM "
+						ips = con.prepareStatement("SELECT * FROM "
 								+ "`inventorymounts` WHERE "
 								+ "`inventoryitemid` = ?");
-						eps.setInt(1, inventoryKey);
-						ers = eps.executeQuery();
-						if (ers.next()) {
-							((TamingMob) e).setLevel(ers.getByte(3));
-							((TamingMob) e).setExp(ers.getShort(4));
-							((TamingMob) e).setTiredness(ers.getByte(5));
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							((TamingMob) e).setLevel(irs.getByte(3));
+							((TamingMob) e).setExp(irs.getShort(4));
+							((TamingMob) e).setTiredness(irs.getByte(5));
 							if (position == -18)
 								p.equippedMount = (TamingMob) e;
 						}
-						ers.close();
-						eps.close();
+						irs.close();
+						ips.close();
 					} else {
 						e = new Equip(itemid);
 					}
-					eps = con.prepareStatement("SELECT * FROM "
+					ips = con.prepareStatement("SELECT * FROM "
 							+ "`inventoryequipment` WHERE "
 							+ "`inventoryitemid` = ?");
-					eps.setInt(1, inventoryKey);
-					ers = eps.executeQuery();
-					if (ers.next()) {
-						e.setStr(ers.getShort(3));
-						e.setDex(ers.getShort(4));
-						e.setInt(ers.getShort(5));
-						e.setLuk(ers.getShort(6));
-						e.setHp(ers.getShort(7));
-						e.setMp(ers.getShort(8));
-						e.setWatk(ers.getShort(9));
-						e.setMatk(ers.getShort(10));
-						e.setWdef(ers.getShort(11));
-						e.setMdef(ers.getShort(12));
-						e.setAcc(ers.getShort(13));
-						e.setAvoid(ers.getShort(14));
-						e.setSpeed(ers.getShort(15));
-						e.setJump(ers.getShort(16));
-						e.setUpgradeSlots(ers.getByte(17));
+					ips.setInt(1, inventoryKey);
+					irs = ips.executeQuery();
+					if (irs.next()) {
+						e.setStr(irs.getShort(3));
+						e.setDex(irs.getShort(4));
+						e.setInt(irs.getShort(5));
+						e.setLuk(irs.getShort(6));
+						e.setHp(irs.getShort(7));
+						e.setMp(irs.getShort(8));
+						e.setWatk(irs.getShort(9));
+						e.setMatk(irs.getShort(10));
+						e.setWdef(irs.getShort(11));
+						e.setMdef(irs.getShort(12));
+						e.setAcc(irs.getShort(13));
+						e.setAvoid(irs.getShort(14));
+						e.setSpeed(irs.getShort(15));
+						e.setJump(irs.getShort(16));
+						e.setUpgradeSlots(irs.getByte(17));
 					}
 					if (gameServer)
 						p.equipChanged(e, true);
-					ers.close();
-					eps.close();
+					irs.close();
+					ips.close();
 					item = e;
 				} else {
 					if (InventoryTools.isPet(itemid)) {
 						Pet pet = new Pet(itemid);
-						PreparedStatement pps = con.prepareStatement("SELECT * "
+						ips = con.prepareStatement("SELECT * "
 								+ "FROM `inventorypets` WHERE "
 								+ "`inventoryitemid` = ?");
-						pps.setInt(1, inventoryKey);
-						ResultSet prs = pps.executeQuery();
-						if (prs.next()) {
-							pet.setName(prs.getString(4));
-							pet.setLevel(prs.getByte(5));
-							pet.setCloseness(prs.getShort(6));
-							pet.setFullness(prs.getByte(7));
-							pet.setExpired(prs.getBoolean(8));
-							byte pos = prs.getByte(3);
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							pet.setName(irs.getString(4));
+							pet.setLevel(irs.getByte(5));
+							pet.setCloseness(irs.getShort(6));
+							pet.setFullness(irs.getByte(7));
+							pet.setExpired(irs.getBoolean(8));
+							byte pos = irs.getByte(3);
 							if (pos >= 0 && pos < 3)
 								p.equippedPets[pos] = pet;
 						}
-						prs.close();
-						pps.close();
+						irs.close();
+						ips.close();
 						item = pet;
 					} else {
 						item = new Item(itemid);
@@ -787,10 +799,11 @@ public class Player extends MapEntity {
 				item.setOwner(rs.getString(9));
 				p.inventories.get(inventoryType).put(position, item);
 			}
-			rs.close();
-			ps.close();
 
 			if (gameServer) {
+				rs.close();
+				ps.close();
+
 				ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 						+ "FROM `skills` WHERE `characterid` = ?");
 				ps.setInt(1, id);
@@ -841,37 +854,43 @@ public class Player extends MapEntity {
 						+ "`characterid` = ?");
 				ps.setInt(1, id);
 				rs = ps.executeQuery();
+				PreparedStatement mps = null;
+				ResultSet mrs = null;
 				while (rs.next()) {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);
 					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
-					PreparedStatement mps = con.prepareStatement("SELECT "
-							+ "`mobid`,`count` FROM `questmobprogress` WHERE "
-							+ "`queststatusid` = ?");
-					mps.setInt(1, questEntryId);
-					ResultSet mrs = mps.executeQuery();
-					while (mrs.next())
-						mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
-					mrs.close();
-					mps.close();
-					QuestEntry status = new QuestEntry(rs.getByte(3), mobProgress);
-					status.setCompletionTime(rs.getLong(4));
-					p.questStatuses.put(Short.valueOf(questId), status);
-					if (status.getState() == QuestEntry.STATE_STARTED) {
-						QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-						if (qc != null) {
-							for (Entry<Integer, Short> mob : qc.getReqMobCounts().entrySet())
-								if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
-									p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
-							for (Integer itemId : qc.getReqItems().keySet())
-								p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
-							for (Integer petId : qc.getReqPets())
-								p.addToWatchedList(questId, QuestRequirementType.PET, petId);
-							for (Short reqQuestId : qc.getReqQuests().keySet())
-								p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-							if (qc.requiresMesos())
-								p.addToWatchedList(questId, QuestRequirementType.MESOS);
+					try {
+						mps = con.prepareStatement("SELECT "
+								+ "`mobid`,`count` FROM `questmobprogress` WHERE "
+								+ "`queststatusid` = ?");
+						mps.setInt(1, questEntryId);
+						mrs = mps.executeQuery();
+						while (mrs.next())
+							mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+						mrs.close();
+						mps.close();
+						QuestEntry status = new QuestEntry(rs.getByte(3), mobProgress);
+						status.setCompletionTime(rs.getLong(4));
+						p.questStatuses.put(Short.valueOf(questId), status);
+						if (status.getState() == QuestEntry.STATE_STARTED) {
+							QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
+							if (qc != null) {
+								for (Entry<Integer, Short> mob : qc.getReqMobCounts().entrySet())
+									if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
+										p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
+								for (Integer itemId : qc.getReqItems().keySet())
+									p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
+								for (Integer petId : qc.getReqPets())
+									p.addToWatchedList(questId, QuestRequirementType.PET, petId);
+								for (Short reqQuestId : qc.getReqQuests().keySet())
+									p.addToWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+								if (qc.requiresMesos())
+									p.addToWatchedList(questId, QuestRequirementType.MESOS);
+							}
 						}
+					} finally {
+						DatabaseManager.cleanup(DatabaseType.STATE, mrs, mps, null);
 					}
 				}
 				rs.close();
@@ -888,23 +907,14 @@ public class Player extends MapEntity {
 					stats.put(MinigameResult.LOSS, rs.getInt(6));
 					p.minigameStats.put(MiniroomType.valueOf(rs.getByte(3)), stats);
 				}
-				rs.close();
-				ps.close();
 			}
-
 			return p;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load character " + id + " from database", ex);
 			return null;
 		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if (ps != null)
-					ps.close();
-			} catch (SQLException e) {
-				//nothing we can do
-			}
+			DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 	}
 
@@ -2271,13 +2281,16 @@ public class Player extends MapEntity {
 
 		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 		boolean prevAutoCommit = true;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			prevTransactionIsolation = con.getTransactionIsolation();
 			prevAutoCommit = con.getAutoCommit();
 			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
 			con.setAutoCommit(false);
-			PreparedStatement ps = con.prepareStatement("INSERT INTO"
+			ps = con.prepareStatement("INSERT INTO"
 					+ "`characters`(`accountid`,`world`,`name`,`gender`,`skin`,"
 					+ "`eyes`,`hair`,`str`,`dex`,`int`,`luk`,`gm`) VALUES"
 					+ " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -2295,7 +2308,7 @@ public class Player extends MapEntity {
 			ps.setShort(11, luk);
 			ps.setByte(12, account.getGm());
 			ps.executeUpdate();
-			ResultSet rs = ps.getGeneratedKeys();
+			rs = ps.getGeneratedKeys();
 			if (rs.next())
 				p.setId(rs.getInt(1));
 			rs.close();
@@ -2321,6 +2334,7 @@ public class Player extends MapEntity {
 				LOG.log(Level.WARNING, "Could not reset Connection config "
 						+ "after creating character " + p.getDataId(), ex);
 			}
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 
 		return p;
@@ -2328,19 +2342,22 @@ public class Player extends MapEntity {
 
 	public static String getNameFromId(int characterid) {
 		String name = null;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `name` FROM"
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `name` FROM"
 					+ "`characters` WHERE id = ?");
 			ps.setInt(1, characterid);
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next())
 				name = rs.getString(1);
-			rs.close();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not find name of character "
 					+ characterid, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return name;
 	}

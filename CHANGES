@@ -864,6 +864,25 @@
 	* Summons/puppets now removed from map when changing maps/channels, or when
 	logging off. Summons are respawned on the new map if changing maps/channels.
 
+2011-06-27  GoldenKevin  (revision 42)
+	* Fixed skill levels and reactor states being skipped when loading from MCDB
+	* Database access rehaul. Added in a connection pool model as a replacement
+	for the thread-local connection model when using the OIO network model
+	(thread per connection), so that the max amount of database connections is
+	not exceeded. All calls to DatabaseConnection.getConnection now have to call
+	DatabaseConnection.returnConnection, even when using thread-local.
+	* Safer database PreparedStatement/ResultSet closing if an exception is
+	thrown during database access.
+	* Redesigned DatabaseConnection now throws out dead connections for both
+	types of connection pooling, so that if a connection goes stale following a
+	time out period, or network paths to the database are momentarily out, then
+	it will try reconnecting by creating a new connection.
+	* DatabaseConnection renamed to DatabaseManager. It is now completely thread
+	safe.
+	* Moved the catching of some SQLExceptions further upstream for performance
+	and logging organization reasons (and to halt further initialization when a
+	database error is encountered at server initialization).
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

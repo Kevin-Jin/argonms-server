@@ -19,7 +19,8 @@
 package argonms.loading.quest;
 
 import argonms.loading.quest.QuestRewards.SkillReward;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,26 +46,32 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 	}
 
 	protected boolean loadInfo() {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `objectid`,`name` FROM `stringdata` WHERE `type` = 6");
-			ResultSet rs = ps.executeQuery();
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT `objectid`,`name` FROM `stringdata` WHERE `type` = 6");
+			rs = ps.executeQuery();
 			while (rs.next())
 				questNames.put(Short.valueOf(rs.getShort(1)), rs.getString(2));
-			rs.close();
-			ps.close();
 			return true;
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Error loading quest info data from the MCDB.", e);
 			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 	}
 
 	protected boolean loadAct() {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `questid`,`nextquest` FROM `questdata`");
-			ResultSet rs = ps.executeQuery();
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT `questid`,`nextquest` FROM `questdata`");
+			rs = ps.executeQuery();
 			while (rs.next()) {
 				short nextQuest = rs.getShort(2);
 				if (nextQuest != 0) {
@@ -120,20 +127,23 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 					sr.addApplicableJob(rs.getShort(15));
 				}
 			}
-			rs.close();
-			ps.close();
 			return true;
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Error loading quest action data from the MCDB.", e);
 			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 	}
 
 	protected boolean loadReq() {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT * FROM `questrequestdata`");
-			ResultSet rs = ps.executeQuery();
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT * FROM `questrequestdata`");
+			rs = ps.executeQuery();
 			while (rs.next()) {
 				short questId = rs.getShort(2);
 				QuestChecks qc = completeReqs.get(Short.valueOf(questId));
@@ -149,12 +159,12 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 					qc.addReqQuest(rs.getShort(6), rs.getByte(7));
 				}
 			}
-			rs.close();
-			ps.close();
 			return true;
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Error loading quest check data from the MCDB.", e);
 			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 	}
 }

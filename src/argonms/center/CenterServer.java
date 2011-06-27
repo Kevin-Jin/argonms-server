@@ -27,7 +27,8 @@ import argonms.center.send.CenterLoginInterface;
 import argonms.center.send.CenterRemoteInterface;
 import argonms.center.send.CenterShopInterface;
 import argonms.center.recv.RemoteServerListener;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.io.FileReader;
 import java.io.IOException;
@@ -70,23 +71,6 @@ public class CenterServer {
 
 	public void init() {
 		Properties prop = new Properties();
-		try {
-			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
-			prop.load(fr);
-			fr.close();
-			DatabaseConnection.setProps(prop, false);
-		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Could not load database properties.", ex);
-		}
-		try {
-			Connection con = DatabaseConnection.getConnection();
-			PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?");
-			ps.setInt(1, RemoteClient.STATUS_NOTLOGGEDIN);
-			ps.executeUpdate();
-		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not reset logged in status of all accounts.", ex);
-		}
-		prop = new Properties();
 		int port;
 		String authKey;
 		int telnetPort;
@@ -102,6 +86,36 @@ public class CenterServer {
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load center server properties!", ex);
 			return;
+		}
+		prop = new Properties();
+		try {
+			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
+			prop.load(fr);
+			fr.close();
+			DatabaseManager.setProps(prop, false, useNio);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			return;
+		} catch (SQLException ex) {
+			LOG.log(Level.SEVERE, "Could not initialize database!", ex);
+			return;
+		}
+		Connection con;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+		} catch (SQLException e) {
+			LOG.log(Level.SEVERE, "Could not connect to database!", e);
+			return;
+		}
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?");
+			ps.setInt(1, RemoteClient.STATUS_NOTLOGGEDIN);
+			ps.executeUpdate();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not reset logged in status of all accounts.", ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 		listener = new RemoteServerListener(authKey, useNio);
 		listener.bind(port);
