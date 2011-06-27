@@ -18,7 +18,8 @@
 
 package argonms.net.external;
 
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import argonms.tools.Scheduler;
 import argonms.tools.output.LittleEndianByteArrayWriter;
 import java.sql.Connection;
@@ -122,15 +123,18 @@ public abstract class RemoteClient {
 	}
 
 	public void updateState(byte currentState) {
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
 			ps.setByte(1, currentState);
 			ps.setInt(2, id);
 			ps.executeUpdate();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not change connected status of account " + id, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 	}
 

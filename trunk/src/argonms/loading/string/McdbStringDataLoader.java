@@ -18,7 +18,8 @@
 
 package argonms.loading.string;
 
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,10 +39,13 @@ public class McdbStringDataLoader extends StringDataLoader {
 	}
 
 	public boolean loadAll() {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `type`,`objectid`,`name` FROM `stringdata` WHERE `type` != 6");
-			ResultSet rs = ps.executeQuery();
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT `type`,`objectid`,`name` FROM `stringdata` WHERE `type` != 6");
+			rs = ps.executeQuery();
 			while (rs.next()) {
 				switch (rs.getShort(1)) {
 					case 1:
@@ -61,12 +65,12 @@ public class McdbStringDataLoader extends StringDataLoader {
 						break;
 				}
 			}
-			rs.close();
-			ps.close();
 			return true;
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Error loading string data from the MCDB.", e);
 			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 	}
 }

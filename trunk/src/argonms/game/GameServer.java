@@ -32,13 +32,15 @@ import argonms.loading.reactor.ReactorDataLoader;
 import argonms.loading.shop.NpcShopDataLoader;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.loading.string.StringDataLoader;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import argonms.tools.Scheduler;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -132,17 +134,28 @@ public class GameServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
 			return;
 		}
+		boolean mcdb = (wzType == DataFileType.MCDB);
 		prop = new Properties();
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.db.config.file", "db.properties"));
 			prop.load(fr);
 			fr.close();
-			DatabaseConnection.setProps(prop, wzType == DataFileType.MCDB);
+			DatabaseManager.setProps(prop, mcdb, useNio);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
 			return;
+		} catch (SQLException ex) {
+			LOG.log(Level.SEVERE, "Could not initialize database!", ex);
+			return;
 		}
-		DatabaseConnection.getConnection();
+		try {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, null, DatabaseManager.getConnection(DatabaseType.STATE));
+			if (mcdb)
+				DatabaseManager.cleanup(DatabaseType.WZ, null, null, DatabaseManager.getConnection(DatabaseType.WZ));
+		} catch (SQLException e) {
+			LOG.log(Level.SEVERE, "Could not connect to database!", e);
+			return;
+		}
 		wzPath = System.getProperty("argonms.data.dir");
 		scriptsPath = System.getProperty("argonms.scripts.dir");
 		gci = new GameCenterInterface(serverId, world, authKey, this);

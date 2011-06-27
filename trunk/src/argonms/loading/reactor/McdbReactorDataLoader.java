@@ -18,7 +18,8 @@
 
 package argonms.loading.reactor;
 
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,73 +39,75 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 	}
 
 	protected void load(int reactorid) {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		ReactorStats stats = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT * FROM `reactoreventdata` WHERE `reactorid` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT * FROM `reactoreventdata` WHERE `reactorid` = ?");
 			ps.setInt(1, reactorid);
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next()) {
 				stats = new ReactorStats(reactorid);
-				doWork(rs, stats);
+				doWork(rs, reactorid, stats);
 			}
-			rs.close();
-			ps.close();
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not read MCDB data for reactor " + reactorid, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 		reactorStats.put(Integer.valueOf(reactorid), stats);
 	}
 
 	public boolean loadAll() {
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("SELECT * FROM `reactoreventdata`");
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT * FROM `reactoreventdata` ORDER BY `reactorid`");
 			rs = ps.executeQuery();
-			while (rs.next()) {
-				int reactorId = rs.getInt(2);
-				ReactorStats stats = new ReactorStats(reactorId);
-				reactorStats.put(Integer.valueOf(doWork(rs, stats)), stats);
+			boolean more = false;
+			while (more || rs.next()) {
+				int reactorid = rs.getInt(2);
+				ReactorStats stats = new ReactorStats(reactorid);
+				more = doWork(rs, reactorid, stats);
+				reactorStats.put(Integer.valueOf(reactorid), stats);
 			}
 			return true;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load all reactor data from MCDB.", ex);
 			return false;
 		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if (ps != null)
-					ps.close();
-			} catch (SQLException ex) {
-				//Nothing we can do
-			}
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 	}
 
 	public boolean canLoad(int reactorid) {
 		if (reactorStats.containsKey(reactorid))
 			return true;
-		Connection con = DatabaseConnection.getWzConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		boolean exists = false;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT * FROM `reactoreventdata` WHERE `reactorid` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.WZ);
+			ps = con.prepareStatement("SELECT * FROM `reactoreventdata` WHERE `reactorid` = ?");
 			ps.setInt(1, reactorid);
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next())
 				exists = true;
-			rs.close();
-			ps.close();
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not use MCDB to determine whether reactor " + reactorid + " is valid.", e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
 		return exists;
 	}
 
-	private int doWork(ResultSet rs, ReactorStats stats) throws SQLException {
-		int reactorid = rs.getInt(2);
+	private boolean doWork(ResultSet rs, int reactorid, ReactorStats stats) throws SQLException {
+		boolean more;
 		do {
 			State s = new State();
 			s.setType(rs.getByte(4));
@@ -113,7 +116,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 			s.setRb(rs.getShort(8), rs.getShort(9));
 			s.setNextState(rs.getByte(10));
 			stats.addState(rs.getByte(3), s);
-		} while (rs.next() && rs.getInt(2) == reactorid);
-		return reactorid;
+		} while ((more = rs.next()) && rs.getInt(2) == reactorid);
+		return more;
 	}
 }

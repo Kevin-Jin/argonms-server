@@ -21,7 +21,8 @@ package argonms.net.external;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.shop.ShopClient;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -65,38 +66,44 @@ public class CheatTracker {
 	}
 
 	private void load() {
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `message`,`points` FROM `cheatlog` WHERE `accountid` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `message`,`points` FROM `cheatlog` WHERE `accountid` = ?");
 			ps.setInt(1, client.getAccountId());
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			while (rs.next()) {
 				int points = rs.getInt(2);
 				offenses.add(new Offense(rs.getString(1), points));
 				total += points;
 			}
-			rs.close();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cheatlog for account "
 					+ client.getAccountId(), ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 	}
 
 	public void suspicious(String message) {
 		offenses.add(new Offense(message, 1));
 		total += 1;
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
 		try {
-			PreparedStatement ps = con.prepareStatement("INSERT INTO `cheatlog`(`message`,`points`,`accountid`) VALUES(?,?,?)");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("INSERT INTO `cheatlog`(`message`,`points`,`accountid`) VALUES(?,?,?)");
 			ps.setString(1, message);
 			ps.setInt(2, 1);
 			ps.setInt(3, client.getAccountId());
 			ps.executeUpdate();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cheatlog for account "
 					+ client.getAccountId(), ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 		if (total >= TOLERANCE) {
 			//shit's going down.

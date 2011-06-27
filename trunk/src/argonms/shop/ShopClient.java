@@ -21,7 +21,8 @@ package argonms.shop;
 import argonms.ServerType;
 import argonms.character.Player;
 import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseConnection;
+import argonms.tools.DatabaseManager;
+import argonms.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -49,18 +50,21 @@ public class ShopClient extends RemoteClient {
 	}
 
 	public byte getOnlineState() {
-		Connection con = DatabaseConnection.getConnection();
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
 		byte ret;
 		try {
-			PreparedStatement ps = con.prepareStatement("SELECT `connected` FROM `accounts` WHERE `id` = ?");
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `connected` FROM `accounts` WHERE `id` = ?");
 			ps.setInt(1, getAccountId());
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			ret = rs.next() ? rs.getByte(1) : -1;
-			rs.close();
-			ps.close();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not get connected status of account " + getAccountId(), ex);
 			ret = -1;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return ret;
 	}
