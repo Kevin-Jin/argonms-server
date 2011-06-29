@@ -22,9 +22,11 @@ import argonms.UserPrivileges;
 import argonms.character.Player;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
+import argonms.loading.map.PortalData;
 import argonms.net.external.CommonPackets;
 import argonms.net.external.RemoteClient;
 import argonms.tools.input.LittleEndianReader;
+import java.awt.Point;
 
 /**
  *
@@ -65,6 +67,23 @@ public class GameGoToHandler {
 		Player p = ((GameClient) rc).getPlayer();
 		if (!p.getMap().enterPortal(p, portalName))
 			rc.getSession().send(CommonPackets.writeEnableActions());
+	}
+
+	public static void handleEnteredInnerPortal(LittleEndianReader packet, RemoteClient rc) {
+		packet.readByte();
+		String portalName = packet.readLengthPrefixedString();
+
+		Player p = ((GameClient) rc).getPlayer();
+		PortalData portal = p.getMap().getStaticData().getPortals().get(Byte.valueOf(p.getMap().getPortalIdByName(portalName)));
+		Point startPos = packet.readPos();
+		Point endPos = packet.readPos();
+		if (portal == null) {
+			//TODO: hacking
+		} else if (portal.getPosition().distanceSq(startPos) > (150 * 150) || portal.getPosition().distanceSq(p.getPosition()) > (150 * 150)) {
+			//TODO: hacking
+		} else if (!p.getMap().getStaticData().getPortals().get(Byte.valueOf(p.getMap().getPortalIdByName(portal.getTargetName()))).getPosition().equals(endPos)) {
+			//TODO: hacking
+		}
 	}
 
 	public static void handleWarpCs(LittleEndianReader packet, RemoteClient rc) {

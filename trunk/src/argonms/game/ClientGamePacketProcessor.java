@@ -127,6 +127,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 			case ClientRecvOps.CHANGE_MAP_SPECIAL:
 				GameGoToHandler.handleEnteredSpecialPortal(reader, s);
 				break;
+			case ClientRecvOps.USE_INNER_PORTAL:
+				GameGoToHandler.handleEnteredInnerPortal(reader, s);
+				break;
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, s);
 				break;

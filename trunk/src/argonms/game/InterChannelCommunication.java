@@ -213,6 +213,7 @@ public class InterChannelCommunication {
 			lew.writePos(summonState.getPosition());
 			lew.writeByte(summonState.getStance());
 		}
+		lew.writeShort(context.getEnergyCharge());
 		return lew.getBytes();
 	}
 
@@ -267,6 +268,7 @@ public class InterChannelCommunication {
 				count = packet.readByte();
 				for (int i = 0; i < count; i++)
 					context.addActiveSummon(packet.readInt(), playerId, packet.readPos(), packet.readByte());
+				context.setEnergyCharge(packet.readShort());
 				receivedInboundPlayer(channel, playerId, context);
 				break;
 			} case INBOUND_PLAYER_ACCEPTED: {
