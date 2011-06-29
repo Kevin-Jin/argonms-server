@@ -22,11 +22,17 @@ import argonms.character.BuffState.ItemState;
 import argonms.character.BuffState.MobSkillState;
 import argonms.character.BuffState.SkillState;
 import argonms.character.inventory.ItemTools;
+import argonms.character.skill.PlayerStatusEffectValues;
+import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import argonms.character.skill.SkillTools;
 import argonms.character.skill.Skills;
+import argonms.loading.skill.PlayerSkillEffectsData;
 import argonms.loading.skill.SkillDataLoader;
 import argonms.map.entity.PlayerSkillSummon;
+import argonms.net.external.CommonPackets;
+import argonms.tools.Scheduler;
 import java.awt.Point;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,12 +46,14 @@ public class PlayerContinuation {
 	private final Map<Integer, SkillState> activeSkills;
 	private final Map<Short, MobSkillState> activeDebuffs;
 	private final Map<Integer, PlayerSkillSummon> activeSummons;
+	private short energyCharge;
 
 	public PlayerContinuation(Player p) {
 		activeItems = p.activeItemsList();
 		activeSkills = p.activeSkillsList();
 		activeDebuffs = p.activeMobSkillsList();
 		activeSummons = p.getAllSummons();
+		energyCharge = p.getEnergyCharge();
 	}
 
 	public PlayerContinuation() {
@@ -71,6 +79,10 @@ public class PlayerContinuation {
 		return activeSummons;
 	}
 
+	public short getEnergyCharge() {
+		return energyCharge;
+	}
+
 	public void addItemBuff(int itemId, long endTime) {
 		activeItems.put(Integer.valueOf(itemId), new ItemState(endTime));
 	}
@@ -89,7 +101,11 @@ public class PlayerContinuation {
 				pos, stance));
 	}
 
-	public void applyTo(Player p) {
+	public void setEnergyCharge(short val) {
+		energyCharge = val;
+	}
+
+	public void applyTo(final Player p) {
 		for (Entry<Integer, ItemState> item : activeItems.entrySet())
 			ItemTools.localUseBuffItem(p, item.getKey().intValue(), item.getValue().endTime);
 		for (Entry<Integer, SkillState> skill : activeSkills.entrySet()) {
@@ -102,6 +118,19 @@ public class PlayerContinuation {
 				} else {
 					SkillTools.cancelBuffSkill(p, skillId);
 				}
+			} else if (skillId == Skills.ENERGY_CHARGE) {
+				final PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(Skills.ENERGY_CHARGE).getLevel(skillState.level);
+				p.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, new PlayerStatusEffectValues(e, (short) 10000));
+				p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+					public void run() {
+						p.resetEnergyCharge();
+						p.removeCancelEffectTask(e);
+						p.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
+						Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
+						p.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+						p.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(p, updatedStats, 0, 0), p);
+					}
+				}, skillState.endTime - System.currentTimeMillis()), skillState.level, skillState.endTime);
 			} else {
 				SkillTools.localUseBuffSkill(p, skillId, skillState.level, skillState.endTime);
 			}
@@ -109,6 +138,10 @@ public class PlayerContinuation {
 		for (Entry<Short, MobSkillState> debuff : activeDebuffs.entrySet()) {
 			MobSkillState debuffState = debuff.getValue();
 			DiseaseTools.localApplyDebuff(p, debuff.getKey().shortValue(), debuffState.level, debuffState.endTime);
+		}
+		if (energyCharge != 0) {
+			p.resetEnergyCharge();
+			p.addToEnergyCharge(energyCharge);
 		}
 	}
 }

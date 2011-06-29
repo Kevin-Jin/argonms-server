@@ -800,10 +800,12 @@
 	for summons and puppets.
 
 2011-06-05  GoldenKevin  (revision 37)
+
 	* You may now allocate ability (stat) points and skill points.
 	* Code cleanup - removal of unused imports and variables/function calls.
 
 2011-06-09  GoldenKevin  (revision 38)
+
 	* Full support for minigames (i.e. omok and match cards).
 	* Added new database table for recording minigame scores - update your SQL.
 	* Full support for player trades.
@@ -811,6 +813,7 @@
 	and hired merchants are still totally nonfunctional.
 
 2011-06-14  GoldenKevin  (revision 39)
+
 	* No more ranged map entities. Rationale:
 		* Bandwidth of repeated packets used to show and hide entities as they
 		went in and out of range for a player was costlier than sending each
@@ -837,6 +840,7 @@
 	EntityPool.nextEntId() skips over entities that are still alive.
 
 2011-06-14  GoldenKevin  (revision 40)
+
 	* Fixed monsters being uncontrolled by a client immediately after the
 	controlling client is echoed back the monster's first move.
 	* Revised various other calls to sendToAll that used the ranged entity
@@ -853,6 +857,7 @@
 	* Fixed some things regarding monster aggro.
 
 2011-06-25  GoldenKevin  (revision 41)
+
 	* Renamed Timer to Scheduler to avoid any ambiguity/confusion with
 	java.util.Timer (plus, makes auto import much less annoying).
 	* When a player changes channels, their buffs are sent to the receiving
@@ -865,6 +870,7 @@
 	logging off. Summons are respawned on the new map if changing maps/channels.
 
 2011-06-27  GoldenKevin  (revision 42)
+
 	* Fixed skill levels and reactor states being skipped when loading from MCDB
 	* Database access rehaul. Added in a connection pool model as a replacement
 	for the thread-local connection model when using the OIO network model
@@ -882,6 +888,12 @@
 	* Moved the catching of some SQLExceptions further upstream for performance
 	and logging organization reasons (and to halt further initialization when a
 	database error is encountered at server initialization).
+
+2011-06-29  GoldenKevin  (revision 43)
+
+	* Fixed activated energy charge not showing to other players when changing
+	channels, and partial charge amount not transferring when changing channels.
+	* Added in stubs for inner portal hacking check.
 
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
