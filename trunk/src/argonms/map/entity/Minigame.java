@@ -80,7 +80,7 @@ public abstract class Minigame extends Miniroom {
 		sendToAll(getStartMessage());
 
 		inProgress = true;
-		getPlayerByPosition((byte) 0).getMap().sendToAll(getUpdateMapBoxMessage());
+		getPlayerByPosition((byte) 0).getMap().sendToAll(getUpdateBalloonMessage());
 	}
 
 	public void endGame(MinigameResult result, byte winnerPos) {
@@ -107,7 +107,7 @@ public abstract class Minigame extends Miniroom {
 		if (!exitAfterFinish[exiterPos = 0] && !exitAfterFinish[exiterPos = 1]) {
 			ownerMovesFirst = (result != MinigameResult.TIE ? winnerPos == 1 : !ownerMovesFirst);
 			currentPos = (byte) (ownerMovesFirst ? 0 : 1);
-			getPlayerByPosition((byte) 0).getMap().sendToAll(getUpdateMapBoxMessage());
+			getPlayerByPosition((byte) 0).getMap().sendToAll(getUpdateBalloonMessage());
 		} else {
 			Player leaver = getPlayerByPosition(exiterPos);
 			leaver.setMiniRoom(null);

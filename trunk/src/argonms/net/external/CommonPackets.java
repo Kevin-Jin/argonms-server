@@ -1217,7 +1217,7 @@ public class CommonPackets {
 		lew.writeShort((short) 0);
 		Miniroom room = p.getMiniRoom();
 		if (room != null && room.isVisible() && room.positionOf(p) == 0)
-			writeMiniroomMapBox(lew, room);
+			writeMiniroomBalloon(lew, room);
 		else
 			lew.writeByte(MiniroomType.NONE.byteValue());
 		/*lew.writeShort((short) 0);
@@ -1716,7 +1716,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
-	public static void writeMiniroomMapBox(LittleEndianWriter lew, Miniroom room) {
+	public static void writeMiniroomBalloon(LittleEndianWriter lew, Miniroom room) {
 		lew.writeByte(room.getMiniroomType().byteValue());
 		lew.writeInt(room.getId());
 		lew.writeLengthPrefixedString(room.getMessage());

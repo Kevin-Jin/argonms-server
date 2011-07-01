@@ -895,6 +895,26 @@
 	channels, and partial charge amount not transferring when changing channels.
 	* Added in stubs for inner portal hacking check.
 
+2011-07-01  GoldenKevin  (revision 44)
+
+	* More meaningful exit codes. 2 = properties loading error, 3 = database
+	error, 4 = center server connection error, 5 = server socket binding error.
+	* For the moment, all external-facing servers will die when they lose
+	connection with the center server since currently there is no (automatic)
+	reconnect interface, and thus the servers pretty much become useless.
+	* Packaged libraries have been updated. Rhino has been updated from version
+	1.7R2 to 1.7R3, MySQL Connector/J from 5.1.14 to 5.1.16, and Netty from
+	3.2.3 to 3.2.4. MySQL's .jar and Rhino's .jar files have been recompressed
+	to reduce their size by a few kilobytes, so they do not match the size of
+	the download you would get on their respective websites.
+	* Fixed a potential performance/thread-safety problem in the packet encoder.
+	The ClientSession is now retrieved only once instead of twice to reduce Map
+	lookup costs and to prevent a condition where another thread removes the
+	channel's ClientSession in between the two calls to ChannelLocal.get.
+	* Mini room "map boxes" are now referred to as balloons. Hint box renamed to
+	hint balloon in PortalActions.
+	* Added in support on the login server for updating rankings. Updated SQL.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

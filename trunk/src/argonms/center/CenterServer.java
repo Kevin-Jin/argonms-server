@@ -85,6 +85,7 @@ public class CenterServer {
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.center.usenio"));
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load center server properties!", ex);
+			System.exit(2);
 			return;
 		}
 		prop = new Properties();
@@ -95,9 +96,11 @@ public class CenterServer {
 			DatabaseManager.setProps(prop, false, useNio);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			System.exit(3);
 			return;
 		} catch (SQLException ex) {
 			LOG.log(Level.SEVERE, "Could not initialize database!", ex);
+			System.exit(3);
 			return;
 		}
 		Connection con;
@@ -105,6 +108,7 @@ public class CenterServer {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
 		} catch (SQLException e) {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
+			System.exit(3);
 			return;
 		}
 		PreparedStatement ps = null;
@@ -118,11 +122,15 @@ public class CenterServer {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 		listener = new RemoteServerListener(authKey, useNio);
-		listener.bind(port);
-		LOG.log(Level.INFO, "Center Server is online.");
+		if (listener.bind(port))
+			LOG.log(Level.INFO, "Center Server is online.");
+		else
+			System.exit(5);
 		if (telnetPort != -1) {
-			new TelnetListener(useNio).bind(telnetPort);
-			LOG.log(Level.INFO, "Telnet Server online.");
+			if (new TelnetListener(useNio).bind(telnetPort))
+				LOG.log(Level.INFO, "Telnet Server online.");
+			else
+				System.exit(5);
 		}
 	}
 

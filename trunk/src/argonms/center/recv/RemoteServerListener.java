@@ -84,12 +84,14 @@ public class RemoteServerListener {
 		this.bootstrap = b;
 	}
 
-	public void bind(int port) {
+	public boolean bind(int port) {
 		try {
 			bootstrap.bind(new InetSocketAddress(port));
 			LOG.log(Level.INFO, "Listening on port {0}", port);
+			return true;
 		} catch (ChannelException ex) {
 			LOG.log(Level.SEVERE, "Could not bind on port " + port, ex);
+			return false;
 		}
 	}
 

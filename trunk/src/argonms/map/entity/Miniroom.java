@@ -191,7 +191,7 @@ public abstract class Miniroom extends MapEntity {
 				occupants[i] = p;
 				p.getClient().getSession().send(getFirstPersonJoinMessage(p));
 				if (openToMap)
-					p.getMap().sendToAll(getUpdateMapBoxMessage());
+					p.getMap().sendToAll(getUpdateBalloonMessage());
 				return true;
 			}
 		}
@@ -213,7 +213,7 @@ public abstract class Miniroom extends MapEntity {
 			occupants[pos] = null;
 			sendToAll(getThirdPersonLeaveMessage(pos));
 			if (openToMap)
-				p.getMap().sendToAll(getUpdateMapBoxMessage());
+				p.getMap().sendToAll(getUpdateBalloonMessage());
 		}
 	}
 
@@ -298,11 +298,11 @@ public abstract class Miniroom extends MapEntity {
 		return lew.getBytes();
 	}
 
-	public byte[] getUpdateMapBoxMessage() {
+	public byte[] getUpdateBalloonMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.MINIROOM_BOX);
+		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
 		lew.writeInt(occupants[0].getId());
-		CommonPackets.writeMiniroomMapBox(lew, this);
+		CommonPackets.writeMiniroomBalloon(lew, this);
 		return lew.getBytes();
 	}
 
@@ -320,9 +320,9 @@ public abstract class Miniroom extends MapEntity {
 
 	public byte[] getShowNewSpawnMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.MINIROOM_BOX);
+		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
 		lew.writeInt(occupants[0].getId());
-		CommonPackets.writeMiniroomMapBox(lew, this);
+		CommonPackets.writeMiniroomBalloon(lew, this);
 		return lew.getBytes();
 	}
 
@@ -332,7 +332,7 @@ public abstract class Miniroom extends MapEntity {
 
 	public byte[] getDestructionMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-		lew.writeShort(ClientSendOps.MINIROOM_BOX);
+		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
 		lew.writeInt(occupants[0].getId());
 		lew.writeByte((byte) 0);
 		return lew.getBytes();

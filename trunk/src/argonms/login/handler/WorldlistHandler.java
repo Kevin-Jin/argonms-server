@@ -18,6 +18,7 @@
 
 package argonms.login.handler;
 
+import argonms.UserPrivileges;
 import argonms.character.Player;
 import argonms.character.PlayerJob;
 import argonms.login.LoginClient;
@@ -377,12 +378,12 @@ public class WorldlistHandler {
 	private static void writeCharEntry(LittleEndianWriter lew, Player p) {
 		CommonPackets.writeCharStats(lew, p);
 		CommonPackets.writeAvatar(lew, p, false);
-		if (!PlayerJob.isModerator(p.getJob())) {
+		if (!PlayerJob.isModerator(p.getJob()) && p.getPrivilegeLevel() <= UserPrivileges.USER) {
 			lew.writeBool(true);
-			lew.writeInt(0); //world rank
-			lew.writeInt(0); //world rank change
-			lew.writeInt(0); //job rank
-			lew.writeInt(0); //job rank change
+			lew.writeInt(p.getWorldRank());
+			lew.writeInt(p.getWorldRankChange());
+			lew.writeInt(p.getJob());
+			lew.writeInt(p.getJobRankChange());
 		} else {
 			lew.writeBool(false);
 		}

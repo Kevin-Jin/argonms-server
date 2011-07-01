@@ -211,12 +211,12 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
-		public byte[] getUpdateMapBoxMessage() {
+		public byte[] getUpdateBalloonMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
-			lew.writeShort(ClientSendOps.HIRED_MERCHANT_BOX);
+			lew.writeShort(ClientSendOps.HIRED_MERCHANT_BALLOON);
 			lew.writeInt(ownerId);
-			CommonPackets.writeMiniroomMapBox(lew, this);
+			CommonPackets.writeMiniroomBalloon(lew, this);
 
 			return lew.getBytes();
 		}
