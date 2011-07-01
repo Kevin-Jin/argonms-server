@@ -65,17 +65,17 @@ public class WorldChannel {
 	}
 
 	public void listen(boolean useNio) {
+		handler = new ClientListener(world, channel, useNio);
+		if (handler.bind(port))
+			LOG.log(Level.INFO, "Channel {0} is online.", channel);
+		else
+			shutdown();
 		Scheduler.getInstance().runRepeatedly(new Runnable() {
 			public void run() {
 				for (GameMap map : mapFactory.getMaps().values())
 					map.respawnMobs();
 			}
 		}, 0, 10000);
-		handler = new ClientListener(world, channel, useNio);
-		if (handler.bind(port))
-			LOG.log(Level.INFO, "Channel {0} is online.", channel);
-		else
-			shutdown();
 	}
 
 	public byte getChannelId() {

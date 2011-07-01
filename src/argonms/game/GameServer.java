@@ -132,6 +132,7 @@ public class GameServer implements LocalServer {
 			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
+			System.exit(2);
 			return;
 		}
 		boolean mcdb = (wzType == DataFileType.MCDB);
@@ -143,9 +144,11 @@ public class GameServer implements LocalServer {
 			DatabaseManager.setProps(prop, mcdb, useNio);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			System.exit(3);
 			return;
 		} catch (SQLException ex) {
 			LOG.log(Level.SEVERE, "Could not initialize database!", ex);
+			System.exit(3);
 			return;
 		}
 		try {
@@ -154,12 +157,14 @@ public class GameServer implements LocalServer {
 				DatabaseManager.cleanup(DatabaseType.WZ, null, null, DatabaseManager.getConnection(DatabaseType.WZ));
 		} catch (SQLException e) {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
+			System.exit(3);
 			return;
 		}
 		wzPath = System.getProperty("argonms.data.dir");
 		scriptsPath = System.getProperty("argonms.scripts.dir");
 		gci = new GameCenterInterface(serverId, world, authKey, this);
 		gci.connect(centerIp, centerPort);
+		System.exit(4); //connection with center server lost before we were able to shutdown
 	}
 
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
@@ -211,9 +216,16 @@ public class GameServer implements LocalServer {
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		Scheduler.enable();
-		for (WorldChannel ch : channels.values())
+		boolean doingWork = false;
+		for (WorldChannel ch : channels.values()) {
 			ch.listen(useNio);
-		gci.serverReady();
+			if (ch.getPort() != -1)
+				doingWork = true;
+		}
+		if (doingWork)
+			gci.serverReady();
+		else
+			System.exit(5);
 	}
 
 	public void centerDisconnected() {

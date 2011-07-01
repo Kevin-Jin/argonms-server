@@ -60,6 +60,7 @@ public class LoginServer implements LocalServer {
 	private DataFileType wzType;
 	private String wzPath;
 	private boolean useNio;
+	private int rankingPeriod;
 	private boolean centerConnected;
 
 	private LoginServer() {
@@ -86,8 +87,10 @@ public class LoginServer implements LocalServer {
 			centerPort = Integer.parseInt(prop.getProperty("argonms.login.center.port"));
 			authKey = prop.getProperty("argonms.login.auth.key");
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.login.usenio"));
+			rankingPeriod = Integer.parseInt(prop.getProperty("argonms.login.ranking.frequency"));
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load login server properties!", ex);
+			System.exit(2);
 			return;
 		}
 		boolean mcdb = (wzType == DataFileType.MCDB);
@@ -99,9 +102,11 @@ public class LoginServer implements LocalServer {
 			DatabaseManager.setProps(prop, mcdb, useNio);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load database properties!", ex);
+			System.exit(3);
 			return;
 		} catch (SQLException ex) {
 			LOG.log(Level.SEVERE, "Could not initialize database!", ex);
+			System.exit(3);
 			return;
 		}
 		try {
@@ -110,11 +115,13 @@ public class LoginServer implements LocalServer {
 				DatabaseManager.cleanup(DatabaseType.WZ, null, null, DatabaseManager.getConnection(DatabaseType.WZ));
 		} catch (SQLException e) {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
+			System.exit(3);
 			return;
 		}
 		wzPath = System.getProperty("argonms.data.dir");
 		lci = new LoginCenterInterface(authKey, this);
 		lci.connect(centerIp, centerPort);
+		System.exit(4); //connection with center server lost before we were able to shutdown
 	}
 
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
@@ -139,7 +146,10 @@ public class LoginServer implements LocalServer {
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Login Server is online.");
 			lci.serverReady();
+		} else {
+			System.exit(5);
 		}
+		Scheduler.getInstance().runRepeatedly(new RankingWorker(), rankingPeriod, rankingPeriod);
 	}
 
 	public void centerDisconnected() {

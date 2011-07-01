@@ -81,10 +81,12 @@ public abstract class RemoteCenterInterface {
 	 */
 	public void connect(String ip, int port) {
 		ChannelFuture future = bootstrap.connect(new InetSocketAddress(ip, port));
-		if (future.isSuccess())
+		if (future.isSuccess()) {
 			future.getChannel().getCloseFuture().awaitUninterruptibly();
-		else
+			LOG.log(Level.SEVERE, "Lost connection with center server!");
+		} else {
 			LOG.log(Level.SEVERE, "Could not connect to center server at " + ip + ":" + port, future.getCause());
+		}
 		bootstrap.releaseExternalResources();
 	}
 

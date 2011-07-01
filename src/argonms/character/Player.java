@@ -146,6 +146,9 @@ public class Player extends MapEntity {
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, Integer>> minigameStats;
 
+	private int worldRanking, worldRankingChange;
+	private int jobRanking, jobRankingChange;
+
 	private Player () {
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		equippedPets = new Pet[3];
@@ -668,6 +671,11 @@ public class Player extends MapEntity {
 				p.remMp = (short) Math.min(rs.getShort(17), p.maxMp);
 				//TODO: move more game/shop server exclusive stat loading into
 				//this block?
+			} else {
+				p.worldRanking = rs.getInt(37);
+				p.worldRankingChange = rs.getInt(38) - p.worldRanking;
+				p.jobRanking = rs.getInt(39);
+				p.jobRankingChange = rs.getInt(40) - p.jobRanking;
 			}
 			p.mesos = rs.getInt(26);
 
@@ -2198,6 +2206,22 @@ public class Player extends MapEntity {
 
 	public byte[] getDestructionMessage() {
 		return CommonPackets.writeRemovePlayer(this);
+	}
+
+	public int getWorldRank() {
+		return worldRanking;
+	}
+
+	public int getWorldRankChange() {
+		return worldRankingChange;
+	}
+
+	public int getJobRank() {
+		return jobRanking;
+	}
+
+	public int getJobRankChange() {
+		return jobRankingChange;
 	}
 
 	public String toString() {

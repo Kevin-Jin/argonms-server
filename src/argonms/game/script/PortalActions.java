@@ -35,7 +35,7 @@ public class PortalActions extends PlayerScriptInteraction {
 	}
 
 	public void showHint(String hint, short width, short height) {
-		getClient().getSession().send(writeHintBox(hint, width, height));
+		getClient().getSession().send(writeHintBalloon(hint, width, height));
 	}
 
 	public void abortWarp() {
@@ -46,7 +46,7 @@ public class PortalActions extends PlayerScriptInteraction {
 		return warped;
 	}
 
-	private static byte[] writeHintBox(String message, short width, short height) {
+	private static byte[] writeHintBalloon(String message, short width, short height) {
 		if (width < 1)
 			width = (short) Math.max(message.length() * 10, 40);
 		if (height < 5)

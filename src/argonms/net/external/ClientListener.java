@@ -133,9 +133,10 @@ public class ClientListener {
 
 	private static final class MaplePacketEncoder extends OneToOneEncoder {
 		protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
-			if (sessions.get(channel) != null) {
+			ClientSession session = sessions.get(channel);
+			if (session != null) {
 				byte[] input = (byte[]) msg;
-				MapleAESOFB sendCypher = sessions.get(channel).getSendCypher();
+				MapleAESOFB sendCypher = session.getSendCypher();
 				int length = input.length;
 				byte[] header = sendCypher.getPacketHeader(length);
 				byte[] body = new byte[length];
