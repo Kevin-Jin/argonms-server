@@ -74,6 +74,14 @@ public interface Player {
 	public byte getPrivilegeLevel();
 	public void close();
 
+	public interface LoggedInPlayer extends Player {
+		public byte getBuddyListCapacity();
+		public int getMesos();
+		public Map<Integer, SkillEntry> getSkillEntries();
+		public Map<Integer, Cooldown> getCooldowns();
+		public Map<Short, QuestEntry> getAllQuests();
+	}
+
 	public static abstract class LimitedActionCharacter implements Player {
 		private int id;
 		private byte gm;
@@ -263,7 +271,7 @@ public interface Player {
 		}
 
 		protected void addInventories(Map<InventoryType, Inventory> inventories) {
-			inventories.putAll(inventories);
+			this.inventories.putAll(inventories);
 		}
 
 		protected static void loadPlayerStats(ResultSet rs, int id, LimitedActionCharacter p, InventoryType extraInvType, Inventory extraInv) throws SQLException {
@@ -304,106 +312,7 @@ public interface Player {
 		}
 
 		protected static void loadInventory(Connection con, ResultSet rs, LimitedActionCharacter p) throws SQLException {
-			PreparedStatement ips = null;
-			ResultSet irs = null;
-			try {
-				while (rs.next()) {
-					InventorySlot item;
-					InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
-					short position = rs.getShort(5);
-					int itemid = rs.getInt(6);
-					int inventoryKey = rs.getInt(1);
-					if (inventoryType == InventoryType.EQUIP || inventoryType == InventoryType.EQUIPPED) {
-						Equip e;
-						if (InventoryTools.isRing(itemid)) {
-							e = new Ring(itemid);
-							ips = con.prepareStatement("SELECT * FROM "
-									+ "`inventoryrings` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								((Ring) e).setPartnerCharId(irs.getInt(3));
-								((Ring) e).setPartnerRingId(irs.getLong(4));
-							}
-							irs.close();
-							ips.close();
-						} else if (InventoryTools.isMount(itemid)) {
-							e = new TamingMob(itemid);
-							ips = con.prepareStatement("SELECT * FROM "
-									+ "`inventorymounts` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								((TamingMob) e).setLevel(irs.getByte(3));
-								((TamingMob) e).setExp(irs.getShort(4));
-								((TamingMob) e).setTiredness(irs.getByte(5));
-							}
-							irs.close();
-							ips.close();
-						} else {
-							e = new Equip(itemid);
-						}
-						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventoryequipment` WHERE "
-								+ "`inventoryitemid` = ?");
-						ips.setInt(1, inventoryKey);
-						irs = ips.executeQuery();
-						if (irs.next()) {
-							e.setStr(irs.getShort(3));
-							e.setDex(irs.getShort(4));
-							e.setInt(irs.getShort(5));
-							e.setLuk(irs.getShort(6));
-							e.setHp(irs.getShort(7));
-							e.setMp(irs.getShort(8));
-							e.setWatk(irs.getShort(9));
-							e.setMatk(irs.getShort(10));
-							e.setWdef(irs.getShort(11));
-							e.setMdef(irs.getShort(12));
-							e.setAcc(irs.getShort(13));
-							e.setAvoid(irs.getShort(14));
-							e.setSpeed(irs.getShort(15));
-							e.setJump(irs.getShort(16));
-							e.setUpgradeSlots(irs.getByte(17));
-						}
-						irs.close();
-						ips.close();
-						item = e;
-					} else {
-						if (InventoryTools.isPet(itemid)) {
-							Pet pet = new Pet(itemid);
-							ips = con.prepareStatement("SELECT * "
-									+ "FROM `inventorypets` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								pet.setName(irs.getString(4));
-								pet.setLevel(irs.getByte(5));
-								pet.setCloseness(irs.getShort(6));
-								pet.setFullness(irs.getByte(7));
-								pet.setExpired(irs.getBoolean(8));
-								byte pos = irs.getByte(3);
-								if (pos >= 0 && pos < 3)
-									p.pets[pos] = pet;
-							}
-							irs.close();
-							ips.close();
-							item = pet;
-						} else {
-							item = new Item(itemid);
-							item.setQuantity(rs.getShort(10));
-						}
-					}
-					item.setExpiration(rs.getLong(7));
-					item.setUniqueId(rs.getLong(8));
-					item.setOwner(rs.getString(9));
-					p.inventories.get(inventoryType).put(position, item);
-				}
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
-			}
+			CharacterTools.loadInventory(con, rs, p.pets, p.inventories);
 		}
 	}
 
@@ -541,6 +450,109 @@ public interface Player {
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
 				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
+			}
+		}
+
+		public static void loadInventory(Connection con, ResultSet rs, Pet[] pets, Map<InventoryType, Inventory> inventories) throws SQLException {
+			PreparedStatement ips = null;
+			ResultSet irs = null;
+			try {
+				while (rs.next()) {
+					InventorySlot item;
+					InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
+					short position = rs.getShort(5);
+					int itemid = rs.getInt(6);
+					int inventoryKey = rs.getInt(1);
+					if (inventoryType == InventoryType.EQUIP || inventoryType == InventoryType.EQUIPPED) {
+						Equip e;
+						if (InventoryTools.isRing(itemid)) {
+							e = new Ring(itemid);
+							ips = con.prepareStatement("SELECT * FROM "
+									+ "`inventoryrings` WHERE "
+									+ "`inventoryitemid` = ?");
+							ips.setInt(1, inventoryKey);
+							irs = ips.executeQuery();
+							if (irs.next()) {
+								((Ring) e).setPartnerCharId(irs.getInt(3));
+								((Ring) e).setPartnerRingId(irs.getLong(4));
+							}
+							irs.close();
+							ips.close();
+						} else if (InventoryTools.isMount(itemid)) {
+							e = new TamingMob(itemid);
+							ips = con.prepareStatement("SELECT * FROM "
+									+ "`inventorymounts` WHERE "
+									+ "`inventoryitemid` = ?");
+							ips.setInt(1, inventoryKey);
+							irs = ips.executeQuery();
+							if (irs.next()) {
+								((TamingMob) e).setLevel(irs.getByte(3));
+								((TamingMob) e).setExp(irs.getShort(4));
+								((TamingMob) e).setTiredness(irs.getByte(5));
+							}
+							irs.close();
+							ips.close();
+						} else {
+							e = new Equip(itemid);
+						}
+						ips = con.prepareStatement("SELECT * FROM "
+								+ "`inventoryequipment` WHERE "
+								+ "`inventoryitemid` = ?");
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							e.setStr(irs.getShort(3));
+							e.setDex(irs.getShort(4));
+							e.setInt(irs.getShort(5));
+							e.setLuk(irs.getShort(6));
+							e.setHp(irs.getShort(7));
+							e.setMp(irs.getShort(8));
+							e.setWatk(irs.getShort(9));
+							e.setMatk(irs.getShort(10));
+							e.setWdef(irs.getShort(11));
+							e.setMdef(irs.getShort(12));
+							e.setAcc(irs.getShort(13));
+							e.setAvoid(irs.getShort(14));
+							e.setSpeed(irs.getShort(15));
+							e.setJump(irs.getShort(16));
+							e.setUpgradeSlots(irs.getByte(17));
+						}
+						irs.close();
+						ips.close();
+						item = e;
+					} else {
+						if (InventoryTools.isPet(itemid)) {
+							Pet pet = new Pet(itemid);
+							ips = con.prepareStatement("SELECT * "
+									+ "FROM `inventorypets` WHERE "
+									+ "`inventoryitemid` = ?");
+							ips.setInt(1, inventoryKey);
+							irs = ips.executeQuery();
+							if (irs.next()) {
+								pet.setName(irs.getString(4));
+								pet.setLevel(irs.getByte(5));
+								pet.setCloseness(irs.getShort(6));
+								pet.setFullness(irs.getByte(7));
+								pet.setExpired(irs.getBoolean(8));
+								byte pos = irs.getByte(3);
+								if (pos >= 0 && pos < 3)
+									pets[pos] = pet;
+							}
+							irs.close();
+							ips.close();
+							item = pet;
+						} else {
+							item = new Item(itemid);
+							item.setQuantity(rs.getShort(10));
+						}
+					}
+					item.setExpiration(rs.getLong(7));
+					item.setUniqueId(rs.getLong(8));
+					item.setOwner(rs.getString(9));
+					inventories.get(inventoryType).put(position, item);
+				}
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 			}
 		}
 	}

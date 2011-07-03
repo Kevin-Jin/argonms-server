@@ -960,6 +960,29 @@
 	refactoring of the previous revision.
 	* Shop server now uses ShopWorld instead of LoginWorld for host/port state.
 
+2011-07-03  GoldenKevin  (revision 47)
+
+	* Even more common operations added to CharacterTools.
+	* Fixed NullPointerException when creating a character.
+	* Game server online messages now display the channel id and the world.
+	* argonms.common.inventory.ItemTools -> argonms.game.character.ItemTools
+	* argonms.game.character.skill.PlayerStatusEffectValues renamed to
+	argonms.game.character.PlayerStatusEffectValues.
+	* All packages in argonms.common.loading moved to argonms.game.loading
+	except item and string loading.
+	* Split MonsterStatusEffect enum from MonsterStatusEffectValues class and
+	moved it to argonms.common (dependency for StatusEffectsData, which is in
+	turn a dependency of ItemDataLoader).
+	* Split PlayerStatusEffect enum from PlayerStatusEffectValues class and
+	moved it to argonms.common.character (dependency of StatusEffectsData, which
+	is in turn a dependency of ItemDataLoader).
+	* argonms.game.character.skill.Cooldown
+	and argonms.game.character.skill.SkillEntry to argonms.common.character
+	as they are both needed by the shop server. The rest of the classes in their
+	old package have been moved to argonms.game.character.
+	* argonms.game.character.QuestEntry moved to argonms.common.character as it
+	is needed by the shop server.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

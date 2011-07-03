@@ -19,7 +19,13 @@
 package argonms.common.net.external;
 
 import argonms.common.GlobalConstants;
+import argonms.common.MonsterStatusEffect;
+import argonms.common.character.Cooldown;
 import argonms.common.character.Player;
+import argonms.common.character.Player.LoggedInPlayer;
+import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.QuestEntry;
+import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
@@ -34,15 +40,10 @@ import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.QuestEntry;
+import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.SkillTools;
 import argonms.game.character.StatusEffectTools;
-import argonms.game.character.skill.Cooldown;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.SkillEntry;
-import argonms.game.character.skill.SkillTools;
 import argonms.game.field.MobSkills;
-import argonms.game.field.MonsterStatusEffectValues.MonsterStatusEffect;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
@@ -269,10 +270,10 @@ public class CommonPackets {
 		}
 	}
 
-	public static void writeCharData(LittleEndianWriter lew, GameCharacter p) {
+	public static void writeCharData(LittleEndianWriter lew, LoggedInPlayer p) {
 		lew.writeLong(-1);
 		writeCharStats(lew, p);
-		lew.writeByte((byte) p.getBuddyList().getCapacity());
+		lew.writeByte(p.getBuddyListCapacity());
 
 		lew.writeInt(p.getMesos()); // mesos
 		lew.writeByte((byte) p.getInventory(InventoryType.EQUIP).getMaxSlots()); // equip slots

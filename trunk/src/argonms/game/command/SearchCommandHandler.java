@@ -19,9 +19,9 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.common.loading.quest.QuestDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.game.character.GameCharacter;
+import argonms.game.loading.quest.QuestDataLoader;
 import java.util.List;
 
 /**
