@@ -18,25 +18,25 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.ItemTools;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.SkillTools;
-import argonms.game.character.skill.Skills;
-import argonms.game.GameClient;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.ItemTools;
 import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.loading.skill.SkillStats;
-import argonms.game.field.MapEntity.EntityType;
-import argonms.game.field.entity.Mob;
-import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameClient;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.PlayerSkillSummon;
 import java.awt.Point;
 
 /**

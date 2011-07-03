@@ -18,14 +18,13 @@
 
 package argonms.game.script;
 
-import argonms.game.GameClient;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.GameClient;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContinuationPending;
 import org.mozilla.javascript.Function;

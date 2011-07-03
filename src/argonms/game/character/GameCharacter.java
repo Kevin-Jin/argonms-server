@@ -19,41 +19,25 @@
 package argonms.game.character;
 
 import argonms.common.GlobalConstants;
-import argonms.game.character.skill.SkillEntry;
 import argonms.common.ServerType;
-import argonms.game.character.BuffState.ItemState;
-import argonms.game.character.BuffState.MobSkillState;
-import argonms.game.character.BuffState.SkillState;
-import argonms.common.Player;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.Cooldown;
-import argonms.game.character.inventory.Equip;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.Item;
-import argonms.game.character.inventory.TamingMob;
-import argonms.game.character.inventory.Pet;
-import argonms.game.character.inventory.Ring;
-import argonms.game.character.skill.SkillTools;
-import argonms.game.character.skill.Skills;
-import argonms.game.GameClient;
-import argonms.game.GameServer;
+import argonms.common.character.KeyBinding;
+import argonms.common.character.Player;
+import argonms.common.character.Player.CharacterTools;
+import argonms.common.character.PlayerJob;
+import argonms.common.character.inventory.Equip;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.Item;
+import argonms.common.character.inventory.Pet;
+import argonms.common.character.inventory.Ring;
+import argonms.common.character.inventory.TamingMob;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.quest.QuestChecks;
 import argonms.common.loading.quest.QuestChecks.QuestRequirementType;
 import argonms.common.loading.quest.QuestDataLoader;
 import argonms.common.loading.skill.SkillDataLoader;
-import argonms.game.field.MapEntity;
-import argonms.game.field.GameMap;
-import argonms.game.field.entity.Minigame.MinigameResult;
-import argonms.game.field.entity.Mob;
-import argonms.game.field.entity.Miniroom;
-import argonms.game.field.entity.Miniroom.MiniroomType;
-import argonms.game.field.entity.Mob.MobDeathHook;
-import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
 import argonms.common.tools.DatabaseManager;
@@ -61,12 +45,31 @@ import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Rng;
 import argonms.common.tools.collections.LockableList;
 import argonms.common.tools.collections.Pair;
+import argonms.game.GameClient;
+import argonms.game.GameServer;
+import argonms.game.character.BuffState.ItemState;
+import argonms.game.character.BuffState.MobSkillState;
+import argonms.game.character.BuffState.SkillState;
+import argonms.game.character.skill.Cooldown;
+import argonms.game.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.character.skill.SkillEntry;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
+import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.Minigame.MinigameResult;
+import argonms.game.field.entity.Miniroom;
+import argonms.game.field.entity.Miniroom.MiniroomType;
+import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.Mob.MobDeathHook;
+import argonms.game.field.entity.PlayerSkillSummon;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -258,7 +261,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbInventory(Connection con) throws SQLException {
+	private void updateDbInventory(Connection con) throws SQLException {
 		String invUpdate = "DELETE FROM `inventoryitems` WHERE "
 				+ "`characterid` = ? AND `inventorytype` <= "
 				+ InventoryType.CASH.byteValue() + " OR `accountid` = ? AND "
@@ -272,127 +275,12 @@ public class GameCharacter extends MapEntity implements Player {
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `inventoryitems` "
-					+ "(`characterid`,`accountid`,`inventorytype`,`position`,"
-					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
-					+ "VALUES (?,?,?,?,?,?,?,?,?)",
-					PreparedStatement.RETURN_GENERATED_KEYS);
-			ps.setInt(2, client.getAccountId());
-			for (Entry<InventoryType, Inventory> ent : inventories.entrySet()) {
-				if (ent.getKey() == InventoryType.STORAGE)
-					//null keys are not affected by foreign key constraints,
-					//so we won't get account wide inventories deleted when
-					//this character is deleted.
-					ps.setNull(1, Types.INTEGER);
-				else
-					ps.setInt(1, getDataId());
-				ps.setInt(3, ent.getKey().byteValue());
-				for (Entry<Short, InventorySlot> e : ent.getValue().getAll().entrySet()) {
-					InventorySlot item = e.getValue();
-
-					ps.setShort(4, e.getKey().shortValue());
-					ps.setInt(5, item.getDataId());
-					ps.setLong(6, item.getExpiration());
-					ps.setLong(7, item.getUniqueId());
-					ps.setString(8, item.getOwner());
-					ps.setShort(9, item.getQuantity());
-					//TODO: refactor so we can use addBatch here for inventories
-					//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
-					//after executeBatch to get generated keys for each item
-					//in iteration order...
-					ps.executeUpdate(); //need the generated keys, so no batch
-					rs = ps.getGeneratedKeys();
-					int inventoryKey = rs.next() ? rs.getInt(1) : -1;
-					rs.close();
-
-					switch (item.getType()) {
-						case RING:
-							Ring ring = (Ring) item;
-							ips = con.prepareStatement(
-									"INSERT INTO `inventoryrings` ("
-									+ "`inventoryitemid`,`partnerchrid`,"
-									+ "`partnerringid`) VALUES(?,?,?)");
-							ips.setInt(1, inventoryKey);
-							ips.setInt(2, ring.getPartnerCharId());
-							ips.setLong(3, ring.getPartnerRingId());
-							ips.executeUpdate();
-							ips.close();
-							insertEquipIntoDb(ring, inventoryKey, con);
-							break;
-						case EQUIP:
-							insertEquipIntoDb((Equip) item, inventoryKey, con);
-							break;
-						case PET:
-							Pet pet = (Pet) item;
-							ips = con.prepareStatement(
-									"INSERT INTO `inventorypets` ("
-									+ "`inventoryitemid`,`position`,`name`,"
-									+ "`level`,`closeness`,`fullness`,`expired`) "
-									+ "VALUES (?,?,?,?,?,?,?)");
-							ips.setInt(1, inventoryKey);
-							ips.setByte(2, getPetPosition(pet));
-							ips.setString(3, pet.getName());
-							ips.setByte(4, pet.getLevel());
-							ips.setShort(5, pet.getCloseness());
-							ips.setByte(6, pet.getFullness());
-							ips.setBoolean(7, pet.isExpired());
-							ips.executeUpdate();
-							break;
-						case MOUNT:
-							TamingMob mount = (TamingMob) item;
-							ips = con.prepareStatement(
-									"INSERT INTO `inventorymounts` ("
-									+ "`inventoryitemid`,`level`,`exp`,"
-									+ "`tiredness`) VALUES (?,?,?,?)");
-							ips.setInt(1, inventoryKey);
-							ips.setByte(2, mount.getMountLevel());
-							ips.setShort(3, mount.getExp());
-							ips.setByte(4, mount.getTiredness());
-							ips.executeUpdate();
-							ips.close();
-							insertEquipIntoDb(mount, inventoryKey, con);
-							break;
-					}
-				}
-			}
+			CharacterTools.commitInventory(con, getDataId(), client.getAccountId(), equippedPets, inventories);
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + name, e);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
-		}
-	}
-
-	private void insertEquipIntoDb(Equip equip, int inventoryKey,
-			Connection con) throws SQLException {
-		PreparedStatement ps = null;
-		try {
-			ps = con.prepareStatement(
-					"INSERT INTO `inventoryequipment` ("
-					+ "`inventoryitemid`,`str`,`dex`,`int`,"
-					+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
-					+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
-					+ "`upgradeslots`) "
-					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			ps.setInt(1, inventoryKey);
-			ps.setShort(2, equip.getStr());
-			ps.setShort(3, equip.getDex());
-			ps.setShort(4, equip.getInt());
-			ps.setShort(5, equip.getLuk());
-			ps.setShort(6, equip.getHp());
-			ps.setShort(7, equip.getMp());
-			ps.setShort(8, equip.getWatk());
-			ps.setShort(9, equip.getMatk());
-			ps.setShort(10, equip.getWdef());
-			ps.setShort(11, equip.getMdef());
-			ps.setShort(12, equip.getAcc());
-			ps.setShort(13, equip.getAvoid());
-			ps.setShort(14, equip.getSpeed());
-			ps.setShort(15, equip.getJump());
-			ps.setByte(16, equip.getUpgradeSlots());
-			ps.executeUpdate();
-		} finally {
-			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
@@ -1432,13 +1320,6 @@ public class GameCharacter extends MapEntity implements Player {
 
 	public Pet[] getPets() {
 		return equippedPets;
-	}
-
-	public byte getPetPosition(Pet p) {
-		for (byte i = 0; i < 3; i++)
-			if (equippedPets[i] != null && equippedPets[i] == p)
-				return i;
-		return -1;
 	}
 
 	public TamingMob getEquippedMount() {

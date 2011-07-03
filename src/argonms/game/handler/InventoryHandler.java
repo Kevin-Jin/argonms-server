@@ -18,19 +18,19 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Equip;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventorySlot.ItemType;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.GameClient;
+import argonms.common.character.inventory.Equip;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventorySlot.ItemType;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
-import argonms.game.field.MapEntity.EntityType;
-import argonms.game.field.entity.ItemDrop;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameClient;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.ItemDrop;
 
 /**
  *

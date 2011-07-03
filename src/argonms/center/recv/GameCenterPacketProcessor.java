@@ -18,9 +18,9 @@
 
 package argonms.center.recv;
 
-import argonms.common.ServerType;
 import argonms.center.CenterServer;
 import argonms.center.send.CenterGameInterface;
+import argonms.common.ServerType;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.tools.input.LittleEndianReader;

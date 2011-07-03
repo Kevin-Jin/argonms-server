@@ -18,11 +18,11 @@
 
 package argonms.game;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.script.NpcConversationActions;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.game.character.GameCharacter;
+import argonms.game.script.NpcConversationActions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

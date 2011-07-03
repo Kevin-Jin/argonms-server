@@ -18,10 +18,10 @@
 
 package argonms.common.loading.skill;
 
-import argonms.game.character.skill.Skills;
-import argonms.game.field.MobSkills;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.game.character.skill.Skills;
+import argonms.game.field.MobSkills;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

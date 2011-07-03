@@ -18,16 +18,16 @@
 
 package argonms.game.script;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Equip;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventorySlot.ItemType;
-import argonms.game.character.inventory.InventoryTools;
+import argonms.common.character.inventory.Equip;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventorySlot.ItemType;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.tools.Rng;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Reactor;
-import argonms.common.tools.Rng;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

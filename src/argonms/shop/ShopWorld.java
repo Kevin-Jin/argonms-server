@@ -32,7 +32,7 @@ public class ShopWorld {
 	private Map<Byte, Integer> channelPorts;
 	private Map<Byte, Set<Byte>> gameToChannelMapping;
 
-	public ShopWorld(String name) {
+	public ShopWorld() {
 		this.hosts = new HashMap<Byte, byte[]>();
 		this.channelPorts = new HashMap<Byte, Integer>();
 		this.gameToChannelMapping = new HashMap<Byte, Set<Byte>>();

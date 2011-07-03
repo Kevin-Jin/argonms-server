@@ -20,9 +20,6 @@ package argonms.game;
 
 import argonms.common.LocalServer;
 import argonms.common.ServerType;
-import argonms.game.script.NpcScriptManager;
-import argonms.game.script.PortalScriptManager;
-import argonms.game.script.ReactorScriptManager;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.map.MapDataLoader;
@@ -35,7 +32,9 @@ import argonms.common.loading.string.StringDataLoader;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Scheduler;
-
+import argonms.game.script.NpcScriptManager;
+import argonms.game.script.PortalScriptManager;
+import argonms.game.script.ReactorScriptManager;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;

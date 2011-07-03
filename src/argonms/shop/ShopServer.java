@@ -23,7 +23,6 @@ import argonms.common.ServerType;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
-import argonms.login.LoginWorld;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.PlayerLog;
@@ -54,7 +53,7 @@ public class ShopServer implements LocalServer {
 	private ShopCenterInterface sci;
 	private String address;
 	private int port;
-	private Map<Byte, LoginWorld> onlineWorlds;
+	private Map<Byte, ShopWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
@@ -63,7 +62,7 @@ public class ShopServer implements LocalServer {
 	private PlayerLog<ShopCharacter> storage;
 
 	private ShopServer() {
-		onlineWorlds = new HashMap<Byte, LoginWorld>();
+		onlineWorlds = new HashMap<Byte, ShopWorld>();
 	}
 
 	public void init() {
@@ -170,9 +169,9 @@ public class ShopServer implements LocalServer {
 	public void gameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		try {
 			byte[] ip = InetAddress.getByName(host).getAddress();
-			LoginWorld w = onlineWorlds.get(Byte.valueOf(world));
+			ShopWorld w = onlineWorlds.get(Byte.valueOf(world));
 			if (w == null) {
-				w = new LoginWorld(world);
+				w = new ShopWorld();
 				onlineWorlds.put(Byte.valueOf(world), w);
 			}
 			w.addGameServer(ip, ports, serverId);
@@ -186,7 +185,7 @@ public class ShopServer implements LocalServer {
 	public void gameDisconnected(byte serverId, byte world) {
 		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(serverId));
 		Byte oW = Byte.valueOf(world);
-		LoginWorld w = onlineWorlds.get(oW);
+		ShopWorld w = onlineWorlds.get(oW);
 		w.removeGameServer(serverId);
 		if (w.getChannelCount() == 0)
 			onlineWorlds.remove(oW);

@@ -18,10 +18,6 @@
 
 package argonms.common;
 
-import argonms.game.GameServer;
-import argonms.login.LoginServer;
-import argonms.shop.ShopServer;
-
 /**
  *
  * @author GoldenKevin
@@ -52,16 +48,6 @@ public final class ServerType {
 
 	public static boolean isGame(byte type) {
 		return type >= 0;
-	}
-
-	public static byte getType() {
-		if (GameServer.getInstance() != null)
-			return GameServer.getInstance().getServerId();
-		if (LoginServer.getInstance() != null)
-			return LOGIN;
-		if (ShopServer.getInstance() != null)
-			return SHOP;
-		return UNDEFINED;
 	}
 
 	public static String getName(byte serverId) {

@@ -19,7 +19,7 @@
 package argonms.common.loading.item;
 
 import argonms.common.StatEffect;
-import argonms.game.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.DataFileType;
 import java.util.ArrayList;
 import java.util.Calendar;

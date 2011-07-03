@@ -18,20 +18,20 @@
 
 package argonms.game.character.skill;
 
-import argonms.game.character.StatusEffectTools;
-import argonms.game.character.ClientUpdateKey;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.game.character.inventory.InventoryTools.WeaponClass;
-import argonms.game.character.GameCharacter;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.character.inventory.InventoryTools.WeaponClass;
 import argonms.common.loading.skill.PlayerSkillEffectsData;
 import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
+import argonms.game.character.ClientUpdateKey;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.StatusEffectTools;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;

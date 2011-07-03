@@ -18,11 +18,11 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.GameCharacter;
+import argonms.common.tools.input.LittleEndianReader;
 import argonms.game.GameClient;
+import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Reactor;
-import argonms.common.tools.input.LittleEndianReader;
 
 /**
  *

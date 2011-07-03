@@ -946,6 +946,20 @@
 	* Improved wording of some low-level networking logged messages.
 	* Fixed match cards minigame not resetting completely.
 
+2011-07-03  GoldenKevin  (revision 46)
+
+	* Further refactoring done to remove references to argonms.game and its
+	subpackages from code in argonms.common, argonms.login, and argonms.shop.
+	argonms.game.character.inventory renamed argonms.common.character.inventory,
+	argonms.common.Player moved to argonms.common.character.Player, and
+	argonms.game.character.KeyBinding to argonms.common.character.KeyBinding.
+	* New abstract class inherited by LoginCharacter and ShopCharacter to reduce
+	repeated code. CharacterTools includes routines common to all three Player
+	implementations.
+	* Reorganized chaotically ordered imports following the large-scale
+	refactoring of the previous revision.
+	* Shop server now uses ShopWorld instead of LoginWorld for host/port state.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -18,7 +18,7 @@
 
 package argonms.common.net.external;
 
-import argonms.common.Player;
+import argonms.common.character.Player;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

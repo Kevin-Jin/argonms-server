@@ -18,11 +18,15 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
+import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.FreeMarketShop.HiredMerchant;
 import argonms.game.field.entity.FreeMarketShop.PlayerStore;
@@ -33,10 +37,6 @@ import argonms.game.field.entity.Minigame.Omok;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
 import argonms.game.field.entity.Trade;
-import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
-import argonms.common.tools.input.LittleEndianReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *

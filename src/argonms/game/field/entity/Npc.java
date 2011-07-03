@@ -18,8 +18,9 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.field.MapEntity;
 import argonms.common.net.external.CommonPackets;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 
 /**
  *

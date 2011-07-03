@@ -18,11 +18,11 @@
 
 package argonms.game.field.entity;
 
-import java.awt.Point;
-
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.field.MapEntity;
+import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.CommonPackets;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import java.awt.Point;
 
 /**
  *

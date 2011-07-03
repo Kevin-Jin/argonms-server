@@ -18,10 +18,6 @@
 
 package argonms.game;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.PlayerContinuation;
-import argonms.game.field.GameMap;
-import argonms.game.field.MapFactory;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.ClientSendOps;
@@ -31,6 +27,10 @@ import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.collections.Pair;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.PlayerContinuation;
+import argonms.game.field.GameMap;
+import argonms.game.field.MapFactory;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

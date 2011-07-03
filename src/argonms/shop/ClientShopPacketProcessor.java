@@ -20,8 +20,8 @@ package argonms.shop;
 
 import argonms.common.net.external.ClientPacketProcessor;
 import argonms.common.net.external.ClientRecvOps;
-import argonms.shop.handler.*;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.shop.handler.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

@@ -18,10 +18,10 @@
 
 package argonms.shop.handler;
 
+import argonms.common.tools.input.LittleEndianReader;
 import argonms.shop.ShopCharacter;
 import argonms.shop.ShopClient;
 import argonms.shop.ShopServer;
-import argonms.common.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

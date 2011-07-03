@@ -18,9 +18,8 @@
 
 package argonms.game.character.skill;
 
-import java.util.concurrent.ScheduledFuture;
-
 import argonms.common.tools.Scheduler;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  *

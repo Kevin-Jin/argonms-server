@@ -18,15 +18,15 @@
 
 package argonms.game.field.entity;
 
-import java.awt.Rectangle;
-
-import argonms.game.character.GameCharacter;
-import argonms.game.character.skill.Skills;
 import argonms.common.loading.skill.MobSkillEffectsData;
 import argonms.common.loading.skill.PlayerSkillEffectsData;
-import argonms.game.field.MapEntity;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Rng;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.skill.Skills;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import java.awt.Rectangle;
 
 /**
  *
