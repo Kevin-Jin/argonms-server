@@ -18,11 +18,10 @@
 
 package argonms.shop.handler;
 
-import argonms.character.Player;
-import argonms.net.external.RemoteClient;
+import argonms.shop.ShopCharacter;
 import argonms.shop.ShopClient;
 import argonms.shop.ShopServer;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,27 +32,26 @@ import java.util.logging.Logger;
 public class ShopHandler {
 	private static final Logger LOG = Logger.getLogger(ShopHandler.class.getName());
 
-	public static void handlePlayerConnection(LittleEndianReader packet, RemoteClient rc) {
-		ShopClient client = (ShopClient) rc;
+	public static void handlePlayerConnection(LittleEndianReader packet, ShopClient sc) {
 		int cid = packet.readInt();
 		/*Pair<Byte, Boolean> info = ShopServer.getInstance().getChannelInfo(cid);
 		client.setChannel(info.getLeft().byteValue());
 		boolean mts = info.getRight().booleanValue();*/
-		Player player = null;
-		player = Player.loadPlayer(client, cid);
+		ShopCharacter player = null;
+		player = ShopCharacter.loadPlayer(sc, cid);
 		if (player == null)
 			return;
-		client.setPlayer(player);
+		sc.setPlayer(player);
 		boolean allowLogin;
-		byte state = client.getOnlineState();
-		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
+		byte state = sc.getOnlineState();
+		allowLogin = (state == ShopClient.STATUS_MIGRATION);
 		if (!allowLogin) {
 			LOG.log(Level.WARNING, "Player {0} tried to double login on shop",
 					player.getName());
-			client.getSession().close();
+			sc.getSession().close();
 			return;
 		}
-		client.updateState(RemoteClient.STATUS_INSHOP);
+		sc.updateState(ShopClient.STATUS_INSHOP);
 
 		ShopServer.getInstance().addPlayer(player);
 		/*try {

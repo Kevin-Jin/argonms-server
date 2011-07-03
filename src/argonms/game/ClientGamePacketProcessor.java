@@ -19,10 +19,9 @@
 package argonms.game;
 
 import argonms.game.handler.*;
-import argonms.net.external.ClientPacketProcessor;
-import argonms.net.external.ClientRecvOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.net.external.ClientPacketProcessor;
+import argonms.common.net.external.ClientRecvOps;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,10 +29,10 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ClientGamePacketProcessor extends ClientPacketProcessor {
+public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient> {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
-	public void process(LittleEndianReader reader, RemoteClient s) {
+	public void process(LittleEndianReader reader, GameClient gc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.SERVERLIST_REREQUEST:
 			case ClientRecvOps.EXIT_CHARLIST:
@@ -44,127 +43,127 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor {
 				//lol, char loading lag...
 				break;
 			case ClientRecvOps.PLAYER_CONNECTED:
-				GameEnterHandler.handlePlayerConnection(reader, s);
+				GameEnterHandler.handlePlayerConnection(reader, gc);
 				break;
 			case ClientRecvOps.PONG:
-				s.receivedPong();
+				gc.receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
-				s.clientError(reader.readLengthPrefixedString());
+				gc.clientError(reader.readLengthPrefixedString());
 				break;
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
 				break;
 			case ClientRecvOps.CHANGE_MAP:
-				GameGoToHandler.handleMapChange(reader, s);
+				GameGoToHandler.handleMapChange(reader, gc);
 				break;
 			case ClientRecvOps.CHANGE_CHANNEL:
-				GameGoToHandler.handleChangeChannel(reader, s);
+				GameGoToHandler.handleChangeChannel(reader, gc);
 				break;
 			case ClientRecvOps.ENTER_CASH_SHOP:
-				GameGoToHandler.handleWarpCs(reader, s);
+				GameGoToHandler.handleWarpCs(reader, gc);
 				break;
 			case ClientRecvOps.MOVE_PLAYER:
-				GameMovementHandler.handleMovePlayer(reader, s);
+				GameMovementHandler.handleMovePlayer(reader, gc);
 				break;
 			case ClientRecvOps.MELEE_ATTACK:
-				DealDamageHandler.handleMeleeAttack(reader, s);
+				DealDamageHandler.handleMeleeAttack(reader, gc);
 				break;
 			case ClientRecvOps.RANGED_ATTACK:
-				DealDamageHandler.handleRangedAttack(reader, s);
+				DealDamageHandler.handleRangedAttack(reader, gc);
 				break;
 			case ClientRecvOps.MAGIC_ATTACK:
-				DealDamageHandler.handleMagicAttack(reader, s);
+				DealDamageHandler.handleMagicAttack(reader, gc);
 				break;
 			case ClientRecvOps.ENERGY_CHARGE_ATTACK:
-				DealDamageHandler.handleEnergyChargeAttack(reader, s);
+				DealDamageHandler.handleEnergyChargeAttack(reader, gc);
 				break;
 			case ClientRecvOps.TAKE_DAMAGE:
-				TakeDamageHandler.handleTakeDamage(reader, s);
+				TakeDamageHandler.handleTakeDamage(reader, gc);
 				break;
 			case ClientRecvOps.MAP_CHAT:
-				GameChatHandler.handleMapChat(reader, s);
+				GameChatHandler.handleMapChat(reader, gc);
 				break;
 			case ClientRecvOps.FACIAL_EXPRESSION:
-				GamePlayerMiscHandler.handleEmote(reader, s);
+				GamePlayerMiscHandler.handleEmote(reader, gc);
 				break;
 			case ClientRecvOps.NPC_TALK:
-				GameNpcHandler.handleStartConversation(reader, s);
+				GameNpcHandler.handleStartConversation(reader, gc);
 				break;
 			case ClientRecvOps.NPC_TALK_MORE:
-				GameNpcHandler.handleContinueConversation(reader, s);
+				GameNpcHandler.handleContinueConversation(reader, gc);
 				break;
 			case ClientRecvOps.ITEM_MOVE:
-				InventoryHandler.handleItemMove(reader, s);
+				InventoryHandler.handleItemMove(reader, gc);
 				break;
 			case ClientRecvOps.USE_ITEM:
-				GameBuffHandler.handleUseItem(reader, s);
+				GameBuffHandler.handleUseItem(reader, gc);
 				break;
 			case ClientRecvOps.CANCEL_ITEM:
-				GameBuffHandler.handleCancelItem(reader, s);
+				GameBuffHandler.handleCancelItem(reader, gc);
 				break;
 			case ClientRecvOps.DISTRIBUTE_AP:
-				StatAllocationHandler.handleApAllocation(reader, s);
+				StatAllocationHandler.handleApAllocation(reader, gc);
 				break;
 			case ClientRecvOps.HEAL_OVER_TIME:
-				GamePlayerMiscHandler.handleReplenishHpMp(reader, s);
+				GamePlayerMiscHandler.handleReplenishHpMp(reader, gc);
 				break;
 			case ClientRecvOps.DISTRIBUTE_SP:
-				StatAllocationHandler.handleSpAllocation(reader, s);
+				StatAllocationHandler.handleSpAllocation(reader, gc);
 				break;
 			case ClientRecvOps.USE_SKILL:
-				GameBuffHandler.handleUseSkill(reader, s);
+				GameBuffHandler.handleUseSkill(reader, gc);
 				break;
 			case ClientRecvOps.CANCEL_SKILL:
-				GameBuffHandler.handleCancelSkill(reader, s);
+				GameBuffHandler.handleCancelSkill(reader, gc);
 				break;
 			case ClientRecvOps.PREPARED_SKILL:
-				DealDamageHandler.handlePreparedSkill(reader, s);
+				DealDamageHandler.handlePreparedSkill(reader, gc);
 				break;
 			case ClientRecvOps.MESO_DROP:
-				InventoryHandler.handleMesoDrop(reader, s);
+				InventoryHandler.handleMesoDrop(reader, gc);
 				break;
 			case ClientRecvOps.CHANGE_MAP_SPECIAL:
-				GameGoToHandler.handleEnteredSpecialPortal(reader, s);
+				GameGoToHandler.handleEnteredSpecialPortal(reader, gc);
 				break;
 			case ClientRecvOps.USE_INNER_PORTAL:
-				GameGoToHandler.handleEnteredInnerPortal(reader, s);
+				GameGoToHandler.handleEnteredInnerPortal(reader, gc);
 				break;
 			case ClientRecvOps.QUEST_ACTION:
-				GameNpcHandler.handleQuestAction(reader, s);
+				GameNpcHandler.handleQuestAction(reader, gc);
 				break;
 			case ClientRecvOps.MINIROOM_ACT:
-				MiniroomHandler.handleAction(reader, s);
+				MiniroomHandler.handleAction(reader, gc);
 				break;
 			case ClientRecvOps.CHANGE_BINDING:
-				GamePlayerMiscHandler.handleBindingChange(reader, s);
+				GamePlayerMiscHandler.handleBindingChange(reader, gc);
 				break;
 			case ClientRecvOps.MOVE_SUMMON:
-				GameMovementHandler.handleMoveSummon(reader, s);
+				GameMovementHandler.handleMoveSummon(reader, gc);
 				break;
 			case ClientRecvOps.SUMMON_ATTACK:
-				DealDamageHandler.handleSummonAttack(reader, s);
+				DealDamageHandler.handleSummonAttack(reader, gc);
 				break;
 			case ClientRecvOps.DAMAGE_SUMMON:
-				TakeDamageHandler.handlePuppetTakeDamage(reader, s);
+				TakeDamageHandler.handlePuppetTakeDamage(reader, gc);
 				break;
 			case ClientRecvOps.MOVE_MOB:
-				GameMovementHandler.handleMoveMob(reader, s);
+				GameMovementHandler.handleMoveMob(reader, gc);
 				break;
 			case ClientRecvOps.MOVE_NPC:
-				GameMovementHandler.handleMoveNpc(reader, s);
+				GameMovementHandler.handleMoveNpc(reader, gc);
 				break;
 			case ClientRecvOps.ITEM_PICKUP:
-				InventoryHandler.handleMapItemPickUp(reader, s);
+				InventoryHandler.handleMapItemPickUp(reader, gc);
 				break;
 			case ClientRecvOps.DAMAGE_REACTOR:
-				ReactorHandler.handleReactorTrigger(reader, s);
+				ReactorHandler.handleReactorTrigger(reader, gc);
 				break;
 			case ClientRecvOps.TOUCH_REACTOR:
-				ReactorHandler.handleReactorTouch(reader, s);
+				ReactorHandler.handleReactorTouch(reader, gc);
 				break;
 			case ClientRecvOps.PLAYER_UPDATE:
-				((GameClient) s).getPlayer().saveCharacter();
+				gc.getPlayer().saveCharacter();
 				break;
 			case ClientRecvOps.MAPLE_TV:
 				//I think we can all agree that we don't care...

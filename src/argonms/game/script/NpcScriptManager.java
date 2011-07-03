@@ -18,11 +18,11 @@
 
 package argonms.game.script;
 
-import argonms.GlobalConstants;
+import argonms.common.GlobalConstants;
 import argonms.game.GameClient;
-import argonms.loading.quest.QuestDataLoader;
-import argonms.net.external.ClientSendOps;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.loading.quest.QuestDataLoader;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;

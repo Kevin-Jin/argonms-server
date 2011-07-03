@@ -18,11 +18,11 @@
 
 package argonms.login;
 
-import argonms.ServerType;
-import argonms.net.HashFunctions;
-import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
+import argonms.common.ServerType;
+import argonms.common.net.HashFunctions;
+import argonms.common.net.external.RemoteClient;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

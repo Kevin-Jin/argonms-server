@@ -18,11 +18,11 @@
 
 package argonms.game;
 
-import argonms.character.Player;
+import argonms.game.character.GameCharacter;
 import argonms.game.script.NpcConversationActions;
-import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
+import argonms.common.net.external.RemoteClient;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 public class GameClient extends RemoteClient {
 	private static final Logger LOG = Logger.getLogger(GameClient.class.getName());
 
-	private Player player;
+	private GameCharacter player;
 	private NpcConversationActions npc;
 
 	public GameClient(byte world, byte channel) {
@@ -45,11 +45,11 @@ public class GameClient extends RemoteClient {
 		setChannel(channel);
 	}
 
-	public Player getPlayer() {
+	public GameCharacter getPlayer() {
 		return player;
 	}
 
-	public void setPlayer(Player p) {
+	public void setPlayer(GameCharacter p) {
 		this.player = p;
 	}
 

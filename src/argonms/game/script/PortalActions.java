@@ -19,8 +19,8 @@
 package argonms.game.script;
 
 import argonms.game.GameClient;
-import argonms.net.external.ClientSendOps;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *

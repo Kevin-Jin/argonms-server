@@ -18,10 +18,10 @@
 
 package argonms.shop;
 
-import argonms.net.internal.CenterRemoteOps;
-import argonms.net.internal.CenterRemotePacketProcessor;
-import argonms.net.internal.RemoteCenterInterface;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.net.internal.CenterRemoteOps;
+import argonms.common.net.internal.CenterRemotePacketProcessor;
+import argonms.common.net.internal.RemoteCenterInterface;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;

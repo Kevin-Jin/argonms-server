@@ -18,7 +18,7 @@
 
 package argonms.center.recv;
 
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.tools.input.LittleEndianReader;
 
 /**
  *

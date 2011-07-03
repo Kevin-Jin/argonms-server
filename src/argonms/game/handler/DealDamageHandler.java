@@ -18,35 +18,34 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
-import argonms.character.PlayerJob;
-import argonms.character.StatusEffectTools;
-import argonms.character.inventory.Inventory.InventoryType;
-import argonms.character.inventory.InventorySlot;
-import argonms.character.inventory.InventoryTools;
-import argonms.character.inventory.InventoryTools.WeaponClass;
-import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.character.skill.SkillTools;
-import argonms.character.skill.Skills;
-import argonms.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.PlayerJob;
+import argonms.game.character.StatusEffectTools;
+import argonms.game.character.inventory.Inventory.InventoryType;
+import argonms.game.character.inventory.InventorySlot;
+import argonms.game.character.inventory.InventoryTools;
+import argonms.game.character.inventory.InventoryTools.WeaponClass;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
+import argonms.game.character.skill.PlayerStatusEffectValues;
 import argonms.game.GameClient;
-import argonms.loading.skill.SkillDataLoader;
-import argonms.loading.skill.PlayerSkillEffectsData;
-import argonms.loading.skill.SkillStats;
-import argonms.map.Element;
-import argonms.map.GameMap;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.MonsterStatusEffectTools;
-import argonms.map.entity.ItemDrop;
-import argonms.map.entity.Mob;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.Rng;
-import argonms.tools.Scheduler;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
-import argonms.tools.output.LittleEndianWriter;
+import argonms.game.character.GameCharacter;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.common.loading.skill.PlayerSkillEffectsData;
+import argonms.common.loading.skill.SkillStats;
+import argonms.game.field.Element;
+import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.MonsterStatusEffectTools;
+import argonms.game.field.entity.ItemDrop;
+import argonms.game.field.entity.Mob;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.Rng;
+import argonms.common.tools.Scheduler;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.tools.output.LittleEndianWriter;
 import java.awt.Point;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,16 +59,16 @@ import java.util.Map.Entry;
 public class DealDamageHandler {
 	private enum AttackType { MELEE, RANGED, MAGIC, SUMMON, CHARGE }
 
-	public static void handleMeleeAttack(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p);
 		applyAttack(attack, p);
 	}
 
 	//bow/arrows, claw/stars, guns/bullets (projectiles)
-	public static void handleRangedAttack(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleRangedAttack(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		short useQty;
@@ -97,9 +96,9 @@ public class DealDamageHandler {
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
 				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(attack.ammoItemId)) {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
-					rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
+					gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
 				} else {
-					rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
+					gc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
 				}
 			}
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
@@ -122,29 +121,29 @@ public class DealDamageHandler {
 		applyAttack(attack, p);
 	}
 
-	public static void handleMagicAttack(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p);
 		applyAttack(attack, p);
 	}
 
-	public static void handleEnergyChargeAttack(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleEnergyChargeAttack(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p);
 		applyAttack(attack, p);
 	}
 
-	public static void handleSummonAttack(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleSummonAttack(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.SUMMON, p);
 		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack), p);
 		applyAttack(attack, p);
 	}
 
-	public static void handlePreparedSkill(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handlePreparedSkill(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int skillId = packet.readInt();
 		byte skillLevel = packet.readByte();
 		byte flags = packet.readByte();
@@ -167,7 +166,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, Player p) {
+	private static AttackInfo parseDamage(LittleEndianReader packet, AttackType type, GameCharacter p) {
 		AttackInfo ret = new AttackInfo();
 
 		if (type != AttackType.SUMMON) {
@@ -230,7 +229,7 @@ public class DealDamageHandler {
 		return ret;
 	}
 
-	private static void doPickPocketDrops(Player p, Mob monster, Entry<Integer, int[]> oned) {
+	private static void doPickPocketDrops(GameCharacter p, Mob monster, Entry<Integer, int[]> oned) {
 		int delay = 0;
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		double reqdamage = 20000;
@@ -257,7 +256,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void giveMonsterDiseasesFromActiveBuffs(Player player, Mob monster) {
+	private static void giveMonsterDiseasesFromActiveBuffs(GameCharacter player, Mob monster) {
 		PlayerStatusEffectValues v;
 		PlayerSkillEffectsData e;
 		if ((v = player.getEffectValue(PlayerStatusEffect.BLIND)) != null) {
@@ -282,7 +281,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static void giveMonsterDiseasesFromPassiveSkills(final Player player, Mob monster, WeaponClass weaponClass, int attackCount) {
+	private static void giveMonsterDiseasesFromPassiveSkills(final GameCharacter player, Mob monster, WeaponClass weaponClass, int attackCount) {
 		byte level;
 		PlayerSkillEffectsData e;
 		//(when the client says "Usable up to 3 times against each monster", do
@@ -374,7 +373,7 @@ public class DealDamageHandler {
 	}
 
 	//TODO: handle skills
-	private static void applyAttack(AttackInfo attack, final Player player) {
+	private static void applyAttack(AttackInfo attack, final GameCharacter player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();
 		if (attackEffect != null) { //attack skills
@@ -482,7 +481,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static byte getMasteryLevel(Player p) {
+	private static byte getMasteryLevel(GameCharacter p) {
 		switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
 			case SWORD1H:
 			case SWORD2H:
@@ -626,7 +625,7 @@ public class DealDamageHandler {
 			this.allDamage = new HashMap<Integer, int[]>();
 		}
 
-		public PlayerSkillEffectsData getAttackEffect(Player p) {
+		public PlayerSkillEffectsData getAttackEffect(GameCharacter p) {
 			if (skill == 0)
 				return null;
 			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(skill);

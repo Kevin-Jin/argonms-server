@@ -18,11 +18,11 @@
 
 package argonms.login;
 
-import argonms.LocalServer;
-import argonms.ServerType;
-import argonms.net.internal.RemoteCenterInterface;
-import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.LocalServer;
+import argonms.common.ServerType;
+import argonms.common.net.internal.RemoteCenterInterface;
+import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  * Provides an interface for the login server between it and the center server.

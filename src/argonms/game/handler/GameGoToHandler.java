@@ -18,14 +18,13 @@
 
 package argonms.game.handler;
 
-import argonms.UserPrivileges;
-import argonms.character.Player;
+import argonms.common.UserPrivileges;
+import argonms.game.character.GameCharacter;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.loading.map.PortalData;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.loading.map.PortalData;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
 import java.awt.Point;
 
 /**
@@ -33,20 +32,20 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class GameGoToHandler {
-	public static void handleChangeChannel(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleChangeChannel(LittleEndianReader packet, GameClient gc) {
 		byte destCh = (byte) (packet.readByte() + 1);
-		byte curCh = rc.getChannel();
-		GameServer.getChannel(curCh).requestChannelChange(((GameClient) rc).getPlayer(), destCh);
+		byte curCh = gc.getChannel();
+		GameServer.getChannel(curCh).requestChannelChange(gc.getPlayer(), destCh);
 	}
 
-	public static void handleMapChange(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMapChange(LittleEndianReader packet, GameClient gc) {
 		/*byte type = */packet.readByte(); //1 on first portal enter, 2 on subsequents...?
 		int dest = packet.readInt();
 		String portalName = packet.readLengthPrefixedString();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		if (dest == -1) { //entered portal
 			if (!p.getMap().enterPortal(p, portalName))
-				rc.getSession().send(CommonPackets.writeEnableActions());
+				gc.getSession().send(CommonPackets.writeEnableActions());
 		} else if (dest == 0 && !p.isAlive()) { //warp when dead and clicked ok
 			//TODO: cancel all buffs and all that good stuff
 			p.setHp((short) 50);
@@ -54,26 +53,26 @@ public class GameGoToHandler {
 			p.changeMap(p.getMap().getReturnMap());
 		} else { //client map command
 			if (p.getPrivilegeLevel() <= UserPrivileges.USER || !p.changeMap(dest))
-				rc.getSession().send(CommonPackets.writeEnableActions());
+				gc.getSession().send(CommonPackets.writeEnableActions());
 		}
 	}
 
-	public static void handleEnteredSpecialPortal(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleEnteredSpecialPortal(LittleEndianReader packet, GameClient gc) {
 		packet.readByte();
 		String portalName = packet.readLengthPrefixedString();
 		packet.readByte();
 		packet.readByte(); //sourcefm?
 
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		if (!p.getMap().enterPortal(p, portalName))
-			rc.getSession().send(CommonPackets.writeEnableActions());
+			gc.getSession().send(CommonPackets.writeEnableActions());
 	}
 
-	public static void handleEnteredInnerPortal(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleEnteredInnerPortal(LittleEndianReader packet, GameClient gc) {
 		packet.readByte();
 		String portalName = packet.readLengthPrefixedString();
 
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		PortalData portal = p.getMap().getStaticData().getPortals().get(Byte.valueOf(p.getMap().getPortalIdByName(portalName)));
 		Point startPos = packet.readPos();
 		Point endPos = packet.readPos();
@@ -86,7 +85,7 @@ public class GameGoToHandler {
 		}
 	}
 
-	public static void handleWarpCs(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleWarpCs(LittleEndianReader packet, GameClient rc) {
 		
 	}
 }

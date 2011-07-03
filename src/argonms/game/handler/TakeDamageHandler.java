@@ -18,21 +18,20 @@
 
 package argonms.game.handler;
 
-import argonms.character.DiseaseTools;
-import argonms.character.Player;
-import argonms.character.skill.PlayerStatusEffectValues;
-import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.character.skill.SkillTools;
+import argonms.game.character.DiseaseTools;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.character.skill.SkillTools;
 import argonms.game.GameClient;
-import argonms.loading.mob.Attack;
-import argonms.loading.mob.MobDataLoader;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.entity.Mob;
-import argonms.map.entity.PlayerSkillSummon;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.loading.mob.Attack;
+import argonms.common.loading.mob.MobDataLoader;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 
 /**
@@ -45,8 +44,8 @@ public class TakeDamageHandler {
 		MAP_DAMAGE = -2 //e.g. vines b/w henesys and ellinia
 	;
 
-	public static void handleTakeDamage(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleTakeDamage(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 
 		/*int tickCount = */packet.readInt();
 		byte attack = packet.readByte();
@@ -132,8 +131,8 @@ public class TakeDamageHandler {
 			p.getMap().sendToAll(writeHurtPlayer(p, attack, damage, pgmr, mobid, direction, stance, noDamageId), p);
 	}
 
-	public static void handlePuppetTakeDamage(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handlePuppetTakeDamage(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int summonEntId = packet.readInt();
 		byte misc = packet.readByte();
 		int damage = packet.readInt();
@@ -149,7 +148,7 @@ public class TakeDamageHandler {
 		p.getMap().sendToAll(writeHurtPuppet(p, puppet, misc, damage, mobEid));
 	}
 
-	private static byte[] writeHurtPuppet(Player p, PlayerSkillSummon puppet, byte misc, int damage, int mobEid) {
+	private static byte[] writeHurtPuppet(GameCharacter p, PlayerSkillSummon puppet, byte misc, int damage, int mobEid) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.DAMAGE_SUMMON);
 		lew.writeInt(p.getId());
@@ -161,7 +160,7 @@ public class TakeDamageHandler {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeHurtPlayer(Player p, byte mobAttack, int damage, MobReturnDamage pgmr, int mobId, byte direction, byte stance, int noDamageSkill) {
+	private static byte[] writeHurtPlayer(GameCharacter p, byte mobAttack, int damage, MobReturnDamage pgmr, int mobId, byte direction, byte stance, int noDamageSkill) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.DAMAGE_PLAYER);
 		lew.writeInt(p.getId());

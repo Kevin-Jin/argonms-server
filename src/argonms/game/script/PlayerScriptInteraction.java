@@ -18,15 +18,15 @@
 
 package argonms.game.script;
 
-import argonms.character.inventory.Inventory;
-import argonms.character.inventory.InventorySlot;
-import argonms.character.inventory.InventoryTools;
-import argonms.character.inventory.Inventory.InventoryType;
-import argonms.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.game.character.inventory.Inventory;
+import argonms.game.character.inventory.InventorySlot;
+import argonms.game.character.inventory.InventoryTools;
+import argonms.game.character.inventory.Inventory.InventoryType;
+import argonms.game.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.net.external.ClientSession;
-import argonms.net.external.CommonPackets;
+import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 
 /**
  *
@@ -59,7 +59,7 @@ public abstract class PlayerScriptInteraction {
 		InventoryType type = InventoryTools.getCategory(itemid);
 		Inventory inv = client.getPlayer().getInventory(type);
 		if (InventoryTools.canFitEntirely(inv, itemid, quantity)) {
-			ClientSession ses = client.getSession();
+			ClientSession<?> ses = client.getSession();
 			UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemid, quantity);
 			short pos;
 			InventorySlot slot;
@@ -84,7 +84,7 @@ public abstract class PlayerScriptInteraction {
 		if (InventoryTools.hasItem(client.getPlayer(), itemid, quantity)) {
 			InventoryType type = InventoryTools.getCategory(itemid);
 			Inventory inv = client.getPlayer().getInventory(type);
-			ClientSession ses = client.getSession();
+			ClientSession<?> ses = client.getSession();
 			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemid, quantity);
 			short pos;
 			InventorySlot slot;

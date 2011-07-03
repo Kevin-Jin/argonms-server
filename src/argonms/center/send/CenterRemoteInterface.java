@@ -18,7 +18,7 @@
 
 package argonms.center.send;
 
-import argonms.ServerType;
+import argonms.common.ServerType;
 import argonms.center.recv.RemoteCenterPacketProcessor;
 import argonms.center.CenterRemoteSession;
 

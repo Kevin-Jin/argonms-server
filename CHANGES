@@ -915,6 +915,37 @@
 	hint balloon in PortalActions.
 	* Added in support on the login server for updating rankings. Updated SQL.
 
+2011-07-02  GoldenKevin  (revision 45)
+
+	* Major refactoring done to split Player into three specific classes that
+	are each tailored to their server type in an effort to be more memory
+	efficient. No more unused fields in the Player class of any server.
+	* Logical reordering of packages:
+		* Everything from the argonms package is now in argonms.common. All
+		classes and packages from the argonms.character package have been moved
+		to argonms.game.character, and the Player class has been turned into an
+		interface that is now in argonms.common.
+		* Moved package argonms.loading to argonms.common.loading, and moved all
+		of its subpackages and classes with it.
+		* Moved package argonms.net to argonms.common.net, and moved all of its
+		subpackages and classes with it.
+		* Moved package argonms.tools to argonms.common.tools, and moved all of
+		its subpackages and classes with it.
+		* argonms.map and its subpackages and classes have been moved to
+		argonms.game.field (field is used to reduce confusion with the
+		java.util.Map collection). GameMap's class name remains unchanged.
+		* argonms.game.clientcommand renamed to argonms.game.command.
+		* argonms.center.recv.RemoteServerListener moved to argonms.center.
+	* Some refactoring done (including some ugly use of generics and the factory
+	pattern) to eliminate a substantial amount of casts between Clients and
+	Players of different server types in common classes, thus making the code
+	appear 100% type safe.
+	* May have fixed the mistaken auto-dc issue. We now start listening for the
+	ping response before sending the ping, in case the client responds faster
+	than we could set up the heartbeat listener.
+	* Improved wording of some low-level networking logged messages.
+	* Fixed match cards minigame not resetting completely.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

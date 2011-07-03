@@ -18,66 +18,63 @@
 
 package argonms.game.handler;
 
-import argonms.GlobalConstants;
+import argonms.common.GlobalConstants;
 import java.util.List;
-import argonms.character.Player;
-import argonms.character.inventory.InventoryTools;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.InventoryTools;
 import argonms.game.GameClient;
 import argonms.game.script.NpcConversationActions;
 import argonms.game.script.NpcScriptManager;
-import argonms.loading.item.ItemDataLoader;
-import argonms.loading.quest.QuestDataLoader;
-import argonms.loading.shop.NpcShopDataLoader;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.NpcShop;
-import argonms.map.NpcShop.ShopItem;
-import argonms.map.entity.Npc;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.BitTools;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.quest.QuestDataLoader;
+import argonms.common.loading.shop.NpcShopDataLoader;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.NpcShop;
+import argonms.game.field.NpcShop.ShopItem;
+import argonms.game.field.entity.Npc;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.BitTools;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameNpcHandler {
-	public static void handleStartConversation(LittleEndianReader packet, RemoteClient rc) {
-		GameClient client = (GameClient) rc;
+	public static void handleStartConversation(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		/*Point currentPos = */packet.readPos(); //player's position at time of click
-		Npc npc = (Npc) client.getPlayer().getMap().getEntityById(EntityType.NPC, entId);
+		Npc npc = (Npc) gc.getPlayer().getMap().getEntityById(EntityType.NPC, entId);
 
 		if (!npc.isPlayerNpc()) {
 			if (NpcShopDataLoader.getInstance().canLoad(npc.getDataId())) {
-				client.getSession().send(npc.getShopPacket());
+				gc.getSession().send(npc.getShopPacket());
 				return;
 			}
 		} else {
-			switch (client.getPlayer().getMapId()) {
+			switch (gc.getPlayer().getMapId()) {
 				case 100000201: //Bowman Instructional School
 				case 101000003: //Magic Library
 				case 102000003: //Warriors' Sanctuary
 				case 103000003: //Thieves' Hideout
-					client.getSession().send(writeMaxLevelPlayerNpc(npc.getDataId()));
+					gc.getSession().send(writeMaxLevelPlayerNpc(npc.getDataId()));
 					return;
 			}
 		}
-		NpcScriptManager.getInstance().runScript(npc.getDataId(), client);
+		NpcScriptManager.getInstance().runScript(npc.getDataId(), gc);
 	}
 
-	public static void handleContinueConversation(LittleEndianReader packet, RemoteClient rc) {
-		NpcConversationActions npc = ((GameClient) rc).getNpc();
+	public static void handleContinueConversation(LittleEndianReader packet, GameClient gc) {
+		NpcConversationActions npc = gc.getNpc();
 		if (npc != null)
 			npc.responseReceived(packet);
 	}
 
-	public static void handleQuestAction(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleQuestAction(LittleEndianReader packet, GameClient gc) {
 		byte action = packet.readByte();
 		short questId = packet.readShort();
-		GameClient client = (GameClient) rc;
-		Player player = client.getPlayer();
+		GameCharacter player = gc.getPlayer();
 		switch (action) {
 			case 1 : { //start quest
 				int npcId = packet.readInt();
@@ -113,7 +110,7 @@ public class GameNpcHandler {
 				int npcId = packet.readInt();
 				/*Point currentPos = */packet.readPos();
 				if (QuestDataLoader.getInstance().canStartQuest(player, questId)) {
-					NpcScriptManager.getInstance().runStartQuestScript(npcId, questId, client);
+					NpcScriptManager.getInstance().runStartQuestScript(npcId, questId, gc);
 				} else {
 					//TODO: hacking
 				}
@@ -122,7 +119,7 @@ public class GameNpcHandler {
 				int npcId = packet.readInt();
 				/*Point currentPos = */packet.readPos();
 				if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
-					NpcScriptManager.getInstance().runCompleteQuestScript(npcId, questId, client);
+					NpcScriptManager.getInstance().runCompleteQuestScript(npcId, questId, gc);
 				} else {
 					//TODO: hacking
 				}
@@ -145,7 +142,7 @@ public class GameNpcHandler {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeNpcShop(Player customer, NpcShop shop) {
+	public static byte[] writeNpcShop(GameCharacter customer, NpcShop shop) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.NPC_SHOP);

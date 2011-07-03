@@ -18,21 +18,20 @@
 
 package argonms.login.handler;
 
-import argonms.UserPrivileges;
-import argonms.character.Player;
-import argonms.character.PlayerJob;
+import argonms.common.UserPrivileges;
+import argonms.game.character.PlayerJob;
+import argonms.login.LoginCharacter;
 import argonms.login.LoginClient;
 import argonms.login.LoginServer;
 import argonms.login.LoginWorld;
 import argonms.login.Message;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
-import argonms.tools.output.LittleEndianWriter;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.tools.output.LittleEndianWriter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -60,7 +59,7 @@ public class WorldlistHandler {
 	;
 
 	private static void loadAndWriteCharacters(LittleEndianWriter lew, LoginClient c) {
-		ArrayList<Player> players = new ArrayList<Player>(c.getMaxCharacters());
+		ArrayList<LoginCharacter> players = new ArrayList<LoginCharacter>(c.getMaxCharacters());
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -72,7 +71,7 @@ public class WorldlistHandler {
 			ps.setInt(2, c.getWorld());
 			rs = ps.executeQuery();
 			while (rs.next())
-				players.add(Player.loadPlayer(c, rs.getInt(1)));
+				players.add(LoginCharacter.loadPlayer(c, rs.getInt(1)));
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load characters of account "
 					+ c.getAccountId(), ex);
@@ -80,35 +79,33 @@ public class WorldlistHandler {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		lew.writeByte((byte) players.size());
-		for (Player p : players)
+		for (LoginCharacter p : players)
 			writeCharEntry(lew, p);
 	}
 
-	public static void handleCharlist(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
-
-		client.setWorld(packet.readByte());
-		client.setChannel((byte) (packet.readByte() + 1));
+	public static void handleCharlist(LittleEndianReader packet, LoginClient lc) {
+		lc.setWorld(packet.readByte());
+		lc.setChannel((byte) (packet.readByte() + 1));
 
 		LittleEndianByteArrayWriter writer = new LittleEndianByteArrayWriter();
 		writer.writeShort(ClientSendOps.CHARLIST);
-		LoginWorld w = LoginServer.getInstance().getWorld(client.getWorld());
-		if (w == null || w.getPort(client.getChannel()) == -1) {
+		LoginWorld w = LoginServer.getInstance().getWorld(lc.getWorld());
+		if (w == null || w.getPort(lc.getChannel()) == -1) {
 			writer.writeByte((byte) 8); //"The connection could not be made because of a system error."
 		} else {
 			writer.writeByte((byte) 0); //show characters
-			loadAndWriteCharacters(writer, client);
-			writer.writeInt(client.getMaxCharacters());
+			loadAndWriteCharacters(writer, lc);
+			writer.writeInt(lc.getMaxCharacters());
 		}
 
-		client.getSession().send(writer.getBytes());
+		lc.getSession().send(writer.getBytes());
 	}
 
-	public static void sendServerStatus(LittleEndianReader packet, RemoteClient rc) {
+	public static void sendServerStatus(LittleEndianReader packet, LoginClient lc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeShort(ClientSendOps.SERVERLOAD_MSG);
 
-		LoginWorld w = LoginServer.getInstance().getWorld(Byte.valueOf(rc.getWorld()));
+		LoginWorld w = LoginServer.getInstance().getWorld(Byte.valueOf(lc.getWorld()));
 		int collectiveLoads = w.getTotalLoad();
 
 		//each channel can hold 2400
@@ -119,17 +116,16 @@ public class WorldlistHandler {
 			lew.writeShort(SERVERSTATUS_WARNING);
 		else
 			lew.writeShort(SERVERSTATUS_OK);
-		rc.getSession().send(lew.getBytes());
+		lc.getSession().send(lew.getBytes());
 	}
 
-	public static void handleWorldListRequest(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleWorldListRequest(LittleEndianReader packet, LoginClient rc) {
 		for (Entry<Byte, LoginWorld> entry : LoginServer.getInstance().getAllWorlds().entrySet())
 			rc.getSession().send(worldEntry(entry.getKey().byteValue(), entry.getValue()));
 		rc.getSession().send(worldListEnd());
 	}
 
-	public static void handleViewAllChars(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
+	public static void handleViewAllChars(LittleEndianReader packet, LoginClient lc) {
 		LittleEndianByteArrayWriter lew;
 		Set<Byte> worlds = new TreeSet<Byte>();
 		byte totalChars = 0;
@@ -139,7 +135,7 @@ public class WorldlistHandler {
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			ps = con.prepareStatement("SELECT `world` FROM `characters` WHERE `accountid` = ?");
-			ps.setInt(1, client.getAccountId());
+			ps.setInt(1, lc.getAccountId());
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				byte world = rs.getByte(1);
@@ -149,7 +145,7 @@ public class WorldlistHandler {
 				}
 			}
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not set load all characters of account " + client.getAccountId(), ex);
+			LOG.log(Level.WARNING, "Could not set load all characters of account " + lc.getAccountId(), ex);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
@@ -158,16 +154,16 @@ public class WorldlistHandler {
 		lew.writeByte((byte) 1);
 		lew.writeInt(totalChars);
 		lew.writeInt(totalChars + (3 - totalChars % 3)); //amount of rows * 3
-		client.getSession().send(lew.getBytes());
+		lc.getSession().send(lew.getBytes());
 
 		for (Byte world : worlds) {
 			lew = new LittleEndianByteArrayWriter(192);
 			lew.writeShort(ClientSendOps.ALL_CHARLIST);
 			lew.writeByte((byte) 0);
 			lew.writeByte(world.byteValue());
-			client.setWorld(world.byteValue());
-			loadAndWriteCharacters(lew, client);
-			client.getSession().send(lew.getBytes());
+			lc.setWorld(world.byteValue());
+			loadAndWriteCharacters(lew, lc);
+			lc.getSession().send(lew.getBytes());
 		}
 	}
 
@@ -186,22 +182,21 @@ public class WorldlistHandler {
 				w.getPort(c.getChannel()), charid));
 	}
 
-	public static void handlePickFromAllChars(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
+	public static void handlePickFromAllChars(LittleEndianReader packet, LoginClient lc) {
 		int charid = packet.readInt();
 		byte world = (byte) packet.readInt();
 		String macs = packet.readLengthPrefixedString();
 		//packet.readLengthPrefixedString(); what the hell is this?
-		client.setWorld(world);
-		client.setChannel(LoginServer.getInstance().getWorld(world).getLeastPopulatedChannel());
-		sendToGameServer(client, charid, macs);
+		lc.setWorld(world);
+		lc.setChannel(LoginServer.getInstance().getWorld(world).getLeastPopulatedChannel());
+		sendToGameServer(lc, charid, macs);
 	}
 
-	public static void handlePickFromWorldCharlist(LittleEndianReader packet, RemoteClient rc) {
+	public static void handlePickFromWorldCharlist(LittleEndianReader packet, LoginClient lc) {
 		int charid = packet.readInt();
 		String macs = packet.readLengthPrefixedString();
 		//packet.readLengthPrefixedString(); what the hell is this?
-		sendToGameServer((LoginClient) rc, charid, macs);
+		sendToGameServer(lc, charid, macs);
 	}
 
 	private static boolean allowedName(String name) {
@@ -228,7 +223,7 @@ public class WorldlistHandler {
 		return valid;
 	}
 
-	public static void handleNameCheck(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleNameCheck(LittleEndianReader packet, LoginClient rc) {
 		String name = packet.readLengthPrefixedString();
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + name.length());
 		lew.writeShort(ClientSendOps.CHECK_NAME_RESP);
@@ -237,7 +232,7 @@ public class WorldlistHandler {
 		rc.getSession().send(lew.getBytes());
 	}
 
-	public static void handleCreateCharacter(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleCreateCharacter(LittleEndianReader packet, LoginClient lc) {
 		String name = packet.readLengthPrefixedString();
 		int eyes = packet.readInt();
 		int hair = packet.readInt();
@@ -280,30 +275,30 @@ public class WorldlistHandler {
 		lew.writeShort(ClientSendOps.CHAR_CREATED);
 		lew.writeBool(!valid);
 		if (valid) {
-			Player p = Player.saveNewPlayer((LoginClient) rc, name, eyes,
+			LoginCharacter p = LoginCharacter.saveNewPlayer(lc, name, eyes,
 					hair + hairColor, skin, gender, str, dex, _int, luk,
 					top, bottom, shoes, weapon);
 			writeCharEntry(lew, p);
 		} else {
 			LOG.log(Level.WARNING, "Player from account {0} tried to create a "
 					+ "stats hacked character named {1} ",
-					new Object[] { rc.getAccountId(), name });
+					new Object[] { lc.getAccountId(), name });
 		}
-		rc.getSession().send(lew.getBytes());
+		lc.getSession().send(lew.getBytes());
 	}
 
-	public static void handleDeleteChar(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleDeleteChar(LittleEndianReader packet, LoginClient lc) {
 		int date = packet.readInt();
 		int cid = packet.readInt();
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.DELETE_CHAR_RESPONSE);
 		lew.writeInt(cid);
-		lew.writeByte(((LoginClient) rc).deleteCharacter(cid, date));
-		rc.getSession().send(lew.getBytes());
+		lew.writeByte(lc.deleteCharacter(cid, date));
+		lc.getSession().send(lew.getBytes());
 	}
 
-	public static void backToLogin(LittleEndianReader packet, RemoteClient rc) {
+	public static void backToLogin(LittleEndianReader packet, LoginClient rc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 		lew.writeShort(ClientSendOps.RELOG_RESPONSE);
 		lew.writeByte((byte) 1);
@@ -375,7 +370,7 @@ public class WorldlistHandler {
 		return lew.getBytes();
 	}
 
-	private static void writeCharEntry(LittleEndianWriter lew, Player p) {
+	private static void writeCharEntry(LittleEndianWriter lew, LoginCharacter p) {
 		CommonPackets.writeCharStats(lew, p);
 		CommonPackets.writeAvatar(lew, p, false);
 		if (!PlayerJob.isModerator(p.getJob()) && p.getPrivilegeLevel() <= UserPrivileges.USER) {

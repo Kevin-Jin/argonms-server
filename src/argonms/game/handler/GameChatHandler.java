@@ -18,51 +18,50 @@
 
 package argonms.game.handler;
 
-import argonms.UserPrivileges;
-import argonms.character.Player;
-import argonms.game.clientcommand.CommandProcessor;
+import argonms.common.UserPrivileges;
+import argonms.game.character.GameCharacter;
+import argonms.game.command.CommandProcessor;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameChatHandler {
-	public static void handleMapChat(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMapChat(LittleEndianReader packet, GameClient gc) {
 		String message = packet.readLengthPrefixedString();
 		byte show = packet.readByte();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
 			p.getMap().sendToAll(writeMapChat(p, message, show, p.getPrivilegeLevel() > UserPrivileges.USER));
 	}
 
-	public static void handlePrivateChat(LittleEndianReader packet, RemoteClient rc) {
+	public static void handlePrivateChat(LittleEndianReader packet, GameClient gc) {
 		byte type = packet.readByte(); // 0 for buddys, 1 for partys, 2 for guilds
 		byte numRecipients = packet.readByte();
 		int[] recipients = new int[numRecipients];
 		for (byte i = 0; i < numRecipients; i++)
 			recipients[i] = packet.readInt();
 		String message = packet.readLengthPrefixedString();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
-			GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
+			GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
 	}
 
-	public static void handleSpouseChat(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleSpouseChat(LittleEndianReader packet, GameClient gc) {
 		String recipient = packet.readLengthPrefixedString();
 		String message = packet.readLengthPrefixedString();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
-			GameServer.getChannel(rc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, message);
+			GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, message);
 	}
 
-	private static byte[] writeMapChat(Player p, String message, byte show, boolean gm) {
+	private static byte[] writeMapChat(GameCharacter p, String message, byte show, boolean gm) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
 				+ message.length());
 
@@ -75,7 +74,7 @@ public class GameChatHandler {
 		return lew.getBytes();
 	}
 
-	private static boolean commandProcessed(Player p, String chat) {
+	private static boolean commandProcessed(GameCharacter p, String chat) {
 		char first = chat.charAt(0);
 		if (first != '!' && first != '@')
 			return false;
@@ -109,7 +108,7 @@ public class GameChatHandler {
 		}
 	}
 
-	public static byte[] writeStyledChat(TextStyle ts, Player p, String message, boolean megaEar) {
+	public static byte[] writeStyledChat(TextStyle ts, GameCharacter p, String message, boolean megaEar) {
 		switch (ts) {
 			case OK_BOX:
 			case LIGHT_BLUE_TEXT_WHITE_BG:

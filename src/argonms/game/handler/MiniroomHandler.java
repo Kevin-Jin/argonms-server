@@ -18,34 +18,33 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
-import argonms.character.inventory.Inventory;
-import argonms.character.inventory.Inventory.InventoryType;
-import argonms.character.inventory.InventorySlot;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.Inventory;
+import argonms.game.character.inventory.Inventory.InventoryType;
+import argonms.game.character.inventory.InventorySlot;
 import argonms.game.GameClient;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.entity.FreeMarketShop.HiredMerchant;
-import argonms.map.entity.FreeMarketShop.PlayerStore;
-import argonms.map.entity.Minigame;
-import argonms.map.entity.Minigame.MatchCards;
-import argonms.map.entity.Minigame.MinigameResult;
-import argonms.map.entity.Minigame.Omok;
-import argonms.map.entity.Miniroom;
-import argonms.map.entity.Miniroom.MiniroomType;
-import argonms.map.entity.Trade;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.FreeMarketShop.HiredMerchant;
+import argonms.game.field.entity.FreeMarketShop.PlayerStore;
+import argonms.game.field.entity.Minigame;
+import argonms.game.field.entity.Minigame.MatchCards;
+import argonms.game.field.entity.Minigame.MinigameResult;
+import argonms.game.field.entity.Minigame.Omok;
+import argonms.game.field.entity.Miniroom;
+import argonms.game.field.entity.Miniroom.MiniroomType;
+import argonms.game.field.entity.Trade;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
  * @author GoldenKevin
  */
 public class MiniroomHandler {
-	public static void handleAction(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleAction(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		switch (packet.readByte()) {
 			case Miniroom.ACT_CREATE:
 				createRoom(p, packet);
@@ -138,7 +137,7 @@ public class MiniroomHandler {
 		}
 	}
 
-	private static void createRoom(Player p, LittleEndianReader packet) {
+	private static void createRoom(GameCharacter p, LittleEndianReader packet) {
 		String text, pwd;
 		Miniroom room = null;
 		switch (MiniroomType.valueOf(packet.readByte())) {
@@ -202,9 +201,9 @@ public class MiniroomHandler {
 		p.getMap().spawnEntity(room);
 	}
 
-	private static void inviteToRoom(Player p, LittleEndianReader packet) {
+	private static void inviteToRoom(GameCharacter p, LittleEndianReader packet) {
 		int pId = packet.readInt();
-		Player invitee = (Player) p.getMap().getEntityById(EntityType.PLAYER, pId);
+		GameCharacter invitee = (GameCharacter) p.getMap().getEntityById(EntityType.PLAYER, pId);
 		Trade room = (Trade) p.getMiniRoom();
 		if (invitee == null) {
 			p.setMiniRoom(null);
@@ -220,12 +219,12 @@ public class MiniroomHandler {
 		}
 	}
 
-	private static void declineInvite(Player p, LittleEndianReader packet) {
+	private static void declineInvite(GameCharacter p, LittleEndianReader packet) {
 		int entId = packet.readInt();
 		byte message = packet.readByte();
 		Trade room = (Trade) p.getMap().getEntityById(EntityType.MINI_ROOM, entId);
 		if (room != null) {
-			Player owner = room.getPlayerByPosition((byte) 0);
+			GameCharacter owner = room.getPlayerByPosition((byte) 0);
 			owner.getClient().getSession().send(writeInviteFail(message, p.getName()));
 			owner.setMiniRoom(null);
 			room.leaveRoom(owner);
@@ -233,7 +232,7 @@ public class MiniroomHandler {
 		}
 	}
 
-	private static void joinRoom(Player p, LittleEndianReader packet) {
+	private static void joinRoom(GameCharacter p, LittleEndianReader packet) {
 		int entId = packet.readInt();
 		Miniroom room = (Miniroom) p.getMap().getEntityById(EntityType.MINI_ROOM, entId);
 		if (room == null)
@@ -248,18 +247,18 @@ public class MiniroomHandler {
 			p.getClient().getSession().send(writeJoinError(Miniroom.JOIN_ERROR_FULL));
 	}
 
-	private static void chat(Player p, LittleEndianReader packet) {
+	private static void chat(GameCharacter p, LittleEndianReader packet) {
 		Miniroom room = p.getMiniRoom();
 		room.sendToAll(writeChat(room.positionOf(p), p.getName(), packet.readLengthPrefixedString()));
 	}
 
-	private static void leaveRoom(Player p) {
+	private static void leaveRoom(GameCharacter p) {
 		Miniroom room = p.getMiniRoom();
 		p.setMiniRoom(null);
 		room.leaveRoom(p);
 	}
 
-	private static void tradeSetItems(Player p, LittleEndianReader packet) {
+	private static void tradeSetItems(GameCharacter p, LittleEndianReader packet) {
 		InventoryType type = InventoryType.valueOf(packet.readByte());
 		short slot = packet.readShort();
 		short quantity = packet.readShort();
@@ -284,7 +283,7 @@ public class MiniroomHandler {
 		room.addItem(p, tradeSlot, itemToPut);
 	}
 
-	private static void tradeSetMesos(Player p, LittleEndianReader packet) {
+	private static void tradeSetMesos(GameCharacter p, LittleEndianReader packet) {
 		int mesosAmt = packet.readInt();
 		if (p.getMesos() >= mesosAmt) {
 			p.setMesos(p.getMesos() - mesosAmt);
@@ -295,61 +294,61 @@ public class MiniroomHandler {
 		}
 	}
 
-	private static void tradeConfirm(Player p) {
+	private static void tradeConfirm(GameCharacter p) {
 		Trade room = (Trade) p.getMiniRoom();
 		room.getPlayerByPosition((byte) (room.positionOf(p) == 0 ? 1 : 0)).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_CONFIRM));
 		room.confirmTrade(p);
 	}
 
-	private static void gameReady(Player p) {
+	private static void gameReady(GameCharacter p) {
 		Miniroom room = p.getMiniRoom();
 		room.sendToAll(writeSimpleMessage(Miniroom.ACT_READY));
 	}
 
-	private static void gameUnready(Player p) {
+	private static void gameUnready(GameCharacter p) {
 		Miniroom room = p.getMiniRoom();
 		room.sendToAll(writeSimpleMessage(Miniroom.ACT_UN_READY));
 	}
 
-	private static void gameExpelVisitor(Player p) {
+	private static void gameExpelVisitor(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		room.banVisitor();
 	}
 
-	private static void gameStart(Player p) {
+	private static void gameStart(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		room.startGame();
 	}
 
-	private static void gameForfeit(Player p) {
+	private static void gameForfeit(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		room.endGame(MinigameResult.LOSS, (byte) (room.positionOf(p) == 0 ? 1 : 0));
 	}
 
-	private static void gameAskRedo(Player p) {
+	private static void gameAskRedo(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
-		Player opponent = (room.positionOf(p) == 0) ? room.getPlayerByPosition((byte) 1) : room.getPlayerByPosition((byte) 0);
+		GameCharacter opponent = (room.positionOf(p) == 0) ? room.getPlayerByPosition((byte) 1) : room.getPlayerByPosition((byte) 0);
 		opponent.getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_REQUEST_REDO));
 	}
 
-	private static void gameDoRedo(Player p, LittleEndianReader packet) {
+	private static void gameDoRedo(GameCharacter p, LittleEndianReader packet) {
 		Omok room = (Omok) p.getMiniRoom();
 		boolean response = packet.readBool();
 		room.redo(response, room.positionOf(p));
 	}
 
-	private static void gameExitAfterFinish(Player p, boolean shouldExit) {
+	private static void gameExitAfterFinish(GameCharacter p, boolean shouldExit) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		room.setExitAfterGame(p, shouldExit);
 	}
 
-	private static void gameAskTie(Player p) {
+	private static void gameAskTie(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
-		Player opponent = (room.positionOf(p) == 0) ? room.getPlayerByPosition((byte) 1) : room.getPlayerByPosition((byte) 0);
+		GameCharacter opponent = (room.positionOf(p) == 0) ? room.getPlayerByPosition((byte) 1) : room.getPlayerByPosition((byte) 0);
 		opponent.getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_REQUEST_TIE));
 	}
 
-	private static void gameDoTie(Player p, LittleEndianReader packet) {
+	private static void gameDoTie(GameCharacter p, LittleEndianReader packet) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		byte opponentPos = (byte) (room.positionOf(p) == 0 ? 1 : 0);
 		if (packet.readBool()) //accepted
@@ -358,12 +357,12 @@ public class MiniroomHandler {
 			room.getPlayerByPosition(opponentPos).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_ANSWER_TIE));
 	}
 
-	private static void gameSkipByTimer(Player p) {
+	private static void gameSkipByTimer(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
 		room.sendToAll(writeMinigameSkip(room.nextTurn()));
 	}
 
-	private static void omokSelect(Player p, LittleEndianReader packet) {
+	private static void omokSelect(GameCharacter p, LittleEndianReader packet) {
 		Omok room = (Omok) p.getMiniRoom();
 		int x = packet.readInt(); // x point
 		int y = packet.readInt(); // y point
@@ -371,14 +370,14 @@ public class MiniroomHandler {
 		room.setPiece(p, x, y, playerNum);
 	}
 
-	private static void matchCardSelect(Player p, LittleEndianReader packet) {
+	private static void matchCardSelect(GameCharacter p, LittleEndianReader packet) {
 		MatchCards room = (MatchCards) p.getMiniRoom();
 		byte turn = packet.readByte();
 		byte slot = packet.readByte();
 		room.selectCard(p, turn, slot);
 	}
 
-	private static void killMerchant(Player p) {
+	private static void killMerchant(GameCharacter p) {
 		HiredMerchant room = (HiredMerchant) p.getMiniRoom();
 		p.setMiniRoom(null);
 		room.closeRoom(p.getMap());

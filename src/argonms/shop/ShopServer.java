@@ -18,18 +18,18 @@
 
 package argonms.shop;
 
-import argonms.LocalServer;
-import argonms.ServerType;
-import argonms.character.Player;
-import argonms.loading.DataFileType;
-import argonms.loading.item.ItemDataLoader;
-import argonms.loading.string.StringDataLoader;
+import argonms.common.LocalServer;
+import argonms.common.ServerType;
+import argonms.common.loading.DataFileType;
+import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.string.StringDataLoader;
 import argonms.login.LoginWorld;
-import argonms.net.external.ClientListener;
-import argonms.net.external.PlayerLog;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
-import argonms.tools.Scheduler;
+import argonms.common.net.external.ClientListener;
+import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.net.external.PlayerLog;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.tools.Scheduler;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -50,7 +50,7 @@ public class ShopServer implements LocalServer {
 
 	private static ShopServer instance;
 
-	private ClientListener handler;
+	private ClientListener<ShopClient> handler;
 	private ShopCenterInterface sci;
 	private String address;
 	private int port;
@@ -60,7 +60,7 @@ public class ShopServer implements LocalServer {
 	private String wzPath;
 	private boolean useNio;
 	private boolean centerConnected;
-	private PlayerLog storage;
+	private PlayerLog<ShopCharacter> storage;
 
 	private ShopServer() {
 		onlineWorlds = new HashMap<Byte, LoginWorld>();
@@ -142,7 +142,16 @@ public class ShopServer implements LocalServer {
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		Scheduler.enable();
-		handler = new ClientListener(ServerType.SHOP, (byte) -1, useNio);
+		try {
+			handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+				public ShopClient newInstance(byte world, byte client) {
+					return new ShopClient();
+				}
+			});
+		} catch (NoSuchMethodException e) {
+			LOG.log(Level.SEVERE, "\"new ShopClient(byte world, byte channel)\" constructor missing!");
+			System.exit(5);
+		}
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Shop Server is online.");
 			sci.serverReady();
@@ -195,19 +204,19 @@ public class ShopServer implements LocalServer {
 		return port;
 	}
 
-	public void addPlayer(Player p) {
+	public void addPlayer(ShopCharacter p) {
 		storage.addPlayer(p);
 	}
 
-	public void removePlayer(Player p) {
+	public void removePlayer(ShopCharacter p) {
 		storage.deletePlayer(p);
 	}
 
-	public Player getPlayerById(int characterid) {
+	public ShopCharacter getPlayerById(int characterid) {
 		return storage.getPlayer(characterid);
 	}
 
-	public Player getPlayerByName(String name) {
+	public ShopCharacter getPlayerByName(String name) {
 		return storage.getPlayer(name);
 	}
 

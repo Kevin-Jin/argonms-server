@@ -18,18 +18,18 @@
 
 package argonms.game;
 
-import argonms.character.BuffState.ItemState;
-import argonms.character.BuffState.MobSkillState;
-import argonms.character.BuffState.SkillState;
-import argonms.character.Player;
-import argonms.character.PlayerContinuation;
-import argonms.map.entity.PlayerSkillSummon;
-import argonms.net.external.CommonPackets;
-import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.collections.Pair;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
-import argonms.tools.output.LittleEndianWriter;
+import argonms.game.character.PlayerContinuation;
+import argonms.game.character.BuffState.ItemState;
+import argonms.game.character.BuffState.MobSkillState;
+import argonms.game.character.BuffState.SkillState;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.tools.collections.Pair;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.tools.output.LittleEndianWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -89,7 +89,7 @@ public class InterChannelCommunication {
 		return new Pair<byte[], Integer>(remoteChannelAddresses.get(Byte.valueOf(ch)), port != null ? port : Integer.valueOf(-1));
 	}
 
-	public void sendChannelChangeRequest(byte destCh, Player p) {
+	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
 		for (int i = 0; i < localChannels.length; i++) {
 			if (destCh == localChannels[i]) {
 				GameServer.getChannel(destCh).getInterChannelInterface().receivedInboundPlayer(self.getChannelId(), p.getId(), new PlayerContinuation(p));
@@ -99,7 +99,7 @@ public class InterChannelCommunication {
 		getCenterComm().send(writePlayerContext(getCenterComm().getWorld(), destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
 	}
 
-	public void sendPrivateChat(byte type, int[] recipients, Player p, String message) {
+	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
 		String name = p.getName();
 		boolean valid = false;
 
@@ -125,7 +125,7 @@ public class InterChannelCommunication {
 		}
 	}
 
-	public void sendSpouseChat(String spouse, Player p, String message) {
+	public void sendSpouseChat(String spouse, GameCharacter p, String message) {
 		//perhaps we should compare spouse's name with p.getSpouseId()?
 		String name = p.getName();
 		int recipient = p.getSpouseId();
@@ -157,7 +157,7 @@ public class InterChannelCommunication {
 	}
 
 	public void receivedPrivateChat(byte type, int[] recipients, String name, String message) {
-		Player p;
+		GameCharacter p;
 		for (int i = 0; i < recipients.length; i++) {
 			p = self.getPlayerById(recipients[i]);
 			if (p != null)
@@ -166,7 +166,7 @@ public class InterChannelCommunication {
 	}
 
 	public void receivedSpouseChat(int recipient, String name, String message) {
-		Player p = self.getPlayerById(recipient);
+		GameCharacter p = self.getPlayerById(recipient);
 		if (p != null)
 			p.getClient().getSession().send(CommonPackets.writeSpouseChatMessage(name, message));
 	}

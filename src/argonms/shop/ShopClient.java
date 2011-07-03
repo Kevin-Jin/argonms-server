@@ -18,11 +18,10 @@
 
 package argonms.shop;
 
-import argonms.ServerType;
-import argonms.character.Player;
-import argonms.net.external.RemoteClient;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
+import argonms.common.ServerType;
+import argonms.common.net.external.RemoteClient;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,13 +38,13 @@ import java.util.logging.Logger;
 public class ShopClient extends RemoteClient {
 	private static final Logger LOG = Logger.getLogger(ShopClient.class.getName());
 
-	private Player player;
+	private ShopCharacter player;
 
-	public Player getPlayer() {
+	public ShopCharacter getPlayer() {
 		return player;
 	}
 
-	public void setPlayer(Player p) {
+	public void setPlayer(ShopCharacter p) {
 		this.player = p;
 	}
 

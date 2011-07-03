@@ -20,11 +20,11 @@ package argonms.center;
 
 import argonms.center.send.CenterRemoteInterface;
 import argonms.center.send.CenterGameInterface;
-import argonms.ServerType;
-import argonms.net.internal.CenterRemoteOps;
-import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.input.LittleEndianByteArrayReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.ServerType;
+import argonms.common.net.internal.CenterRemoteOps;
+import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.tools.input.LittleEndianByteArrayReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;

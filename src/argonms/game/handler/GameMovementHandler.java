@@ -18,30 +18,29 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
+import argonms.game.character.GameCharacter;
 import argonms.game.GameClient;
-import argonms.loading.mob.Skill;
-import argonms.loading.skill.MobSkillEffectsData;
-import argonms.loading.skill.SkillDataLoader;
-import argonms.map.MapEntity;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.MonsterStatusEffectTools;
-import argonms.map.movement.AbsoluteLifeMovement;
-import argonms.map.movement.ChairMovement;
-import argonms.map.movement.ChangeEquipSpecialAwesome;
-import argonms.map.movement.JumpDownMovement;
-import argonms.map.movement.LifeMovement;
-import argonms.map.movement.LifeMovementFragment;
-import argonms.map.movement.RelativeLifeMovement;
-import argonms.map.movement.TeleportMovement;
-import argonms.map.entity.Mob;
-import argonms.map.entity.PlayerSkillSummon;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.Rng;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.loading.mob.Skill;
+import argonms.common.loading.skill.MobSkillEffectsData;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.MonsterStatusEffectTools;
+import argonms.game.field.movement.AbsoluteLifeMovement;
+import argonms.game.field.movement.ChairMovement;
+import argonms.game.field.movement.ChangeEquipSpecialAwesome;
+import argonms.game.field.movement.JumpDownMovement;
+import argonms.game.field.movement.LifeMovement;
+import argonms.game.field.movement.LifeMovementFragment;
+import argonms.game.field.movement.RelativeLifeMovement;
+import argonms.game.field.movement.TeleportMovement;
+import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.Rng;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +54,7 @@ import java.util.logging.Logger;
 public class GameMovementHandler {
 	private static final Logger LOG = Logger.getLogger(GameMovementHandler.class.getName());
 
-	public static void handleMovePlayer(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMovePlayer(LittleEndianReader packet, GameClient gc) {
 		packet.readByte();
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
@@ -66,19 +65,19 @@ public class GameMovementHandler {
 					new Object[] { packet.available(), packet });
 			return;
 		}
-		Player player = ((GameClient) rc).getPlayer();
+		GameCharacter player = gc.getPlayer();
 		updatePosition(res, player, 0);
 		player.getMap().playerMoved(player, res, startPos);
 	}
 
-	public static void handleMovePet(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMovePet(LittleEndianReader packet, GameClient gc) {
 		//TODO: implement
 	}
 
-	public static void handleMoveSummon(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMoveSummon(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 
-		Player player = ((GameClient) rc).getPlayer();
+		GameCharacter player = gc.getPlayer();
 		//PlayerSkillSummon summon = p.getSummonBySkill(p.getEffectValue(PlayerStatusEffect.SUMMON).getSource());
 		PlayerSkillSummon summon = (PlayerSkillSummon) player.getMap().getEntityById(EntityType.SUMMON, entId);
 		if (summon == null)
@@ -90,11 +89,11 @@ public class GameMovementHandler {
 		player.getMap().summonMoved(player, summon, res, startPos);
 	}
 
-	public static void handleMoveMob(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMoveMob(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		short moveid = packet.readShort();
 
-		Player player = ((GameClient) rc).getPlayer();
+		GameCharacter player = gc.getPlayer();
 		//TODO: Synchronize on the mob (for the canUseSkill, which gets Hp, and
 		//the aggro things)
 		Mob monster = (Mob) player.getMap().getEntityById(EntityType.MONSTER, entId);
@@ -136,7 +135,7 @@ public class GameMovementHandler {
 
 		res = parseMovement(packet);
 
-		Player controller = monster.getController();
+		GameCharacter controller = monster.getController();
 		if (controller != player) {
 			if (monster.wasAttackedBy(player)) { // aggro and controller change
 				if (controller != null) {
@@ -158,9 +157,9 @@ public class GameMovementHandler {
 		boolean aggro = monster.controllerHasAggro();
 
 		if (skillToUse != null)
-			rc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, skillToUse.getSkill(), skillToUse.getLevel()));
+			gc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, skillToUse.getSkill(), skillToUse.getLevel()));
 		else
-			rc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, (short) 0, (byte) 0));
+			gc.getSession().send(moveMonsterResponse(entId, moveid, monster.getMp(), aggro, (short) 0, (byte) 0));
 
 		if (aggro)
 			monster.setControllerKnowsAboutAggro(true);
@@ -174,7 +173,7 @@ public class GameMovementHandler {
 		player.getMap().monsterMoved(player, monster, res, useSkill, skill, skillId, skillLevel, skill3, skill4, startPos);
 	}
 
-	public static void handleMoveNpc(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleMoveNpc(LittleEndianReader packet, GameClient gc) {
 		//too complicated to add one NPC animator per map (mobs were bad enough)
 		//so we'll just let all clients animate their own NPCs and echo back
 		//what they send to us.
@@ -190,7 +189,7 @@ public class GameMovementHandler {
 			lew.writeShort(ClientSendOps.MOVE_NPC);
 			lew.writeBytes(packet.readBytes(remaining - 9));
 		}
-		rc.getSession().send(lew.getBytes());
+		gc.getSession().send(lew.getBytes());
 	}
 
 	private static List<LifeMovementFragment> parseMovement(LittleEndianReader packet) {

@@ -18,13 +18,12 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
-import argonms.character.inventory.Inventory.InventoryType;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.Inventory.InventoryType;
 import argonms.game.GameClient;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 
 /**
  *
@@ -37,8 +36,8 @@ public class GamePlayerMiscHandler {
 		BINDING_CHANGE_AUTO_MP_POT = 2
 	;
 
-	public static void handleReplenishHpMp(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleReplenishHpMp(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		packet.skip(4);
 		short hp = packet.readShort();
 		short mp = packet.readShort();
@@ -52,8 +51,8 @@ public class GamePlayerMiscHandler {
 			p.gainMp(mp);
 	}
 
-	public static void handleEmote(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleEmote(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int emote = packet.readInt();
 		if (emote > 7) { //cash emotes
 			int itemid = 5159992 + emote;
@@ -65,8 +64,8 @@ public class GamePlayerMiscHandler {
 		p.getMap().sendToAll(writeExpressionChange(p, emote), p);
 	}
 
-	public static void handleBindingChange(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleBindingChange(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int actionType = packet.readInt();
 		switch (actionType) {
 			case BINDING_CHANGE_KEY_MAPPING: {
@@ -98,7 +97,7 @@ public class GamePlayerMiscHandler {
 		}
 	}
 
-	private static byte[] writeExpressionChange(Player p, int expression) {
+	private static byte[] writeExpressionChange(GameCharacter p, int expression) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 		lew.writeShort(ClientSendOps.FACIAL_EXPRESSION);
 		lew.writeInt(p.getId());

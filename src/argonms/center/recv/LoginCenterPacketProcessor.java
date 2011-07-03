@@ -20,8 +20,8 @@ package argonms.center.recv;
 
 import argonms.center.CenterServer;
 import argonms.center.send.CenterLoginInterface;
-import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.tools.input.LittleEndianReader;
 
 /**
  * Processes packet sent from the login server and received at the center

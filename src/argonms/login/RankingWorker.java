@@ -18,8 +18,8 @@
 
 package argonms.login;
 
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

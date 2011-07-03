@@ -18,22 +18,21 @@
 
 package argonms.game.handler;
 
-import argonms.UserPrivileges;
-import argonms.character.KeyBinding;
-import argonms.character.Player;
-import argonms.character.SkillMacro;
-import argonms.character.skill.SkillTools;
-import argonms.character.skill.Skills;
+import argonms.common.UserPrivileges;
+import argonms.game.character.KeyBinding;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.SkillMacro;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.WorldChannel;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.Rng;
-import argonms.tools.TimeUtil;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.Rng;
+import argonms.common.tools.TimeUtil;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
@@ -46,31 +45,30 @@ import java.util.logging.Logger;
 public class GameEnterHandler {
 	private static final Logger LOG = Logger.getLogger(GameEnterHandler.class.getName());
 
-	public static void handlePlayerConnection(LittleEndianReader packet, RemoteClient rc) {
-		GameClient client = (GameClient) rc;
+	public static void handlePlayerConnection(LittleEndianReader packet, GameClient gc) {
 		int cid = packet.readInt();
-		Player player = null;
-		player = Player.loadPlayer(client, cid);
+		GameCharacter player = null;
+		player = GameCharacter.loadPlayer(gc, cid);
 		if (player == null)
 			return;
-		client.setPlayer(player);
+		gc.setPlayer(player);
 		boolean allowLogin;
-		byte state = client.getOnlineState();
+		byte state = gc.getOnlineState();
 		//TODO: check every game server of this world to see if we are logged in
 		//(since a character of a particular world cannot be logged in on any
 		//other world). Remember to check local process and remote processes.
-		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
+		allowLogin = (state == GameClient.STATUS_MIGRATION);
 		if (!allowLogin) {
 			LOG.log(Level.WARNING, "Player {0} tried to double login on world"
-					+ " {1}", new Object[] { player.getName(), rc.getWorld() });
-			client.getSession().close();
+					+ " {1}", new Object[] { player.getName(), gc.getWorld() });
+			gc.getSession().close();
 			return;
 		}
-		client.updateState(RemoteClient.STATUS_INGAME);
+		gc.updateState(GameClient.STATUS_INGAME);
 
-		WorldChannel cserv = GameServer.getChannel(client.getChannel());
+		WorldChannel cserv = GameServer.getChannel(gc.getChannel());
 		cserv.addPlayer(player);
-		client.getSession().send(writeEnterMap(player));
+		gc.getSession().send(writeEnterMap(player));
 		cserv.applyBuffsFromLastChannel(player);
 		if (player.isVisible() && player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
@@ -108,8 +106,8 @@ public class GameEnterHandler {
 		} catch (SQLException e) {
 			LOG.error("LOADING NOTE", e);
 		}*/
-		client.getSession().send(writeKeymap(player.getKeyMap()));
-		client.getSession().send(writeMacros(player.getMacros()));
+		gc.getSession().send(writeKeymap(player.getKeyMap()));
+		gc.getSession().send(writeMacros(player.getMacros()));
 
 		/*for (MapleQuestStatus status : player.getStartedQuests()) {
 			if (status.hasMobKills()) {
@@ -128,7 +126,7 @@ public class GameEnterHandler {
 		player.expirationTask();*/
 	}
 
-	private static byte[] writeEnterMap(Player p) {
+	private static byte[] writeEnterMap(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.CHANGE_MAP);
