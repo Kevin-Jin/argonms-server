@@ -20,10 +20,9 @@ package argonms.login.handler;
 
 import argonms.login.LoginClient;
 import argonms.login.LoginServer;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.output.LittleEndianByteArrayWriter;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.tools.input.LittleEndianReader;
 
 /**
  *
@@ -37,15 +36,13 @@ public class AuthHandler {
 		PIN_REQUEST = 0x04
 	;
 
-	public static void handleLogin(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
-
+	public static void handleLogin(LittleEndianReader packet, LoginClient lc) {
 		String login = packet.readLengthPrefixedString();
 		String pwd = packet.readLengthPrefixedString();
 
-		client.setAccountName(login);
+		lc.setAccountName(login);
 
-		byte result = client.loginResult(pwd);
+		byte result = lc.loginResult(pwd);
 
 		LittleEndianByteArrayWriter writer = new LittleEndianByteArrayWriter(result == 0 ? 39 + login.length() : result == 2 ? 17 : 8);
 
@@ -54,82 +51,76 @@ public class AuthHandler {
 		writer.writeInt(0);
 
 		if (result == 0) {
-			writer.writeInt(client.getAccountId());
-			writer.writeByte(client.getGender()); //0 = male, 1 = female, 0x0A = ask gender, 0x0B = ask pin
+			writer.writeInt(lc.getAccountId());
+			writer.writeByte(lc.getGender()); //0 = male, 1 = female, 0x0A = ask gender, 0x0B = ask pin
 			writer.writeByte((byte) 0); //Admin byte, allows client to use "/". Used for logging commands I guess. Disables any player interactions though.
 			writer.writeByte((byte) 0x4E);
 			writer.writeLengthPrefixedString(login);
 			writer.writeBytes(new byte[]{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte) 0xDC, 0x3D, 0x0B, 0x28, 0x64, (byte) 0xC5, 1, 8, 0, 0, 0});
 		} else if (result == 2) {
-			writer.writeByte(client.getBanReason());
+			writer.writeByte(lc.getBanReason());
 			writer.writeInt(0);
-			writer.writeInt(client.getBanExpiration());
+			writer.writeInt(lc.getBanExpiration());
 		}
 
-		client.getSession().send(writer.getBytes());
+		lc.getSession().send(writer.getBytes());
 	}
 
-	public static void handleGender(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
-
+	public static void handleGender(LittleEndianReader packet, LoginClient lc) {
 		byte op1 = packet.readByte();
 		byte op2;
 		if (op1 == 1) {
 			op2 = packet.readByte();
-			client.setGender(op2);
-			client.getSession().send(genderDone(op2));
+			lc.setGender(op2);
+			lc.getSession().send(genderDone(op2));
 		} else if (op1 == 0) {
-			client.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
+			lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
 		}
 	}
 
-	public static void handlePin(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
-
+	public static void handlePin(LittleEndianReader packet, LoginClient lc) {
 		byte op1 = packet.readByte();
 		byte op2 = packet.readByte();
 		packet.readInt(); //always 1?
 		if (op1 == 1 && op2 == 1) {
 			if (LoginServer.getInstance().usePin()) {
-				if (client.getPin() == null) {
-					client.getSession().send(pinOperation(PIN_REGISTER));
+				if (lc.getPin() == null) {
+					lc.getSession().send(pinOperation(PIN_REGISTER));
 				} else {
-					client.getSession().send(pinOperation(PIN_REQUEST));
+					lc.getSession().send(pinOperation(PIN_REQUEST));
 				}
 			} else {
-				client.getSession().send(pinOperation(PIN_ACCEPTED));
+				lc.getSession().send(pinOperation(PIN_ACCEPTED));
 			}
 		} else if (op1 == 1 && op2 == 0) {
 			String pin = packet.readLengthPrefixedString();
-			if (pin.equals(client.getPin())) {
-				client.getSession().send(pinOperation(PIN_ACCEPTED));
+			if (pin.equals(lc.getPin())) {
+				lc.getSession().send(pinOperation(PIN_ACCEPTED));
 			} else {
-				client.getSession().send(pinOperation(PIN_REJECTED));
+				lc.getSession().send(pinOperation(PIN_REJECTED));
 			}
 		} else if (op1 == 2 && op2 == 0) {
 			String pin = packet.readLengthPrefixedString();
-			if (pin.equals(client.getPin())) {
-				client.getSession().send(pinOperation(PIN_REGISTER));
+			if (pin.equals(lc.getPin())) {
+				lc.getSession().send(pinOperation(PIN_REGISTER));
 			} else {
-				client.getSession().send(pinOperation(PIN_REJECTED));
+				lc.getSession().send(pinOperation(PIN_REJECTED));
 			}
 		} else if (op1 == 0) {
-			client.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
+			lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
 		}
 	}
 
-	public static void handlePinRegister(LittleEndianReader packet, RemoteClient rc) {
-		LoginClient client = (LoginClient) rc;
-		
+	public static void handlePinRegister(LittleEndianReader packet, LoginClient lc) {
 		byte c2 = packet.readByte();
 		if (c2 != 0) {
 			String pin = packet.readLengthPrefixedString();
 			if (pin != null) {
-				client.setPin(pin);
-				client.getSession().send(pinRegistered());
+				lc.setPin(pin);
+				lc.getSession().send(pinRegistered());
 			}
 		}
-		client.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
+		lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
 	}
 
 	private static byte[] genderDone(byte gender) {

@@ -19,10 +19,9 @@
 package argonms.login;
 
 import argonms.login.handler.*;
-import argonms.net.external.ClientPacketProcessor;
-import argonms.net.external.ClientRecvOps;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.net.external.ClientPacketProcessor;
+import argonms.common.net.external.ClientRecvOps;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,69 +29,69 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ClientLoginPacketProcessor extends ClientPacketProcessor {
+public class ClientLoginPacketProcessor extends ClientPacketProcessor<LoginClient> {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
-	public void process(LittleEndianReader reader, RemoteClient s) {
+	public void process(LittleEndianReader reader, LoginClient lc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.LOGIN_PASSWORD:
-				AuthHandler.handleLogin(reader, s);
+				AuthHandler.handleLogin(reader, lc);
 				break;
 			case ClientRecvOps.SERVERLIST_REREQUEST:
-				WorldlistHandler.handleWorldListRequest(reader, s);
+				WorldlistHandler.handleWorldListRequest(reader, lc);
 				break;
 			case ClientRecvOps.CHARLIST_REQ:
-				WorldlistHandler.handleCharlist(reader, s);
+				WorldlistHandler.handleCharlist(reader, lc);
 				break;
 			case ClientRecvOps.REQ_SERVERLOAD:
-				WorldlistHandler.sendServerStatus(reader, s);
+				WorldlistHandler.sendServerStatus(reader, lc);
 				break;
 			case ClientRecvOps.SET_GENDER:
-				AuthHandler.handleGender(reader, s);
+				AuthHandler.handleGender(reader, lc);
 				break;
 			case ClientRecvOps.PIN_OPERATION:
-				AuthHandler.handlePin(reader, s);
+				AuthHandler.handlePin(reader, lc);
 				break;
 			case ClientRecvOps.REGISTER_PIN:
-				AuthHandler.handlePinRegister(reader, s);
+				AuthHandler.handlePinRegister(reader, lc);
 				break;
 			case ClientRecvOps.SERVERLIST_REQUEST:
-				WorldlistHandler.handleWorldListRequest(reader, s);
+				WorldlistHandler.handleWorldListRequest(reader, lc);
 				break;
 			case ClientRecvOps.EXIT_CHARLIST:
 				//I guess if we're loading a character right now, we cancel it?
 				break;
 			case ClientRecvOps.VIEW_ALL_CHARS:
-				WorldlistHandler.handleViewAllChars(reader, s);
+				WorldlistHandler.handleViewAllChars(reader, lc);
 				break;
 			case ClientRecvOps.PICK_ALL_CHAR:
-				WorldlistHandler.handlePickFromAllChars(reader, s);
+				WorldlistHandler.handlePickFromAllChars(reader, lc);
 				break;
 			case ClientRecvOps.ENTER_EXIT_VIEW_ALL:
 				//I guess if we're loading a character right now, we cancel it?
 				break;
 			case ClientRecvOps.CHAR_SELECT:
-				WorldlistHandler.handlePickFromWorldCharlist(reader, s);
+				WorldlistHandler.handlePickFromWorldCharlist(reader, lc);
 				break;
 			case ClientRecvOps.CHECK_CHAR_NAME:
-				WorldlistHandler.handleNameCheck(reader, s);
+				WorldlistHandler.handleNameCheck(reader, lc);
 				break;
 			case ClientRecvOps.CREATE_CHAR:
-				WorldlistHandler.handleCreateCharacter(reader, s);
+				WorldlistHandler.handleCreateCharacter(reader, lc);
 				break;
 			case ClientRecvOps.DELETE_CHAR:
-				WorldlistHandler.handleDeleteChar(reader, s);
+				WorldlistHandler.handleDeleteChar(reader, lc);
 				break;
 			case ClientRecvOps.PONG:
-				s.receivedPong();
+				lc.receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
-				s.clientError(reader.readLengthPrefixedString());
+				lc.clientError(reader.readLengthPrefixedString());
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
 				break;
 			case ClientRecvOps.RELOG:
-				WorldlistHandler.backToLogin(reader, s);
+				WorldlistHandler.backToLogin(reader, lc);
 				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				//no-op

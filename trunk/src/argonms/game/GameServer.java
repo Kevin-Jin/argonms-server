@@ -18,23 +18,23 @@
 
 package argonms.game;
 
-import argonms.LocalServer;
-import argonms.ServerType;
+import argonms.common.LocalServer;
+import argonms.common.ServerType;
 import argonms.game.script.NpcScriptManager;
 import argonms.game.script.PortalScriptManager;
 import argonms.game.script.ReactorScriptManager;
-import argonms.loading.DataFileType;
-import argonms.loading.item.ItemDataLoader;
-import argonms.loading.map.MapDataLoader;
-import argonms.loading.mob.MobDataLoader;
-import argonms.loading.quest.QuestDataLoader;
-import argonms.loading.reactor.ReactorDataLoader;
-import argonms.loading.shop.NpcShopDataLoader;
-import argonms.loading.skill.SkillDataLoader;
-import argonms.loading.string.StringDataLoader;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
-import argonms.tools.Scheduler;
+import argonms.common.loading.DataFileType;
+import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.map.MapDataLoader;
+import argonms.common.loading.mob.MobDataLoader;
+import argonms.common.loading.quest.QuestDataLoader;
+import argonms.common.loading.reactor.ReactorDataLoader;
+import argonms.common.loading.shop.NpcShopDataLoader;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.common.loading.string.StringDataLoader;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.tools.Scheduler;
 
 import java.io.FileReader;
 import java.io.IOException;

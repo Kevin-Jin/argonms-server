@@ -18,26 +18,25 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
-import argonms.character.inventory.Inventory.InventoryType;
-import argonms.character.inventory.InventorySlot;
-import argonms.character.inventory.InventoryTools;
-import argonms.character.inventory.ItemTools;
-import argonms.character.skill.PlayerStatusEffectValues;
-import argonms.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.character.skill.SkillTools;
-import argonms.character.skill.Skills;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.Inventory.InventoryType;
+import argonms.game.character.inventory.InventorySlot;
+import argonms.game.character.inventory.InventoryTools;
+import argonms.game.character.inventory.ItemTools;
+import argonms.game.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
 import argonms.game.GameClient;
-import argonms.loading.skill.SkillDataLoader;
-import argonms.loading.skill.SkillStats;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.entity.Mob;
-import argonms.map.entity.PlayerSkillSummon;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.common.loading.skill.SkillStats;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.awt.Point;
 
 /**
@@ -45,8 +44,8 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class GameBuffHandler {
-	public static void handleUseSkill(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleUseSkill(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		/*int tickCount = */packet.readInt();
 		int skillId = packet.readInt();
 		byte skillLevel = packet.readByte();
@@ -62,7 +61,7 @@ public class GameBuffHandler {
 					p.getMap().sendToAll(writeMonsterMagnetSuccess(mobEntId, success), p);
 					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobEntId);
 					if (m != null) {
-						Player controller = m.getController();
+						GameCharacter controller = m.getController();
 						if (controller != null) {
 							controller.uncontrolMonster(m);
 							controller.getClient().getSession().send(CommonPackets.writeStopControlMonster(m));
@@ -102,23 +101,23 @@ public class GameBuffHandler {
 		SkillTools.useCastSkill(p, skillId, skillLevel, stance);
 	}
 
-	public static void handleUseItem(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleUseItem(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		/*int tickCount = */packet.readInt();
 		short slot = packet.readShort();
 		int itemId = packet.readInt();
 		//TODO: hacking if item's id at slot does not match itemId
 		InventorySlot changed = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), slot, (short) 1);
 		if (changed != null)
-			rc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
+			gc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
 		else
-			rc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
+			gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		ItemTools.useItem(p, itemId);
 		p.itemCountChanged(itemId);
 	}
 
-	public static void handleCancelSkill(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleCancelSkill(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int skillId = packet.readInt();
 		//method name is kind of a misnomer. this handles buff cancels and
 		//skills with a keydownend (only Hurricane and Rapid Fire at the moment)
@@ -128,13 +127,13 @@ public class GameBuffHandler {
 			p.getMap().sendToAll(writeEndKeydown(p, skillId), p);
 	}
 
-	public static void handleCancelItem(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleCancelItem(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		int itemId = -packet.readInt();
 		ItemTools.cancelBuffItem(p, itemId);
 	}
 
-	private static byte[] writeEndKeydown(Player p, int skillId) {
+	private static byte[] writeEndKeydown(GameCharacter p, int skillId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 		lew.writeShort(ClientSendOps.END_KEY_DOWN);
 		lew.writeInt(p.getId());

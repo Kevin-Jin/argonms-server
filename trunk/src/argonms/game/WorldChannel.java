@@ -18,18 +18,19 @@
 
 package argonms.game;
 
-import argonms.character.Player;
-import argonms.character.PlayerContinuation;
-import argonms.map.GameMap;
-import argonms.map.MapFactory;
-import argonms.net.external.ClientListener;
-import argonms.net.external.ClientSendOps;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.PlayerLog;
-import argonms.net.internal.RemoteCenterOps;
-import argonms.tools.Scheduler;
-import argonms.tools.collections.Pair;
-import argonms.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.PlayerContinuation;
+import argonms.game.field.GameMap;
+import argonms.game.field.MapFactory;
+import argonms.common.net.external.ClientListener;
+import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.net.external.PlayerLog;
+import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.tools.Scheduler;
+import argonms.common.tools.collections.Pair;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,11 +48,11 @@ public class WorldChannel {
 
 	private final Map<Integer, PlayerContinuation> channelChangeData;
 	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
-	private ClientListener handler;
+	private ClientListener<GameClient> handler;
 	private byte world, channel;
 	private int port;
 	private MapFactory mapFactory;
-	private PlayerLog storage;
+	private PlayerLog<GameCharacter> storage;
 	private InterChannelCommunication worldComm;
 
 	protected WorldChannel(byte world, byte channel, int port) {
@@ -61,15 +62,27 @@ public class WorldChannel {
 		this.channel = channel;
 		this.port = port;
 		this.mapFactory = new MapFactory();
-		this.storage = new PlayerLog();
+		this.storage = new PlayerLog<GameCharacter>();
 	}
 
 	public void listen(boolean useNio) {
-		handler = new ClientListener(world, channel, useNio);
-		if (handler.bind(port))
-			LOG.log(Level.INFO, "Channel {0} is online.", channel);
-		else
+		try {
+			handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
+				public GameClient newInstance(byte world, byte client) {
+					return new GameClient(world, client);
+				}
+			});
+		} catch (NoSuchMethodException e) {
+			LOG.log(Level.SEVERE, "\"new GameClient(byte world, byte channel)\" constructor missing!");
 			shutdown();
+			return;
+		}
+		if (handler.bind(port)) {
+			LOG.log(Level.INFO, "Channel {0} is online.", channel);
+		} else {
+			shutdown();
+			return;
+		}
 		Scheduler.getInstance().runRepeatedly(new Runnable() {
 			public void run() {
 				for (GameMap map : mapFactory.getMaps().values())
@@ -82,21 +95,21 @@ public class WorldChannel {
 		return channel;
 	}
 
-	public void addPlayer(Player p) {
+	public void addPlayer(GameCharacter p) {
 		storage.addPlayer(p);
 		sendNewLoad(storage.getConnectedCount());
 	}
 
-	public void removePlayer(Player p) {
+	public void removePlayer(GameCharacter p) {
 		storage.deletePlayer(p);
 		sendNewLoad(storage.getConnectedCount());
 	}
 
-	public Player getPlayerById(int characterid) {
+	public GameCharacter getPlayerById(int characterid) {
 		return storage.getPlayer(characterid);
 	}
 
-	public Player getPlayerByName(String name) {
+	public GameCharacter getPlayerByName(String name) {
 		return storage.getPlayer(name);
 	}
 
@@ -104,12 +117,12 @@ public class WorldChannel {
 		return storage.getPlayer(characterid) != null;
 	}
 
-	private void channelChangeError(Player p) {
+	private void channelChangeError(GameCharacter p) {
 		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
 		p.getClient().getSession().send(CommonPackets.writeEnableActions());
 	}
 
-	public void requestChannelChange(final Player p, byte destCh) {
+	public void requestChannelChange(final GameCharacter p, byte destCh) {
 		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
 			public void run() {
 				channelChangeError(p);
@@ -131,7 +144,7 @@ public class WorldChannel {
 			destHost = null;
 			destPort = -1;
 		}
-		Player p = storage.getPlayer(playerId);
+		GameCharacter p = storage.getPlayer(playerId);
 		if (destHost != null && destPort != -1) {
 			p.prepareChannelChange();
 			p.getClient().getSession().send(writeNewGameHost(destHost, destPort));
@@ -144,7 +157,7 @@ public class WorldChannel {
 		channelChangeData.put(Integer.valueOf(playerId), context);
 	}
 
-	public boolean applyBuffsFromLastChannel(Player p) {
+	public boolean applyBuffsFromLastChannel(GameCharacter p) {
 		PlayerContinuation context = channelChangeData.remove(Integer.valueOf(p.getId()));
 		if (context == null)
 			return false;

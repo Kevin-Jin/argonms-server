@@ -18,32 +18,31 @@
 
 package argonms.game.handler;
 
-import argonms.character.Player;
+import argonms.game.character.GameCharacter;
 import argonms.game.GameClient;
-import argonms.map.MapEntity.EntityType;
-import argonms.map.entity.Reactor;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.Reactor;
+import argonms.common.tools.input.LittleEndianReader;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ReactorHandler {
-	public static void handleReactorTrigger(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleReactorTrigger(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		/*Point currentPos = */packet.readPos();
 		short stance = packet.readShort();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		Reactor r = (Reactor) p.getMap().getEntityById(EntityType.REACTOR, entId);
 		if (r != null)
 			r.hit(p, stance);
 	}
 
-	public static void handleReactorTouch(LittleEndianReader packet, RemoteClient rc) {
+	public static void handleReactorTouch(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		boolean enter = packet.readBool();
-		Player p = ((GameClient) rc).getPlayer();
+		GameCharacter p = gc.getPlayer();
 		Reactor r = (Reactor) p.getMap().getEntityById(EntityType.REACTOR, entId);
 		if (r != null) {
 			if (enter)

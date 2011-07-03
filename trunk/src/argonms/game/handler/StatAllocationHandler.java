@@ -18,15 +18,14 @@
 
 package argonms.game.handler;
 
-import argonms.character.ClientUpdateKey;
-import argonms.character.Player;
-import argonms.character.skill.SkillTools;
-import argonms.character.skill.Skills;
+import argonms.game.character.ClientUpdateKey;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
 import argonms.game.GameClient;
-import argonms.loading.skill.SkillDataLoader;
-import argonms.net.external.CommonPackets;
-import argonms.net.external.RemoteClient;
-import argonms.tools.input.LittleEndianReader;
+import argonms.game.character.GameCharacter;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.common.net.external.CommonPackets;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -35,8 +34,8 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class StatAllocationHandler {
-	public static void handleApAllocation(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleApAllocation(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		/*int time = */packet.readInt();
 		int updateMask = packet.readInt();
 		Map<ClientUpdateKey, Short> updatedStats = new EnumMap<ClientUpdateKey, Short>(ClientUpdateKey.class);
@@ -92,11 +91,11 @@ public class StatAllocationHandler {
 					break;
 			}
 		}
-		rc.getSession().send(CommonPackets.writeUpdatePlayerStats(updatedStats, true));
+		gc.getSession().send(CommonPackets.writeUpdatePlayerStats(updatedStats, true));
 	}
 
-	public static void handleSpAllocation(LittleEndianReader packet, RemoteClient rc) {
-		Player p = ((GameClient) rc).getPlayer();
+	public static void handleSpAllocation(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
 		/*int time = */packet.readInt();
 		int skillId = packet.readInt();
 		byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);

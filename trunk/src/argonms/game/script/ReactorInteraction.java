@@ -18,16 +18,16 @@
 
 package argonms.game.script;
 
-import argonms.character.Player;
-import argonms.character.inventory.Equip;
-import argonms.character.inventory.InventorySlot;
-import argonms.character.inventory.InventorySlot.ItemType;
-import argonms.character.inventory.InventoryTools;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.Equip;
+import argonms.game.character.inventory.InventorySlot;
+import argonms.game.character.inventory.InventorySlot.ItemType;
+import argonms.game.character.inventory.InventoryTools;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
-import argonms.map.entity.ItemDrop;
-import argonms.map.entity.Reactor;
-import argonms.tools.Rng;
+import argonms.game.field.entity.ItemDrop;
+import argonms.game.field.entity.Reactor;
+import argonms.common.tools.Rng;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -68,7 +68,7 @@ public class ReactorInteraction extends PlayerScriptInteraction {
 				drops.add(new ItemDrop(item));
 			}
 		}
-		Player p = getClient().getPlayer();
+		GameCharacter p = getClient().getPlayer();
 		p.getMap().drop(drops, reactor, ItemDrop.PICKUP_ALLOW_OWNER, p.getId());
 	}
 }

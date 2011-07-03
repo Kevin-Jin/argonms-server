@@ -18,11 +18,10 @@
 
 package argonms.shop;
 
-import argonms.net.external.ClientPacketProcessor;
-import argonms.net.external.ClientRecvOps;
-import argonms.net.external.RemoteClient;
+import argonms.common.net.external.ClientPacketProcessor;
+import argonms.common.net.external.ClientRecvOps;
 import argonms.shop.handler.*;
-import argonms.tools.input.LittleEndianReader;
+import argonms.common.tools.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,19 +29,19 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ClientShopPacketProcessor extends ClientPacketProcessor {
+public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient> {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
-	public void process(LittleEndianReader reader, RemoteClient s) {
+	public void process(LittleEndianReader reader, ShopClient sc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.PLAYER_CONNECTED:
-				ShopHandler.handlePlayerConnection(reader, s);
+				ShopHandler.handlePlayerConnection(reader, sc);
 				break;
 			case ClientRecvOps.PONG:
-				s.receivedPong();
+				sc.receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
-				s.clientError(reader.readLengthPrefixedString());
+				sc.clientError(reader.readLengthPrefixedString());
 				break;
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op

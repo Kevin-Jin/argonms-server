@@ -18,14 +18,15 @@
 
 package argonms.login;
 
-import argonms.LocalServer;
-import argonms.ServerType;
-import argonms.loading.DataFileType;
-import argonms.loading.item.ItemDataLoader;
-import argonms.net.external.ClientListener;
-import argonms.tools.DatabaseManager;
-import argonms.tools.DatabaseManager.DatabaseType;
-import argonms.tools.Scheduler;
+import argonms.common.LocalServer;
+import argonms.common.ServerType;
+import argonms.common.loading.DataFileType;
+import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.net.external.ClientListener;
+import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.tools.DatabaseManager;
+import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.tools.Scheduler;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -49,7 +50,7 @@ public class LoginServer implements LocalServer {
 
 	private static LoginServer instance;
 
-	private ClientListener handler;
+	private ClientListener<LoginClient> handler;
 	private LoginCenterInterface lci;
 	private String address;
 	private int port;
@@ -142,7 +143,16 @@ public class LoginServer implements LocalServer {
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		Scheduler.enable();
-		handler = new ClientListener(ServerType.LOGIN, (byte) -1, useNio);
+		try {
+			handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, useNio, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+				public LoginClient newInstance(byte world, byte client) {
+					return new LoginClient();
+				}
+			});
+		} catch (NoSuchMethodException e) {
+			LOG.log(Level.SEVERE, "\"new LoginClient(byte world, byte channel)\" constructor missing!");
+			System.exit(5);
+		}
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Login Server is online.");
 			lci.serverReady();
