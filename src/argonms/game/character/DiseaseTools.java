@@ -18,9 +18,9 @@
 
 package argonms.game.character;
 
-import argonms.common.loading.skill.MobSkillEffectsData;
-import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.tools.Scheduler;
+import argonms.game.loading.skill.MobSkillEffectsData;
+import argonms.game.loading.skill.SkillDataLoader;
 
 /**
  *

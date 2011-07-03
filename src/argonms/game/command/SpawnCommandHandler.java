@@ -19,11 +19,11 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.common.loading.mob.MobDataLoader;
-import argonms.common.loading.mob.MobStats;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.entity.Npc;
+import argonms.game.loading.mob.MobDataLoader;
+import argonms.game.loading.mob.MobStats;
 import java.awt.Point;
 
 /**

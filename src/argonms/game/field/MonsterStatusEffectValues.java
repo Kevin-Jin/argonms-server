@@ -26,50 +26,6 @@ import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
  * @author GoldenKevin
  */
 public class MonsterStatusEffectValues {
-	//if you're adding on to this, PLEASE keep it sorted by the mask. you'll
-	//break a hell of a lot of routines if you don't keep it in order.
-	public enum MonsterStatusEffect { //byte numbers are from left to right
-		//byte 1
-		WATK				(0x00000001),
-		WDEF				(0x00000002),
-		MATK				(0x00000004),
-		MDEF				(0x00000008),
-		ACC					(0x00000010),
-		AVOID				(0x00000020),
-		SPEED				(0x00000040),
-		STUN				(0x00000080),
-
-		//byte 2
-		FREEZE				(0x00000100),
-		POISON				(0x00000200),
-		SEAL				(0x00000400),
-		TAUNT				(0x00000800),
-		WEAPON_ATTACK_UP	(0x00001000),
-		WEAPON_DEFENSE_UP	(0x00002000),
-		MAGIC_ATTACK_UP		(0x00004000),
-		MAGIC_DEFENSE_UP	(0x00008000),
-
-		//byte 3
-		DOOM				(0x00010000),
-		SHADOW_WEB			(0x00020000),
-		WEAPON_IMMUNITY		(0x00040000),
-		MAGIC_IMMUNITY		(0x00080000),
-		NINJA_AMBUSH		(0x00400000),
-
-		//byte 4
-		INERTMOB			(0x10000000)
-		;
-
-		private final int mask;
-
-		private MonsterStatusEffect(int mask) {
-			this.mask = mask;
-		}
-
-		public int intValue() {
-			return mask;
-		}
-	}
 
 	private final MonsterStatusEffectsData e;
 	private final short mod;

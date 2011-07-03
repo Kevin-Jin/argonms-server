@@ -18,14 +18,12 @@
 
 package argonms.game.character;
 
+import argonms.common.character.PlayerStatusEffect;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.BuffsData;
-import argonms.common.loading.skill.PlayerSkillEffectsData;
 import argonms.common.net.external.CommonPackets;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.Skills;
 import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.game.loading.skill.PlayerSkillEffectsData;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;

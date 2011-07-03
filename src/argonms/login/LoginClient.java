@@ -242,6 +242,10 @@ public class LoginClient extends RemoteClient {
 		return false;
 	}
 
+	public LoginCharacter getPlayer() {
+		return null;
+	}
+
 	public byte getServerId() {
 		return ServerType.LOGIN;
 	}

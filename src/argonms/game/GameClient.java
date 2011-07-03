@@ -45,14 +45,6 @@ public class GameClient extends RemoteClient {
 		setChannel(channel);
 	}
 
-	public GameCharacter getPlayer() {
-		return player;
-	}
-
-	public void setPlayer(GameCharacter p) {
-		this.player = p;
-	}
-
 	public byte getOnlineState() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -79,6 +71,14 @@ public class GameClient extends RemoteClient {
 
 	public NpcConversationActions getNpc() {
 		return npc;
+	}
+
+	public void setPlayer(GameCharacter p) {
+		this.player = p;
+	}
+
+	public GameCharacter getPlayer() {
+		return player;
 	}
 
 	public byte getServerId() {

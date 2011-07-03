@@ -18,20 +18,20 @@
 
 package argonms.game.handler;
 
-import argonms.common.loading.mob.Attack;
-import argonms.common.loading.mob.MobDataLoader;
+import argonms.common.character.PlayerStatusEffect;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.SkillTools;
+import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.SkillTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.game.loading.mob.Attack;
+import argonms.game.loading.mob.MobDataLoader;
 import java.awt.Point;
 
 /**

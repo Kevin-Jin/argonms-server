@@ -78,7 +78,7 @@ public class WorldChannel {
 			return;
 		}
 		if (handler.bind(port)) {
-			LOG.log(Level.INFO, "Channel {0} is online.", channel);
+			LOG.log(Level.INFO, "World {0} Channel {1} is online.", new Object[] { world, channel });
 		} else {
 			shutdown();
 			return;

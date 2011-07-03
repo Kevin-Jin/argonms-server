@@ -18,6 +18,7 @@
 
 package argonms.common.net.external;
 
+import argonms.common.character.Player;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Scheduler;
@@ -137,6 +138,8 @@ public abstract class RemoteClient {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
 	}
+
+	public abstract Player getPlayer();
 
 	public abstract byte getServerId();
 

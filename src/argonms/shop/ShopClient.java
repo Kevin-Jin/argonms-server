@@ -40,14 +40,6 @@ public class ShopClient extends RemoteClient {
 
 	private ShopCharacter player;
 
-	public ShopCharacter getPlayer() {
-		return player;
-	}
-
-	public void setPlayer(ShopCharacter p) {
-		this.player = p;
-	}
-
 	public byte getOnlineState() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -66,6 +58,14 @@ public class ShopClient extends RemoteClient {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return ret;
+	}
+
+	public void setPlayer(ShopCharacter p) {
+		this.player = p;
+	}
+
+	public ShopCharacter getPlayer() {
+		return player;
 	}
 
 	public byte getServerId() {

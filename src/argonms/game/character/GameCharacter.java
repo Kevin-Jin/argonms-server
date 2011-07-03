@@ -18,26 +18,24 @@
 
 package argonms.game.character;
 
+import argonms.common.character.QuestEntry;
 import argonms.common.GlobalConstants;
 import argonms.common.ServerType;
+import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
-import argonms.common.character.Player;
 import argonms.common.character.Player.CharacterTools;
+import argonms.common.character.Player.LoggedInPlayer;
 import argonms.common.character.PlayerJob;
+import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
-import argonms.common.character.inventory.Item;
 import argonms.common.character.inventory.Pet;
-import argonms.common.character.inventory.Ring;
 import argonms.common.character.inventory.TamingMob;
 import argonms.common.loading.StatusEffectsData;
-import argonms.common.loading.quest.QuestChecks;
-import argonms.common.loading.quest.QuestChecks.QuestRequirementType;
-import argonms.common.loading.quest.QuestDataLoader;
-import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
 import argonms.common.tools.DatabaseManager;
@@ -50,12 +48,6 @@ import argonms.game.GameServer;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
-import argonms.game.character.skill.Cooldown;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.skill.SkillEntry;
-import argonms.game.character.skill.SkillTools;
-import argonms.game.character.skill.Skills;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
 import argonms.game.field.MapEntity.EntityType;
@@ -65,6 +57,10 @@ import argonms.game.field.entity.Miniroom.MiniroomType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.Mob.MobDeathHook;
 import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.game.loading.quest.QuestChecks;
+import argonms.game.loading.quest.QuestChecks.QuestRequirementType;
+import argonms.game.loading.quest.QuestDataLoader;
+import argonms.game.loading.skill.SkillDataLoader;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -89,7 +85,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class GameCharacter extends MapEntity implements Player {
+public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private static final Logger LOG = Logger.getLogger(GameCharacter.class.getName());
 
 	private GameClient client;
@@ -121,7 +117,6 @@ public class GameCharacter extends MapEntity implements Player {
 	private int mesos;
 	private final Map<InventoryType, Inventory> inventories;
 	private final Pet[] equippedPets;
-	private TamingMob equippedMount;
 
 	private final Map<Byte, KeyBinding> bindings;
 	private final List<SkillMacro> skillMacros;
@@ -202,7 +197,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbStats(Connection con) throws SQLException {
+	private void updateDbStats(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
 			ps = con.prepareStatement("UPDATE `characters` "
@@ -284,7 +279,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbSkills(Connection con) throws SQLException {
+	private void updateDbSkills(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM `skills` "
@@ -311,7 +306,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbCooldowns(Connection con) throws SQLException {
+	private void updateDbCooldowns(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM `cooldowns` "
@@ -336,7 +331,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbBindings(Connection con) throws SQLException {
+	private void updateDbBindings(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM `keymaps` "
@@ -386,7 +381,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbQuests(Connection con) throws SQLException {
+	private void updateDbQuests(Connection con) throws SQLException {
 		PreparedStatement ps = null, mps = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM "
@@ -429,7 +424,7 @@ public class GameCharacter extends MapEntity implements Player {
 		}
 	}
 
-	public void updateDbMinigameStats(Connection con) throws SQLException {
+	private void updateDbMinigameStats(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM "
@@ -537,107 +532,11 @@ public class GameCharacter extends MapEntity implements Player {
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
-			while (rs.next()) {
-				InventorySlot item;
-				InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
-				short position = rs.getShort(5);
-				int itemid = rs.getInt(6);
-				int inventoryKey = rs.getInt(1);
-				if (inventoryType == InventoryType.EQUIP || inventoryType == InventoryType.EQUIPPED) {
-					Equip e;
-					if (InventoryTools.isRing(itemid)) {
-						e = new Ring(itemid);
-						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventoryrings` WHERE "
-								+ "`inventoryitemid` = ?");
-						ips.setInt(1, inventoryKey);
-						irs = ips.executeQuery();
-						if (irs.next()) {
-							((Ring) e).setPartnerCharId(irs.getInt(3));
-							((Ring) e).setPartnerRingId(irs.getLong(4));
-						}
-						irs.close();
-						ips.close();
-					} else if (InventoryTools.isMount(itemid)) {
-						e = new TamingMob(itemid);
-						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventorymounts` WHERE "
-								+ "`inventoryitemid` = ?");
-						ips.setInt(1, inventoryKey);
-						irs = ips.executeQuery();
-						if (irs.next()) {
-							((TamingMob) e).setLevel(irs.getByte(3));
-							((TamingMob) e).setExp(irs.getShort(4));
-							((TamingMob) e).setTiredness(irs.getByte(5));
-							if (position == -18)
-								p.equippedMount = (TamingMob) e;
-						}
-						irs.close();
-						ips.close();
-					} else {
-						e = new Equip(itemid);
-					}
-					ips = con.prepareStatement("SELECT * FROM "
-							+ "`inventoryequipment` WHERE "
-							+ "`inventoryitemid` = ?");
-					ips.setInt(1, inventoryKey);
-					irs = ips.executeQuery();
-					if (irs.next()) {
-						e.setStr(irs.getShort(3));
-						e.setDex(irs.getShort(4));
-						e.setInt(irs.getShort(5));
-						e.setLuk(irs.getShort(6));
-						e.setHp(irs.getShort(7));
-						e.setMp(irs.getShort(8));
-						e.setWatk(irs.getShort(9));
-						e.setMatk(irs.getShort(10));
-						e.setWdef(irs.getShort(11));
-						e.setMdef(irs.getShort(12));
-						e.setAcc(irs.getShort(13));
-						e.setAvoid(irs.getShort(14));
-						e.setSpeed(irs.getShort(15));
-						e.setJump(irs.getShort(16));
-						e.setUpgradeSlots(irs.getByte(17));
-					}
-					if (inventoryType == InventoryType.EQUIPPED)
-						p.equipChanged(e, true);
-					irs.close();
-					ips.close();
-					item = e;
-				} else {
-					if (InventoryTools.isPet(itemid)) {
-						Pet pet = new Pet(itemid);
-						ips = con.prepareStatement("SELECT * "
-								+ "FROM `inventorypets` WHERE "
-								+ "`inventoryitemid` = ?");
-						ips.setInt(1, inventoryKey);
-						irs = ips.executeQuery();
-						if (irs.next()) {
-							pet.setName(irs.getString(4));
-							pet.setLevel(irs.getByte(5));
-							pet.setCloseness(irs.getShort(6));
-							pet.setFullness(irs.getByte(7));
-							pet.setExpired(irs.getBoolean(8));
-							byte pos = irs.getByte(3);
-							if (pos >= 0 && pos < 3)
-								p.equippedPets[pos] = pet;
-						}
-						irs.close();
-						ips.close();
-						item = pet;
-					} else {
-						item = new Item(itemid);
-						item.setQuantity(rs.getShort(10));
-					}
-				}
-				item.setExpiration(rs.getLong(7));
-				item.setUniqueId(rs.getLong(8));
-				item.setOwner(rs.getString(9));
-				p.inventories.get(inventoryType).put(position, item);
-			}
-
+			CharacterTools.loadInventory(con, rs, p.equippedPets, p.inventories);
 			rs.close();
 			ps.close();
+			for (InventorySlot equip : p.inventories.get(InventoryType.EQUIPPED).getAll().values())
+				p.equipChanged((Equip) equip, true);
 
 			ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 					+ "FROM `skills` WHERE `characterid` = ?");
@@ -1258,6 +1157,10 @@ public class GameCharacter extends MapEntity implements Player {
 		return buddies;
 	}
 
+	public byte getBuddyListCapacity() {
+		return (byte) buddies.getCapacity();
+	}
+
 	//Scrolling equips will screw this up, so remember
 	//to call equipChanged(e, false) before scrolling and
 	//then call equipChanged(e, true) after scrolling
@@ -1323,7 +1226,7 @@ public class GameCharacter extends MapEntity implements Player {
 	}
 
 	public TamingMob getEquippedMount() {
-		return equippedMount;
+		return (TamingMob) getInventory(InventoryType.EQUIPPED).get((short) -18);
 	}
 
 	public KeyBinding[] getKeyMap() {
