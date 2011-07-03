@@ -18,18 +18,18 @@
 
 package argonms.common.loading.quest;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.QuestEntry;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.game.character.inventory.ItemTools;
-import argonms.game.GameServer;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.character.inventory.ItemTools;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.TimeUtil;
+import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.QuestEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

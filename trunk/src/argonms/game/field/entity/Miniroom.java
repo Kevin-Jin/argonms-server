@@ -18,13 +18,14 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.field.GameMap;
-import argonms.game.field.MapEntity;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -20,7 +20,6 @@ package argonms.game.field;
 
 import argonms.common.loading.map.MapDataLoader;
 import argonms.common.loading.map.MapStats;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

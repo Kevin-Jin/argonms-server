@@ -18,8 +18,8 @@
 
 package argonms.game.field.entity;
 
+import argonms.common.character.inventory.Inventory;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Inventory;
 import java.awt.Point;
 import java.util.Map;
 

@@ -18,11 +18,11 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.character.GameCharacter;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.Rng;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.character.GameCharacter;
 import java.util.Random;
 
 /**

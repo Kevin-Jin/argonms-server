@@ -18,8 +18,8 @@
 
 package argonms.common.loading.quest;
 
-import argonms.game.character.GameCharacter;
 import argonms.common.loading.DataFileType;
+import argonms.game.character.GameCharacter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

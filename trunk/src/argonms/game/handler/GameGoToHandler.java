@@ -19,12 +19,12 @@
 package argonms.game.handler;
 
 import argonms.common.UserPrivileges;
-import argonms.game.character.GameCharacter;
-import argonms.game.GameClient;
-import argonms.game.GameServer;
 import argonms.common.loading.map.PortalData;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameClient;
+import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
 import java.awt.Point;
 
 /**

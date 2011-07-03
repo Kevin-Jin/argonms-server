@@ -16,26 +16,44 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
+package argonms.common.character.inventory;
 
 /**
  *
  * @author GoldenKevin
  */
-public class KeyBinding {
-	private byte type;
-	private int action;
+public class Item extends InventorySlot implements Cloneable {
+	private short qty;
 
-	public KeyBinding(byte type, int action) {
-		this.type = type;
-		this.action = action;
+	public Item(int itemid) {
+		super(itemid);
+		qty = 1;
 	}
 
-	public byte getType() {
-		return type;
+	public ItemType getType() {
+		return ItemType.ITEM;
 	}
 
-	public int getAction() {
-		return action;
+	public byte getTypeByte() {
+		return InventorySlot.ITEM;
+	}
+
+	public short getQuantity() {
+		return qty;
+	}
+
+	public void setQuantity(short newValue) {
+		this.qty = newValue;
+	}
+
+	public Item clone() {
+		Item copy = new Item(getDataId());
+		copy.setExpiration(getExpiration());
+		copy.setUniqueId(getUniqueId());
+		copy.setOwner(getOwner());
+		copy.setFlag(getFlag());
+
+		copy.setQuantity(getQuantity());
+		return copy;
 	}
 }

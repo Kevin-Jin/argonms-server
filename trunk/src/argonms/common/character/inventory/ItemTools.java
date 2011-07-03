@@ -16,19 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character.inventory;
+package argonms.common.character.inventory;
 
 import argonms.common.GlobalConstants;
-import argonms.game.character.ClientUpdateKey;
-import argonms.game.character.DiseaseTools;
-import argonms.game.character.skill.PlayerStatusEffectValues;
-import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
-import argonms.game.character.StatusEffectTools;
-import argonms.game.character.GameCharacter;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
+import argonms.game.character.ClientUpdateKey;
+import argonms.game.character.DiseaseTools;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.StatusEffectTools;
+import argonms.game.character.skill.PlayerStatusEffectValues;
+import argonms.game.character.skill.PlayerStatusEffectValues.PlayerStatusEffect;
 import java.util.EnumMap;
 import java.util.Map;
 

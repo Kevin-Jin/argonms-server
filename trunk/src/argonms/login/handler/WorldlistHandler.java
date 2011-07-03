@@ -19,12 +19,7 @@
 package argonms.login.handler;
 
 import argonms.common.UserPrivileges;
-import argonms.game.character.PlayerJob;
-import argonms.login.LoginCharacter;
-import argonms.login.LoginClient;
-import argonms.login.LoginServer;
-import argonms.login.LoginWorld;
-import argonms.login.Message;
+import argonms.common.character.PlayerJob;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.DatabaseManager;
@@ -32,7 +27,11 @@ import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
-
+import argonms.login.LoginCharacter;
+import argonms.login.LoginClient;
+import argonms.login.LoginServer;
+import argonms.login.LoginWorld;
+import argonms.login.Message;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

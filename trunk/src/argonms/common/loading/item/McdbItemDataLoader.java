@@ -18,8 +18,8 @@
 
 package argonms.common.loading.item;
 
-import argonms.game.character.inventory.InventoryTools;
 import argonms.common.StatEffect;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import java.sql.Connection;

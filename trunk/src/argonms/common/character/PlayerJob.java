@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
+package argonms.common.character;
 
 /**
  * A helper class with static methods that accept job id parameters and check

@@ -18,11 +18,11 @@
 
 package argonms.common.net.external;
 
-import argonms.common.Player;
-import argonms.game.GameClient;
-import argonms.shop.ShopClient;
+import argonms.common.character.Player;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.game.GameClient;
+import argonms.shop.ShopClient;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;

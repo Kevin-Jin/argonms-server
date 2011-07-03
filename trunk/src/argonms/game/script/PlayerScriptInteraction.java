@@ -18,15 +18,15 @@
 
 package argonms.game.script;
 
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.game.GameClient;
-import argonms.game.GameServer;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
+import argonms.game.GameClient;
+import argonms.game.GameServer;
 
 /**
  *

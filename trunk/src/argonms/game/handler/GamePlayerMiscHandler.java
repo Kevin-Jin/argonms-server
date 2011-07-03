@@ -18,12 +18,12 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.GameClient;
+import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameClient;
+import argonms.game.character.GameCharacter;
 
 /**
  *

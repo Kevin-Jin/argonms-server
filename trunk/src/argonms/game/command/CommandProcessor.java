@@ -19,19 +19,19 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.game.character.inventory.Inventory;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.inventory.InventoryTools;
-import argonms.game.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.loading.skill.SkillDataLoader;
+import argonms.common.loading.skill.SkillStats;
+import argonms.common.net.external.CommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
-import argonms.common.loading.skill.SkillDataLoader;
-import argonms.common.loading.skill.SkillStats;
 import argonms.game.field.GameMap;
 import argonms.game.field.entity.PlayerNpc;
-import argonms.common.net.external.CommonPackets;
 import java.awt.Point;
 import java.util.LinkedHashMap;
 import java.util.Map;

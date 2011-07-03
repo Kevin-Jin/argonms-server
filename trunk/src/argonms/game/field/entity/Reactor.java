@@ -18,13 +18,14 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.character.GameCharacter;
-import argonms.game.script.ReactorScriptManager;
 import argonms.common.loading.reactor.ReactorStats;
 import argonms.common.loading.reactor.State;
-import argonms.game.field.MapEntity;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.collections.Pair;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.script.ReactorScriptManager;
 import java.awt.Point;
 import java.awt.Rectangle;
 

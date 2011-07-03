@@ -18,10 +18,10 @@
 
 package argonms.game.command;
 
-import argonms.game.GameClient;
-import argonms.game.handler.GameChatHandler.TextStyle;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
+import argonms.game.GameClient;
+import argonms.game.handler.GameChatHandler.TextStyle;
 
 /**
  *

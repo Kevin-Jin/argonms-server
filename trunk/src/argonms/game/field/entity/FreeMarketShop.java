@@ -18,14 +18,14 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.character.inventory.InventorySlot;
-import argonms.game.character.GameCharacter;
-import argonms.game.field.GameMap;
+import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.GameMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;

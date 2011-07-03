@@ -18,12 +18,13 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.character.GameCharacter;
 import argonms.common.loading.skill.PlayerSkillEffectsData;
 import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.loading.skill.SkillStats;
-import argonms.game.field.MapEntity;
 import argonms.common.net.external.CommonPackets;
+import argonms.game.character.GameCharacter;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 import java.awt.Point;
 
 /**

@@ -18,7 +18,6 @@
 
 package argonms.game.character;
 
-import argonms.game.character.GameCharacter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

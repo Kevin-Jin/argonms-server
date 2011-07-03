@@ -18,11 +18,11 @@
 
 package argonms.login.handler;
 
+import argonms.common.net.external.ClientSendOps;
+import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.login.LoginClient;
 import argonms.login.LoginServer;
-import argonms.common.net.external.ClientSendOps;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.common.tools.input.LittleEndianReader;
 
 /**
  *

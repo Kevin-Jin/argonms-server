@@ -97,10 +97,6 @@ public class LoginWorld {
 		return ch;
 	}
 
-	public Map<Byte, Load> getAllLoads() {
-		return Collections.unmodifiableMap(loads);
-	}
-
 	public int getChannelCount() {
 		//channelPort.size() and loads.size() work just fine too.
 		return hosts.size();

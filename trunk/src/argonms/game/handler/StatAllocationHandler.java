@@ -18,14 +18,14 @@
 
 package argonms.game.handler;
 
-import argonms.game.character.ClientUpdateKey;
-import argonms.game.character.skill.SkillTools;
-import argonms.game.character.skill.Skills;
-import argonms.game.GameClient;
-import argonms.game.character.GameCharacter;
 import argonms.common.loading.skill.SkillDataLoader;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameClient;
+import argonms.game.character.ClientUpdateKey;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.skill.SkillTools;
+import argonms.game.character.skill.Skills;
 import java.util.EnumMap;
 import java.util.Map;
 

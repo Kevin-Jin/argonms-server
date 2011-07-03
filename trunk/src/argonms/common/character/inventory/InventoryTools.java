@@ -16,16 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character.inventory;
+package argonms.common.character.inventory;
 
 import argonms.common.StatEffect;
-import argonms.game.character.inventory.Equip.WeaponType;
-import argonms.game.character.inventory.Inventory.InventoryType;
-import argonms.game.character.GameCharacter;
+import argonms.common.character.Player;
+import argonms.common.character.inventory.Equip.WeaponType;
+import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.tools.Rng;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -72,7 +71,7 @@ public class InventoryTools {
 			return lookup.get(Byte.valueOf(value));
 		}
 
-		public static WeaponClass getForPlayer(GameCharacter p) {
+		public static WeaponClass getForPlayer(Player p) {
 			WeaponClass wClass;
 			InventorySlot weapon = p.getInventory(InventoryType.EQUIPPED).get((short) -11);
 			if (weapon == null)
@@ -233,7 +232,7 @@ public class InventoryTools {
 		return addToInventory(inv, makeItemWithId(itemid), quantity);
 	}
 
-	public static UpdatedSlots addToInventory(GameCharacter p, int itemid, short quantity) {
+	public static UpdatedSlots addToInventory(Player p, int itemid, short quantity) {
 		return addToInventory(p.getInventory(getCategory(itemid)), itemid, quantity);
 	}
 
@@ -367,7 +366,7 @@ public class InventoryTools {
 		return new UpdatedSlots(changed, removed);
 	}
 
-	public static UpdatedSlots removeFromInventory(GameCharacter p, int itemId, short quantity) {
+	public static UpdatedSlots removeFromInventory(Player p, int itemId, short quantity) {
 		return removeFromInventory(p.getInventory(getCategory(itemId)), itemId, quantity);
 	}
 
@@ -399,7 +398,7 @@ public class InventoryTools {
 		return total;
 	}
 
-	public static boolean hasItem(GameCharacter p, int itemId, short quantity) {
+	public static boolean hasItem(Player p, int itemId, short quantity) {
 		InventoryType type = getCategory(itemId);
 		if (quantity > 0) {
 			return (p.getInventory(type).hasItem(itemId, quantity)
@@ -475,7 +474,7 @@ public class InventoryTools {
 	}
 
 	//TODO: take into account a player's skills and stats (i.e. claw mastery for stars)
-	public static short getPersonalSlotMax(GameCharacter p, int itemid) {
+	public static short getPersonalSlotMax(Player p, int itemid) {
 		return ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 	}
 

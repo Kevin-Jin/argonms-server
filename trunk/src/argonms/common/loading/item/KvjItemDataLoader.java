@@ -18,7 +18,7 @@
 
 package argonms.common.loading.item;
 
-import argonms.game.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.KvjEffects;
 import argonms.common.tools.input.LittleEndianByteArrayReader;
 import argonms.common.tools.input.LittleEndianReader;
