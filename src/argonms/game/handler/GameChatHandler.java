@@ -20,9 +20,9 @@ package argonms.game.handler;
 
 import argonms.common.UserPrivileges;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -114,20 +114,20 @@ public class GameChatHandler {
 			case LIGHT_BLUE_TEXT_WHITE_BG:
 			case RED_TEXT_CLEAR_BG:
 			case LIGHT_BLUE_TEXT_CLEAR_BG:
-				return CommonPackets.writeServerMessage(ts.byteValue(), p.getName() + " : " + message, p.getClient().getChannel(), megaEar);
+				return GameCommonPackets.writeServerMessage(ts.byteValue(), p.getName() + " : " + message, p.getClient().getChannel(), megaEar);
 			case ORANGE_TEXT_CLEAR_BG:
 			case PURPLE_TEXT_CLEAR_BG:
 			case PINK_TEXT_CLEAR_BG:
-				return CommonPackets.writePrivateChatMessage(ts.byteValue(), p.getName(), message);
+				return GameCommonPackets.writePrivateChatMessage(ts.byteValue(), p.getName(), message);
 			case DULL_GREEN_TEXT_CLEAR_BG:
-				return CommonPackets.writeSpouseChatMessage(p.getName(), message);
+				return GameCommonPackets.writeSpouseChatMessage(p.getName(), message);
 			case WHITE_TEXT_CLEAR_BG:
 			case BLACK_TEXT_WHITE_BG:
 				return writeMapChat(p, message, (byte) 0, ts.byteValue() != 0);
 			case BRIGHT_GREEN_TEXT_CLEAR_BG:
-				return CommonPackets.writeWhisperMessge(p.getName(), message, p.getClient().getChannel());
+				return GameCommonPackets.writeWhisperMessge(p.getName(), message, p.getClient().getChannel());
 			case YELLOW_TEXT_CLEAR_BG:
-				return CommonPackets.writeTipMessage(p.getName() + " : " + message);
+				return GameCommonPackets.writeTipMessage(p.getName() + " : " + message);
 			default:
 				return null;
 		}

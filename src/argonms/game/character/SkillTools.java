@@ -27,6 +27,7 @@ import argonms.common.character.inventory.InventoryTools.WeaponClass;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.StatusEffectTools;
@@ -42,14 +43,6 @@ import java.util.Map.Entry;
  * @author GoldenKevin
  */
 public class SkillTools {
-	public static boolean isFourthJob(int skillid) {
-		return ((skillid / 10000) % 10) == 2;
-	}
-
-	public static boolean isBeginnerSkill(int skillid) {
-		return (skillid / 10000) == 0;
-	}
-
 	//TODO: IMPLEMENT HP/MP stuff for alchemist, heal, chakra
 	private static Map<ClientUpdateKey, Number> skillCastCosts(GameCharacter p, PlayerSkillEffectsData e) {
 		//might as well save ourself some bandwidth and don't send an individual
@@ -77,11 +70,11 @@ public class SkillTools {
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
+				ses.send(GameCommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
+				ses.send(GameCommonPackets.writeInventoryClearSlot(type, pos));
 			}
 			p.itemCountChanged(itemId);
 		}
@@ -153,11 +146,11 @@ public class SkillTools {
 				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
+					ses.send(GameCommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					ses.send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
+					ses.send(GameCommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
 				}
 				p.itemCountChanged(removeItemId);
 			}
@@ -173,7 +166,7 @@ public class SkillTools {
 	 */
 	public static void useCastSkill(final GameCharacter p, final int skillId, final byte skillLevel, byte stance) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
+		p.getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
@@ -239,6 +232,6 @@ public class SkillTools {
 
 	public static void useAttackSkill(GameCharacter p, int skillId, byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
+		p.getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
 	}
 }

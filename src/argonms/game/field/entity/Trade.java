@@ -26,6 +26,7 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import java.util.HashMap;
@@ -80,8 +81,8 @@ public class Trade extends Miniroom {
 			GameCharacter p = getPlayerByPosition(i);
 			byte traderPos = (byte) (i == 0 ? 1 : 0);
 			if (((long) p.getMesos() + mesos[traderPos]) > Integer.MAX_VALUE) {
-				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
-				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeShowInventoryFull());
 				return false;
 			}
 			itemQtys = new HashMap<Integer, Short>();
@@ -95,8 +96,8 @@ public class Trade extends Miniroom {
 			for (Entry<Integer, Short> entry : itemQtys.entrySet()) {
 				int itemId = entry.getKey().intValue();
 				if (!InventoryTools.canFitEntirely(p.getInventory(InventoryTools.getCategory(itemId)), itemId, entry.getValue().shortValue())) {
-					p.getClient().getSession().send(CommonPackets.writeInventoryFull());
-					p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
+					p.getClient().getSession().send(GameCommonPackets.writeInventoryFull());
+					p.getClient().getSession().send(GameCommonPackets.writeShowInventoryFull());
 					return false;
 				}
 			}
@@ -138,15 +139,15 @@ public class Trade extends Miniroom {
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					to.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+					to.getClient().getSession().send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					to.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
+					to.getClient().getSession().send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
 				}
 				if (taxAndShowGain)
-					to.getClient().getSession().send(CommonPackets.writeShowItemGain(item.getDataId(), item.getQuantity()));
+					to.getClient().getSession().send(GameCommonPackets.writeShowItemGain(item.getDataId(), item.getQuantity()));
 			}
 		}
 	}

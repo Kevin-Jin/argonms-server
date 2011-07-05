@@ -33,7 +33,7 @@ public class ClientSession<T extends RemoteClient> {
 	private MapleAESOFB sendCypher, recvCypher;
 	private T client;
 
-	public ClientSession(Channel ch, byte world, byte channel, T client) {
+	public ClientSession(Channel ch, T client) {
 		this.ch = ch;
 
 		Random generator = Rng.getGenerator();

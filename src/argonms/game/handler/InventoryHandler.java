@@ -25,8 +25,8 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
@@ -46,19 +46,19 @@ public class InventoryHandler {
 		GameCharacter p = gc.getPlayer();
 		if (src < 0 && dst > 0) { //unequip
 			InventoryTools.unequip(p.getInventory(InventoryType.EQUIPPED), p.getInventory(InventoryType.EQUIP), src, dst);
-			gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
+			gc.getSession().send(GameCommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
 			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false);
-			p.getMap().sendToAll(CommonPackets.writeUpdateAvatar(p), p);
+			p.getMap().sendToAll(GameCommonPackets.writeUpdateAvatar(p), p);
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
-				gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
+				gc.getSession().send(GameCommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
 				if (result.length == 2)
-					gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
+					gc.getSession().send(GameCommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true);
-				p.getMap().sendToAll(CommonPackets.writeUpdateAvatar(p), p);
+				p.getMap().sendToAll(GameCommonPackets.writeUpdateAvatar(p), p);
 			} else {
-				gc.getSession().send(CommonPackets.writeInventoryFull());
+				gc.getSession().send(GameCommonPackets.writeInventoryFull());
 			}
 		} else if (dst == 0) { //drop
 			Inventory inv = p.getInventory(src >= 0 ? type : InventoryType.EQUIPPED);
@@ -71,12 +71,12 @@ public class InventoryHandler {
 			if (newQty == 0 || InventoryTools.isRechargeable(item.getDataId())) {
 				inv.remove(src);
 				toDrop = item;
-				gc.getSession().send(CommonPackets.writeInventoryClearSlot(type, src));
+				gc.getSession().send(GameCommonPackets.writeInventoryClearSlot(type, src));
 			} else {
 				item.setQuantity(newQty);
 				toDrop = item.clone();
 				toDrop.setQuantity(qty);
-				gc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
+				gc.getSession().send(GameCommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
 			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getDataId()));
@@ -95,11 +95,11 @@ public class InventoryHandler {
 					short rest = (short) (total - slotMax);
 					move.setQuantity(rest);
 					replace.setQuantity(slotMax);
-					gc.getSession().send(CommonPackets.writeInventoryMoveItemShiftQuantities(type, src, rest, dst, slotMax));
+					gc.getSession().send(GameCommonPackets.writeInventoryMoveItemShiftQuantities(type, src, rest, dst, slotMax));
 				} else { //combine
 					replace.setQuantity((short) total);
 					inv.remove(src);
-					gc.getSession().send(CommonPackets.writeInventoryMoveItemCombineQuantities(type, src, dst, (short) total));
+					gc.getSession().send(GameCommonPackets.writeInventoryMoveItemCombineQuantities(type, src, dst, (short) total));
 				}
 			}
 		}
@@ -127,8 +127,8 @@ public class InventoryHandler {
 		//not thread safe if two players try picking it up at the exact same time).
 		ItemDrop d = (ItemDrop) p.getMap().getEntityById(EntityType.DROP, eid);
 		if (d == null || !d.isAlive()) {
-			gc.getSession().send(CommonPackets.writeInventoryFull());
-			gc.getSession().send(CommonPackets.writeShowInventoryFull());
+			gc.getSession().send(GameCommonPackets.writeInventoryFull());
+			gc.getSession().send(GameCommonPackets.writeShowInventoryFull());
 			return;
 		}
 		p.getMap().pickUpDrop(d, p);
@@ -147,6 +147,6 @@ public class InventoryHandler {
 		inv.put(dst, item1);
 		if (item2 != null)
 			inv.put(src, item2);
-		p.getClient().getSession().send(CommonPackets.writeInventoryMoveItem(type, src, dst, (byte) -1));
+		p.getClient().getSession().send(GameCommonPackets.writeInventoryMoveItem(type, src, dst, (byte) -1));
 	}
 }

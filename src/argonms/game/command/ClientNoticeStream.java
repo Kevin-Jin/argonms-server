@@ -19,7 +19,7 @@
 package argonms.game.command;
 
 import argonms.common.net.external.ClientSession;
-import argonms.common.net.external.CommonPackets;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.handler.GameChatHandler.TextStyle;
 
@@ -35,10 +35,10 @@ public class ClientNoticeStream {
 	}
 
 	public void printOut(String message) {
-		ses.send(CommonPackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		ses.send(GameCommonPackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void printErr(String message) {
-		ses.send(CommonPackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		ses.send(GameCommonPackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 }

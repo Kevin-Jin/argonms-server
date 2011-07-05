@@ -18,7 +18,6 @@
 
 package argonms.game;
 
-import argonms.common.net.external.CommonPackets;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.tools.collections.Pair;
 import argonms.common.tools.input.LittleEndianReader;
@@ -161,14 +160,14 @@ public class InterChannelCommunication {
 		for (int i = 0; i < recipients.length; i++) {
 			p = self.getPlayerById(recipients[i]);
 			if (p != null)
-				p.getClient().getSession().send(CommonPackets.writePrivateChatMessage(type, name, message));
+				p.getClient().getSession().send(GameCommonPackets.writePrivateChatMessage(type, name, message));
 		}
 	}
 
 	public void receivedSpouseChat(int recipient, String name, String message) {
 		GameCharacter p = self.getPlayerById(recipient);
 		if (p != null)
-			p.getClient().getSession().send(CommonPackets.writeSpouseChatMessage(name, message));
+			p.getClient().getSession().send(GameCommonPackets.writeSpouseChatMessage(name, message));
 	}
 
 	private static void writeHeader(LittleEndianWriter lew, byte world, byte channel) {

@@ -168,10 +168,10 @@ public class ClientListener<T extends RemoteClient> {
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Client connected from {0}", e.getChannel().getRemoteAddress());
 			T client = clientCtor.newInstance(world, channel);
-			ClientSession<T> session = new ClientSession<T>(e.getChannel(), world, channel, client);
+			ClientSession<T> session = new ClientSession<T>(e.getChannel(), client);
 			client.setSession(session);
-			e.getChannel().write(getHello(session.getRecvCypher(), session.getSendCypher()));
 			sessions.set(e.getChannel(), session);
+			e.getChannel().write(getHello(session.getRecvCypher(), session.getSendCypher()));
 		}
 
 		public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception {

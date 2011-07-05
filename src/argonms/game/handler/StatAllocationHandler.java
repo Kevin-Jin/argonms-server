@@ -18,13 +18,12 @@
 
 package argonms.game.handler;
 
-import argonms.common.net.external.CommonPackets;
+import argonms.common.character.Skills;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.SkillTools;
-import argonms.game.character.Skills;
 import argonms.game.loading.skill.SkillDataLoader;
 import java.util.EnumMap;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class StatAllocationHandler {
 					break;
 			}
 		}
-		gc.getSession().send(CommonPackets.writeUpdatePlayerStats(updatedStats, true));
+		gc.getSession().send(GameCommonPackets.writeUpdatePlayerStats(updatedStats, true));
 	}
 
 	public static void handleSpAllocation(LittleEndianReader packet, GameClient gc) {
@@ -101,7 +100,7 @@ public class StatAllocationHandler {
 		byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
 		if (newLevel <= p.getMasterSkillLevel(skillId)) {
 			p.setSkillLevel(skillId, newLevel, (byte) -1);
-			if (!SkillTools.isBeginnerSkill(skillId))
+			if (!Skills.isBeginnerSkill(skillId))
 				p.setSp((short) (p.getSp() - 1));
 		} else {
 			//TODO: hacking

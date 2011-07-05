@@ -20,11 +20,10 @@ package argonms.game.loading.skill;
 
 import argonms.common.MonsterStatusEffect;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.loading.StatusEffectsData.BuffsData;
-import argonms.common.loading.StatusEffectsData.EffectSource;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.tools.Rng;
-import argonms.game.character.Skills;
 import java.awt.Point;
 
 /**

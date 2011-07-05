@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
+package argonms.common.character;
 
 /**
  * A class of constants for player skills.
@@ -256,5 +256,13 @@ public final class Skills {
 
 	private Skills() {
 		//uninstantiable...
+	}
+
+	public static boolean isBeginnerSkill(int skillid) {
+		return (skillid / 10000) == 0;
+	}
+
+	public static boolean isFourthJob(int skillid) {
+		return ((skillid / 10000) % 10) == 2;
 	}
 }

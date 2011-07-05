@@ -26,12 +26,12 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.collections.LockableList;
 import argonms.common.tools.collections.LockableMap;
 import argonms.common.tools.collections.Pair;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.ItemTools;
@@ -207,7 +207,7 @@ public class GameMap {
 			boolean aggro = monster.isFirstAttack();
 			monster.setControllerHasAggro(aggro);
 			monster.setControllerKnowsAboutAggro(aggro);
-			controller.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, aggro));
+			controller.getClient().getSession().send(GameCommonPackets.writeShowAndControlMonster(monster, aggro));
 		}
 	}
 
@@ -238,7 +238,7 @@ public class GameMap {
 			switch (ent.getEntityType()) {
 				case NPC:
 					if (((Npc) ent).isPlayerNpc())
-						p.getClient().getSession().send(CommonPackets.writePlayerNpcLook((PlayerNpc) ent));
+						p.getClient().getSession().send(GameCommonPackets.writePlayerNpcLook((PlayerNpc) ent));
 					break;
 				case MONSTER:
 					updateMonsterController((Mob) ent);
@@ -441,7 +441,7 @@ public class GameMap {
 		players.lockRead();
 		try {
 			for (MapEntity p : players.allEnts())
-				((GameCharacter) p).getClient().getSession().send(CommonPackets.writePlayerNpcLook(n));
+				((GameCharacter) p).getClient().getSession().send(GameCommonPackets.writePlayerNpcLook(n));
 		} finally {
 			players.unlockRead();
 		}
@@ -507,8 +507,8 @@ public class GameMap {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 			} else {
-				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
-				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeShowInventoryFull());
 			}
 		} else {
 			InventorySlot pickedUp = d.getItem();
@@ -526,21 +526,21 @@ public class GameMap {
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+						p.getClient().getSession().send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
+						p.getClient().getSession().send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
 					}
 					p.itemCountChanged(itemid);
 				} else {
 					ItemTools.useItem(p, itemid);
 				}
-				p.getClient().getSession().send(CommonPackets.writeShowItemGain(itemid, qty));
+				p.getClient().getSession().send(GameCommonPackets.writeShowItemGain(itemid, qty));
 			} else {
-				p.getClient().getSession().send(CommonPackets.writeInventoryFull());
-				p.getClient().getSession().send(CommonPackets.writeShowInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeInventoryFull());
+				p.getClient().getSession().send(GameCommonPackets.writeShowInventoryFull());
 			}
 		}
 	}
@@ -812,7 +812,7 @@ public class GameMap {
 		lew.writeShort(ClientSendOps.MOVE_PLAYER);
 		lew.writeInt(p.getId());
 		lew.writePos(startPos);
-		CommonPackets.writeSerializedMovements(lew, moves);
+		GameCommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}
 
@@ -822,7 +822,7 @@ public class GameMap {
 		lew.writeInt(p.getId());
 		lew.writeInt(s.getId());
 		lew.writePos(startPos);
-		CommonPackets.writeSerializedMovements(lew, moves);
+		GameCommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}
 
@@ -837,7 +837,7 @@ public class GameMap {
 		lew.writeByte(s3);
 		lew.writeByte(s4); //or is this just 0?
 		lew.writePos(startPos);
-		CommonPackets.writeSerializedMovements(lew, moves);
+		GameCommonPackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();
 	}
 

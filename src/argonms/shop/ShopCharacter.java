@@ -88,7 +88,7 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
-	public void removeCooldown(int skill) {
+	private void removeCooldown(int skill) {
 		cooldowns.remove(Integer.valueOf(skill)).cancel();
 	}
 

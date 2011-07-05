@@ -19,8 +19,8 @@
 package argonms.game.handler;
 
 import argonms.common.UserPrivileges;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -45,7 +45,7 @@ public class GameGoToHandler {
 		GameCharacter p = gc.getPlayer();
 		if (dest == -1) { //entered portal
 			if (!p.getMap().enterPortal(p, portalName))
-				gc.getSession().send(CommonPackets.writeEnableActions());
+				gc.getSession().send(GameCommonPackets.writeEnableActions());
 		} else if (dest == 0 && !p.isAlive()) { //warp when dead and clicked ok
 			//TODO: cancel all buffs and all that good stuff
 			p.setHp((short) 50);
@@ -53,7 +53,7 @@ public class GameGoToHandler {
 			p.changeMap(p.getMap().getReturnMap());
 		} else { //client map command
 			if (p.getPrivilegeLevel() <= UserPrivileges.USER || !p.changeMap(dest))
-				gc.getSession().send(CommonPackets.writeEnableActions());
+				gc.getSession().send(GameCommonPackets.writeEnableActions());
 		}
 	}
 
@@ -65,7 +65,7 @@ public class GameGoToHandler {
 
 		GameCharacter p = gc.getPlayer();
 		if (!p.getMap().enterPortal(p, portalName))
-			gc.getSession().send(CommonPackets.writeEnableActions());
+			gc.getSession().send(GameCommonPackets.writeEnableActions());
 	}
 
 	public static void handleEnteredInnerPortal(LittleEndianReader packet, GameClient gc) {

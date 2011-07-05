@@ -19,19 +19,19 @@
 package argonms.game.handler;
 
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.ItemTools;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
-import argonms.game.character.Skills;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
@@ -64,11 +64,11 @@ public class GameBuffHandler {
 						GameCharacter controller = m.getController();
 						if (controller != null) {
 							controller.uncontrolMonster(m);
-							controller.getClient().getSession().send(CommonPackets.writeStopControlMonster(m));
+							controller.getClient().getSession().send(GameCommonPackets.writeStopControlMonster(m));
 						}
 						m.setController(p);
 						p.controlMonster(m);
-						p.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(m, m.controllerHasAggro()));
+						p.getClient().getSession().send(GameCommonPackets.writeShowAndControlMonster(m, m.controllerHasAggro()));
 						m.setControllerKnowsAboutAggro(false);
 					}
 				}
@@ -109,9 +109,9 @@ public class GameBuffHandler {
 		//TODO: hacking if item's id at slot does not match itemId
 		InventorySlot changed = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), slot, (short) 1);
 		if (changed != null)
-			gc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
+			gc.getSession().send(GameCommonPackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
 		else
-			gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
+			gc.getSession().send(GameCommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		ItemTools.useItem(p, itemId);
 		p.itemCountChanged(itemId);
 	}

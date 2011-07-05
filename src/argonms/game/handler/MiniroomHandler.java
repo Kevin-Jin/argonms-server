@@ -22,9 +22,9 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
@@ -274,10 +274,10 @@ public class MiniroomHandler {
 			item.setQuantity((short) (item.getQuantity() - quantity));
 			itemToPut = item.clone();
 			itemToPut.setQuantity(quantity);
-			p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, slot, item));
+			p.getClient().getSession().send(GameCommonPackets.writeInventorySlotUpdate(type, slot, item));
 		} else {
 			itemToPut = inv.remove(slot);
-			p.getClient().getSession().send(CommonPackets.writeInventoryClearSlot(type, slot));
+			p.getClient().getSession().send(GameCommonPackets.writeInventoryClearSlot(type, slot));
 		}
 		Trade room = (Trade) p.getMiniRoom();
 		room.addItem(p, tradeSlot, itemToPut);
