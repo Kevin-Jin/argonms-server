@@ -983,6 +983,21 @@
 	* argonms.game.character.QuestEntry moved to argonms.common.character as it
 	is needed by the shop server.
 
+2011-07-05  GoldenKevin  (revision 48)
+
+	* Moved methods isFourthJob and isBeginnerSkill from
+	argonms.game.character.SkillTools to argonms.game.character.Skills.
+	* argonms.game.character.Skills renamed to argonms.common.character.Skills
+	as it is a dependency of CommonPackets (needed for shop server).
+	* CommonPackets split into GameCommonPackets, which provides routines that
+	are dependent on game server classes/packages.
+	* Each subpackage of the root argonms package can now be placed in its own
+	.jar file as the center, game, login, and shop subpackages are now all
+	independent of each other. argonms.center, argonms.game, argonms.login, and
+	argonms.shop all depend only on the argonms.common package.
+	* Removed world and channel arguments in the ClientSession constructor as
+	they are not needed.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -19,10 +19,10 @@
 package argonms.game.handler;
 
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Rng;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
@@ -140,11 +140,11 @@ public class GameMovementHandler {
 			if (monster.wasAttackedBy(player)) { // aggro and controller change
 				if (controller != null) {
 					controller.uncontrolMonster(monster);
-					controller.getClient().getSession().send(CommonPackets.writeStopControlMonster(monster));
+					controller.getClient().getSession().send(GameCommonPackets.writeStopControlMonster(monster));
 				}
 				monster.setController(player);
 				player.controlMonster(monster);
-				player.getClient().getSession().send(CommonPackets.writeShowAndControlMonster(monster, true));
+				player.getClient().getSession().send(GameCommonPackets.writeShowAndControlMonster(monster, true));
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			} else {

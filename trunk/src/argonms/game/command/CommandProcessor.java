@@ -24,7 +24,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.common.net.external.CommonPackets;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -163,12 +163,12 @@ public class CommandProcessor {
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+					p.getClient().getSession().send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
+					p.getClient().getSession().send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
 				}
 				p.itemCountChanged(itemId);
 			}

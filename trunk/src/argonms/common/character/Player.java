@@ -38,6 +38,8 @@ import java.sql.Types;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -317,6 +319,8 @@ public interface Player {
 	}
 
 	public static class CharacterTools {
+		private static final Logger LOG = Logger.getLogger(CharacterTools.class.getName());
+
 		private static void insertEquipIntoDb(Equip equip, int inventoryKey,
 				Connection con) throws SQLException {
 			PreparedStatement ps = null;
@@ -554,6 +558,28 @@ public interface Player {
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 			}
+		}
+
+		public static String getNameFromId(int characterid) {
+			String name = null;
+			Connection con = null;
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+			try {
+				con = DatabaseManager.getConnection(DatabaseType.STATE);
+				ps = con.prepareStatement("SELECT `name` FROM"
+						+ "`characters` WHERE id = ?");
+				ps.setInt(1, characterid);
+				rs = ps.executeQuery();
+				if (rs.next())
+					name = rs.getString(1);
+			} catch (SQLException ex) {
+				LOG.log(Level.WARNING, "Could not find name of character "
+						+ characterid, ex);
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+			}
+			return name;
 		}
 	}
 }

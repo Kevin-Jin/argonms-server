@@ -21,7 +21,6 @@ package argonms.game;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.tools.Scheduler;
@@ -119,7 +118,7 @@ public class WorldChannel {
 
 	private void channelChangeError(GameCharacter p) {
 		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
-		p.getClient().getSession().send(CommonPackets.writeEnableActions());
+		p.getClient().getSession().send(GameCommonPackets.writeEnableActions());
 	}
 
 	public void requestChannelChange(final GameCharacter p, byte destCh) {

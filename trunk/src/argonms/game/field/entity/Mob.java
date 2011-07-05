@@ -24,10 +24,10 @@ import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.collections.LockableMap;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.ItemTools;
@@ -36,7 +36,6 @@ import argonms.game.character.StatusEffectTools;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.loading.mob.MobStats;
 import argonms.game.loading.mob.Skill;
@@ -200,8 +199,8 @@ public class Mob extends MapEntity {
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
-			killer.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
-			map.sendToAll(CommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
+			killer.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
+			map.sendToAll(GameCommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
 		}
 		GameCharacter highestDamage = giveExp(killer);
 		for (MobDeathHook hook : hooks)
@@ -426,15 +425,15 @@ public class Mob extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return CommonPackets.writeShowMonster(this, true, spawnEffect);
+		return GameCommonPackets.writeShowMonster(this, true, spawnEffect);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
-		return CommonPackets.writeShowMonster(this, false, spawnEffect);
+		return GameCommonPackets.writeShowMonster(this, false, spawnEffect);
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveMonster(this, deathEffect);
+		return GameCommonPackets.writeRemoveMonster(this, deathEffect);
 	}
 
 	public interface MobDeathHook {

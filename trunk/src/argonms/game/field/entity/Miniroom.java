@@ -22,10 +22,10 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -303,7 +303,7 @@ public abstract class Miniroom extends MapEntity {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
 		lew.writeInt(occupants[0].getId());
-		CommonPackets.writeMiniroomBalloon(lew, this);
+		GameCommonPackets.writeMiniroomBalloon(lew, this);
 		return lew.getBytes();
 	}
 
@@ -323,7 +323,7 @@ public abstract class Miniroom extends MapEntity {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
 		lew.writeInt(occupants[0].getId());
-		CommonPackets.writeMiniroomBalloon(lew, this);
+		GameCommonPackets.writeMiniroomBalloon(lew, this);
 		return lew.getBytes();
 	}
 

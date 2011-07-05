@@ -24,6 +24,7 @@ import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import java.util.ArrayList;
@@ -216,7 +217,7 @@ public abstract class FreeMarketShop extends Miniroom {
 
 			lew.writeShort(ClientSendOps.HIRED_MERCHANT_BALLOON);
 			lew.writeInt(ownerId);
-			CommonPackets.writeMiniroomBalloon(lew, this);
+			GameCommonPackets.writeMiniroomBalloon(lew, this);
 
 			return lew.getBytes();
 		}

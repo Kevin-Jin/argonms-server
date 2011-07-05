@@ -18,11 +18,10 @@
 
 package argonms.game.field.entity;
 
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.collections.Pair;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.reactor.ReactorStats;
 import argonms.game.loading.reactor.State;
 import argonms.game.script.ReactorScriptManager;
@@ -101,7 +100,7 @@ public class Reactor extends MapEntity {
 
 	private void triggered(GameCharacter p) {
 		if (getState() != null) {
-			p.getMap().sendToAll(CommonPackets.writeTriggerReactor(this));
+			p.getMap().sendToAll(GameCommonPackets.writeTriggerReactor(this));
 		} else {
 			//TODO: if script does not exist and we are using MCDB, try loading
 			//from MCDB's drop table with the reactor's data id as the dropperid
@@ -144,14 +143,14 @@ public class Reactor extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return CommonPackets.writeShowReactor(this);
+		return GameCommonPackets.writeShowReactor(this);
 	}
 
 	public byte[] getShowExistingSpawnMessage() { //I guess there is nothing else...?
-		return CommonPackets.writeShowReactor(this);
+		return GameCommonPackets.writeShowReactor(this);
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveReactor(this);
+		return GameCommonPackets.writeRemoveReactor(this);
 	}
 }

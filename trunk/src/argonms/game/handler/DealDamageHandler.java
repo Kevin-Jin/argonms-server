@@ -20,23 +20,23 @@ package argonms.game.handler;
 
 import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.WeaponClass;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Rng;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.SkillTools;
-import argonms.game.character.Skills;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity.EntityType;
@@ -96,9 +96,9 @@ public class DealDamageHandler {
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
 				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(attack.ammoItemId)) {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
-					gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
+					gc.getSession().send(GameCommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
 				} else {
-					gc.getSession().send(CommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
+					gc.getSession().send(GameCommonPackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
 				}
 			}
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
@@ -314,8 +314,8 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GameCommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -326,8 +326,8 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GameCommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -338,8 +338,8 @@ public class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GameCommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -358,16 +358,16 @@ public class DealDamageHandler {
 							player.removeCancelEffectTask(effects);
 							player.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
 							Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
-							player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
-							player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
+							player.getClient().getSession().send(GameCommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+							player.getMap().sendToAll(GameCommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
 						}
 					}, e.getDuration()), level, System.currentTimeMillis() + e.getDuration());
 				}
 				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(player.getEnergyCharge()));
-				player.getClient().getSession().send(CommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
-				player.getMap().sendToAll(CommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
-				player.getClient().getSession().send(CommonPackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
-				player.getMap().sendToAll(CommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
+				player.getClient().getSession().send(GameCommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
+				player.getMap().sendToAll(GameCommonPackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
+				player.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
+				player.getMap().sendToAll(GameCommonPackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
 			}
 		}
 	}
@@ -384,7 +384,7 @@ public class DealDamageHandler {
 				if (player.isAlive())
 					SkillTools.useAttackSkill(player, attackEffect.getDataId(), attackEffect.getLevel());
 				else
-					player.getClient().getSession().send(CommonPackets.writeEnableActions());
+					player.getClient().getSession().send(GameCommonPackets.writeEnableActions());
 			}
 			//perform meso explosion
 			if (attack.skill == Skills.MESO_EXPLOSION) {

@@ -18,12 +18,11 @@
 
 package argonms.game.field.entity;
 
-import argonms.common.net.external.CommonPackets;
+import argonms.common.character.Skills;
 import argonms.common.tools.Rng;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.Skills;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import java.awt.Rectangle;
@@ -116,7 +115,7 @@ public class Mist extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return CommonPackets.writeShowMist(this);
+		return GameCommonPackets.writeShowMist(this);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
@@ -124,6 +123,6 @@ public class Mist extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return CommonPackets.writeRemoveMist(this);
+		return GameCommonPackets.writeRemoveMist(this);
 	}
 }

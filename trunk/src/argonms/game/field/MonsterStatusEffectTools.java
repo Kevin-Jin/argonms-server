@@ -19,13 +19,13 @@
 package argonms.game.field;
 
 import argonms.common.MonsterStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Rng;
 import argonms.common.tools.Scheduler;
+import argonms.game.GameCommonPackets;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.Skills;
 import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
 import argonms.game.loading.mob.MobDataLoader;
@@ -45,15 +45,15 @@ public class MonsterStatusEffectTools {
 	private static byte[] getCastEffect(Mob m, MonsterStatusEffectsData e, Map<MonsterStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
-				return CommonPackets.writeMonsterBuff(m, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
+				return GameCommonPackets.writeMonsterBuff(m, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
 			case PLAYER_SKILL:
-				return CommonPackets.writeMonsterDebuff(m, updatedStats, e.getDataId(), (short) 900);
+				return GameCommonPackets.writeMonsterDebuff(m, updatedStats, e.getDataId(), (short) 900);
 		}
 		return null;
 	}
 
 	private static byte[] getDispelEffect(Mob m, MonsterStatusEffectsData e) {
-		return CommonPackets.writeMonsterCancelStatusEffect(m, EnumSet.of(e.getMonsterEffect()));
+		return GameCommonPackets.writeMonsterCancelStatusEffect(m, EnumSet.of(e.getMonsterEffect()));
 	}
 
 	private static Rectangle calculateBoundingBox(Point posFrom, Point lt, Point rb, boolean facingLeft) {

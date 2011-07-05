@@ -22,8 +22,8 @@ import argonms.common.GlobalConstants;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.item.ItemEffectsData;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
+import argonms.game.GameCommonPackets;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -97,7 +97,7 @@ public class ItemTools {
 		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
 		Map<ClientUpdateKey, Number> statChanges = itemRecovers(p, e);
 		if (!statChanges.isEmpty())
-			p.getClient().getSession().send(CommonPackets.writeUpdatePlayerStats(statChanges, false));
+			p.getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(statChanges, false));
 		if (e.getDuration() > 0) { //buff item
 			StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {

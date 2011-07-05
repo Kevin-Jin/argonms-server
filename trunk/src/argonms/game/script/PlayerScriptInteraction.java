@@ -24,7 +24,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
-import argonms.common.net.external.CommonPackets;
+import argonms.game.GameCommonPackets;
 import argonms.game.GameClient;
 import argonms.game.GameServer;
 
@@ -66,14 +66,14 @@ public abstract class PlayerScriptInteraction {
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+				ses.send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
+				ses.send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
 			}
-			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, quantity));
+			ses.send(GameCommonPackets.writeShowItemGainFromQuest(itemid, quantity));
 			client.getPlayer().itemCountChanged(itemid);
 			return true;
 		}
@@ -91,13 +91,13 @@ public abstract class PlayerScriptInteraction {
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				ses.send(CommonPackets.writeInventorySlotUpdate(type, pos, slot));
+				ses.send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
+				ses.send(GameCommonPackets.writeInventoryClearSlot(type, pos));
 			}
-			ses.send(CommonPackets.writeShowItemGainFromQuest(itemid, -quantity));
+			ses.send(GameCommonPackets.writeShowItemGainFromQuest(itemid, -quantity));
 			client.getPlayer().itemCountChanged(itemid);
 			return true;
 		}

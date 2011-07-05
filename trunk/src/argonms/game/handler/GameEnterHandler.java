@@ -20,6 +20,7 @@ package argonms.game.handler;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.KeyBinding;
+import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Rng;
@@ -32,7 +33,6 @@ import argonms.game.WorldChannel;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.SkillMacro;
 import argonms.game.character.SkillTools;
-import argonms.game.character.Skills;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
