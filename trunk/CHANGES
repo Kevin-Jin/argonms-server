@@ -998,6 +998,31 @@
 	* Removed world and channel arguments in the ClientSession constructor as
 	they are not needed.
 
+2011-07-06  GoldenKevin  (revision 49)
+
+	* Included some more SQL files that may need to be executed depending on the
+	type of data loading that the external-facing servers use. None of them are
+	necessary at the moment (except default_shops.sql), but will be needed in
+	the future. argonms.sql moved to the new sql folder in trunk.
+	* argonms.common.character.inventory.InventoryTools.getPersonalSlotMax moved
+	to argonms.game.character.ItemTools since it depends on GameCharacter and
+	SkillDataLoader. ItemTools.getPersonalSlotMax now behaves as expected.
+	* Support for NPC shops. If using KVJ, sql/default_shops.sql must be run.
+	MCDB should be fine without any additional database modifying.
+	* Implemented a proper unique ID generator. Cash shop implementation is
+	still far off, but cash items that you give yourself will now have a proper
+	UID. Please update your database with the updated argonms.sql.
+	* Roger's Apple quest script now checks whether your inventory is full
+	before Roger's Apple is given.
+	* InventoryTools functions deal more gracefully with rechargeable items.
+	* InventoryTools functions now will accept a 4-byte int for quantity, since
+	even though the highest slot max (3000) is way below Short.MAX_VALUE, these
+	functions don't necessarily work on only one slot. Maximum amount of slots
+	per inventory is 255, while the maximum quantity per slot is 3000, so the
+	actual maximum quantity that the functions should accept is 3000*255=765000.
+	* Stubs for NPC item storage.
+	* Fixed clients closing while connecting.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

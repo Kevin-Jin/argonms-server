@@ -117,7 +117,7 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		Double ret = unitPrice.get(oId);
-		return ret != null ? ret.doubleValue() : 0;
+		return ret != null ? ret.doubleValue() : -1;
 	}
 
 	public short getSlotMax(int itemId) {

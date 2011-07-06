@@ -56,7 +56,7 @@ public class GamePlayerMiscHandler {
 		int emote = packet.readInt();
 		if (emote > 7) { //cash emotes
 			int itemid = 5159992 + emote;
-			if (p.getInventory(InventoryType.CASH).hasItem(itemid, (short) 1)) {
+			if (p.getInventory(InventoryType.CASH).hasItem(itemid, 1)) {
 				//TODO: hacking
 				return;
 			}

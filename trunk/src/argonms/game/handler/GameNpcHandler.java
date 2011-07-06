@@ -19,23 +19,16 @@
 package argonms.game.handler;
 
 import argonms.common.GlobalConstants;
-import argonms.common.character.inventory.InventoryTools;
-import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.tools.BitTools;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
-import argonms.game.field.NpcShop;
-import argonms.game.field.NpcShop.ShopItem;
 import argonms.game.field.entity.Npc;
 import argonms.game.loading.quest.QuestDataLoader;
-import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.script.NpcConversationActions;
 import argonms.game.script.NpcScriptManager;
-import java.util.List;
 
 /**
  *
@@ -47,12 +40,7 @@ public class GameNpcHandler {
 		/*Point currentPos = */packet.readPos(); //player's position at time of click
 		Npc npc = (Npc) gc.getPlayer().getMap().getEntityById(EntityType.NPC, entId);
 
-		if (!npc.isPlayerNpc()) {
-			if (NpcShopDataLoader.getInstance().canLoad(npc.getDataId())) {
-				gc.getSession().send(npc.getShopPacket());
-				return;
-			}
-		} else {
+		if (npc.isPlayerNpc()) {
 			switch (gc.getPlayer().getMapId()) {
 				case 100000201: //Bowman Instructional School
 				case 101000003: //Magic Library
@@ -138,30 +126,6 @@ public class GameNpcHandler {
 		lew.writeLengthPrefixedString("I am #r" + npc + ", and I have reached level #b" + GlobalConstants.MAX_LEVEL + "#k.");
 		lew.writeBool(false); //prev button
 		lew.writeBool(false); //next button
-
-		return lew.getBytes();
-	}
-
-	public static byte[] writeNpcShop(GameCharacter customer, NpcShop shop) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-
-		lew.writeShort(ClientSendOps.NPC_SHOP);
-		lew.writeInt(shop.getId());
-		List<ShopItem> items = shop.getStock();
-		lew.writeShort((short) items.size());
-		for (ShopItem item : items) {
-			lew.writeInt(item.getItemId());
-			lew.writeInt(item.getPrice());
-			if (!InventoryTools.isThrowingStar(item.getItemId()) && !InventoryTools.isBullet(item.getItemId())) {
-				lew.writeShort((short) 1);
-				lew.writeShort(item.getBuyable());
-			} else {
-				lew.writeShort((short) 0);
-				lew.writeInt(0);
-				lew.writeShort((short) BitTools.doubleToShortBits(ItemDataLoader.getInstance().getUnitPrice(item.getItemId())));
-				lew.writeShort(InventoryTools.getPersonalSlotMax(customer, item.getItemId()));
-			}
-		}
 
 		return lew.getBytes();
 	}

@@ -170,8 +170,8 @@ public class ClientListener<T extends RemoteClient> {
 			T client = clientCtor.newInstance(world, channel);
 			ClientSession<T> session = new ClientSession<T>(e.getChannel(), client);
 			client.setSession(session);
-			sessions.set(e.getChannel(), session);
 			e.getChannel().write(getHello(session.getRecvCypher(), session.getSendCypher()));
+			sessions.set(e.getChannel(), session);
 		}
 
 		public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception {

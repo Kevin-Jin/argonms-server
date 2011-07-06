@@ -59,10 +59,6 @@ public class Npc extends MapEntity {
 		return cy;
 	}
 
-	public byte[] getShopPacket() {
-		return null;
-	}
-
 	public boolean isPlayerNpc() {
 		return false;
 	}

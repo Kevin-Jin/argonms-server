@@ -255,3 +255,9 @@ CREATE TABLE `skills` (
   KEY `characterid` (`characterid`),
   CONSTRAINT `skills_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `uniqueid`;
+CREATE TABLE `uniqueid` (
+  `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`nextuid`)
+) ENGINE=InnoDB;

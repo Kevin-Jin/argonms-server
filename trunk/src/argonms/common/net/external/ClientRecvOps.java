@@ -66,7 +66,7 @@ public final class ClientRecvOps {
 		NPC_TALK = 0x36,
 		NPC_TALK_MORE = 0x38,
 		NPC_SHOP = 0x39,
-		STORAGE = 0x3A,
+		NPC_STORAGE = 0x3A,
 		USE_HIRED_MERCHANT = 0x3B,
 		DUEY_ACTION = 0x3D,
 		ITEM_SORT = 0x40,

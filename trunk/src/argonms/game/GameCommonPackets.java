@@ -26,6 +26,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.Ring;
 import argonms.common.net.external.ClientSendOps;
@@ -37,6 +38,7 @@ import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.ItemTools;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.field.MobSkills;
@@ -51,6 +53,8 @@ import argonms.game.field.entity.PlayerNpc;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.field.entity.Reactor;
 import argonms.game.field.movement.LifeMovementFragment;
+import argonms.game.loading.shop.NpcShop;
+import argonms.game.loading.shop.NpcShop.ShopSlot;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1175,6 +1179,55 @@ public class GameCommonPackets {
 		lew.writeShort(ClientSendOps.CONTROL_NPC);
 		lew.writeByte((byte) 0);
 		lew.writeInt(npc.getId());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeNpcShop(GameCharacter customer, int npcId, NpcShop shop) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_SHOP);
+		lew.writeInt(npcId);
+		List<ShopSlot> items = shop.allItems();
+		Map<Integer, Double> rechargeables = shop.nonBuyableRechargeables();
+		lew.writeShort((short) (items.size() + rechargeables.size()));
+		for (ShopSlot item : items) {
+			lew.writeInt(item.itemId);
+			lew.writeInt(item.price);
+			if (!InventoryTools.isRechargeable(item.itemId))
+				lew.writeShort(item.quantity);
+			else
+				lew.writeDouble(shop.rechargeCost(item.itemId));
+			lew.writeShort(ItemTools.getPersonalSlotMax(customer, item.itemId));
+		}
+		for (Map.Entry<Integer, Double> rechargeable : rechargeables.entrySet()) {
+			int itemId = rechargeable.getKey().intValue();
+			lew.writeInt(itemId);
+			lew.writeInt(0);
+			lew.writeDouble(rechargeable.getValue().doubleValue());
+			lew.writeShort(ItemTools.getPersonalSlotMax(customer, itemId));
+		}
+
+		return lew.getBytes();
+	}
+
+	public static byte[] getNpcStorage(int npcId, byte slots, Collection<InventorySlot> items, int meso) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x15);
+		lew.writeInt(npcId);
+		lew.writeByte(slots);
+		lew.writeShort((short) 0x7E);
+		lew.writeShort((short) 0);
+		lew.writeInt(0);
+		lew.writeInt(meso);
+		lew.writeShort((short) 0);
+		lew.writeByte((byte) items.size());
+		for (InventorySlot item : items)
+			CommonPackets.writeItemInfo(lew, (byte) 0, item, true, true, false);
+		lew.writeShort((short) 0);
+		lew.writeByte((byte) 0);
+
 		return lew.getBytes();
 	}
 

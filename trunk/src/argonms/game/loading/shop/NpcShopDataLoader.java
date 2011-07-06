@@ -31,25 +31,30 @@ import argonms.common.loading.DataFileType;
 public abstract class NpcShopDataLoader {
 	private static NpcShopDataLoader instance;
 
-	protected Map<Integer, NpcShopStock> loadedShops;
+	protected Map<Integer, NpcShop> loadedShops;
+	protected Map<Integer, Integer> npcToShop;
 
 	protected NpcShopDataLoader() {
-		loadedShops = new HashMap<Integer, NpcShopStock>();
+		loadedShops = new HashMap<Integer, NpcShop>();
+		npcToShop = new HashMap<Integer, Integer>();
 	}
 
-	protected abstract void load(int npcid);
+	protected abstract int load(int npcid);
 
 	public abstract boolean loadAll();
 
 	public abstract boolean canLoad(int npcid);
 
-	public NpcShopStock getShopByNpc(int id) {
-		Integer oId = Integer.valueOf(id);
-		NpcShopStock stats;
-		if (!loadedShops.containsKey(oId))
-			load(id);
-		stats = loadedShops.get(oId);
-		return stats;
+	public NpcShop getShopByNpc(int id) {
+		Integer shopId = npcToShop.get(Integer.valueOf(id));
+		if (shopId == null || shopId.intValue() != 0 && !loadedShops.containsKey(shopId))
+			shopId = Integer.valueOf(load(id));
+		if (shopId.intValue() == 0) {
+			if (!npcToShop.containsKey(shopId))
+				npcToShop.put(shopId, Integer.valueOf(0));
+			return null; //no shop for this NPC
+		}
+		return loadedShops.get(shopId);
 	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {
@@ -59,7 +64,7 @@ public abstract class NpcShopDataLoader {
 					instance = new McdbNpcShopDataLoader();
 					break;
 				default:
-					instance = new DbNpcShopDataLoader();
+					instance = new DefaultNpcShopDataLoader();
 					break;
 			}
 		}

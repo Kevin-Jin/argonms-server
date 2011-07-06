@@ -95,7 +95,7 @@ public class Trade extends Miniroom {
 			}
 			for (Entry<Integer, Short> entry : itemQtys.entrySet()) {
 				int itemId = entry.getKey().intValue();
-				if (!InventoryTools.canFitEntirely(p.getInventory(InventoryTools.getCategory(itemId)), itemId, entry.getValue().shortValue())) {
+				if (!InventoryTools.canFitEntirely(p.getInventory(InventoryTools.getCategory(itemId)), itemId, entry.getValue().shortValue(), false)) {
 					p.getClient().getSession().send(GameCommonPackets.writeInventoryFull());
 					p.getClient().getSession().send(GameCommonPackets.writeShowInventoryFull());
 					return false;
@@ -133,7 +133,7 @@ public class Trade extends Miniroom {
 			if (item != null) {
 				InventoryType type = InventoryTools.getCategory(item.getDataId());
 				Inventory inv = to.getInventory(type);
-				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, item, item.getQuantity());
+				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, item, item.getQuantity(), false);
 				short pos;
 				InventorySlot slot;
 				for (Short s : changedSlots.modifiedSlots) {
