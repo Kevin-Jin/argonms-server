@@ -935,7 +935,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public void doDecHp(int protectItem, int dec) {
-		if (!getInventory(InventoryType.EQUIPPED).hasItem(protectItem, (short) 1)) {
+		if (!getInventory(InventoryType.EQUIPPED).hasItem(protectItem, 1)) {
 			PlayerStatusEffectValues mg = getEffectValue(PlayerStatusEffect.MAGIC_GUARD);
 			if (mg != null) {
 				int delta = dec * mg.getModifier() / 100;
@@ -1792,7 +1792,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					//completeReqs can never be null because in order for us to
 					//add something to questReqWatching, it had to be not null
 					Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
-					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).shortValue()))
+					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue()))
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
 							getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId));
 				}

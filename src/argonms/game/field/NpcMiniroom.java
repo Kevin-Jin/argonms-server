@@ -1,4 +1,5 @@
 /*
+/*
  * ArgonMS MapleStory server emulator written in Java
  * Copyright (C) 2011  GoldenKevin
  *
@@ -16,21 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.loading.shop;
+package argonms.game.field;
 
 /**
  *
  * @author GoldenKevin
  */
-public class DbNpcShopDataLoader extends NpcShopDataLoader {
-	protected void load(int npcid) {
-	}
-
-	public boolean loadAll() {
-		return false;
-	}
-
-	public boolean canLoad(int npcid) {
-		return false;
+public interface NpcMiniroom {
+	public static class AccountItemStorage implements NpcMiniroom {
+		
 	}
 }

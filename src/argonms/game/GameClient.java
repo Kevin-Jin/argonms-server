@@ -22,6 +22,7 @@ import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.game.character.GameCharacter;
+import argonms.game.field.NpcMiniroom;
 import argonms.game.script.NpcConversationActions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -39,6 +40,7 @@ public class GameClient extends RemoteClient {
 
 	private GameCharacter player;
 	private NpcConversationActions npc;
+	private NpcMiniroom npcRoom;
 
 	public GameClient(byte world, byte channel) {
 		setWorld(world);
@@ -71,6 +73,14 @@ public class GameClient extends RemoteClient {
 
 	public NpcConversationActions getNpc() {
 		return npc;
+	}
+
+	public void setNpcRoom(NpcMiniroom room) {
+		this.npcRoom = room;
+	}
+
+	public NpcMiniroom getNpcRoom() {
+		return npcRoom;
 	}
 
 	public void setPlayer(GameCharacter p) {

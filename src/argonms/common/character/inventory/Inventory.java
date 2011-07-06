@@ -137,10 +137,10 @@ public class Inventory {
 		return empty;
 	}
 
-	public boolean hasItem(int itemid, short minQty) {
+	public boolean hasItem(int itemid, int minQty) {
 		if (minQty < 0)
 			throw new IllegalArgumentException("Domain error. Quantity must be >= 0");
-		short remaining = minQty;
+		int remaining = minQty;
 		for (InventorySlot i : slots.values()) {
 			if (i.getDataId() == itemid) {
 				remaining -= i.getQuantity();

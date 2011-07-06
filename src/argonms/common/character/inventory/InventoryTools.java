@@ -19,6 +19,7 @@
 package argonms.common.character.inventory;
 
 import argonms.common.StatEffect;
+import argonms.common.UniqueIdGenerator;
 import argonms.common.character.Player;
 import argonms.common.character.inventory.Equip.WeaponType;
 import argonms.common.character.inventory.Inventory.InventoryType;
@@ -27,10 +28,13 @@ import argonms.common.loading.string.StringDataLoader;
 import argonms.common.tools.Rng;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -101,24 +105,35 @@ public class InventoryTools {
 		}
 	}
 
+	private static final Logger LOG = Logger.getLogger(InventoryTools.class.getName());
+
 	private static Map<Integer, Equip> equipCache;
 
 	static {
 		equipCache = new HashMap<Integer, Equip>();
 	}
 
-	public static boolean canFitEntirely(Inventory inv, int itemid, short remQty) {
+	public static boolean canFitEntirely(Inventory inv, int itemid, short remQty, boolean breakRechargeableStack) {
 		if (remQty > 0) {
-			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
-			for (Short s : inv.getItemSlots(itemid)) {
-				InventorySlot slot = inv.get(s.shortValue());
-				if (slot.getQuantity() < slotMax)
-					remQty -= (slotMax - slot.getQuantity());
-			}
-			if (remQty > 0) {
-				int slotsNeeded = ((remQty - 1) / slotMax) + 1; //ceiling
-				if (inv.freeSlots() < slotsNeeded)
-					return false;
+			if (!isRechargeable(itemid) || breakRechargeableStack) {
+				//TODO: getPersonalSlotMax, but this is in argonms.common. X.X
+				short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
+				for (Short s : inv.getItemSlots(itemid)) {
+					InventorySlot slot = inv.get(s.shortValue());
+					if (slot.getQuantity() < slotMax)
+						remQty -= (slotMax - slot.getQuantity());
+				}
+				if (remQty > 0) {
+					int slotsNeeded = ((remQty - 1) / slotMax) + 1; //ceiling of (remQty / slotMax)
+					if (inv.freeSlots() < slotsNeeded)
+						return false;
+				}
+			} else {
+				//rechargeables can go beyond even a personal slot max (e.g. if
+				//the personal slot max of the giving player is higher than the
+				//receiving player because of higher claw/gun mastery for).
+				//the item will be stacked to the given quantity in one slot.
+				return inv.freeSlots() > 0;
 			}
 		}
 		return true;
@@ -134,8 +149,13 @@ public class InventoryTools {
 		} else {
 			item = new Item(itemid);
 		}
-		if (isCashItem(itemid)) //TODO: get next unique id
-			item.setUniqueId((long) (Math.random() * Long.MAX_VALUE));
+		if (isCashItem(itemid)) {
+			try {
+				item.setUniqueId(UniqueIdGenerator.incrementAndGet());
+			} catch (Exception e) {
+				LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
+			}
+		}
 		return item;
 	}
 
@@ -150,18 +170,36 @@ public class InventoryTools {
 	 * be placed in the inventory until it is full. The quantity of the given
 	 * InventorySlot will be ignored, and the object itself will be placed in
 	 * the first slot added once all other slots with the same item id are full.
+	 * 
+	 * If breakRechargeableStack is false and the given item is a rechargeable,
+	 * then the entire quantity will be placed into one slot. Useful for
+	 * preserving a stack of stars/bullets when items are transferred from a
+	 * player who has a higher personal slot max of a particular rechargeable
+	 * than the receiving player (i.e. higher claw/gun mastery).
 	 * @param inv
 	 * @param item
 	 * @param quantity
+	 * @param breakRechargeableStack should be false only if the passed item
+	 * came from another player, e.g. by means of trading or picking up a drop
+	 * made by a player.
 	 * @return
 	 */
-	public static UpdatedSlots addToInventory(Inventory inv, InventorySlot item, short quantity) {
+	public static UpdatedSlots addToInventory(Inventory inv, InventorySlot item, int quantity, boolean breakRechargeableStack) {
 		List<Short> modifiedSlots = new ArrayList<Short>();
 		List<Short> insertedSlots = new ArrayList<Short>();
 
 		int itemid = item.getDataId();
 		boolean rechargeable = isRechargeable(itemid);
-		if (quantity > 0) {
+		if (rechargeable && quantity < Short.MAX_VALUE && (!breakRechargeableStack || quantity == 0)) {
+			//a fully exhausted rechargeable ammo item will have quantity 0, but
+			//we can still add it to our inventory.
+			item.setQuantity((short) quantity);
+			List<Short> freeSlots = inv.getFreeSlots(1);
+			for (Short s : freeSlots) {
+				inv.put(s.shortValue(), item);
+				insertedSlots.add(s);
+			}
+		} else if (quantity > 0) {
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
 
@@ -195,18 +233,15 @@ public class InventoryTools {
 					insertedSlots.add(s);
 					if (i.hasNext()) {
 						item = item.clone();
-						if (updateUid) //TODO: get next unique id
-							item.setUniqueId((long) (Math.random() * Long.MAX_VALUE));
+						if (updateUid) {
+							try {
+								item.setUniqueId(UniqueIdGenerator.incrementAndGet());
+							} catch (Exception e) {
+								LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
+							}
+						}
 					}
 				}
-			}
-		} else if (rechargeable) {
-			//a fully exhausted rechargeable ammo item will have quantity 0, but
-			//we can still add it to our inventory.
-			List<Short> freeSlots = inv.getFreeSlots(1);
-			for (Short s : freeSlots) {
-				inv.put(s.shortValue(), item);
-				insertedSlots.add(s);
 			}
 		}
 		return new UpdatedSlots(modifiedSlots, insertedSlots);
@@ -228,12 +263,8 @@ public class InventoryTools {
 	 * had their quantities changed, and the right being a list of slots that
 	 * were added.
 	 */
-	public static UpdatedSlots addToInventory(Inventory inv, int itemid, short quantity) {
-		return addToInventory(inv, makeItemWithId(itemid), quantity);
-	}
-
-	public static UpdatedSlots addToInventory(Player p, int itemid, short quantity) {
-		return addToInventory(p.getInventory(getCategory(itemid)), itemid, quantity);
+	public static UpdatedSlots addToInventory(Inventory inv, int itemid, int quantity) {
+		return addToInventory(inv, makeItemWithId(itemid), quantity, true);
 	}
 
 	/**
@@ -265,7 +296,7 @@ public class InventoryTools {
 							slot = src; //overwrite our overall with the pants
 							removeOld = false;
 						} else { //we have top and pants equipped already
-							if (!canFitEntirely(equips, bottom.getDataId(), bottom.getQuantity()))
+							if (!canFitEntirely(equips, bottom.getDataId(), bottom.getQuantity(), true))
 								return null;
 							slot = equips.getFreeSlots(1).get(0);
 						}
@@ -282,7 +313,7 @@ public class InventoryTools {
 						slot = src; //overwrite our pants with the overall
 						removeOld = false;
 					} else { //we have overall and pants equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, top.getDataId(), top.getQuantity()))
+						if (!canFitEntirely(equips, top.getDataId(), top.getQuantity(), true))
 							return null;
 						slot = equips.getFreeSlots(1).get(0);
 					}
@@ -298,7 +329,7 @@ public class InventoryTools {
 						slot = src; //overwrite our shield with two handed weapon
 						removeOld = false;
 					} else { //we have shield and two handed weapon equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, weapon.getDataId(), weapon.getQuantity()))
+						if (!canFitEntirely(equips, weapon.getDataId(), weapon.getQuantity(), true))
 							return null;
 						slot = equips.getFreeSlots(1).get(0);
 					}
@@ -315,7 +346,7 @@ public class InventoryTools {
 							slot = src; //overwrite our weapon with the shield
 							removeOld = false;
 						} else { //we have weapon and shield equipped already
-							if (!canFitEntirely(equips, shield.getDataId(), shield.getQuantity()))
+							if (!canFitEntirely(equips, shield.getDataId(), shield.getQuantity(), true))
 								return null;
 							slot = equips.getFreeSlots(1).get(0);
 						}
@@ -345,7 +376,7 @@ public class InventoryTools {
 		}
 	}
 
-	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, short quantity) {
+	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, int quantity) {
 		boolean rechargeable = isRechargeable(itemId);
 		List<Short> changed = new ArrayList<Short>();
 		List<Short> removed = new ArrayList<Short>();
@@ -366,7 +397,7 @@ public class InventoryTools {
 		return new UpdatedSlots(changed, removed);
 	}
 
-	public static UpdatedSlots removeFromInventory(Player p, int itemId, short quantity) {
+	public static UpdatedSlots removeFromInventory(Player p, int itemId, int quantity) {
 		return removeFromInventory(p.getInventory(getCategory(itemId)), itemId, quantity);
 	}
 
@@ -398,7 +429,7 @@ public class InventoryTools {
 		return total;
 	}
 
-	public static boolean hasItem(Player p, int itemId, short quantity) {
+	public static boolean hasItem(Player p, int itemId, int quantity) {
 		InventoryType type = getCategory(itemId);
 		if (quantity > 0) {
 			return (p.getInventory(type).hasItem(itemId, quantity)
@@ -471,11 +502,6 @@ public class InventoryTools {
 		e.setMdef(makeRandStat(e.getMdef(), 10));
 		e.setHp(makeRandStat(e.getHp(), 10));
 		e.setMp(makeRandStat(e.getMp(), 10));
-	}
-
-	//TODO: take into account a player's skills and stats (i.e. claw mastery for stars)
-	public static short getPersonalSlotMax(Player p, int itemid) {
-		return ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 	}
 
 	public static WeaponType getWeaponType(int itemId) {
@@ -560,7 +586,7 @@ public class InventoryTools {
 	}
 
 	public static boolean isBullet(int itemId) {
-		return (itemId >= 2330000 && itemId < 2340000);
+		return (itemId >= 2330000 && itemId < 2331000);
 	}
 
 	public static boolean isRechargeable(int itemId) {
@@ -721,6 +747,11 @@ public class InventoryTools {
 		public UpdatedSlots(List<Short> modify, List<Short> addOrRemove) {
 			modifiedSlots = modify;
 			addedOrRemovedSlots = addOrRemove;
+		}
+
+		public void union(UpdatedSlots other) {
+			modifiedSlots.addAll(other.modifiedSlots);
+			addedOrRemovedSlots.addAll(other.addedOrRemovedSlots);
 		}
 	}
 }

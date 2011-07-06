@@ -20,10 +20,13 @@ package argonms.game.character;
 
 import argonms.common.GlobalConstants;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.tools.Scheduler;
 import argonms.game.GameCommonPackets;
+import argonms.game.loading.skill.SkillDataLoader;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -32,6 +35,16 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class ItemTools {
+	public static short getPersonalSlotMax(GameCharacter p, int itemid) {
+		short max = ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
+		int skillId;
+		byte level;
+		if (InventoryTools.isThrowingStar(itemid) && (level = p.getSkillLevel(skillId = Skills.CLAW_MASTERY)) > 0
+				|| InventoryTools.isBullet(itemid) && (level = p.getSkillLevel(skillId = Skills.GUN_MASTERY)) > 0)
+			max += SkillDataLoader.getInstance().getSkill(skillId).getLevel(level).getY();
+		return max;
+	}
+
 	private static Map<ClientUpdateKey, Number> itemRecovers(GameCharacter p, ItemEffectsData e) {
 		//might as well save ourself some bandwidth and don't send an individual
 		//packet for each changed stat

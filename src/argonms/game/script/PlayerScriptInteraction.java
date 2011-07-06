@@ -51,14 +51,14 @@ public abstract class PlayerScriptInteraction {
 		client.getPlayer().gainMesos(gain * GameServer.getVariables().getMesoRate(), true);
 	}
 
-	public boolean playerHasItem(int itemid, short quantity) {
+	public boolean playerHasItem(int itemid, int quantity) {
 		return InventoryTools.hasItem(client.getPlayer(), itemid, quantity);
 	}
 
 	public boolean giveItem(int itemid, short quantity) {
 		InventoryType type = InventoryTools.getCategory(itemid);
 		Inventory inv = client.getPlayer().getInventory(type);
-		if (InventoryTools.canFitEntirely(inv, itemid, quantity)) {
+		if (InventoryTools.canFitEntirely(inv, itemid, quantity, true)) {
 			ClientSession<?> ses = client.getSession();
 			UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemid, quantity);
 			short pos;
@@ -80,7 +80,7 @@ public abstract class PlayerScriptInteraction {
 		return false;
 	}
 
-	public boolean takeItem(int itemid, short quantity) {
+	public boolean takeItem(int itemid, int quantity) {
 		if (InventoryTools.hasItem(client.getPlayer(), itemid, quantity)) {
 			InventoryType type = InventoryTools.getCategory(itemid);
 			Inventory inv = client.getPlayer().getInventory(type);

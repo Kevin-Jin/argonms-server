@@ -22,7 +22,10 @@ import argonms.common.GlobalConstants;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
+import argonms.game.GameCommonPackets;
 import argonms.game.loading.quest.QuestDataLoader;
+import argonms.game.loading.shop.NpcShop;
+import argonms.game.loading.shop.NpcShopDataLoader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -50,6 +53,17 @@ public class NpcScriptManager {
 		questPath = scriptsPath + "quests" + GlobalConstants.DIR_DELIMIT;
 	}
 
+	private boolean openDefault(int npcId, GameClient client) {
+		NpcShop shop = NpcShopDataLoader.getInstance().getShopByNpc(npcId);
+		if (shop != null) {
+			client.setNpcRoom(shop);
+			client.getSession().send(GameCommonPackets.writeNpcShop(client.getPlayer(), npcId, shop));
+			return true;
+		}
+		return false;
+	}
+
+	//scripts for shop NPC overrides the shop.
 	public void runScript(int npcId, GameClient client) {
 		Context cx = Context.enter();
 		NpcConversationActions convoMan = null;
@@ -67,7 +81,8 @@ public class NpcScriptManager {
 		} catch (ContinuationPending pending) {
 			convoMan.setContinuation(pending.getContinuation());
 		} catch (FileNotFoundException ex) {
-			client.getSession().send(unscriptedNpc(npcId));
+			if (!openDefault(npcId, client))
+				client.getSession().send(unscriptedNpc(npcId));
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing NPC script " + npcId, ex);
 			if (convoMan != null)

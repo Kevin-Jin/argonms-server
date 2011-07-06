@@ -93,6 +93,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.NPC_TALK_MORE:
 				GameNpcHandler.handleContinueConversation(reader, gc);
 				break;
+			case ClientRecvOps.NPC_SHOP:
+				NpcMiniroomHandler.handleNpcShopAction(reader, gc);
+				break;
+			case ClientRecvOps.NPC_STORAGE:
+				NpcMiniroomHandler.handleNpcStorageAction(reader, gc);
+				break;
 			case ClientRecvOps.ITEM_MOVE:
 				InventoryHandler.handleItemMove(reader, gc);
 				break;

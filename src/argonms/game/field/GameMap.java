@@ -516,11 +516,11 @@ public class GameMap {
 			short qty = pickedUp.getQuantity();
 			InventoryType type = InventoryTools.getCategory(d.getItem().getDataId());
 			Inventory inv = p.getInventory(type);
-			if (InventoryTools.canFitEntirely(inv, itemid, qty)) {
+			if (InventoryTools.canFitEntirely(inv, itemid, qty, false)) {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
-					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty);
+					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty, false);
 					short pos;
 					InventorySlot slot;
 					for (Short s : changedSlots.modifiedSlots) {

@@ -161,7 +161,7 @@ public class QuestRewards {
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 		if (quantity == 0)
 			quantity = (short) -InventoryTools.getAmountOfItem(inv, itemId);
-		UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, (short) -quantity);
+		UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, -quantity);
 		short pos;
 		InventorySlot slot;
 		for (Short s : changedSlots.modifiedSlots) {
