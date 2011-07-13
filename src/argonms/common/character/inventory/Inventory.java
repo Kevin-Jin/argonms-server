@@ -33,7 +33,7 @@ import java.util.TreeSet;
  *
  * @author GoldenKevin
  */
-public class Inventory {
+public class Inventory implements IInventory {
 	public enum InventoryType {
 		EQUIPPED (-1),
 		EQUIP (1),

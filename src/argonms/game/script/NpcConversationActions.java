@@ -24,6 +24,8 @@ import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
 import argonms.game.GameClient;
 import argonms.game.GameCommonPackets;
+import argonms.game.loading.npc.NpcDataLoader;
+import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.loading.shop.NpcShop;
 import java.util.logging.Level;
@@ -183,8 +185,15 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		return false;
 	}
 
-	public void sendStorage() {
-		//TODO: implement
+	public boolean sendStorage(int npcId) {
+		NpcStorageKeeper storage = NpcDataLoader.getInstance().getStorageById(npcId);
+		if (storage != null) {
+			endConversation();
+			getClient().setNpcRoom(storage);
+			getClient().getSession().send(GameCommonPackets.writeNpcStorage(npcId, getClient().getPlayer().getStorageInventory()));
+			return true;
+		}
+		return false;
 	}
 
 	private void endChatHook() {

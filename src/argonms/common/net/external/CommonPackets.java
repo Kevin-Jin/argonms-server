@@ -157,16 +157,80 @@ public class CommonPackets {
 				p.getHair(), p.getInventory(InventoryType.EQUIPPED).getItemIds(), p.getPets());
 	}
 
-	public static void writeItemInfo(LittleEndianWriter lew, short pos,
-			InventorySlot item) {
-		writeItemInfo(lew, pos, item, true, false, false);
+	private static void writeItemInfo(LittleEndianWriter lew, InventorySlot item,
+			boolean showExpire, boolean shopTransfer, boolean masking) {
+		boolean cashItem = item.getUniqueId() > 0;
+		lew.writeByte(item.getTypeByte());
+		lew.writeInt(item.getDataId());
+		lew.writeBool(cashItem);
+		if (cashItem)
+			lew.writeLong(item.getUniqueId());
+		writeItemExpire(lew, item.getExpiration(), showExpire);
+
+		switch (item.getType()) {
+			case PET: {
+				Pet pet = (Pet) item;
+				lew.writePaddedAsciiString(pet.getName(), 13);
+				lew.writeByte(pet.getLevel());
+				lew.writeShort(pet.getCloseness());
+				lew.writeByte(pet.getFullness());
+				writeItemExpire(lew, item.getExpiration(), showExpire); //again?
+				lew.writeLengthPrefixedString(item.getOwner());
+				lew.writeShort(item.getFlag());
+				break;
+			}
+			case EQUIP:
+			case RING: {
+				Equip equip = (Equip) item;
+				lew.writeByte(equip.getUpgradeSlots());
+				lew.writeByte(equip.getLevel());
+				lew.writeShort(equip.getStr());
+				lew.writeShort(equip.getDex());
+				lew.writeShort(equip.getInt());
+				lew.writeShort(equip.getLuk());
+				lew.writeShort(equip.getHp());
+				lew.writeShort(equip.getMp());
+				lew.writeShort(equip.getWatk());
+				lew.writeShort(equip.getMatk());
+				lew.writeShort(equip.getWdef());
+				lew.writeShort(equip.getMdef());
+				lew.writeShort(equip.getAcc());
+				lew.writeShort(equip.getAvoid());
+				lew.writeShort(equip.getHands());
+				lew.writeShort(equip.getSpeed());
+				lew.writeShort(equip.getJump());
+				lew.writeLengthPrefixedString(item.getOwner());
+
+				if (item.getType() == ItemType.RING) {
+					lew.writeByte(item.getFlag());
+				} else {
+					if (!shopTransfer) {
+						lew.writeShort(equip.getFlag());
+						if (!masking)
+							lew.writeLong(0);
+					} else {
+						lew.writeBytes(new byte[] { 0x40, (byte) 0xE0, (byte) 0xFD, 0x3B, 0x37, 0x4F, 0x01 });
+						lew.writeInt(-1);
+					}
+				}
+				break;
+			}
+			default: {
+				lew.writeShort(item.getQuantity());
+				lew.writeLengthPrefixedString(item.getOwner());
+				lew.writeShort(item.getFlag());
+				if (InventoryTools.isThrowingStar(item.getDataId())
+						|| InventoryTools.isBullet(item.getDataId())) {
+					//Might be rechargeable ID for internal tracking/duping tracking
+					lew.writeLong(0);
+				}
+				break;
+			}
+		}
 	}
 
-	//it seems as though Vana's PlayerPacketHelper::addItemInfo is much simpler
 	public static void writeItemInfo(LittleEndianWriter lew, short pos,
-			InventorySlot item, boolean showExpire, boolean leaveOut,
-			boolean shopTransfer) {
-
+			InventorySlot item) {
 		boolean cashItem = item.getUniqueId() > 0;
 		boolean masking = false;
 		if (pos < (byte) 0) {
@@ -178,69 +242,15 @@ public class CommonPackets {
 			} else {
 				lew.writeByte((byte) pos);
 			}
-		} else if (!leaveOut) {
+		} else {
 			lew.writeByte((byte) pos);
 		}
-		lew.writeByte(item.getTypeByte());
-		lew.writeInt(item.getDataId());
-		lew.writeBool(cashItem);
-		if (cashItem)
-			lew.writeLong(item.getUniqueId());
-		writeItemExpire(lew, item.getExpiration(), showExpire);
+		writeItemInfo(lew, item, true, false, masking);
+	}
 
-		if (item.getType() == ItemType.PET) {
-			Pet pet = (Pet) item;
-			lew.writePaddedAsciiString(pet.getName(), 13);
-			lew.writeByte(pet.getLevel());
-			lew.writeShort(pet.getCloseness());
-			lew.writeByte(pet.getFullness());
-			//00 B8 D5 60 00 CE C8 01
-			writeItemExpire(lew, item.getExpiration(), showExpire); //again?
-			lew.writeLengthPrefixedString(item.getOwner());
-			lew.writeShort(item.getFlag());
-		} else if (item.getType() == ItemType.EQUIP || item.getType() == ItemType.RING) {
-			Equip equip = (Equip) item;
-			lew.writeByte(equip.getUpgradeSlots());
-			lew.writeByte(equip.getLevel());
-			lew.writeShort(equip.getStr());
-			lew.writeShort(equip.getDex());
-			lew.writeShort(equip.getInt());
-			lew.writeShort(equip.getLuk());
-			lew.writeShort(equip.getHp());
-			lew.writeShort(equip.getMp());
-			lew.writeShort(equip.getWatk());
-			lew.writeShort(equip.getMatk());
-			lew.writeShort(equip.getWdef());
-			lew.writeShort(equip.getMdef());
-			lew.writeShort(equip.getAcc());
-			lew.writeShort(equip.getAvoid());
-			lew.writeShort(equip.getHands());
-			lew.writeShort(equip.getSpeed());
-			lew.writeShort(equip.getJump());
-			lew.writeLengthPrefixedString(item.getOwner());
-
-			if (item.getType() == ItemType.RING) {
-				lew.writeByte(item.getFlag());
-			} else {
-				if (!shopTransfer) {
-					lew.writeShort(equip.getFlag());
-					if (!masking)
-						lew.writeLong(0);
-				} else {
-					lew.writeBytes(new byte[] { 0x40, (byte) 0xE0, (byte) 0xFD, 0x3B, 0x37, 0x4F, 0x01 });
-					lew.writeInt(-1);
-				}
-			}
-		} else {
-			lew.writeShort(item.getQuantity());
-			lew.writeLengthPrefixedString(item.getOwner());
-			lew.writeShort(item.getFlag());
-			if (InventoryTools.isThrowingStar(item.getDataId())
-					|| InventoryTools.isBullet(item.getDataId())) {
-				//Might be rechargeable ID for internal tracking/duping tracking
-				lew.writeLong(0);
-			}
-		}
+	public static void writeItemInfo(LittleEndianWriter lew, InventorySlot item,
+			boolean showExpire, boolean shopTransfer) {
+		writeItemInfo(lew, item, showExpire, shopTransfer, false);
 	}
 
 	public static void writeCharData(LittleEndianWriter lew, LoggedInPlayer p) {

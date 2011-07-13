@@ -109,11 +109,11 @@ public class LoginCharacter extends LimitedActionCharacter {
 			}
 			LoginCharacter p = new LoginCharacter();
 			p.client = c;
-			loadPlayerStats(rs, id, p, null, null);
-			p.worldRanking = rs.getInt(37);
-			p.worldRankingChange = rs.getInt(38) - p.worldRanking;
-			p.jobRanking = rs.getInt(39);
-			p.jobRankingChange = rs.getInt(40) - p.jobRanking;
+			loadPlayerStats(rs, id, p);
+			p.worldRanking = rs.getInt(36);
+			p.worldRankingChange = rs.getInt(37) - p.worldRanking;
+			p.jobRanking = rs.getInt(38);
+			p.jobRankingChange = rs.getInt(39) - p.jobRanking;
 			rs.close();
 			ps.close();
 
@@ -121,7 +121,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 					+ "AND `inventorytype` <= " + InventoryType.CASH.byteValue());
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
-			loadInventory(con, rs, p);
+			CharacterTools.loadInventory(con, rs, p.getPets(), p.getInventories());
 			return p;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load character " + id + " from database", ex);
@@ -143,7 +143,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 			ps.executeUpdate();
 			ps.close();
 
-			commitInventory(con, client.getAccountId());
+			CharacterTools.commitInventory(con, getId(), client.getAccountId(), getPets(), getInventories());
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + getName(), e);
 		} finally {
@@ -196,14 +196,14 @@ public class LoginCharacter extends LimitedActionCharacter {
 		p.setGm(account.getGm());
 
 		Map<InventoryType, Inventory> inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
-		Inventory equipment = new Inventory((byte) 24);
-		Inventory equipped = new Inventory((byte) 0);
-		Inventory etc = new Inventory((byte) 24);
+		Inventory equipment = new Inventory((short) 24);
+		Inventory equipped = new Inventory((short) 0);
+		Inventory etc = new Inventory((short) 24);
 		inventories.put(InventoryType.EQUIP, equipment);
-		inventories.put(InventoryType.USE, new Inventory((byte) 24));
-		inventories.put(InventoryType.SETUP, new Inventory((byte) 24));
+		inventories.put(InventoryType.USE, new Inventory((short) 24));
+		inventories.put(InventoryType.SETUP, new Inventory((short) 24));
 		inventories.put(InventoryType.ETC, etc);
-		inventories.put(InventoryType.CASH, new Inventory((byte) 24));
+		inventories.put(InventoryType.CASH, new Inventory((short) 24));
 		//TODO: get real equipped inventory size?
 		inventories.put(InventoryType.EQUIPPED, equipped);
 		InventoryTools.equip(equipment, equipped,

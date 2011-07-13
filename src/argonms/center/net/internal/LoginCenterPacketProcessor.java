@@ -16,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.recv;
+package argonms.center.net.internal;
 
 import argonms.center.CenterServer;
-import argonms.center.send.CenterLoginInterface;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.tools.input.LittleEndianReader;
 

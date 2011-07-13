@@ -29,6 +29,7 @@ import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Equip;
+import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -116,6 +117,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	private int mesos;
 	private final Map<InventoryType, Inventory> inventories;
+	private StorageInventory storage;
 	private final Pet[] equippedPets;
 
 	private final Map<Byte, KeyBinding> bindings;
@@ -167,6 +169,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			prevAutoCommit = con.getAutoCommit();
 			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
 			con.setAutoCommit(false);
+			updateDbAccount(con);
 			updateDbStats(con);
 			updateDbInventory(con);
 			if (ServerType.isGame(client.getServerId())) {
@@ -197,6 +200,23 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	private void updateDbAccount(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("UPDATE `accounts` "
+					+ "SET `storageslots` = ?, `storagemesos` = ? "
+					+ "WHERE `id` = ?");
+			ps.setShort(1, storage.getMaxSlots());
+			ps.setInt(2, storage.getMesos());
+			ps.setInt(3, client.getAccountId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save account-info of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
 	private void updateDbStats(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
@@ -208,7 +228,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					+ "`maxmp` = ?, `ap` = ?, `sp` = ?, `exp` = ?, `fame` = ?, "
 					+ "`spouse` = ?, `map` = ?, `spawnpoint` = ?, `mesos` = ?, "
 					+ "`equipslots` = ?, `useslots` = ?, `setupslots` = ?, "
-					+ "`etcslots` = ?, `cashslots` = ?, `storageslots` = ?,"
+					+ "`etcslots` = ?, `cashslots` = ?, "
 					+ "`buddyslots` = ?, `gm` = ? WHERE `id` = ?");
 			ps.setInt(1, client.getAccountId());
 			ps.setByte(2, client.getWorld());
@@ -240,10 +260,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps.setShort(28, inventories.get(InventoryType.SETUP).getMaxSlots());
 			ps.setShort(29, inventories.get(InventoryType.ETC).getMaxSlots());
 			ps.setShort(30, inventories.get(InventoryType.CASH).getMaxSlots());
-			ps.setShort(31, inventories.get(InventoryType.STORAGE).getMaxSlots());
-			ps.setShort(32, buddies.getCapacity());
-			ps.setByte(33, gm);
-			ps.setInt(34, getDataId());
+			ps.setShort(31, buddies.getCapacity());
+			ps.setByte(32, gm);
+			ps.setInt(33, getDataId());
 			int updateRows = ps.executeUpdate();
 			if (updateRows < 1)
 				LOG.log(Level.WARNING, "Updating a deleted character with name "
@@ -270,7 +289,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps.executeUpdate();
 			ps.close();
 
-			CharacterTools.commitInventory(con, getDataId(), client.getAccountId(), equippedPets, inventories);
+			EnumMap<InventoryType, IInventory> union = new EnumMap<InventoryType, IInventory>(inventories);
+			union.put(InventoryType.STORAGE, storage);
+			CharacterTools.commitInventory(con, getDataId(), client.getAccountId(), equippedPets, union);
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + name, e);
 		} finally {
@@ -458,7 +479,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		ResultSet rs = null, irs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT * FROM `characters` WHERE `id` = ?");
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`storageslots`,"
+					+ "`a`.`storagemesos` FROM `characters` `c` "
+					+ "LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
+					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
@@ -513,26 +537,28 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			p.remMp = (short) Math.min(rs.getShort(17), p.maxMp);
 
 			p.mesos = rs.getInt(26);
-			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getByte(27)));
-			p.inventories.put(InventoryType.USE, new Inventory(rs.getByte(28)));
-			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getByte(29)));
-			p.inventories.put(InventoryType.ETC, new Inventory(rs.getByte(30)));
-			p.inventories.put(InventoryType.CASH, new Inventory(rs.getByte(31)));
+			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getShort(27)));
+			p.inventories.put(InventoryType.USE, new Inventory(rs.getShort(28)));
+			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getShort(29)));
+			p.inventories.put(InventoryType.ETC, new Inventory(rs.getShort(30)));
+			p.inventories.put(InventoryType.CASH, new Inventory(rs.getShort(31)));
 			//TODO: get real equipped inventory size?
-			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
-			p.inventories.put(InventoryType.STORAGE, new Inventory(rs.getByte(32)));
-			p.buddies = new BuddyList(rs.getShort(33));
-			p.gm = rs.getByte(34);
+			p.inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
+			p.buddies = new BuddyList(rs.getShort(32));
+			p.gm = rs.getByte(33);
+			p.storage = new StorageInventory(rs.getShort(42), rs.getInt(43));
 			rs.close();
 			ps.close();
 
+			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.inventories);
+			invUnion.put(InventoryType.STORAGE, p.storage);
 			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ?"
 					+ " AND `inventorytype` <= " + InventoryType.CASH.byteValue()
 					+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.byteValue());
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
-			CharacterTools.loadInventory(con, rs, p.equippedPets, p.inventories);
+			CharacterTools.loadInventory(con, rs, p.equippedPets, invUnion);
 			rs.close();
 			ps.close();
 			for (InventorySlot equip : p.inventories.get(InventoryType.EQUIPPED).getAll().values())
@@ -1052,6 +1078,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return inventories.get(type);
 	}
 
+	public StorageInventory getStorageInventory() {
+		return storage;
+	}
+
 	public int getMesos() {
 		return mesos;
 	}
@@ -1074,7 +1104,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public boolean gainMesos(int gain, boolean fromQuest, boolean fromDrop) {
 		long newValue = (long) mesos + gain;
-		if (newValue <= Integer.MAX_VALUE) {
+		if (newValue <= Integer.MAX_VALUE && newValue >= 0) {
 			setMesos((int) newValue, fromDrop);
 			if (!fromQuest) {
 				if (gain > 0) //don't show when we're dropping mesos, only show when we're picking up

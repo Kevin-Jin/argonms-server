@@ -18,10 +18,11 @@
 
 package argonms.center;
 
-import argonms.center.send.CenterGameInterface;
-import argonms.center.send.CenterLoginInterface;
-import argonms.center.send.CenterRemoteInterface;
-import argonms.center.send.CenterShopInterface;
+import argonms.center.net.internal.CenterGameInterface;
+import argonms.center.net.internal.CenterLoginInterface;
+import argonms.center.net.internal.CenterRemoteInterface;
+import argonms.center.net.internal.CenterShopInterface;
+import argonms.center.net.internal.RemoteServerListener;
 import argonms.common.ServerType;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.CenterRemoteOps;

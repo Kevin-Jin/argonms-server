@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center;
+package argonms.center.net.internal;
 
 import argonms.common.net.internal.InterServerPacketDecoder;
 import argonms.common.net.internal.InterServerPacketEncoder;

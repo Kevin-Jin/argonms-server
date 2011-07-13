@@ -19,7 +19,7 @@
 package argonms.game.loading.shop;
 
 import argonms.common.loading.item.ItemDataLoader;
-import argonms.game.field.NpcMiniroom;
+import argonms.game.GameClient.NpcMiniroom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

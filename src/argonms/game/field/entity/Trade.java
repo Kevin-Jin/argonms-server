@@ -146,6 +146,7 @@ public class Trade extends Miniroom {
 					slot = inv.get(pos);
 					to.getClient().getSession().send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
 				}
+				to.itemCountChanged(item.getDataId());
 				if (taxAndShowGain)
 					to.getClient().getSession().send(GameCommonPackets.writeShowItemGain(item.getDataId(), item.getQuantity()));
 			}
@@ -257,7 +258,7 @@ public class Trade extends Miniroom {
 		lew.writeShort(ClientSendOps.MINIROOM_ACT);
 		lew.writeByte(ACT_SET_ITEMS);
 		lew.writeByte(pos);
-		CommonPackets.writeItemInfo(lew, slot, item, true, false, false);
+		CommonPackets.writeItemInfo(lew, slot, item);
 		return lew.getBytes();
 	}
 

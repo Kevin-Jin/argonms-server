@@ -22,7 +22,6 @@ import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.game.character.GameCharacter;
-import argonms.game.field.NpcMiniroom;
 import argonms.game.script.NpcConversationActions;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,6 +36,10 @@ import java.util.logging.Logger;
  */
 public class GameClient extends RemoteClient {
 	private static final Logger LOG = Logger.getLogger(GameClient.class.getName());
+
+	public interface NpcMiniroom {
+
+	}
 
 	private GameCharacter player;
 	private NpcConversationActions npc;

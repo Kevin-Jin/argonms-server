@@ -23,6 +23,7 @@ import argonms.common.character.Player.LimitedActionCharacter;
 import argonms.common.character.Player.LoggedInPlayer;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
+import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.net.external.CommonPackets;
@@ -33,6 +34,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -48,6 +50,7 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 	private ShopClient client;
 
 	private short maxBuddies;
+	private Inventory shopInventory;
 	private int mesos;
 	private final Map<Integer, SkillEntry> skills;
 	private final Map<Integer, Cooldown> cooldowns;
@@ -122,19 +125,23 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 			c.setWorld(world); //we aren't aware of our world yet
 			ShopCharacter p = new ShopCharacter();
 			p.client = c;
-			loadPlayerStats(rs, id, p, InventoryType.CASH_SHOP, new Inventory((byte) 0));
+			loadPlayerStats(rs, id, p);
 			p.mesos = rs.getInt(26);
-			p.maxBuddies = rs.getShort(33);
+			p.maxBuddies = rs.getShort(31);
 			rs.close();
 			ps.close();
 
+			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.getInventories());
+			invUnion.put(InventoryType.CASH_SHOP, p.shopInventory);
 			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ?"
 					+ " AND `inventorytype` <= " + InventoryType.CASH.byteValue()
 					+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.byteValue());
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
-			loadInventory(con, rs, p);
+			CharacterTools.loadInventory(con, rs, p.getPets(), invUnion);
+			rs.close();
+			ps.close();
 
 			ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 					+ "FROM `skills` WHERE `characterid` = ?");
