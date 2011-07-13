@@ -62,18 +62,22 @@ public class Pet extends InventorySlot {
 		this.expired = expd;
 	}
 
+	@Override
 	public ItemType getType() {
 		return ItemType.PET;
 	}
 
+	@Override
 	public byte getTypeByte() {
 		return InventorySlot.PET;
 	}
 
+	@Override
 	public short getQuantity() {
 		return 1;
 	}
 
+	@Override
 	public void setQuantity(short newValue) {
 		throw new UnsupportedOperationException("Cannot change quantity of a pet.");
 	}
@@ -130,6 +134,7 @@ public class Pet extends InventorySlot {
 		return foothold;
 	}
 
+	@Override
 	public Pet clone() {
 		Pet copy = new Pet(getDataId());
 		copy.setExpiration(getExpiration());

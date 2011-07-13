@@ -39,6 +39,7 @@ public class LittleEndianStreamWriter extends LittleEndianWriter {
 		this.os = os;
 	}
 
+	@Override
 	public void write(byte b) {
 		try {
 			os.write(b);
@@ -47,6 +48,7 @@ public class LittleEndianStreamWriter extends LittleEndianWriter {
 		}
 	}
 
+	@Override
 	protected void write(byte... bytes) {
 		try {
 			os.write(bytes);
@@ -55,6 +57,7 @@ public class LittleEndianStreamWriter extends LittleEndianWriter {
 		}
 	}
 
+	@Override
 	public void dispose() {
 		try {
 			os.close();

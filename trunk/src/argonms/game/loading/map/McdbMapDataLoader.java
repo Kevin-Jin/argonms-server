@@ -39,6 +39,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		
 	}
 
+	@Override
 	protected void load(int mapid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -61,6 +62,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		mapStats.put(Integer.valueOf(mapid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -84,6 +86,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int mapid) {
 		if (mapStats.containsKey(mapid))
 			return true;

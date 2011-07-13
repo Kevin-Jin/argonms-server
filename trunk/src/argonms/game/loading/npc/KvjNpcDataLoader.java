@@ -44,6 +44,7 @@ public class KvjNpcDataLoader extends NpcDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void load(int npcId) {
 		String id = String.format("%07d", npcId);
 
@@ -57,6 +58,7 @@ public class KvjNpcDataLoader extends NpcDataLoader {
 		loaded.add(Integer.valueOf(npcId));
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Npc.wz");

@@ -85,6 +85,7 @@ public class PortalData {
 		return script;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder ret = new StringBuilder();
 		ret.append("Name=").append(pn).append(", Type=").append(pt).append(", (").append(pos.x).append(", ").append(pos.y).append("), target=").append(tm);

@@ -65,6 +65,7 @@ public class CommandProcessor {
 				return "Syntax: !tp [name of player to warp] [name of player to warp to]";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3) {
 					resp.printErr("Invalid usage. " + getUsage());
@@ -90,6 +91,7 @@ public class CommandProcessor {
 				return "Syntax: !skill [skillid] [level] <master level>";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3) {
 					resp.printErr("Invalid usage. " + getUsage());
@@ -133,6 +135,7 @@ public class CommandProcessor {
 				return "Syntax: !give [itemid] <quantity>";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 2) {
 					resp.printErr("Invalid usage. " + getUsage());
@@ -179,6 +182,7 @@ public class CommandProcessor {
 				return "Syntax: !playernpc <scriptid>";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				int scriptId = 9901000;
 				if (args.length > 1) {
@@ -202,6 +206,7 @@ public class CommandProcessor {
 				return "Syntax: !info <player's name";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length > 1) {
 					p = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
@@ -220,6 +225,7 @@ public class CommandProcessor {
 				return "Syntax: !rate [exp/meso/drop] [new rate]";
 			}
 
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3 || !AbstractCommandDefinition.isNumber(args[2])) {
 					resp.printErr("Invalid usage. " + getUsage());
@@ -265,6 +271,7 @@ public class CommandProcessor {
 	}
 
 	private class HelpCommandHandler implements CommandAction {
+		@Override
 		public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 			for (Entry<String, AbstractCommandDefinition> entry : definitions.entrySet())
 				if (p.getPrivilegeLevel() >= entry.getValue().minPrivilegeLevel())

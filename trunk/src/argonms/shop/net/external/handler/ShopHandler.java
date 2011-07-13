@@ -18,6 +18,7 @@
 
 package argonms.shop.net.external.handler;
 
+import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.shop.ShopServer;
 import argonms.shop.character.ShopCharacter;
@@ -44,14 +45,14 @@ public class ShopHandler {
 		sc.setPlayer(player);
 		boolean allowLogin;
 		byte state = sc.getOnlineState();
-		allowLogin = (state == ShopClient.STATUS_MIGRATION);
+		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
 		if (!allowLogin) {
 			LOG.log(Level.WARNING, "Player {0} tried to double login on shop",
 					player.getName());
 			sc.getSession().close();
 			return;
 		}
-		sc.updateState(ShopClient.STATUS_INSHOP);
+		sc.updateState(RemoteClient.STATUS_INSHOP);
 
 		ShopServer.getInstance().addPlayer(player);
 		/*try {

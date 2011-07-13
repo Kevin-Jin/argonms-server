@@ -56,6 +56,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void load(int mapid) {
 		String id = String.format("%09d", mapid);
 
@@ -72,6 +73,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 		mapStats.put(Integer.valueOf(mapid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Map.wz/Map");
@@ -94,6 +96,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int mapid) {
 		if (mapStats.containsKey(Integer.valueOf(mapid)))
 			return true;

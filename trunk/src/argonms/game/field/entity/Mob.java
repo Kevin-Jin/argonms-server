@@ -35,7 +35,6 @@ import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.loading.mob.MobStats;
 import argonms.game.loading.mob.Skill;
@@ -116,6 +115,7 @@ public class Mob extends MapEntity {
 
 	private void makeDrops(final int owner, final byte pickupAllow) {
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				map.drop(getDrops(), Mob.this, pickupAllow, owner);
 			}
@@ -178,7 +178,7 @@ public class Mob extends MapEntity {
 				for (GameCharacter member : members) {
 					attackerLevel = member.getLevel();
 					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5)) {
-						int exp = (int) (stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10);
+						int exp = (stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10);
 						int hsRate = member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
 								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
 						//exp = exp * getTauntEffect() / 100;
@@ -413,26 +413,32 @@ public class Mob extends MapEntity {
 		return time != null ? time.intValue() : 0;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.MONSTER;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return remHp > 0;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowMonster(this, true, spawnEffect);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return GamePackets.writeShowMonster(this, false, spawnEffect);
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveMonster(this, deathEffect);
 	}

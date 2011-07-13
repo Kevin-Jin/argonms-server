@@ -34,6 +34,7 @@ public class LoginCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		this.r = r;
 	}
 
+	@Override
 	public void process(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case RemoteCenterOps.ONLINE:

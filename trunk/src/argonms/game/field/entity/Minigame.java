@@ -59,6 +59,7 @@ public abstract class Minigame extends Miniroom {
 		currentPos = 0;
 	}
 
+	@Override
 	public void leaveRoom(GameCharacter p) {
 		byte pos = positionOf(p);
 		exitAfterFinish[pos] = false;
@@ -71,6 +72,7 @@ public abstract class Minigame extends Miniroom {
 		banVisitor((byte) 1);
 	}
 
+	@Override
 	public boolean gameInProgress() {
 		return inProgress;
 	}
@@ -139,6 +141,7 @@ public abstract class Minigame extends Miniroom {
 		return lew.getBytes();
 	}
 
+	@Override
 	public byte[] getFirstPersonJoinMessage(GameCharacter p) {
 		GameCharacter v;
 
@@ -156,7 +159,7 @@ public abstract class Minigame extends Miniroom {
 
 		for (byte i = 0; i < getMaxPlayers(); i++) {
 			if ((v = getPlayerByPosition(i)) != null) {
-				lew.writeByte((byte) i);
+				lew.writeByte(i);
 				writeMinigameScores(lew, v, getMiniroomType());
 			}
 		}
@@ -168,6 +171,7 @@ public abstract class Minigame extends Miniroom {
 		return lew.getBytes();
 	}
 
+	@Override
 	public byte[] getThirdPersonJoinMessage(GameCharacter p, byte pos) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_ACT);
@@ -270,16 +274,19 @@ public abstract class Minigame extends Miniroom {
 			}
 		}
 
+		@Override
 		public MiniroomType getMiniroomType() {
 			return MiniroomType.OMOK;
 		}
 
+		@Override
 		protected void reset() {
 			for (int i = 0; i < COLUMNS; i++)
 				for (int j = 0; j < ROWS; j++)
 					board[i][j] = 0;
 		}
 
+		@Override
 		protected byte[] getStartMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);
@@ -385,15 +392,18 @@ public abstract class Minigame extends Miniroom {
 			}
 		}
 
+		@Override
 		public MiniroomType getMiniroomType() {
 			return MiniroomType.MATCH_CARDS;
 		}
 
+		@Override
 		protected void reset() {
 			randomizeCards();
 			matches[0] = matches[1] = 0;
 		}
 
+		@Override
 		protected byte[] getStartMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + 4 * cards.length);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);

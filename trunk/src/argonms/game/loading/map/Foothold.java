@@ -91,6 +91,7 @@ public class Foothold implements Comparable<Foothold> {
 		return x1 == x2;
 	}
 
+	@Override
 	public int compareTo(Foothold o) {
 		if (y2 < o.getY1())
 			return -1;
@@ -100,6 +101,7 @@ public class Foothold implements Comparable<Foothold> {
 			return 0;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder ret = new StringBuilder();
 		ret.append('(').append(x1).append(", ").append(y1).append("), (").append(x2).append(", ").append(y2).append("). Prev=").append(prev).append(", Next=").append(next);

@@ -39,6 +39,7 @@ import java.util.logging.Logger;
 public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 	private static final Logger LOG = Logger.getLogger(DefaultNpcShopDataLoader.class.getName());
 
+	@Override
 	protected int load(int npcid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -79,6 +80,7 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 		}
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -118,6 +120,7 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 		return false;
 	}
 
+	@Override
 	public boolean canLoad(int npcid) {
 		return false;
 	}

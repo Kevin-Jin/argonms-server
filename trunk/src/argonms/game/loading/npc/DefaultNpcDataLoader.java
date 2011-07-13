@@ -54,11 +54,13 @@ public class DefaultNpcDataLoader extends NpcDataLoader {
 		hardCodedTable.put(Integer.valueOf(9270042), new NpcStorageKeeper(100, 0));
 	}
 
+	@Override
 	protected void load(int npcId) {
 		storageCosts.put(Integer.valueOf(npcId), hardCodedTable.get(Integer.valueOf(npcId)));
 		loaded.add(Integer.valueOf(npcId));
 	}
 
+	@Override
 	public boolean loadAll() {
 		storageCosts.putAll(hardCodedTable);
 		loaded.addAll(hardCodedTable.keySet());

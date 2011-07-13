@@ -1068,6 +1068,14 @@
 		* argonms.game/login/shop.handler moved to
 		argonms.game/login/shop.net.external
 
+2011-07-13  GoldenKevin  (revision 52)
+
+	* Performed an Eclipse code cleanup. Pretty much removed all unnecessary
+	casts, organized imports, rerouted inherited static field access to base
+	class, and added missing @Override annotations to all overriden methods and
+	implemented methods (only allowed in Java 6, but it's okay since there's
+	quite a lot of Java 5 incompatible code in the source anyway).
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -22,7 +22,6 @@ import argonms.common.character.Skills;
 import argonms.common.tools.Rng;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
@@ -103,26 +102,32 @@ public class Mist extends MapEntity {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.MIST;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return true;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowMist(this);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return getShowNewSpawnMessage();
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveMist(this);
 	}

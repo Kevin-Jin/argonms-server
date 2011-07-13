@@ -18,10 +18,9 @@
 
 package argonms.game.loading.shop;
 
+import argonms.common.loading.DataFileType;
 import java.util.HashMap;
 import java.util.Map;
-
-import argonms.common.loading.DataFileType;
 
 //FIXME: Thread safety for concurrent read/writes (if we're not preloading)
 /**

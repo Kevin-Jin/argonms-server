@@ -158,14 +158,17 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return mpCon;
 	}
 
+	@Override
 	public int getDuration() {
 		return duration;
 	}
 
+	@Override
 	public int getX() {
 		return x;
 	}
 
+	@Override
 	public int getY() {
 		return y;
 	}
@@ -206,22 +209,27 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return summons;
 	}
 
+	@Override
 	public int getDataId() {
 		return skillid;
 	}
 
+	@Override
 	public byte getLevel() {
 		return level;
 	}
 
+	@Override
 	public MonsterStatusEffect getMonsterEffect() {
 		return monsterBuff;
 	}
 
+	@Override
 	public EffectSource getSourceType() {
 		return EffectSource.MOB_SKILL;
 	}
 
+	@Override
 	public Set<PlayerStatusEffect> getEffects() {
 		if (playerDisease != null)
 			return EnumSet.of(playerDisease);

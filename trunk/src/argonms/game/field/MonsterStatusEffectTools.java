@@ -177,6 +177,7 @@ public class MonsterStatusEffectTools {
 		if (m.isVisible() && effect != null)
 			p.getMap().sendToAll(effect);
 		m.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				dispelEffectsAndShowVisuals(m, p, e);
 			}

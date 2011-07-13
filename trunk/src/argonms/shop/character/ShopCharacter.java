@@ -64,30 +64,37 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 		questStatuses = new HashMap<Short, QuestEntry>();
 	}
 
+	@Override
 	public ShopClient getClient() {
 		return client;
 	}
 
+	@Override
 	public byte getBuddyListCapacity() {
 		return (byte) maxBuddies;
 	}
 
+	@Override
 	public int getMesos() {
 		return mesos;
 	}
 
+	@Override
 	public Map<Integer, SkillEntry> getSkillEntries() {
 		return Collections.unmodifiableMap(skills);
 	}
 
+	@Override
 	public Map<Integer, Cooldown> getCooldowns() {
 		return Collections.unmodifiableMap(cooldowns);
 	}
 
+	@Override
 	public Map<Short, QuestEntry> getAllQuests() {
 		return Collections.unmodifiableMap(questStatuses);
 	}
 
+	@Override
 	public void close() {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
@@ -98,6 +105,7 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 
 	private void addCooldown(final int skill, short time) {
 		cooldowns.put(Integer.valueOf(skill), new Cooldown(time * 1000, new Runnable() {
+			@Override
 			public void run() {
 				removeCooldown(skill);
 				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));

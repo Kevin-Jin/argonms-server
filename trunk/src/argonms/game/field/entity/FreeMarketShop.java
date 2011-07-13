@@ -62,12 +62,14 @@ public abstract class FreeMarketShop extends Miniroom {
 		}
 	}
 
+	@Override
 	public boolean isPlayerBanned(GameCharacter p) {
 		return bannedPlayers.contains(p.getName().toLowerCase());
 	}
 
 	protected abstract byte[] getSlotUpdateMessage();
 
+	@Override
 	public byte[] getThirdPersonJoinMessage(GameCharacter p, byte pos) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_ACT);
@@ -84,10 +86,12 @@ public abstract class FreeMarketShop extends Miniroom {
 			openToMap = true;
 		}
 
+		@Override
 		public MiniroomType getMiniroomType() {
 			return MiniroomType.PLAYER_SHOP;
 		}
 
+		@Override
 		protected byte[] getSlotUpdateMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -98,6 +102,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
+		@Override
 		public byte[] getFirstPersonJoinMessage(GameCharacter p) {
 			GameCharacter v;
 
@@ -135,21 +140,25 @@ public abstract class FreeMarketShop extends Miniroom {
 			ownerId = owner.getId();
 			final GameMap map = owner.getMap();
 			expireSchedule = Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
 				public void run() {
 					closeRoom(map);
 				}
 			}, 1000 * 60 * 60 * 24);
 		}
 
+		@Override
 		public void closeRoom(GameMap map) {
 			super.closeRoom(map);
 			expireSchedule.cancel(false);
 		}
 
+		@Override
 		public MiniroomType getMiniroomType() {
 			return MiniroomType.HIRED_MERCHANT;
 		}
 
+		@Override
 		protected byte[] getSlotUpdateMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -167,6 +176,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
+		@Override
 		public byte[] getFirstPersonJoinMessage(GameCharacter p) {
 			return getFirstPersonJoinMessage(p, false);
 		}
@@ -212,6 +222,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
+		@Override
 		public byte[] getUpdateBalloonMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -222,6 +233,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
+		@Override
 		public byte[] getShowNewSpawnMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 			lew.writeShort(ClientSendOps.SHOW_HIRED_MERCHANT);
@@ -239,6 +251,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			return lew.getBytes();
 		}
 
+		@Override
 		public byte[] getDestructionMessage() {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
 			lew.writeShort(ClientSendOps.REMOVE_HIRED_MERCHANT);

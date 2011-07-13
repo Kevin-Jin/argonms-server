@@ -50,6 +50,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void loadPlayerSkill(int skillid) {
 		String id = String.format("%07d", skillid);
 
@@ -62,6 +63,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
+	@Override
 	protected void loadMobSkill(short skillid) {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
@@ -72,6 +74,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Skill.wz");
@@ -97,6 +100,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
+	@Override
 	public boolean canLoadPlayerSkill(int skillid) {
 		if (skillStats.containsKey(Integer.valueOf(skillid)))
 			return true;
@@ -107,6 +111,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 
 	//TODO: Actually do real work to see if the skill exists in the file so we
 	//can name this method exists() instead of loadable?
+	@Override
 	public boolean canLoadMobSkill(short skillid) {
 		if (mobSkillStats.containsKey(Short.valueOf(skillid)))
 			return true;

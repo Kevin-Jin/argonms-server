@@ -167,6 +167,7 @@ public class SkillTools {
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
 				public void run() {
 					cancelBuffSkill(p, skillId, skillLevel);
 				}
@@ -188,6 +189,7 @@ public class SkillTools {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffects(p, e);
 		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				cancelBuffSkill(p, skillId, skillLevel);
 			}

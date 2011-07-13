@@ -31,10 +31,12 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class SpawnCommandHandler extends AbstractCommandDefinition {
+	@Override
 	public String getHelpMessage() {
 		return "Spawn a temporary NPC or monster at your current location";
 	}
 
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
 	}
@@ -43,6 +45,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		return "Syntax: !spawn [mob/npc] [mob/npc WZ id] <mobtime>";
 	}
 
+	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 3) {
 			resp.printErr("Invalid usage. " + getUsage());

@@ -42,6 +42,7 @@ public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 		local = ls;
 	}
 
+	@Override
 	public void process(LittleEndianReader packet, RemoteCenterInterface r) {
 		switch (packet.readByte()) {
 			case CenterRemoteOps.AUTH_RESPONSE:

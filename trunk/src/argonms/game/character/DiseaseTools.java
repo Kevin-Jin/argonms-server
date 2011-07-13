@@ -31,6 +31,7 @@ public class DiseaseTools {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
 		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				cancelDebuff(p, mobSkillId, skillLevel);
 			}
@@ -41,6 +42,7 @@ public class DiseaseTools {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffects(p, e);
 		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				cancelDebuff(p, mobSkillId, skillLevel);
 			}

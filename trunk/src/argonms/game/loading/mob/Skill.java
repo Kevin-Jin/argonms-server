@@ -42,6 +42,7 @@ public class Skill {
 		return level;
 	}
 
+	@Override
 	public String toString() {
 		return "Id=" + skill + ", Level=" + level;
 	}

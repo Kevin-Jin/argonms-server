@@ -81,6 +81,7 @@ public class KvjQuestDataLoader extends QuestDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Quest.wz");
@@ -93,6 +94,7 @@ public class KvjQuestDataLoader extends QuestDataLoader {
 		}
 	}
 
+	@Override
 	protected boolean loadInfo() {
 		try {
 			File f = new File(dataPath + "Quest.wz" + "QuestInfo.img.kvj");
@@ -105,6 +107,7 @@ public class KvjQuestDataLoader extends QuestDataLoader {
 		}
 	}
 
+	@Override
 	protected boolean loadReq() {
 		try {
 			File f = new File(dataPath + "Quest.wz" + "Check.img.kvj");
@@ -117,6 +120,7 @@ public class KvjQuestDataLoader extends QuestDataLoader {
 		}
 	}
 
+	@Override
 	protected boolean loadAct() {
 		try {
 			File f = new File(dataPath + "Quest.wz" + "Act.img.kvj");

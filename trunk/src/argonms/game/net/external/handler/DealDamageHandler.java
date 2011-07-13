@@ -239,13 +239,14 @@ public class DealDamageHandler {
 
 		for (int eachd : oned.getValue()) {
 			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(4211003)).shouldPerform()) {
-				double perc = (double) eachd / reqdamage;
+				double perc = eachd / reqdamage;
 
 				int dropAmt = Math.min(Math.max((int) (perc * maxmeso), 1), maxmeso);
 				final Point tdpos = new Point(mobPos.x + Rng.getGenerator().nextInt(100) - 50, mobPos.y);
 				final ItemDrop d = new ItemDrop(dropAmt);
 
 				Scheduler.getInstance().runAfterDelay(new Runnable() {
+					@Override
 					public void run() {
 						tdmap.drop(d, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
 					}
@@ -353,6 +354,7 @@ public class DealDamageHandler {
 					player.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, new PlayerStatusEffectValues(e, (short) 10000));
 					final PlayerSkillEffectsData effects = e;
 					player.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+						@Override
 						public void run() {
 							player.resetEnergyCharge();
 							player.removeCancelEffectTask(effects);
@@ -393,6 +395,7 @@ public class DealDamageHandler {
 					final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
 					if (drop != null) {
 						Scheduler.getInstance().runAfterDelay(new Runnable() {
+							@Override
 							public void run() {
 								synchronized (drop) {
 									if (drop.isAlive())

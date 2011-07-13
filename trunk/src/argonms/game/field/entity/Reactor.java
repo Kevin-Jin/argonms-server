@@ -21,7 +21,6 @@ package argonms.game.field.entity;
 import argonms.common.tools.collections.Pair;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.reactor.ReactorStats;
 import argonms.game.loading.reactor.State;
 import argonms.game.net.external.GamePackets;
@@ -131,26 +130,32 @@ public class Reactor extends MapEntity {
 		alive = true;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.REACTOR;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return alive;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowReactor(this);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() { //I guess there is nothing else...?
 		return GamePackets.writeShowReactor(this);
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveReactor(this);
 	}

@@ -23,6 +23,7 @@ import argonms.common.character.KeyBinding;
 import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
+import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.Rng;
 import argonms.common.tools.TimeUtil;
 import argonms.common.tools.input.LittleEndianReader;
@@ -57,14 +58,14 @@ public class GameEnterHandler {
 		//TODO: check every game server of this world to see if we are logged in
 		//(since a character of a particular world cannot be logged in on any
 		//other world). Remember to check local process and remote processes.
-		allowLogin = (state == GameClient.STATUS_MIGRATION);
+		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
 		if (!allowLogin) {
 			LOG.log(Level.WARNING, "Player {0} tried to double login on world"
 					+ " {1}", new Object[] { player.getName(), gc.getWorld() });
 			gc.getSession().close();
 			return;
 		}
-		gc.updateState(GameClient.STATUS_INGAME);
+		gc.updateState(RemoteClient.STATUS_INGAME);
 
 		WorldChannel cserv = GameServer.getChannel(gc.getChannel());
 		cserv.addPlayer(player);

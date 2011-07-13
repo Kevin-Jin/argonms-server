@@ -30,6 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 		super();
 	}
 
+	@Override
 	public LoginClient getClient() {
 		return client;
 	}
@@ -76,6 +78,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 		return jobRankingChange;
 	}
 
+	@Override
 	public void close() {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
@@ -273,7 +276,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 					+ "`characters`(`accountid`,`world`,`name`,`gender`,`skin`,"
 					+ "`eyes`,`hair`,`str`,`dex`,`int`,`luk`,`gm`) VALUES"
 					+ " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-					PreparedStatement.RETURN_GENERATED_KEYS);
+					Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1, account.getAccountId());
 			ps.setByte(2, account.getWorld());
 			ps.setString(3, name);

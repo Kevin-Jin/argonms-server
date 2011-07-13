@@ -63,26 +63,32 @@ public class Npc extends MapEntity {
 		return false;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.NPC;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return true;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowAndControlNpc(this);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return getShowNewSpawnMessage();
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeStopControlAndRemoveNpc(this);
 	}

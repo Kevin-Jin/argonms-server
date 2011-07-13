@@ -38,10 +38,12 @@ public class LoginCenterInterface extends RemoteCenterInterface {
 		this.local = ls;
 	}
 
+	@Override
 	protected byte getServerId() {
 		return ServerType.LOGIN;
 	}
 
+	@Override
 	public void serverReady() {
 		send(serverReady(local.getExternalIp(), local.getClientPort()));
 	}
@@ -56,6 +58,7 @@ public class LoginCenterInterface extends RemoteCenterInterface {
 		return lew.getBytes();
 	}
 
+	@Override
 	public LocalServer getLocalServer() {
 		return local;
 	}

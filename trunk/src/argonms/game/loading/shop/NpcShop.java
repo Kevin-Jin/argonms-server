@@ -78,10 +78,12 @@ public abstract class NpcShop implements NpcMiniroom {
 					rechargeableOnly.remove(Integer.valueOf(item.itemId));
 		}
 
+		@Override
 		public double rechargeCost(int itemId) {
 			return ItemDataLoader.getInstance().getUnitPrice(itemId);
 		}
 
+		@Override
 		public int rechargeCost(int itemId, int amount) {
 			return (int) Math.ceil(ItemDataLoader.getInstance().getUnitPrice(itemId) * amount);
 		}
@@ -99,10 +101,12 @@ public abstract class NpcShop implements NpcMiniroom {
 					rechargeableOnly.remove(Integer.valueOf(item.itemId));
 		}
 
+		@Override
 		public double rechargeCost(int itemId) {
 			return rechargeables.get(Integer.valueOf(itemId)).doubleValue();
 		}
 
+		@Override
 		public int rechargeCost(int itemId, int amount) {
 			Double unitCost = rechargeables.get(Integer.valueOf(itemId));
 			return (unitCost != null) ? ((int) Math.ceil(unitCost.doubleValue() * amount)) : -1;

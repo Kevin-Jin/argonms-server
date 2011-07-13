@@ -38,9 +38,10 @@ public class Rng {
 
 	static {
 		GENERATOR = new ThreadLocal<Random>() {
-			 protected Random initialValue() {
+			 @Override
+			protected Random initialValue() {
 				 return new Random();
-			 }
+			}
 		};
 	}
 

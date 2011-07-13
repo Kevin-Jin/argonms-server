@@ -78,18 +78,22 @@ public class Equip extends InventorySlot implements Cloneable {
 		super(itemid);
 	}
 
+	@Override
 	public ItemType getType() {
 		return ItemType.EQUIP;
 	}
 
+	@Override
 	public byte getTypeByte() {
 		return InventorySlot.EQUIP;
 	}
 
+	@Override
 	public short getQuantity() {
 		return 1;
 	}
 
+	@Override
 	public void setQuantity(short newValue) {
 		throw new UnsupportedOperationException("Cannot change quantity of an equip.");
 	}
@@ -226,6 +230,7 @@ public class Equip extends InventorySlot implements Cloneable {
 		this.jump = value;
 	}
 
+	@Override
 	public Equip clone() {
 		Equip copy = new Equip(getDataId());
 		copy.setExpiration(getExpiration());

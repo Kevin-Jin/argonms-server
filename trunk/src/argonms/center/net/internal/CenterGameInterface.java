@@ -38,10 +38,12 @@ public class CenterGameInterface extends CenterRemoteInterface {
 		this.serverId = serverId;
 	}
 
+	@Override
 	public void makePacketProcessor() {
 		this.pp = new GameCenterPacketProcessor(this);
 	}
 
+	@Override
 	public RemoteCenterPacketProcessor getPacketProcessor() {
 		return pp;
 	}
@@ -78,6 +80,7 @@ public class CenterGameInterface extends CenterRemoteInterface {
 		return clientPorts;
 	}
 
+	@Override
 	public void disconnected() {
 		if (online) {
 			online = false;

@@ -37,10 +37,12 @@ public class ShopCenterInterface extends RemoteCenterInterface {
 		this.local = ss;
 	}
 
+	@Override
 	protected byte getServerId() {
 		return ServerType.SHOP;
 	}
 
+	@Override
 	public void serverReady() {
 		send(serverReady(local.getExternalIp(), local.getClientPort()));
 	}
@@ -55,6 +57,7 @@ public class ShopCenterInterface extends RemoteCenterInterface {
 		return lew.getBytes();
 	}
 
+	@Override
 	public LocalServer getLocalServer() {
 		return local;
 	}

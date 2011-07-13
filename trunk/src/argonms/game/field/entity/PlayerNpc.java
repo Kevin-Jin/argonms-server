@@ -75,6 +75,7 @@ public class PlayerNpc extends Npc {
 		return equips;
 	}
 
+	@Override
 	public boolean isPlayerNpc() {
 		return true;
 	}

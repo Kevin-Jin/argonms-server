@@ -120,6 +120,7 @@ public class PlayerContinuation {
 				final PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(Skills.ENERGY_CHARGE).getLevel(skillState.level);
 				p.addToActiveEffects(PlayerStatusEffect.ENERGY_CHARGE, new PlayerStatusEffectValues(e, (short) 10000));
 				p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+					@Override
 					public void run() {
 						p.resetEnergyCharge();
 						p.removeCancelEffectTask(e);

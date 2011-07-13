@@ -57,6 +57,7 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 		return more;
 	}
 
+	@Override
 	protected int load(int npcid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -120,6 +121,7 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 		}
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -168,6 +170,7 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 		return false;
 	}
 
+	@Override
 	public boolean canLoad(int npcid) {
 		if (npcToShop.containsKey(Integer.valueOf(npcid)))
 			return true;

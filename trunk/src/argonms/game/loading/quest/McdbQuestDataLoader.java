@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 public class McdbQuestDataLoader extends QuestDataLoader {
 	private static final Logger LOG = Logger.getLogger(McdbQuestDataLoader.class.getName());
 
+	@Override
 	public boolean loadAll() {
 		if (!loadInfo())
 			return false;
@@ -45,6 +46,7 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 		return true;
 	}
 
+	@Override
 	protected boolean loadInfo() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -64,6 +66,7 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 		}
 	}
 
+	@Override
 	protected boolean loadAct() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -136,6 +139,7 @@ public class McdbQuestDataLoader extends QuestDataLoader {
 		}
 	}
 
+	@Override
 	protected boolean loadReq() {
 		Connection con = null;
 		PreparedStatement ps = null;

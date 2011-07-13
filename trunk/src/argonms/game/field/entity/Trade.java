@@ -51,6 +51,7 @@ public class Trade extends Miniroom {
 		confirmed = new boolean[2];
 	}
 
+	@Override
 	public boolean joinRoom(GameCharacter p) {
 		for (byte i = 1; i < getMaxPlayers(); i++) {
 			if (getPlayerByPosition(i) == null) {
@@ -64,6 +65,7 @@ public class Trade extends Miniroom {
 		return false;
 	}
 
+	@Override
 	public void leaveRoom(GameCharacter p) {
 		GameCharacter v;
 		closeRoom(p.getMap());
@@ -153,6 +155,7 @@ public class Trade extends Miniroom {
 		}
 	}
 
+	@Override
 	public void closeRoom(GameMap map) {
 		GameCharacter v;
 		super.closeRoom(map);
@@ -214,10 +217,12 @@ public class Trade extends Miniroom {
 			performTrade();
 	}
 
+	@Override
 	public MiniroomType getMiniroomType() {
 		return MiniroomType.TRADE;
 	}
 
+	@Override
 	public byte[] getFirstPersonJoinMessage(GameCharacter p) {
 		GameCharacter v;
 
@@ -237,6 +242,7 @@ public class Trade extends Miniroom {
 		return lew.getBytes();
 	}
 
+	@Override
 	public byte[] getThirdPersonJoinMessage(GameCharacter p, byte pos) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_ACT);
@@ -245,10 +251,12 @@ public class Trade extends Miniroom {
 		return lew.getBytes();
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		throw new UnsupportedOperationException("Trades do not show up on the map");
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		throw new UnsupportedOperationException("Trades do not show up on the map");
 	}

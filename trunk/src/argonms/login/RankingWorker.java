@@ -126,6 +126,7 @@ public class RankingWorker implements Runnable {
 		}
 	}
 
+	@Override
 	public void run() {
 		Connection con = null;
 		try {

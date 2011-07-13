@@ -119,6 +119,7 @@ public class ItemTools {
 		if (e.getDuration() > 0) { //buff item
 			StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
 				public void run() {
 					cancelBuffItem(p, itemId);
 				}
@@ -139,6 +140,7 @@ public class ItemTools {
 		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
 		StatusEffectTools.applyEffects(p, e);
 		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				cancelBuffItem(p, itemId);
 			}

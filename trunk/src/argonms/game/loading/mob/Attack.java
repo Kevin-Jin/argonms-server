@@ -73,6 +73,7 @@ public class Attack {
 		return conMp;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("DeadlyAttack=").append(deadlyAttack);

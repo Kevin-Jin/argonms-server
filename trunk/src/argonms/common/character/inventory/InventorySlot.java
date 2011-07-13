@@ -82,9 +82,11 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 		this.flag = flag;
 	}
 
+	@Override
 	public int compareTo(InventorySlot item) {
 		return this.getDataId() - item.getDataId();
 	}
 
+	@Override
 	public abstract InventorySlot clone();
 }

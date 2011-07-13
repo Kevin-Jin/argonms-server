@@ -30,22 +30,27 @@ public class Item extends InventorySlot implements Cloneable {
 		qty = 1;
 	}
 
+	@Override
 	public ItemType getType() {
 		return ItemType.ITEM;
 	}
 
+	@Override
 	public byte getTypeByte() {
 		return InventorySlot.ITEM;
 	}
 
+	@Override
 	public short getQuantity() {
 		return qty;
 	}
 
+	@Override
 	public void setQuantity(short newValue) {
 		this.qty = newValue;
 	}
 
+	@Override
 	public Item clone() {
 		Item copy = new Item(getDataId());
 		copy.setExpiration(getExpiration());

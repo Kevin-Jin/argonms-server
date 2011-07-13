@@ -35,14 +35,17 @@ public class CommandDefinition extends AbstractCommandDefinition {
 		minGm = minPriv;
 	}
 
+	@Override
 	public String getHelpMessage() {
 		return help;
 	}
 
+	@Override
 	public byte minPrivilegeLevel() {
 		return minGm;
 	}
 
+	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		r.doAction(p, args, resp);
 	}

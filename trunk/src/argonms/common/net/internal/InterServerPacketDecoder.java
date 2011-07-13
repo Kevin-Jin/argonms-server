@@ -28,6 +28,7 @@ import org.jboss.netty.handler.codec.frame.FrameDecoder;
  * @author GoldenKevin
  */
 public class InterServerPacketDecoder extends FrameDecoder {
+	@Override
 	protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) throws Exception {
 		if (buf.readableBytes() < 4)
 			return null;

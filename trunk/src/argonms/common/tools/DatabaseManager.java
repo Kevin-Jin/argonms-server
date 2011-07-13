@@ -189,6 +189,7 @@ public class DatabaseManager {
 			this.password = password;
 		}
 
+		@Override
 		protected Connection initialValue() {
 			try {
 				Connection con = DriverManager.getConnection(url, user, password);
@@ -200,6 +201,7 @@ public class DatabaseManager {
 			}
 		}
 
+		@Override
 		public Connection getConnection() throws SQLException {
 			Connection con = get();
 			if (con == null) {
@@ -222,18 +224,22 @@ public class DatabaseManager {
 			}
 		}
 
+		@Override
 		public void returnConnection(Connection con) {
 			taken.decrementAndGet();
 		}
 
+		@Override
 		public LockableList<Connection> allConnections() {
 			return allConnections;
 		}
 
+		@Override
 		public int connectionsInUse() {
 			return taken.get();
 		}
 
+		@Override
 		public int totalConnections() {
 			return allConnections.size();
 		}
@@ -254,6 +260,7 @@ public class DatabaseManager {
 			this.password = password;
 		}
 
+		@Override
 		public Connection getConnection() throws SQLException {
 			Connection next = available.poll();
 			if (next == null || !connectionCheck(next)) {
@@ -276,19 +283,23 @@ public class DatabaseManager {
 			return next;
 		}
 
+		@Override
 		public void returnConnection(Connection con) {
 			available.add(con);
 			taken.decrementAndGet();
 		}
 
+		@Override
 		public LockableList<Connection> allConnections() {
 			return allConnections;
 		}
 
+		@Override
 		public int connectionsInUse() {
 			return taken.get(); //should = available.size()
 		}
 
+		@Override
 		public int totalConnections() {
 			return allConnections.getSizeWhenSafe();
 		}

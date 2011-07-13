@@ -76,6 +76,7 @@ public class Inventory implements IInventory {
 		this.slots = new TreeMap<Short, InventorySlot>();
 	}
 
+	@Override
 	public void put(short slot, InventorySlot item) {
 		slots.put(Short.valueOf(slot), item);
 	}
@@ -88,6 +89,7 @@ public class Inventory implements IInventory {
 		return slots.remove(Short.valueOf(s));
 	}
 
+	@Override
 	public Map<Short, InventorySlot> getAll() {
 		return Collections.unmodifiableMap(slots);
 	}
@@ -155,6 +157,7 @@ public class Inventory implements IInventory {
 		return minQty == 0;
 	}
 
+	@Override
 	public short getMaxSlots() {
 		return maxSlots;
 	}

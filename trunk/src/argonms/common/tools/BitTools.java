@@ -42,7 +42,7 @@ public final class BitTools {
 	public static int getShort(byte array[], int index) {
 		int ret = array[index];
 		ret &= 0xFF;
-		ret |= ((int) (array[index + 1]) << 8) & 0xFF00;
+		ret |= (array[index + 1] << 8) & 0xFF00;
 		return ret;
 	}
 
@@ -72,7 +72,7 @@ public final class BitTools {
 	 * @return The string read.
 	 */
 	public static String getMapleString(byte[] array, int index) {
-		int length = ((int) (array[index]) & 0xFF) | ((int) (array[index + 1] << 8) & 0xFF00);
+		int length = (array[index] & 0xFF) | (array[index + 1] << 8 & 0xFF00);
 		return BitTools.getString(array, index + 2, length);
 	}
 
@@ -85,7 +85,7 @@ public final class BitTools {
 	 * @return The rotated byte.
 	 */
 	public static byte rollLeft(byte in, int count) {
-		int tmp = (int) in & 0xFF;
+		int tmp = in & 0xFF;
 		tmp = tmp << (count % 8);
 		return (byte) ((tmp & 0xFF) | (tmp >> 8));
 	}
@@ -99,7 +99,7 @@ public final class BitTools {
 	 * @return The rotated byte.
 	 */
 	public static byte rollRight(byte in, int count) {
-		int tmp = (int) in & 0xFF;
+		int tmp = in & 0xFF;
 		tmp = (tmp << 8) >>> (count % 8);
 		return (byte) ((tmp & 0xFF) | (tmp >>> 8));
 	}

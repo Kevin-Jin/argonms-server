@@ -38,6 +38,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 		
 	}
 
+	@Override
 	protected void load(int mobid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -60,6 +61,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 		mobStats.put(Integer.valueOf(mobid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -83,6 +85,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int mobid) {
 		if (mobStats.containsKey(mobid))
 			return true;

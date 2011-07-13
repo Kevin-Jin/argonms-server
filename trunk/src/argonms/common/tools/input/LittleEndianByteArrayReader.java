@@ -63,12 +63,14 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 		}
 	}
 
+	@Override
 	protected int read() {
 		if (index >= bytes.length)
 			return -1;
-		return (int) bytes[index++] & 0xFF;
+		return bytes[index++] & 0xFF;
 	}
 
+	@Override
 	protected byte[] read(int amount) {
 		byte[] ret = new byte[amount];
 		System.arraycopy(bytes, index, ret, 0, Math.min(available(), amount));
@@ -76,22 +78,27 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 		return ret;
 	}
 
+	@Override
 	public void skip(int amount) {
 		index += amount;
 	}
 
+	@Override
 	public int available() {
 		return bytes.length - index;
 	}
 
+	@Override
 	public void dispose() {
 		bytes = null;
 	}
 
+	@Override
 	public int readInt() {
 		return (read() + (read() << 8) + (read() << 16) + (read() << 24));
 	}
 
+	@Override
 	public short readShort() {
 		return (short) (read() + (read() << 8));
 	}
@@ -106,6 +113,7 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 		return trimmed;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("All Bytes: ").append(HexTool.toString(bytes));
 		byte[] remaining = remaining();
