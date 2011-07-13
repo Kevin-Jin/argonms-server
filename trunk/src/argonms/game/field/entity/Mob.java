@@ -19,27 +19,28 @@
 package argonms.game.field.entity;
 
 import argonms.common.GlobalConstants;
-import argonms.common.MonsterStatusEffect;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.Scheduler;
 import argonms.common.tools.collections.LockableMap;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.game.GameCommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.ItemTools;
 import argonms.game.character.Party;
 import argonms.game.character.StatusEffectTools;
+import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.loading.mob.MobStats;
 import argonms.game.loading.mob.Skill;
 import argonms.game.loading.skill.MobSkillEffectsData;
+import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -199,8 +200,8 @@ public class Mob extends MapEntity {
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
-			killer.getClient().getSession().send(GameCommonPackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
-			map.sendToAll(GameCommonPackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
+			killer.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
+			map.sendToAll(GamePackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
 		}
 		GameCharacter highestDamage = giveExp(killer);
 		for (MobDeathHook hook : hooks)
@@ -425,15 +426,15 @@ public class Mob extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowMonster(this, true, spawnEffect);
+		return GamePackets.writeShowMonster(this, true, spawnEffect);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
-		return GameCommonPackets.writeShowMonster(this, false, spawnEffect);
+		return GamePackets.writeShowMonster(this, false, spawnEffect);
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeRemoveMonster(this, deathEffect);
+		return GamePackets.writeRemoveMonster(this, deathEffect);
 	}
 
 	public interface MobDeathHook {

@@ -18,7 +18,7 @@
 
 package argonms.game.script;
 
-import argonms.game.GameClient;
+import argonms.game.net.external.GameClient;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 

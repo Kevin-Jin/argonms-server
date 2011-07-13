@@ -1050,6 +1050,24 @@
 	* Implemented the main parts of NPC storages. Everything except
 	"Arrange Items" is fully working.
 
+2011-07-13  GoldenKevin  (revision 51)
+
+	* Further reorganized packages for consistency. Packages have been created
+	even if they only contain one class or if their fully qualified names are
+	annoyingly long for the sake of logical grouping and hierarchy.
+		* All 2nd level packages now share the same package structures
+		* argonms.common.field created for argonms.common.MonsterStatusEffect
+		(consistency with argonms.game.field)
+		* argonms.game.character.StorageInventory and
+		argonms.game.character.ItemTools moved to
+		argonms.game.character.inventory (consistency with
+		argonms.common.character.inventory)
+		* argonms.game/login/shop.net packages created, along with the internal
+		and external subpackages of net for consistency with argonms.common and
+		argonms.center. Appropriate classes have been moved into them.
+		* argonms.game/login/shop.handler moved to
+		argonms.game/login/shop.net.external
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

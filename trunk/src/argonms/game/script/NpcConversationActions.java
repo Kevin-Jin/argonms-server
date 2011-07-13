@@ -22,12 +22,12 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.common.tools.output.LittleEndianWriter;
-import argonms.game.GameClient;
-import argonms.game.GameCommonPackets;
 import argonms.game.loading.npc.NpcDataLoader;
 import argonms.game.loading.npc.NpcStorageKeeper;
-import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.loading.shop.NpcShop;
+import argonms.game.loading.shop.NpcShopDataLoader;
+import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
@@ -179,7 +179,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		if (shop != null) {
 			endConversation();
 			getClient().setNpcRoom(shop);
-			getClient().getSession().send(GameCommonPackets.writeNpcShop(getClient().getPlayer(), shopId, shop));
+			getClient().getSession().send(GamePackets.writeNpcShop(getClient().getPlayer(), shopId, shop));
 			return true;
 		}
 		return false;
@@ -190,7 +190,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		if (storage != null) {
 			endConversation();
 			getClient().setNpcRoom(storage);
-			getClient().getSession().send(GameCommonPackets.writeNpcStorage(npcId, getClient().getPlayer().getStorageInventory()));
+			getClient().getSession().send(GamePackets.writeNpcStorage(npcId, getClient().getPlayer().getStorageInventory()));
 			return true;
 		}
 		return false;

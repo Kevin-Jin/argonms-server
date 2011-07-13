@@ -24,7 +24,6 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.game.GameCommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -32,6 +31,7 @@ import argonms.game.field.GameMap;
 import argonms.game.field.entity.PlayerNpc;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
+import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -163,12 +163,12 @@ public class CommandProcessor {
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(GameCommonPackets.writeInventorySlotUpdate(type, pos, slot));
+					p.getClient().getSession().send(GamePackets.writeInventorySlotUpdate(type, pos, slot));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(GameCommonPackets.writeInventoryAddSlot(type, pos, slot));
+					p.getClient().getSession().send(GamePackets.writeInventoryAddSlot(type, pos, slot));
 				}
 				p.itemCountChanged(itemId);
 			}

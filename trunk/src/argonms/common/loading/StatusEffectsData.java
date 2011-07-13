@@ -18,8 +18,8 @@
 
 package argonms.common.loading;
 
-import argonms.common.MonsterStatusEffect;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.field.MonsterStatusEffect;
 import java.util.Set;
 import java.util.EnumSet;
 

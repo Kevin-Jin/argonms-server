@@ -18,6 +18,7 @@
 
 package argonms.shop;
 
+import argonms.common.GlobalConstants;
 import argonms.common.LocalServer;
 import argonms.common.ServerType;
 import argonms.common.loading.DataFileType;
@@ -29,10 +30,18 @@ import argonms.common.net.external.PlayerLog;
 import argonms.common.tools.DatabaseManager;
 import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Scheduler;
+import argonms.shop.character.ShopCharacter;
+import argonms.shop.net.ShopWorld;
+import argonms.shop.net.external.ClientShopPacketProcessor;
+import argonms.shop.net.external.ShopClient;
+import argonms.shop.net.internal.ShopCenterInterface;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;

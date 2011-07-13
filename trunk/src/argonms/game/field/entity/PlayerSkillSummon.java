@@ -18,12 +18,13 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
+import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 
 /**
@@ -100,14 +101,14 @@ public class PlayerSkillSummon extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowSummon(this, (byte) 0);
+		return GamePackets.writeShowSummon(this, (byte) 0);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
-		return GameCommonPackets.writeShowSummon(this, (byte) 1);
+		return GamePackets.writeShowSummon(this, (byte) 1);
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeRemoveSummon(this, (byte) 1);
+		return GamePackets.writeRemoveSummon(this, (byte) 1);
 	}
 }

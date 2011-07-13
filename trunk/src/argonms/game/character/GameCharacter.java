@@ -18,14 +18,15 @@
 
 package argonms.game.character;
 
-import argonms.common.character.QuestEntry;
 import argonms.common.GlobalConstants;
 import argonms.common.ServerType;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
+import argonms.common.character.Player.CharacterTools;
 import argonms.common.character.Player.LoggedInPlayer;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Equip;
@@ -44,14 +45,14 @@ import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Rng;
 import argonms.common.tools.collections.LockableList;
 import argonms.common.tools.collections.Pair;
-import argonms.game.GameCommonPackets;
-import argonms.game.GameClient;
 import argonms.game.GameServer;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
+import argonms.game.character.inventory.StorageInventory;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Minigame.MinigameResult;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
@@ -62,6 +63,8 @@ import argonms.game.loading.quest.QuestChecks;
 import argonms.game.loading.quest.QuestChecks.QuestRequirementType;
 import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
+import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -711,19 +714,19 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setExp(int newExp) {
 		this.exp = newExp;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
 	}
 
 	public void gainExp(int gain, boolean isKiller, boolean fromQuest) {
 		if (level < GlobalConstants.MAX_LEVEL) {
-			getClient().getSession().send(GameCommonPackets.writeShowExpGain(gain, isKiller, fromQuest));
+			getClient().getSession().send(GamePackets.writeShowExpGain(gain, isKiller, fromQuest));
 
 			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
 			long newExp = exp + gain; //should solve many overflow errors
 			if (newExp >= ExpTables.getForLevel(level))
 				newExp = levelUp(newExp, updatedStats);
 			updatedStats.put(ClientUpdateKey.EXP, Integer.valueOf(exp = (int) newExp));
-			getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(updatedStats, false));
+			getClient().getSession().send(GamePackets.writeUpdatePlayerStats(updatedStats, false));
 		}
 	}
 
@@ -799,7 +802,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		stats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp));
 		stats.put(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp));
 
-		getMap().sendToAll(GameCommonPackets.writeShowLevelUp(this), this);
+		getMap().sendToAll(GamePackets.writeShowLevelUp(this), this);
 
 		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
 	}
@@ -810,7 +813,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setLevel(short newLevel) {
 		this.level = newLevel;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 	}
 
 	public short getJob() {
@@ -819,8 +822,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setJob(short newJob) {
 		this.job = newJob;
-		getMap().sendToAll(GameCommonPackets.writeShowJobChange(this));
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
+		getMap().sendToAll(GamePackets.writeShowJobChange(this));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 	}
 
 	public short getStr() {
@@ -837,7 +840,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setStr(short newStr) {
 		this.baseStr = newStr;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
 	}
 
 	public short getDex() {
@@ -854,7 +857,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setDex(short newDex) {
 		this.baseDex = newDex;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
 	}
 
 	public short getInt() {
@@ -871,7 +874,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setInt(short newInt) {
 		this.baseInt = newInt;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
 	}
 
 	public short getLuk() {
@@ -888,7 +891,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setLuk(short newLuk) {
 		this.baseLuk = newLuk;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
 	}
 
 	public short getHp() {
@@ -906,7 +909,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	public void setHp(short newHp) {
 		//TODO: send new hp to party mates (I think v0.62 supports it...)
 		setLocalHp(newHp);
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
 		if (remHp == 0)
 			died();
 	}
@@ -924,7 +927,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public void died() {
-		getClient().getSession().send(GameCommonPackets.writeEnableActions());
+		getClient().getSession().send(GamePackets.writeEnableActions());
 		//TODO: lose exp
 	}
 
@@ -938,7 +941,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		updateMaxHp(newMax);
 		if (remHp > maxHp)
 			remHp = maxHp;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp)), false));
 	}
 
 	public short incrementMaxHp(int gain) {
@@ -986,7 +989,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setMp(short newMp) {
 		setLocalMp(newMp);
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
 	}
 
 	public void gainMp(int gain) {
@@ -1011,7 +1014,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		updateMaxMp(newMax);
 		if (remMp > maxMp)
 			remMp = maxMp;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(baseMaxMp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXMP, Short.valueOf(baseMaxMp)), false));
 	}
 
 	public short incrementMaxMp(int gain) {
@@ -1047,7 +1050,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setAp(short newAp) {
 		this.remAp = newAp;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp)), false));
 	}
 
 	public short getSp() {
@@ -1056,7 +1059,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setSp(short newSp) {
 		this.remSp = newSp;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp)), false));
 	}
 
 	public short getFame() {
@@ -1065,13 +1068,13 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setFame(short newFame) {
 		this.fame = newFame;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FAME, Integer.valueOf(fame)), false));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FAME, Integer.valueOf(fame)), false));
 	}
 
 	public void gainFame(int gain, boolean fromQuest) {
 		setFame((short) Math.min(fame + gain, Short.MAX_VALUE));
 		if (fromQuest)
-			GameCommonPackets.writeShowPointsGainFromQuest(gain, PacketSubHeaders.STATUS_INFO_FAME);
+			GamePackets.writeShowPointsGainFromQuest(gain, PacketSubHeaders.STATUS_INFO_FAME);
 	}
 
 	public Inventory getInventory(InventoryType type) {
@@ -1092,7 +1095,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void setMesos(int newValue, boolean fromDrop) {
 		this.mesos = newValue;
-		getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), fromDrop));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MESO, Integer.valueOf(mesos)), fromDrop));
 
 		//quests with meso requirements
 		mesosChanged();
@@ -1108,9 +1111,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			setMesos((int) newValue, fromDrop);
 			if (!fromQuest) {
 				if (gain > 0) //don't show when we're dropping mesos, only show when we're picking up
-					getClient().getSession().send(GameCommonPackets.writeShowMesoGain(gain));
+					getClient().getSession().send(GamePackets.writeShowMesoGain(gain));
 			} else {
-				getClient().getSession().send(GameCommonPackets.writeShowPointsGainFromQuest(gain, (byte) 5));
+				getClient().getSession().send(GamePackets.writeShowPointsGainFromQuest(gain, (byte) 5));
 			}
 			return true;
 		}
@@ -1313,7 +1316,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			if (masterLevel != -1)
 				skillLevel.changeMasterLevel(masterLevel);
 		}
-		getClient().getSession().send(GameCommonPackets.writeUpdateSkillLevel(
+		getClient().getSession().send(GamePackets.writeUpdateSkillLevel(
 				skill, skillLevel.getLevel(), skillLevel.getMasterLevel()));
 	}
 
@@ -1511,9 +1514,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			map.removePlayer(this);
 			map = goTo;
 			setPosition(map.getPortalPosition(initialPortal));
-			client.getSession().send(GameCommonPackets.writeChangeMap(mapid, initialPortal, this));
+			client.getSession().send(GamePackets.writeChangeMap(mapid, initialPortal, this));
 			if (!isVisible())
-				getClient().getSession().send(GameCommonPackets.writeShowHide());
+				getClient().getSession().send(GamePackets.writeShowHide());
 			map.spawnPlayer(this);
 			return true;
 		}
@@ -1580,11 +1583,11 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			} else {
 				if (controller != null) {
 					controller.uncontrolMonster(monster);
-					controller.getClient().getSession().send(GameCommonPackets.writeStopControlMonster(monster));
+					controller.getClient().getSession().send(GamePackets.writeStopControlMonster(monster));
 				}
 				monster.setController(this);
 				controlMonster(monster);
-				getClient().getSession().send(GameCommonPackets.writeShowAndControlMonster(monster, true));
+				getClient().getSession().send(GamePackets.writeShowAndControlMonster(monster, true));
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			}
@@ -1691,9 +1694,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 */
 	public void startQuest(short questId, int npcId) {
 		localStartQuest(questId);
-		getClient().getSession().send(GameCommonPackets.writeQuestProgress(questId, ""));
+		getClient().getSession().send(GamePackets.writeQuestProgress(questId, ""));
 		//TODO: check if quest start is not success
-		getClient().getSession().send(GameCommonPackets.writeQuestStartSuccess(questId, npcId));
+		getClient().getSession().send(GamePackets.writeQuestStartSuccess(questId, npcId));
 	}
 
 
@@ -1749,10 +1752,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 */
 	public void completeQuest(short questId, int npcId, int selection) {
 		short nextQuest = localCompleteQuest(questId, selection);
-		getClient().getSession().send(GameCommonPackets.writeQuestCompleted(questId, questStatuses.get(Short.valueOf(questId))));
-		getClient().getSession().send(GameCommonPackets.writeQuestStartNext(questId, npcId, nextQuest));
-		getClient().getSession().send(GameCommonPackets.writeShowSelfQuestEffect());
-		getMap().sendToAll(GameCommonPackets.writeShowQuestEffect(this));
+		getClient().getSession().send(GamePackets.writeQuestCompleted(questId, questStatuses.get(Short.valueOf(questId))));
+		getClient().getSession().send(GamePackets.writeQuestStartNext(questId, npcId, nextQuest));
+		getClient().getSession().send(GamePackets.writeShowSelfQuestEffect());
+		getMap().sendToAll(GamePackets.writeShowQuestEffect(this));
 	}
 
 	/**
@@ -1789,7 +1792,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
 			questStatuses.put(oId, status);
 		}
-		getClient().getSession().send(GameCommonPackets.writeQuestForfeit(questId));
+		getClient().getSession().send(GamePackets.writeQuestForfeit(questId));
 	}
 
 	private void questStatusChanged(short questId, byte newStatus) {
@@ -1805,7 +1808,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
 					if (questReq.get(oId).byteValue() == newStatus)
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-							getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId));
+							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
 				}
 			}
 		}
@@ -1824,7 +1827,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
 					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue()))
 						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-							getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId));
+							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
 				}
 			}
 		}
@@ -1837,7 +1840,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			if (watchingQuests != null)
 				for (Short questId : watchingQuests)
 					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-						getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 		}
 	}
 
@@ -1846,7 +1849,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		if (watchedPetTameness != null)
 			for (Short questId : watchedPetTameness.get(null))
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-					getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 	}
 
 	private void mesosChanged() {
@@ -1854,14 +1857,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		if (watchingMesos != null)
 			for (Short questId : watchingMesos.get(null))
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-					getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 	}
 
 	public void killedMob(short questId, int mobId) {
 		QuestEntry status = questStatuses.get(Short.valueOf(questId));
 		if (status != null) {
 			status.killedMob(mobId);
-			getClient().getSession().send(GameCommonPackets.writeQuestProgress(questId, status.getData()));
+			getClient().getSession().send(GamePackets.writeQuestProgress(questId, status.getData()));
 			//completeReqs can never be null because in order for us to add
 			//something to questReqWatching, it had to be not null
 			Map<Integer, Short> mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts();
@@ -1869,7 +1872,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			if (status.getMobCount(mobId) >= mobReq.get(oId)) {
 				removeFromWatchedList(questId, QuestRequirementType.MOB, oId);
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-					getClient().getSession().send(GameCommonPackets.writeShowQuestReqsFulfilled(questId));
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
 			}
 		} else { //shouldn't ever happen
 			
@@ -1949,7 +1952,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowPlayer(this);
+		return GamePackets.writeShowPlayer(this);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
@@ -1957,7 +1960,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeRemovePlayer(this);
+		return GamePackets.writeRemovePlayer(this);
 	}
 
 	public String toString() {

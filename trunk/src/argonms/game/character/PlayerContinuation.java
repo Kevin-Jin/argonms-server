@@ -21,13 +21,14 @@ package argonms.game.character;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.tools.Scheduler;
-import argonms.game.GameCommonPackets;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
+import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
+import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,8 +125,8 @@ public class PlayerContinuation {
 						p.removeCancelEffectTask(e);
 						p.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
 						Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
-						p.getClient().getSession().send(GameCommonPackets.writeUsePirateSkill(updatedStats, 0, 0));
-						p.getMap().sendToAll(GameCommonPackets.writeBuffMapPirateEffect(p, updatedStats, 0, 0), p);
+						p.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0));
+						p.getMap().sendToAll(GamePackets.writeBuffMapPirateEffect(p, updatedStats, 0, 0), p);
 					}
 				}, skillState.endTime - System.currentTimeMillis()), skillState.level, skillState.endTime);
 			} else {
