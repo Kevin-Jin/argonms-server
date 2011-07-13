@@ -18,8 +18,8 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.GameCommonPackets;
 import argonms.game.field.MapEntity;
+import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -49,7 +49,7 @@ public class MysticDoor extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowMysticDoor(this);
+		return GamePackets.writeShowMysticDoor(this);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
@@ -57,6 +57,6 @@ public class MysticDoor extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeRemoveMysticDoor(this);
+		return GamePackets.writeRemoveMysticDoor(this);
 	}
 }

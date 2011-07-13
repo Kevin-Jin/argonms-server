@@ -19,8 +19,9 @@
 package argonms.game.field.entity;
 
 import argonms.common.character.inventory.InventorySlot;
-import argonms.game.GameCommonPackets;
 import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 
 /**
@@ -142,18 +143,18 @@ public class ItemDrop extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_DROP, mod);
+		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_DROP, mod);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
-		return GameCommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_NONE, mod);
+		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_NONE, mod);
 	}
 
 	public byte[] getDisappearMessage() {
-		return GameCommonPackets.writeShowItemDrop(this, SPAWN_ANIMATION_FADE, mod);
+		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_FADE, mod);
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeRemoveItemDrop(this, mod);
+		return GamePackets.writeRemoveItemDrop(this, mod);
 	}
 }

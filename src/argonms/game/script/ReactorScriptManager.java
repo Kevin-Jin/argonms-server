@@ -19,8 +19,8 @@
 package argonms.game.script;
 
 import argonms.common.GlobalConstants;
-import argonms.game.GameClient;
 import argonms.game.field.entity.Reactor;
+import argonms.game.net.external.GameClient;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;

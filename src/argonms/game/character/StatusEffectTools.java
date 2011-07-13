@@ -22,9 +22,9 @@ import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.BuffsData;
-import argonms.game.GameCommonPackets;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
+import argonms.game.net.external.GamePackets;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -57,14 +57,14 @@ public class StatusEffectTools {
 					case Skills.CHAKRA:
 						break;
 					case Skills.DASH:
-						return GameCommonPackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration());
 					default:
-						return GameCommonPackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
 				}
 			case ITEM:
-				return GameCommonPackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());
+				return GamePackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());
 			case MOB_SKILL:
-				return GameCommonPackets.writeGiveDebuff(updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
+				return GamePackets.writeGiveDebuff(updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
 		}
 		return null;
 	}
@@ -72,7 +72,7 @@ public class StatusEffectTools {
 	private static byte[] getThirdPersonCastVisualEffect(GameCharacter p, StatusEffectsData e, byte stance) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return GameCommonPackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), stance);
+				return GamePackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), stance);
 		}
 		return null;
 	}
@@ -84,13 +84,13 @@ public class StatusEffectTools {
 					case Skills.CHAKRA:
 						break;
 					case Skills.DASH:
-						return GameCommonPackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), e.getDuration());
 					default:
 						if (e.getDuration() > 0)
-							return GameCommonPackets.writeBuffMapEffect(p, updatedStats);
+							return GamePackets.writeBuffMapEffect(p, updatedStats);
 				}
 			case MOB_SKILL:
-				return GameCommonPackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
+				return GamePackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
 		}
 		return null;
 	}
@@ -100,7 +100,7 @@ public class StatusEffectTools {
 	}
 
 	private static byte[] getFirstPersonDispelEffect(GameCharacter p, StatusEffectsData e) {
-		return GameCommonPackets.writeCancelStatusEffect(e.getEffects());
+		return GamePackets.writeCancelStatusEffect(e.getEffects());
 	}
 
 	private static byte[] getThirdPersonDispelVisualEffect(GameCharacter p) {
@@ -108,7 +108,7 @@ public class StatusEffectTools {
 	}
 
 	private static byte[] getThirdPersonDispelEffect(GameCharacter p, StatusEffectsData e, Set<PlayerStatusEffect> updatedStats) {
-		return GameCommonPackets.writeCancelStatusEffectMapEffect(p, updatedStats);
+		return GamePackets.writeCancelStatusEffectMapEffect(p, updatedStats);
 	}
 
 	public static Map<PlayerStatusEffect, Short> applyEffects(GameCharacter p, StatusEffectsData e) {
@@ -269,7 +269,7 @@ public class StatusEffectTools {
 				break;
 			case HIDE:
 				mod = 0;
-				p.getClient().getSession().send(GameCommonPackets.writeShowHide());
+				p.getClient().getSession().send(GamePackets.writeShowHide());
 				p.getMap().hidePlayer(p);
 				break;
 			case BOOSTER:
@@ -410,7 +410,7 @@ public class StatusEffectTools {
 			case DARKSIGHT:
 				break;
 			case HIDE:
-				p.getClient().getSession().send(GameCommonPackets.writeStopHide());
+				p.getClient().getSession().send(GamePackets.writeStopHide());
 				p.getMap().unhidePlayer(p);
 				break;
 			case BOOSTER:

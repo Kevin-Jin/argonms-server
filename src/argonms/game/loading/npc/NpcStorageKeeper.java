@@ -18,7 +18,7 @@
 
 package argonms.game.loading.npc;
 
-import argonms.game.GameClient.NpcMiniroom;
+import argonms.game.net.external.GameClient.NpcMiniroom;
 
 /**
  *

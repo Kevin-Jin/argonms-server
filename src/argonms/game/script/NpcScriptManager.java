@@ -21,13 +21,13 @@ package argonms.game.script;
 import argonms.common.GlobalConstants;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.game.GameClient;
-import argonms.game.GameCommonPackets;
 import argonms.game.loading.npc.NpcDataLoader;
 import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
+import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -59,13 +59,13 @@ public class NpcScriptManager {
 		NpcShop shop = NpcShopDataLoader.getInstance().getShopByNpc(npcId);
 		if (shop != null) {
 			client.setNpcRoom(shop);
-			client.getSession().send(GameCommonPackets.writeNpcShop(client.getPlayer(), npcId, shop));
+			client.getSession().send(GamePackets.writeNpcShop(client.getPlayer(), npcId, shop));
 			return true;
 		}
 		NpcStorageKeeper storage = NpcDataLoader.getInstance().getStorageById(npcId);
 		if (storage != null) {
 			client.setNpcRoom(storage);
-			client.getSession().send(GameCommonPackets.writeNpcStorage(npcId, client.getPlayer().getStorageInventory()));
+			client.getSession().send(GamePackets.writeNpcStorage(npcId, client.getPlayer().getStorageInventory()));
 			return true;
 		}
 		return false;

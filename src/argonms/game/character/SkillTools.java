@@ -27,12 +27,9 @@ import argonms.common.character.inventory.InventoryTools.WeaponClass;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.Scheduler;
-import argonms.game.GameCommonPackets;
-import argonms.game.character.ClientUpdateKey;
-import argonms.game.character.GameCharacter;
-import argonms.game.character.StatusEffectTools;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
+import argonms.game.net.external.GamePackets;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,11 +67,11 @@ public class SkillTools {
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				ses.send(GameCommonPackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
+				ses.send(GamePackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				ses.send(GameCommonPackets.writeInventoryClearSlot(type, pos));
+				ses.send(GamePackets.writeInventoryClearSlot(type, pos));
 			}
 			p.itemCountChanged(itemId);
 		}
@@ -146,11 +143,11 @@ public class SkillTools {
 				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(GameCommonPackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
+					ses.send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					ses.send(GameCommonPackets.writeInventoryClearSlot(InventoryType.USE, pos));
+					ses.send(GamePackets.writeInventoryClearSlot(InventoryType.USE, pos));
 				}
 				p.itemCountChanged(removeItemId);
 			}
@@ -166,7 +163,7 @@ public class SkillTools {
 	 */
 	public static void useCastSkill(final GameCharacter p, final int skillId, final byte skillLevel, byte stance) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
+		p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
@@ -232,6 +229,6 @@ public class SkillTools {
 
 	public static void useAttackSkill(GameCharacter p, int skillId, byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-		p.getClient().getSession().send(GameCommonPackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
+		p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
 	}
 }

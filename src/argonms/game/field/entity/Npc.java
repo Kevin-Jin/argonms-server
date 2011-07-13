@@ -18,8 +18,8 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.GameCommonPackets;
 import argonms.game.field.MapEntity;
+import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -76,7 +76,7 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getShowNewSpawnMessage() {
-		return GameCommonPackets.writeShowAndControlNpc(this);
+		return GamePackets.writeShowAndControlNpc(this);
 	}
 
 	public byte[] getShowExistingSpawnMessage() {
@@ -84,6 +84,6 @@ public class Npc extends MapEntity {
 	}
 
 	public byte[] getDestructionMessage() {
-		return GameCommonPackets.writeStopControlAndRemoveNpc(this);
+		return GamePackets.writeStopControlAndRemoveNpc(this);
 	}
 }
