@@ -39,7 +39,8 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 	private static final byte
 		LINK = 1,
 		HIT_EVENT = 2,
-		ITEM_EVENT = 3
+		ITEM_EVENT = 3,
+		SCRIPT_NAME = 4
 	;
 
 	private String dataPath;
@@ -102,6 +103,9 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 					break;
 				case ITEM_EVENT:
 					processItemEvent(reader, stats);
+					break;
+				case SCRIPT_NAME:
+					reader.readNullTerminatedString();
 					break;
 			}
 		}

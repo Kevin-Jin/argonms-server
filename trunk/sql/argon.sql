@@ -30,6 +30,8 @@ CREATE TABLE `accounts` (
   `banexpire` INT(11) UNSIGNED DEFAULT NULL,
   `banreason` TINYINT(3) DEFAULT NULL,
   `banmessage` VARCHAR(255) DEFAULT NULL,
+  `storageslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 4,
+  `storagemesos` INT(11) NOT NULL DEFAULT 0,
   `gm` TINYINT(3) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB;
@@ -67,7 +69,6 @@ CREATE TABLE `characters` (
   `setupslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 24,
   `etcslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 24,
   `cashslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 24,
-  `storageslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 4,
   `buddyslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 20,
   `gm` TINYINT(3) NOT NULL,
   `overallrankcurrentpos` INT(11) NOT NULL DEFAULT 0,

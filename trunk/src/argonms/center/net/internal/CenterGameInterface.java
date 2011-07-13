@@ -16,55 +16,73 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.send;
+package argonms.center.net.internal;
 
-import argonms.center.CenterRemoteSession;
 import argonms.center.CenterServer;
-import argonms.center.recv.LoginCenterPacketProcessor;
-import argonms.center.recv.RemoteCenterPacketProcessor;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public class CenterLoginInterface extends CenterRemoteInterface {
+public class CenterGameInterface extends CenterRemoteInterface {
 	private String host;
-	private int port;
-	private LoginCenterPacketProcessor pp;
+	private byte world;
+	private Map<Byte, Integer> clientPorts;
+	private byte serverId;
+	private GameCenterPacketProcessor pp;
 
-	public CenterLoginInterface(CenterRemoteSession session) {
+	public CenterGameInterface(CenterRemoteSession session, byte serverId) {
 		super(session);
+		this.serverId = serverId;
 	}
 
 	public void makePacketProcessor() {
-		this.pp = new LoginCenterPacketProcessor(this);
+		this.pp = new GameCenterPacketProcessor(this);
 	}
 
 	public RemoteCenterPacketProcessor getPacketProcessor() {
 		return pp;
 	}
 
+	public byte getServerId() {
+		return serverId;
+	}
+
 	public void setHost(String host) {
 		this.host = host;
 	}
 
-	public void setClientPort(int port) {
-		this.port = port;
+	public void setWorld(byte world) {
+		this.world = world;
+	}
+
+	public byte getWorld() {
+		return world;
+	}
+
+	public void setClientPorts(Map<Byte, Integer> clientPorts) {
+		this.clientPorts = clientPorts;
+	}
+
+	public Set<Byte> getChannels() {
+		return clientPorts.keySet();
 	}
 
 	public String getHost() {
 		return host;
 	}
 
-	public int getClientPort() {
-		return port;
+	public Map<Byte, Integer> getClientPorts() {
+		return clientPorts;
 	}
 
 	public void disconnected() {
 		if (online) {
 			online = false;
 			disconnecting = true;
-			CenterServer.getInstance().loginDisconnected();
+			CenterServer.getInstance().gameDisconnected(this);
 		}
 	}
 }

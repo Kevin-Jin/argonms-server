@@ -1023,6 +1023,33 @@
 	* Stubs for NPC item storage.
 	* Fixed clients closing while connecting.
 
+2011-07-13  GoldenKevin  (revision 50)
+
+	* ItemDataLoader's loaded items list is now a set, since it is more
+	"contains"-heavy than add-heavy, and although HashSet is not as fast as
+	ArrayList in adding, HashSet's contains method runs in constant time rather
+	than linear time like ArrayList's.
+	* Merged packages argonms.center.recv and argonms.center.send to
+	argonms.center.net.internal, since their distinction is blurred by the fact
+	that the CenterRemoteInterface classes of argonms.center.send references
+	their respective RemoteCenterPacketProcessor classes.
+	Moved CenterRemoteSession and RemoteServerListener with them.
+	* Reorganized the overloads of CommonPackets.writeItemInfo. The main
+	overload now uses a switch case instead of a series of conditionals.
+	* Added IInventory interface, to be implemented by the old Inventory class,
+	the new StorageInventory class, and a future CashShopInventory class.
+	* Moved the empty argonms.game.field.NpcMiniroom interface into GameClient
+	to be an inner interface.
+	* Trade and shop transactions will now trigger a notification for a
+	completed quest if the quest after gaining a needed item.
+	* Moved storageslots column from characters table to accounts table, since
+	it's account-wide data. Please update your database.
+	* Added a Npc.wz data loader, which currently only loads the storage costs
+	of NPCs. KvjBin needs to be updated to r25 in order to compile Npc.wz. Mcdb
+	currently uses hard coded values until I make a better solution.
+	* Implemented the main parts of NPC storages. Everything except
+	"Arrange Items" is fully working.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

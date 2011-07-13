@@ -24,8 +24,10 @@ import argonms.common.loading.DataFileType;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 
 //FIXME: Thread safety for concurrent read/writes (if we're not preloading)
@@ -36,7 +38,7 @@ import java.util.TimeZone;
 public abstract class ItemDataLoader {
 	private static ItemDataLoader instance;
 
-	protected List<Integer> loaded;
+	protected Set<Integer> loaded;
 	protected Map<Integer, Integer> wholePrice;
 	protected Map<Integer, Short> slotMax;
 	protected List<Integer> tradeBlocked;
@@ -65,7 +67,7 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, Byte> tamingMobIds;
 
 	protected ItemDataLoader() {
-		loaded = new ArrayList<Integer>();
+		loaded = new HashSet<Integer>();
 		wholePrice = new HashMap<Integer, Integer>();
 		slotMax = new HashMap<Integer, Short>();
 		tradeBlocked = new ArrayList<Integer>();

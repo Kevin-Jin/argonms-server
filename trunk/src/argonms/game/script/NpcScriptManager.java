@@ -23,6 +23,8 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
 import argonms.game.GameCommonPackets;
+import argonms.game.loading.npc.NpcDataLoader;
+import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
@@ -58,6 +60,12 @@ public class NpcScriptManager {
 		if (shop != null) {
 			client.setNpcRoom(shop);
 			client.getSession().send(GameCommonPackets.writeNpcShop(client.getPlayer(), npcId, shop));
+			return true;
+		}
+		NpcStorageKeeper storage = NpcDataLoader.getInstance().getStorageById(npcId);
+		if (storage != null) {
+			client.setNpcRoom(storage);
+			client.getSession().send(GameCommonPackets.writeNpcStorage(npcId, client.getPlayer().getStorageInventory()));
 			return true;
 		}
 		return false;

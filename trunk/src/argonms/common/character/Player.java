@@ -19,6 +19,7 @@
 package argonms.common.character;
 
 import argonms.common.character.inventory.Equip;
+import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -212,16 +213,16 @@ public interface Player {
 			return spawnPoint;
 		}
 
+		protected Map<InventoryType, Inventory> getInventories() {
+			return inventories;
+		}
+
 		public Inventory getInventory(InventoryType type) {
 			return inventories.get(type);
 		}
 
 		public byte getPrivilegeLevel() {
 			return gm;
-		}
-
-		protected void commitInventory(Connection con, int accountId) throws SQLException {
-			CharacterTools.commitInventory(con, id, accountId, pets, inventories);
 		}
 
 		protected void setName(String name) {
@@ -276,7 +277,7 @@ public interface Player {
 			this.inventories.putAll(inventories);
 		}
 
-		protected static void loadPlayerStats(ResultSet rs, int id, LimitedActionCharacter p, InventoryType extraInvType, Inventory extraInv) throws SQLException {
+		protected static void loadPlayerStats(ResultSet rs, int id, LimitedActionCharacter p) throws SQLException {
 			p.id = id;
 			p.name = rs.getString(4);
 			p.gender = rs.getByte(5);
@@ -301,20 +302,14 @@ public interface Player {
 			p.map = rs.getInt(24);
 			p.spawnPoint = rs.getByte(25);
 
-			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getByte(27)));
-			p.inventories.put(InventoryType.USE, new Inventory(rs.getByte(28)));
-			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getByte(29)));
-			p.inventories.put(InventoryType.ETC, new Inventory(rs.getByte(30)));
-			p.inventories.put(InventoryType.CASH, new Inventory(rs.getByte(31)));
+			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getShort(27)));
+			p.inventories.put(InventoryType.USE, new Inventory(rs.getShort(28)));
+			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getShort(29)));
+			p.inventories.put(InventoryType.ETC, new Inventory(rs.getShort(30)));
+			p.inventories.put(InventoryType.CASH, new Inventory(rs.getShort(31)));
 			//TODO: get real equipped inventory size?
-			p.inventories.put(InventoryType.EQUIPPED, new Inventory((byte) 0));
-			if (extraInvType != null)
-				p.inventories.put(extraInvType, extraInv);
-			p.gm = rs.getByte(34);
-		}
-
-		protected static void loadInventory(Connection con, ResultSet rs, LimitedActionCharacter p) throws SQLException {
-			CharacterTools.loadInventory(con, rs, p.pets, p.inventories);
+			p.inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
+			p.gm = rs.getByte(33);
 		}
 	}
 
@@ -361,7 +356,7 @@ public interface Player {
 			return -1;
 		}
 
-		public static void commitInventory(Connection con, int characterId, int accountId, Pet[] pets, Map<InventoryType, Inventory> inventories) throws SQLException {
+		public static void commitInventory(Connection con, int characterId, int accountId, Pet[] pets, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
 			PreparedStatement ps = null, ips = null;
 			ResultSet rs = null;
 			try {
@@ -372,7 +367,7 @@ public interface Player {
 					PreparedStatement.RETURN_GENERATED_KEYS);
 				ps.setInt(1, characterId);
 				ps.setInt(2, accountId);
-				for (Entry<InventoryType, Inventory> ent : inventories.entrySet()) {
+				for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
 					switch (ent.getKey()) {
 						case STORAGE:
 						case CASH_SHOP:
@@ -457,7 +452,7 @@ public interface Player {
 			}
 		}
 
-		public static void loadInventory(Connection con, ResultSet rs, Pet[] pets, Map<InventoryType, Inventory> inventories) throws SQLException {
+		public static void loadInventory(Connection con, ResultSet rs, Pet[] pets, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
 			PreparedStatement ips = null;
 			ResultSet irs = null;
 			try {
@@ -467,7 +462,7 @@ public interface Player {
 					short position = rs.getShort(5);
 					int itemid = rs.getInt(6);
 					int inventoryKey = rs.getInt(1);
-					if (inventoryType == InventoryType.EQUIP || inventoryType == InventoryType.EQUIPPED) {
+					if (InventoryTools.isEquip(itemid)) {
 						Equip e;
 						if (InventoryTools.isRing(itemid)) {
 							e = new Ring(itemid);

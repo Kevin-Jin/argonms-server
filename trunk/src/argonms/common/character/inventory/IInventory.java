@@ -16,14 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.recv;
+package argonms.common.character.inventory;
 
-import argonms.common.tools.input.LittleEndianReader;
+import java.util.Map;
 
 /**
- *
+ * Represents an object that holds items. Allows the loading and saving of items
+ * to be less redundant.
  * @author GoldenKevin
  */
-public abstract class RemoteCenterPacketProcessor {
-	public abstract void process(LittleEndianReader packet);
+public interface IInventory {
+	public void put(short position, InventorySlot item);
+	public Map<Short, InventorySlot> getAll();
+	public short getMaxSlots();
 }

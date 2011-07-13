@@ -161,7 +161,7 @@ public abstract class FreeMarketShop extends Miniroom {
 				lew.writeShort(item.bundles);
 				lew.writeShort(item.item.getQuantity());
 				lew.writeInt(item.price);
-				CommonPackets.writeItemInfo(lew, (byte) 0, item.item, true, true, false);
+				CommonPackets.writeItemInfo(lew, item.item, true, false);
 			}
 
 			return lew.getBytes();
@@ -253,7 +253,7 @@ public abstract class FreeMarketShop extends Miniroom {
 			lew.writeShort(item.bundles);
 			lew.writeShort(item.item.getQuantity());
 			lew.writeInt(item.price);
-			CommonPackets.writeItemInfo(lew, (byte) 0, item.item, true, true, false);
+			CommonPackets.writeItemInfo(lew, item.item, true, false);
 		}
 	}
 }

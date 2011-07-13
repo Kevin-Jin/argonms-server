@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.send;
+package argonms.center.net.internal;
 
-import argonms.center.CenterRemoteSession;
 import argonms.center.CenterServer;
-import argonms.center.recv.RemoteCenterPacketProcessor;
-import argonms.center.recv.ShopCenterPacketProcessor;
 
 /**
  *

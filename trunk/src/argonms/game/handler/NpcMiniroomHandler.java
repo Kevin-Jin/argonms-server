@@ -18,6 +18,7 @@
 
 package argonms.game.handler;
 
+import argonms.common.UniqueIdGenerator;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -25,20 +26,28 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.game.GameClient;
 import argonms.game.GameCommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.ItemTools;
-import argonms.game.field.NpcMiniroom.AccountItemStorage;
+import argonms.game.character.StorageInventory;
+import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.shop.NpcShop;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class NpcMiniroomHandler {
+	private static final Logger LOG = Logger.getLogger(NpcMiniroomHandler.class.getName());
+
 	private static final byte
 		//shop
 		ACT_BUY = 0,
@@ -46,10 +55,11 @@ public class NpcMiniroomHandler {
 		ACT_RECHARGE = 2,
 		ACT_EXIT_SHOP = 3,
 		//storage
-		ACT_TAKE_ITEM = 4,
-		ACT_STORE_ITEM = 5,
-		ACT_MESOS_TRANSFER = 6,
-		ACT_EXIT_STORAGE = 7
+		ACT_WITHDRAW_ITEM = 4,
+		ACT_DEPOSIT_ITEM = 5,
+		ACT_ARRANGE_ITEMS = 6,
+		ACT_MESOS_TRANSFER = 7,
+		ACT_EXIT_STORAGE = 8
 	;
 
 	private static final byte
@@ -60,6 +70,7 @@ public class NpcMiniroomHandler {
 	public static void handleNpcShopAction(LittleEndianReader packet, GameClient gc) {
 		NpcShop shop = (NpcShop) gc.getNpcRoom();
 		if (shop == null) {
+			return;
 			//TODO: hacking
 		}
 		switch (packet.readByte()) {
@@ -73,12 +84,14 @@ public class NpcMiniroomHandler {
 				int totalPrice = price * quantity;
 				int totalQuantity = item.quantity * quantity;
 				if (item == null || item.itemId != itemId || item.price != price) {
+					return;
 					//TODO: hacking
 				}
 				GameCharacter p = gc.getPlayer();
 				InventoryType invType = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(invType);
 				if (p.getMesos() < totalPrice) {
+					return;
 					//TODO: hacking
 				}
 				UpdatedSlots changedSlots = null;
@@ -90,6 +103,7 @@ public class NpcMiniroomHandler {
 						if (InventoryTools.canFitEntirely(inv, itemId, quantity, true))
 							changedSlots = InventoryTools.addToInventory(p.getInventory(invType), itemId, totalQuantity);
 					} else {
+						return;
 						//TODO: hacking
 					}
 				} else {
@@ -114,6 +128,7 @@ public class NpcMiniroomHandler {
 						gc.getSession().send(GameCommonPackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
 					}
 					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
+					p.itemCountChanged(itemId);
 				} else {
 					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_INVENTORY_FULL));
 				}
@@ -127,6 +142,7 @@ public class NpcMiniroomHandler {
 				Inventory inventory = p.getInventory(invType);
 				InventorySlot item = inventory.get(slot);
 				if (item == null || item.getDataId() != itemId || !InventoryTools.isRechargeable(itemId) && item.getQuantity() < quantity) {
+					return;
 					//TODO: hacking
 				}
 				int price = ItemDataLoader.getInstance().getWholePrice(itemId) * quantity;
@@ -145,6 +161,7 @@ public class NpcMiniroomHandler {
 					item.setQuantity((short) (item.getQuantity() - quantity));
 					gc.getSession().send(GameCommonPackets.writeInventorySlotUpdate(invType, slot, item));
 				}
+				p.itemCountChanged(itemId);
 				p.gainMesos(price, false);
 				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
 				break;
@@ -154,11 +171,13 @@ public class NpcMiniroomHandler {
 				Inventory inventory = p.getInventory(InventoryType.USE);
 				InventorySlot item = inventory.get(slot);
 				if (item == null || !InventoryTools.isRechargeable(item.getDataId())) {
+					return;
 					//TODO: hacking
 				}
 				short slotMax = ItemTools.getPersonalSlotMax(p, item.getDataId());
 				int rechargeCost = shop.rechargeCost(item.getDataId(), slotMax - item.getQuantity());
 				if (rechargeCost < 0 || p.getMesos() < rechargeCost) {
+					return;
 					//TODO: hacking
 				}
 				item.setQuantity(slotMax);
@@ -174,29 +193,192 @@ public class NpcMiniroomHandler {
 	}
 
 	public static void handleNpcStorageAction(LittleEndianReader packet, GameClient gc) {
-		AccountItemStorage storage = (AccountItemStorage) gc.getNpcRoom();
-		if (storage == null) {
+		NpcStorageKeeper keeper = (NpcStorageKeeper) gc.getNpcRoom();
+		if (keeper == null) {
+			return;
 			//TODO: hacking
 		}
-		//TODO: implement
+		StorageInventory storageInv = gc.getPlayer().getStorageInventory();
 		switch (packet.readByte()) {
-			case ACT_TAKE_ITEM:
+			case ACT_WITHDRAW_ITEM: {
+				GameCharacter p = gc.getPlayer();
+				InventoryType invType = InventoryType.valueOf(packet.readByte());
+				Inventory destInv = p.getInventory(invType);
+				byte slot = packet.readByte();
+				System.err.println(slot);
+				if (p.getMesos() < keeper.getWithdrawCost()) {
+					gc.getSession().send(writeStorageInsufficientFunds());
+					return;
+				}
+				InventorySlot item = storageInv.get(invType, slot);
+				if (item == null) {
+					//TODO: hacking
+					return;
+				}
+				if (!InventoryTools.canFitEntirely(destInv, item.getDataId(), item.getQuantity(), false)) {
+					gc.getSession().send(writeStorageWithdrawInventoryFull());
+					return;
+				}
+				p.gainMesos(-keeper.getWithdrawCost(), false);
+				storageInv.remove(invType, slot);
+				UpdatedSlots changedSlots = InventoryTools.addToInventory(destInv, item, item.getQuantity(), false);
+				for (Short s : changedSlots.modifiedSlots) {
+					short pos = s.shortValue();
+					gc.getSession().send(GameCommonPackets.writeInventorySlotUpdate(invType, pos, p.getInventory(invType).get(pos)));
+				}
+				for (Short s : changedSlots.addedOrRemovedSlots) {
+					short pos = s.shortValue();
+					gc.getSession().send(GameCommonPackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
+				}
+				gc.getSession().send(writeStorageWithdrawal(storageInv, invType));
+				p.itemCountChanged(item.getDataId());
 				break;
-			case ACT_STORE_ITEM:
+			} case ACT_DEPOSIT_ITEM: {
+				GameCharacter p = gc.getPlayer();
+				short slot = packet.readShort();
+				int itemId = packet.readInt();
+				short quantity = packet.readShort();
+				InventoryType invType = InventoryTools.getCategory(itemId);
+				Inventory inv = p.getInventory(invType);
+				InventorySlot item = inv.get(slot);
+				if (item == null || item.getDataId() != itemId || quantity < 1 || quantity > item.getQuantity()) {
+					//TODO: hacking
+					return;
+				}
+				if (p.getMesos() < keeper.getDepositCost()) {
+					gc.getSession().send(writeStorageInsufficientFunds());
+					return;
+				}
+				if (storageInv.freeSlots() <= 0) {
+					gc.getSession().send(writeStorageFull());
+					return;
+				}
+				p.gainMesos(-keeper.getDepositCost(), false);
+				if (quantity == item.getQuantity() || InventoryTools.isRechargeable(itemId)) {
+					storageInv.put(inv.remove(slot));
+					gc.getSession().send(GameCommonPackets.writeInventoryClearSlot(invType, slot));
+				} else {
+					InventorySlot split = item.clone();
+					item.setQuantity((short) (item.getQuantity() - quantity));
+					split.setQuantity(quantity);
+					if (item.getUniqueId() != 0) {
+						try {
+							split.setUniqueId(UniqueIdGenerator.incrementAndGet());
+						} catch (Exception e) {
+							LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
+						}
+					}
+					storageInv.put(split);
+					gc.getSession().send(GameCommonPackets.writeInventorySlotUpdate(invType, slot, item));
+				}
+				p.itemCountChanged(item.getDataId());
+				gc.getSession().send(writeStorageDeposit(storageInv, invType));
+					break;
+			} case ACT_ARRANGE_ITEMS: {
+				//TODO: IMPLEMENT
 				break;
-			case ACT_MESOS_TRANSFER:
+			} case ACT_MESOS_TRANSFER: {
+				GameCharacter p = gc.getPlayer();
+				int delta = packet.readInt();
+				if (delta > 0 && delta > storageInv.getMesos() || delta < 0 && -delta > p.getMesos()) {
+					//TODO: hacking
+					return;
+				}
+				if ((long) p.getMesos() + delta > Integer.MAX_VALUE) {
+					gc.getSession().send(writeStorageWithdrawInventoryFull());
+				} else if ((long) storageInv.getMesos() + -delta > Integer.MAX_VALUE) {
+					gc.getSession().send(writeStorageFull());
+				} else {
+					p.gainMesos(delta, false);
+					storageInv.changeMesos(delta);
+					gc.getSession().send(writeStorageMesoUpdate(storageInv));
+				}
 				break;
-			case ACT_EXIT_STORAGE:
+			} case ACT_EXIT_STORAGE: {
+				storageInv.collapse();
 				gc.setNpcRoom(null);
 				break;
+			}
 		}
 	}
 
 	private static byte[] writeConfirmShopTransaction(byte code) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 
 		lew.writeShort(ClientSendOps.CONFIRM_SHOP_TRANSACTION);
 		lew.writeByte(code);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageWithdrawal(StorageInventory storage, InventoryType destInv) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x09);
+		lew.writeByte((byte) storage.getMaxSlots());
+		lew.writeInt(storage.getBitfield(false, EnumSet.of(destInv), false));
+		lew.writeInt(0);
+		List<InventorySlot> items = storage.getRealItems(destInv);
+		lew.writeByte((byte) items.size());
+		for (InventorySlot item : items)
+			CommonPackets.writeItemInfo(lew, item, true, false);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageWithdrawInventoryFull() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x0A);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageDeposit(StorageInventory storage, InventoryType srcInv) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x0C);
+		lew.writeByte((byte) storage.getMaxSlots());
+		lew.writeInt(storage.getBitfield(false, EnumSet.of(srcInv), false));
+		lew.writeInt(0);
+		List<InventorySlot> items = storage.getRealItems(srcInv);
+		lew.writeByte((byte) items.size());
+		for (InventorySlot item : items)
+			CommonPackets.writeItemInfo(lew, item, true, false);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageInsufficientFunds() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x0F);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageFull() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x10);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeStorageMesoUpdate(StorageInventory storage) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
+
+		lew.writeShort(ClientSendOps.NPC_STORAGE);
+		lew.writeByte((byte) 0x12);
+		lew.writeByte((byte) storage.getMaxSlots());
+		lew.writeInt(storage.getBitfield(false, EnumSet.noneOf(InventoryType.class), true));
+		lew.writeInt(0);
+		lew.writeInt(storage.getMesos());
 
 		return lew.getBytes();
 	}

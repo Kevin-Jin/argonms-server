@@ -41,6 +41,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.ItemTools;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
+import argonms.game.character.StorageInventory;
 import argonms.game.field.MobSkills;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Miniroom;
@@ -60,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1210,21 +1212,21 @@ public class GameCommonPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] getNpcStorage(int npcId, byte slots, Collection<InventorySlot> items, int meso) {
+	public static byte[] writeNpcStorage(int npcId, StorageInventory storage) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.NPC_STORAGE);
 		lew.writeByte((byte) 0x15);
 		lew.writeInt(npcId);
-		lew.writeByte(slots);
-		lew.writeShort((short) 0x7E);
-		lew.writeShort((short) 0);
+		lew.writeByte((byte) storage.getMaxSlots());
+		lew.writeInt(storage.getBitfield(true, EnumSet.of(InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH), true));
 		lew.writeInt(0);
-		lew.writeInt(meso);
+		lew.writeInt(storage.getMesos());
+		InventorySlot[] items = storage.getStartingItems();
 		lew.writeShort((short) 0);
-		lew.writeByte((byte) items.size());
+		lew.writeByte((byte) items.length);
 		for (InventorySlot item : items)
-			CommonPackets.writeItemInfo(lew, (byte) 0, item, true, true, false);
+			CommonPackets.writeItemInfo(lew, item, true, false);
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
 

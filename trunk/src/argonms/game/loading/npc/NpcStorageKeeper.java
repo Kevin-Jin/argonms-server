@@ -1,5 +1,4 @@
 /*
-/*
  * ArgonMS MapleStory server emulator written in Java
  * Copyright (C) 2011  GoldenKevin
  *
@@ -17,14 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.field;
+package argonms.game.loading.npc;
+
+import argonms.game.GameClient.NpcMiniroom;
 
 /**
  *
  * @author GoldenKevin
  */
-public interface NpcMiniroom {
-	public static class AccountItemStorage implements NpcMiniroom {
-		
+public class NpcStorageKeeper implements NpcMiniroom {
+	private final int putCost, getCost;
+
+	public NpcStorageKeeper(int trunkPut, int trunkGet) {
+		this.putCost = trunkPut;
+		this.getCost = trunkGet;
+	}
+
+	public int getDepositCost() {
+		return putCost;
+	}
+
+	public int getWithdrawCost() {
+		return getCost;
 	}
 }

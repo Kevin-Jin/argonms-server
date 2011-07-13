@@ -28,6 +28,7 @@ import argonms.common.tools.DatabaseManager.DatabaseType;
 import argonms.common.tools.Scheduler;
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.mob.MobDataLoader;
+import argonms.game.loading.npc.NpcDataLoader;
 import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.loading.shop.NpcShopDataLoader;
@@ -175,6 +176,7 @@ public class GameServer implements LocalServer {
 		ItemDataLoader.setInstance(wzType, wzPath);
 		MapDataLoader.setInstance(wzType, wzPath);
 		NpcShopDataLoader.setInstance(wzType, wzPath);
+		NpcDataLoader.setInstance(wzType, wzPath);
 		NpcScriptManager.setInstance(scriptsPath);
 		PortalScriptManager.setInstance(scriptsPath);
 		ReactorScriptManager.setInstance(scriptsPath);
@@ -204,6 +206,9 @@ public class GameServer implements LocalServer {
 			System.out.println("\tDone!");
 			System.out.print("Loading Shop data...");
 			NpcShopDataLoader.getInstance().loadAll();
+			System.out.println("\tDone!");
+			System.out.print("Loading Storage data...");
+			NpcDataLoader.getInstance().loadAll();
 			System.out.println("\tDone!");
 		}
 		end = System.nanoTime();
