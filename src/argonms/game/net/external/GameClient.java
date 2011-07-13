@@ -91,14 +91,17 @@ public class GameClient extends RemoteClient {
 		this.player = p;
 	}
 
+	@Override
 	public GameCharacter getPlayer() {
 		return player;
 	}
 
+	@Override
 	public byte getServerId() {
 		return GameServer.getInstance().getServerId();
 	}
 
+	@Override
 	public void disconnected() {
 		stopPingTask();
 		if (npc != null)

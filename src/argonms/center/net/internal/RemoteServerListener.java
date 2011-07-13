@@ -66,6 +66,7 @@ public class RemoteServerListener {
 		}
 		this.bootstrap = new ServerBootstrap(chFactory);
 		this.bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			@Override
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
 				pipeline.addLast("decoder", new InterServerPacketDecoder());
@@ -96,29 +97,35 @@ public class RemoteServerListener {
 	public static final ChannelLocal<CenterRemoteSession> sessions = new ChannelLocal<CenterRemoteSession>();
 
 	private class CenterServerHandler extends SimpleChannelUpstreamHandler {
+		@Override
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Trying to accept remote server from {0}", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Remote server connected from {0}", e.getChannel().getRemoteAddress());
 			sessions.set(e.getChannel(), new CenterRemoteSession(e.getChannel(), interServerPassword));
 		}
 
+		@Override
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Remote server from {0} disconnected", e.getChannel().getRemoteAddress());
 			sessions.get(e.getChannel()).disconnected();
 		}
 
+		@Override
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Removing remote server from {0}", e.getChannel().getRemoteAddress());
 			sessions.remove(e.getChannel());
 		}
 
+		@Override
 		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 			sessions.get(e.getChannel()).process((byte[]) e.getMessage());
 		}
 
+		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 			LOG.log(Level.FINE, "Exception raised in internal network facing code (remote server " + e.getChannel().getRemoteAddress() + ")", e.getCause());
 		}

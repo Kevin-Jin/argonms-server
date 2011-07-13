@@ -58,10 +58,12 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 		lookup.put("showa town", Integer.valueOf(801000000));
 	}
 
+	@Override
 	public String getHelpMessage() {
 		return "Warp to a town or place of interest. Use !town list for a list of locations.";
 	}
 
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
 	}
@@ -84,6 +86,7 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 		return sb.substring(0, sb.length() - 1); //assume we have at least one arg
 	}
 
+	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 2) {
 			resp.printErr("Invalid usage. " + getUsage());

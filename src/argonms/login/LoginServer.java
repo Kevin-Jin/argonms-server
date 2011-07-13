@@ -146,6 +146,7 @@ public class LoginServer implements LocalServer {
 		}
 	}
 
+	@Override
 	public void centerConnected() {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
@@ -153,6 +154,7 @@ public class LoginServer implements LocalServer {
 		Scheduler.enable();
 		try {
 			handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, useNio, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+				@Override
 				public LoginClient newInstance(byte world, byte client) {
 					return new LoginClient();
 				}
@@ -170,6 +172,7 @@ public class LoginServer implements LocalServer {
 		Scheduler.getInstance().runRepeatedly(new RankingWorker(), rankingPeriod, rankingPeriod);
 	}
 
+	@Override
 	public void centerDisconnected() {
 		if (centerConnected) {
 			LOG.log(Level.SEVERE, "Center server disconnected.");
@@ -231,6 +234,7 @@ public class LoginServer implements LocalServer {
 		return instance;
 	}
 
+	@Override
 	public String getExternalIp() {
 		return address;
 	}

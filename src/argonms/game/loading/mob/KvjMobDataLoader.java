@@ -64,6 +64,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void load(int mobid) {
 		String id = String.format("%07d", mobid);
 
@@ -80,6 +81,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		mobStats.put(Integer.valueOf(mobid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Mob.wz");
@@ -99,6 +101,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int mobid) {
 		if (mobStats.containsKey(mobid))
 			return true;

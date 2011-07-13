@@ -43,6 +43,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		
 	}
 
+	@Override
 	protected void load(int itemid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -67,6 +68,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		loaded.add(Integer.valueOf(itemid));
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -93,6 +95,7 @@ public class McdbItemDataLoader extends ItemDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int itemid) {
 		if (loaded.contains(Integer.valueOf(itemid)))
 			return true;

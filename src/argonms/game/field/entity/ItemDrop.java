@@ -20,7 +20,6 @@ package argonms.game.field.entity;
 
 import argonms.common.character.inventory.InventorySlot;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 
@@ -105,6 +104,7 @@ public class ItemDrop extends MapEntity {
 		return item.getExpiration();
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.DROP;
 	}
@@ -134,18 +134,22 @@ public class ItemDrop extends MapEntity {
 		this.mod = DESTROY_ANIMATION_FADE;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return !gone;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_DROP, mod);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_NONE, mod);
 	}
@@ -154,6 +158,7 @@ public class ItemDrop extends MapEntity {
 		return GamePackets.writeShowItemDrop(this, SPAWN_ANIMATION_FADE, mod);
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveItemDrop(this, mod);
 	}

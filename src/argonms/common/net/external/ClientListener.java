@@ -84,6 +84,7 @@ public class ClientListener<T extends RemoteClient> {
 		bootstrap = new ServerBootstrap(chFactory);
 		bootstrap.setOption("child.tcpNoDelay", true);
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			@Override
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
 				pipeline.addLast("decoder", new MaplePacketDecoder());
@@ -109,6 +110,7 @@ public class ClientListener<T extends RemoteClient> {
 	private final ChannelLocal<ClientSession<T>> sessions = new ChannelLocal<ClientSession<T>>();
 
 	private final class MaplePacketDecoder extends FrameDecoder {
+		@Override
 		protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) throws Exception {
 			if (buf.readableBytes() < 4)
 				return null;
@@ -139,6 +141,7 @@ public class ClientListener<T extends RemoteClient> {
 	}
 
 	private final class MaplePacketEncoder extends OneToOneEncoder {
+		@Override
 		protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
 			ClientSession<T> session = sessions.get(channel);
 			if (session != null) {
@@ -161,10 +164,12 @@ public class ClientListener<T extends RemoteClient> {
 	}
 
 	private class MapleServerHandler extends IdleStateAwareChannelUpstreamHandler {
+		@Override
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Trying to accept client from {0}", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Client connected from {0}", e.getChannel().getRemoteAddress());
 			T client = clientCtor.newInstance(world, channel);
@@ -174,26 +179,31 @@ public class ClientListener<T extends RemoteClient> {
 			sessions.set(e.getChannel(), session);
 		}
 
+		@Override
 		public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception {
 			LOG.log(Level.FINER, "Client from {0} went idle -> pinging", e.getChannel().getRemoteAddress());
 			sessions.get(e.getChannel()).getClient().startPingTask();
 		}
 
+		@Override
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Client from {0} disconnected", e.getChannel().getRemoteAddress());
 			sessions.get(e.getChannel()).getClient().disconnected();
 		}
 
+		@Override
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Removing client from {0}", e.getChannel().getRemoteAddress());
 			sessions.remove(e.getChannel());
 		}
 
+		@Override
 		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 			byte[] message = (byte[]) e.getMessage();
 			pp.process(new LittleEndianByteArrayReader(message), sessions.get(e.getChannel()).getClient());
 		}
 
+		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 			LOG.log(Level.FINE, "Exception raised in external network facing code (client " + e.getChannel().getRemoteAddress() + ")", e.getCause());
 		}

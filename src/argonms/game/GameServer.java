@@ -221,6 +221,7 @@ public class GameServer implements LocalServer {
 		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
 	}
 
+	@Override
 	public void centerConnected() {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
@@ -238,6 +239,7 @@ public class GameServer implements LocalServer {
 			System.exit(5);
 	}
 
+	@Override
 	public void centerDisconnected() {
 		if (centerConnected) {
 			LOG.log(Level.SEVERE, "Center server disconnected.");
@@ -273,6 +275,7 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.INFO, "Shop server disconnected.");
 	}
 
+	@Override
 	public String getExternalIp() {
 		return address;
 	}

@@ -33,10 +33,12 @@ public class CenterLoginInterface extends CenterRemoteInterface {
 		super(session);
 	}
 
+	@Override
 	public void makePacketProcessor() {
 		this.pp = new LoginCenterPacketProcessor(this);
 	}
 
+	@Override
 	public RemoteCenterPacketProcessor getPacketProcessor() {
 		return pp;
 	}
@@ -57,6 +59,7 @@ public class CenterLoginInterface extends CenterRemoteInterface {
 		return port;
 	}
 
+	@Override
 	public void disconnected() {
 		if (online) {
 			online = false;

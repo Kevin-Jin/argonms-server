@@ -92,6 +92,7 @@ public class TelnetListener {
 	public static final ChannelLocal<TelnetSession> sessions = new ChannelLocal<TelnetSession>();
 
 	private static final class TelnetServerPipelineFactory implements ChannelPipelineFactory {
+		@Override
 		public ChannelPipeline getPipeline() throws Exception {
 			ChannelPipeline pipeline = Channels.pipeline();
 			pipeline.addLast("specialChars", new TelnetDecoder());
@@ -104,6 +105,7 @@ public class TelnetListener {
 	}
 
 	private static final class TelnetDecoder extends OneToOneDecoder {
+		@Override
 		protected Object decode(ChannelHandlerContext ctx, Channel chn, Object o) throws Exception {
 			boolean echo = sessions.get(chn).willEcho();
 			ChannelBuffer buf = (ChannelBuffer) o;
@@ -124,6 +126,7 @@ public class TelnetListener {
 	}
 
 	private static final class TelnetEncoder extends OneToOneEncoder {
+		@Override
 		protected Object encode(ChannelHandlerContext chc, Channel chnl, Object o) throws Exception {
 			if (o instanceof String)
 				return ChannelBuffers.copiedBuffer(((String) o).getBytes(asciiEncoder));
@@ -134,29 +137,35 @@ public class TelnetListener {
 	}
 
 	private static final class TelnetServerHandler extends SimpleChannelUpstreamHandler {
+		@Override
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Accepting telnet user from {0}", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Telnet user connected from {0}", e.getChannel().getRemoteAddress());
 			sessions.set(e.getChannel(), new TelnetSession(e.getChannel()));
 		}
 
+		@Override
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Telnet user from {0} disconnected", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Removing telnet user from {0}", e.getChannel().getRemoteAddress());
 			sessions.remove(e.getChannel());
 		}
 
+		@Override
 		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 			String message = (String) e.getMessage();
 			sessions.get(e.getChannel()).process(message);
 		}
 
+		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 			LOG.log(Level.FINE, "Exception raised with telnet user " + e.getChannel().getRemoteAddress(), e.getCause());
 		}

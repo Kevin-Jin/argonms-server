@@ -33,10 +33,12 @@ public class CenterShopInterface extends CenterRemoteInterface {
 		super(session);
 	}
 
+	@Override
 	public void makePacketProcessor() {
 		this.pp = new ShopCenterPacketProcessor(this);
 	}
 
+	@Override
 	public RemoteCenterPacketProcessor getPacketProcessor() {
 		return pp;
 	}
@@ -57,6 +59,7 @@ public class CenterShopInterface extends CenterRemoteInterface {
 		return port;
 	}
 
+	@Override
 	public void disconnected() {
 		if (online) {
 			online = false;

@@ -38,6 +38,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 
 	}
 
+	@Override
 	protected void load(int reactorid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -60,6 +61,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 		reactorStats.put(Integer.valueOf(reactorid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -84,6 +86,7 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int reactorid) {
 		if (reactorStats.containsKey(reactorid))
 			return true;

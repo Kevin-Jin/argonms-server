@@ -68,6 +68,7 @@ public class StorageInventory implements IInventory {
 		}
 	}
 
+	@Override
 	public void put(short position, InventorySlot item) {
 		writeLock.lock();
 		try {
@@ -134,6 +135,7 @@ public class StorageInventory implements IInventory {
 		}
 	}
 
+	@Override
 	public Map<Short, InventorySlot> getAll() {
 		InventorySlot item;
 		readLock.lock();
@@ -168,6 +170,7 @@ public class StorageInventory implements IInventory {
 		}
 	}
 
+	@Override
 	public short getMaxSlots() {
 		readLock.lock();
 		try {

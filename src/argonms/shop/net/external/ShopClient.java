@@ -66,14 +66,17 @@ public class ShopClient extends RemoteClient {
 		this.player = p;
 	}
 
+	@Override
 	public ShopCharacter getPlayer() {
 		return player;
 	}
 
+	@Override
 	public byte getServerId() {
 		return ServerType.SHOP;
 	}
 
+	@Override
 	public void disconnected() {
 		stopPingTask();
 		if (player != null) {

@@ -145,6 +145,7 @@ public class ShopServer implements LocalServer {
 		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
 	}
 
+	@Override
 	public void centerConnected() {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
@@ -152,6 +153,7 @@ public class ShopServer implements LocalServer {
 		Scheduler.enable();
 		try {
 			handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+				@Override
 				public ShopClient newInstance(byte world, byte client) {
 					return new ShopClient();
 				}
@@ -168,6 +170,7 @@ public class ShopServer implements LocalServer {
 		}
 	}
 
+	@Override
 	public void centerDisconnected() {
 		if (centerConnected) {
 			LOG.log(Level.SEVERE, "Center server disconnected.");
@@ -204,6 +207,7 @@ public class ShopServer implements LocalServer {
 		return instance;
 	}
 
+	@Override
 	public String getExternalIp() {
 		return address;
 	}

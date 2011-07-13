@@ -30,6 +30,7 @@ public class Ring extends Equip implements Cloneable {
 		super(itemid);
 	}
 
+	@Override
 	public ItemType getType() {
 		return ItemType.RING;
 	}
@@ -50,6 +51,7 @@ public class Ring extends Equip implements Cloneable {
 		this.partnerRingUid = uid;
 	}
 
+	@Override
 	public Ring clone() {
 		Ring copy = new Ring(getDataId());
 		copy.setExpiration(getExpiration());

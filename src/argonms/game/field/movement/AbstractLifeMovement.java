@@ -37,18 +37,22 @@ public abstract class AbstractLifeMovement implements LifeMovement {
 		this.newstate = newstate;
 	}
 
+	@Override
 	public byte getType() {
 		return type;
 	}
 
+	@Override
 	public short getDuration() {
 		return duration;
 	}
 
+	@Override
 	public byte getNewstate() {
 		return newstate;
 	}
 
+	@Override
 	public Point getPosition() {
 		return position;
 	}

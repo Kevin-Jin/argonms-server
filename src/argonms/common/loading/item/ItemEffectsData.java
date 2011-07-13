@@ -47,6 +47,7 @@ public class ItemEffectsData extends BuffsData {
 		petConsumableBy = new ArrayList<Integer>();
 	}
 
+	@Override
 	public EffectSource getSourceType() {
 		return EffectSource.ITEM;
 	}
@@ -147,10 +148,12 @@ public class ItemEffectsData extends BuffsData {
 		return mpR;
 	}
 
+	@Override
 	public int hashCode() {
 		return getDataId();
 	}
 
+	@Override
 	public byte getLevel() {
 		return -1;
 	}

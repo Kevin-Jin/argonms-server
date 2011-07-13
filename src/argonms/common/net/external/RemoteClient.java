@@ -166,6 +166,7 @@ public abstract class RemoteClient {
 			future = Scheduler.getInstance().runAfterDelay(this, TIMEOUT);
 		}
 
+		@Override
 		public void run() {
 			LOG.log(Level.INFO, "Account {0} timed out after " + TIMEOUT
 					+ " milliseconds -> Disconnecting.", getAccountName());

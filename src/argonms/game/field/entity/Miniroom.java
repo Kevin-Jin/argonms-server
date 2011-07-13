@@ -25,7 +25,6 @@ import argonms.common.tools.output.LittleEndianWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.net.external.GamePackets;
 import java.util.HashMap;
 import java.util.Map;
@@ -308,18 +307,22 @@ public abstract class Miniroom extends MapEntity {
 		return lew.getBytes();
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.MINI_ROOM;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return true;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return openToMap;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);
@@ -328,10 +331,12 @@ public abstract class Miniroom extends MapEntity {
 		return lew.getBytes();
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return getShowNewSpawnMessage();
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.MINIROOM_BALLOON);

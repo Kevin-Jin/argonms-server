@@ -35,6 +35,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Types;
 import java.util.EnumMap;
 import java.util.Map;
@@ -113,102 +114,127 @@ public interface Player {
 			pets = new Pet[3];
 		}
 
+		@Override
 		public String getName() {
 			return name;
 		}
 
+		@Override
 		public int getDataId() {
 			return id;
 		}
 
+		@Override
 		public int getId() {
 			return id;
 		}
 
+		@Override
 		public byte getGender() {
 			return gender;
 		}
 
+		@Override
 		public byte getSkinColor() {
 			return skin;
 		}
 
+		@Override
 		public short getEyes() {
 			return eyes;
 		}
 
+		@Override
 		public short getHair() {
 			return hair;
 		}
 
+		@Override
 		public Pet[] getPets() {
 			return pets;
 		}
 
+		@Override
 		public short getLevel() {
 			return level;
 		}
 
+		@Override
 		public short getJob() {
 			return job;
 		}
 
+		@Override
 		public short getStr() {
 			return str;
 		}
 
+		@Override
 		public short getDex() {
 			return dex;
 		}
 
+		@Override
 		public short getInt() {
 			return _int;
 		}
 
+		@Override
 		public short getLuk() {
 			return luk;
 		}
 
+		@Override
 		public short getHp() {
 			return remHp;
 		}
 
+		@Override
 		public short getMaxHp() {
 			return maxHp;
 		}
 
+		@Override
 		public short getMp() {
 			return remMp;
 		}
 
+		@Override
 		public short getMaxMp() {
 			return maxMp;
 		}
 
+		@Override
 		public short getAp() {
 			return remAp;
 		}
 
+		@Override
 		public short getSp() {
 			return remSp;
 		}
 
+		@Override
 		public int getExp() {
 			return exp;
 		}
 
+		@Override
 		public short getFame() {
 			return fame;
 		}
 
+		@Override
 		public int getSpouseId() {
 			return partner;
 		}
 
+		@Override
 		public int getMapId() {
 			return map;
 		}
 
+		@Override
 		public byte getSpawnPoint() {
 			return spawnPoint;
 		}
@@ -217,10 +243,12 @@ public interface Player {
 			return inventories;
 		}
 
+		@Override
 		public Inventory getInventory(InventoryType type) {
 			return inventories.get(type);
 		}
 
+		@Override
 		public byte getPrivilegeLevel() {
 			return gm;
 		}
@@ -364,7 +392,7 @@ public interface Player {
 					+ "(`characterid`,`accountid`,`inventorytype`,`position`,"
 					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?)",
-					PreparedStatement.RETURN_GENERATED_KEYS);
+					Statement.RETURN_GENERATED_KEYS);
 				ps.setInt(1, characterId);
 				ps.setInt(2, accountId);
 				for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {

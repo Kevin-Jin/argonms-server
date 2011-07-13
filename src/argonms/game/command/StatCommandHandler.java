@@ -28,10 +28,12 @@ import argonms.game.character.GameCharacter;
  * @author GoldenKevin
  */
 public class StatCommandHandler extends AbstractCommandDefinition {
+	@Override
 	public String getHelpMessage() {
 		return "Change the value of one of your stats.";
 	}
 
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
 	}
@@ -40,6 +42,7 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 		return "Syntax: !stat [set/add] [stat] [amount]";
 	}
 
+	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 4) {
 			resp.printErr("Invalid usage. " + getUsage());

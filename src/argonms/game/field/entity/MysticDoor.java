@@ -32,6 +32,7 @@ public class MysticDoor extends MapEntity {
 		this.townDoor = town;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.DOOR;
 	}
@@ -40,22 +41,27 @@ public class MysticDoor extends MapEntity {
 		return townDoor;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return false;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowMysticDoor(this);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return getShowNewSpawnMessage();
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveMysticDoor(this);
 	}

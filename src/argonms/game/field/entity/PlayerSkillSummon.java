@@ -20,7 +20,6 @@ package argonms.game.field.entity;
 
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
@@ -88,26 +87,32 @@ public class PlayerSkillSummon extends MapEntity {
 		return remHp >= 0;
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.SUMMON;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return remHp != 0;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return true;
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowSummon(this, (byte) 0);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return GamePackets.writeShowSummon(this, (byte) 1);
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemoveSummon(this, (byte) 1);
 	}

@@ -20,8 +20,8 @@ package argonms.common.loading;
 
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.field.MonsterStatusEffect;
-import java.util.Set;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
@@ -31,10 +31,16 @@ public interface StatusEffectsData {
 	public enum EffectSource { ITEM, PLAYER_SKILL, MOB_SKILL }
 
 	public EffectSource getSourceType();
+
 	public int getDataId();
+
 	public Set<PlayerStatusEffect> getEffects();
+
+	@Override
 	public int hashCode();
+
 	public byte getLevel();
+
 	public int getDuration();
 
 	public abstract class BuffsData implements StatusEffectsData {
@@ -132,6 +138,7 @@ public interface StatusEffectsData {
 			}
 		}
 
+		@Override
 		public int getDuration() {
 			return duration;
 		}
@@ -176,10 +183,12 @@ public interface StatusEffectsData {
 			return morph;
 		}
 
+		@Override
 		public int getDataId() {
 			return sourceid;
 		}
 
+		@Override
 		public Set<PlayerStatusEffect> getEffects() {
 			return effects;
 		}

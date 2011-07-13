@@ -71,6 +71,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void load(int itemid) {
 		File f = getFile(itemid);
 		try {
@@ -82,6 +83,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		loaded.add(Integer.valueOf(itemid));
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Item.wz");
@@ -122,6 +124,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int itemid) {
 		return loaded.contains(Integer.valueOf(itemid)) || getFile(itemid).exists();
 	}

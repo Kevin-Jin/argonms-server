@@ -19,6 +19,7 @@
 package argonms.login.net.external.handler;
 
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.RemoteClient;
 import argonms.common.tools.input.LittleEndianReader;
 import argonms.common.tools.output.LittleEndianByteArrayWriter;
 import argonms.login.LoginServer;
@@ -74,7 +75,7 @@ public class AuthHandler {
 			lc.setGender(op2);
 			lc.getSession().send(genderDone(op2));
 		} else if (op1 == 0) {
-			lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
+			lc.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
 		}
 	}
 
@@ -107,7 +108,7 @@ public class AuthHandler {
 				lc.getSession().send(pinOperation(PIN_REJECTED));
 			}
 		} else if (op1 == 0) {
-			lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
+			lc.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
 		}
 	}
 
@@ -120,7 +121,7 @@ public class AuthHandler {
 				lc.getSession().send(pinRegistered());
 			}
 		}
-		lc.updateState(LoginClient.STATUS_NOTLOGGEDIN);
+		lc.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
 	}
 
 	private static byte[] genderDone(byte gender) {

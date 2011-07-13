@@ -77,6 +77,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		}
 	}
 
+	@Override
 	public EffectSource getSourceType() {
 		return EffectSource.PLAYER_SKILL;
 	}
@@ -406,6 +407,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		this.mp = mp;
 	}
 
+	@Override
 	public int getDuration() {
 		if (isFreeze)
 			return super.getDuration() * 2;
@@ -420,10 +422,12 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return hpCon;
 	}
 
+	@Override
 	public int getX() {
 		return x;
 	}
 
+	@Override
 	public int getY() {
 		return y;
 	}
@@ -500,6 +504,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return mp;
 	}
 
+	@Override
 	public int hashCode() {
 		//set the high bit to differentiate between skill and item effects that
 		//have the same data id.
@@ -507,10 +512,12 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return getDataId() | 0x80000000;
 	}
 
+	@Override
 	public MonsterStatusEffect getMonsterEffect() {
 		return monsterDisease;
 	}
 
+	@Override
 	public byte getLevel() {
 		return level;
 	}

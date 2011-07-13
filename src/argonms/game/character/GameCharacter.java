@@ -22,7 +22,6 @@ import argonms.common.GlobalConstants;
 import argonms.common.ServerType;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
-import argonms.common.character.Player.CharacterTools;
 import argonms.common.character.Player.LoggedInPlayer;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
@@ -52,7 +51,6 @@ import argonms.game.character.BuffState.SkillState;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Minigame.MinigameResult;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
@@ -70,6 +68,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -158,6 +157,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		minigameStats = new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class);
 	}
 
+	@Override
 	public int getDataId() {
 		return getId();
 	}
@@ -418,7 +418,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps = con.prepareStatement("INSERT INTO `queststatuses` "
 					+ "(`characterid`,`questid`,`state`,`completed`) VALUES "
 					+ "(?,?,?, ?)",
-					PreparedStatement.RETURN_GENERATED_KEYS);
+					Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1, getDataId());
 			for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
 				QuestEntry status = entry.getValue();
@@ -680,22 +680,27 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	@Override
 	public GameClient getClient() {
 		return client;
 	}
 
+	@Override
 	public byte getPrivilegeLevel() {
 		return gm;
 	}
 
+	@Override
 	public String getName() {
 		return name;
 	}
 
+	@Override
 	public byte getGender() {
 		return gender;
 	}
 
+	@Override
 	public byte getSkinColor() {
 		return skin;
 	}

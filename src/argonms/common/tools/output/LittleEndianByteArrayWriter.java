@@ -45,6 +45,7 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		data = copy;
 	}
 
+	@Override
 	public void write(byte b) {
 		if (index == data.length)
 			grow(1);
@@ -52,6 +53,7 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		data[index++] = b;
 	}
 
+	@Override
 	public void write(byte... bytes) {
 		if (index + bytes.length >= data.length + 1)
 			grow(bytes.length);
@@ -60,10 +62,12 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		index += bytes.length;
 	}
 
+	@Override
 	public void dispose() {
 		data = null;
 	}
 
+	@Override
 	public LittleEndianWriter writeInt(int i) {
 		write((byte) (i & 0xFF));
 		write((byte) ((i >>> 8) & 0xFF));
@@ -72,6 +76,7 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		return this;
 	}
 
+	@Override
 	public LittleEndianWriter writeShort(short s) {
 		write((byte) (s & 0xFF));
 		write((byte) ((s >>> 8) & 0xFF));
@@ -87,6 +92,7 @@ public class LittleEndianByteArrayWriter extends LittleEndianWriter {
 		return trimmed;
 	}
 
+	@Override
 	public String toString() {
 		return HexTool.toString(getBytes());
 	}

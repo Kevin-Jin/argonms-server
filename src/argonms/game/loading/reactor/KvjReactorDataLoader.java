@@ -49,6 +49,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		this.dataPath = wzPath;
 	}
 
+	@Override
 	protected void load(int reactorid) {
 		String id = String.format("%07d", reactorid);
 
@@ -65,6 +66,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		reactorStats.put(Integer.valueOf(reactorid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		try {
 			File root = new File(dataPath + "Reactor.wz");
@@ -84,6 +86,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoad(int reactorid) {
 		if (reactorStats.containsKey(reactorid))
 			return true;

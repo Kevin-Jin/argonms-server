@@ -217,24 +217,24 @@ public class MapleAESOFB {
 		for (int x = 0; x < 4; x++) {
 			byte elina = in[1];
 			byte anna = oldIv[x];
-			byte moritz = funnyBytes[(int) elina & 0xFF];
+			byte moritz = funnyBytes[elina & 0xFF];
 			moritz -= oldIv[x];
 			in[0] += moritz;
 			moritz = in[2];
-			moritz ^= funnyBytes[(int) anna & 0xFF];
-			elina -= (int) moritz & 0xFF;
+			moritz ^= funnyBytes[anna & 0xFF];
+			elina -= moritz & 0xFF;
 			in[1] = elina;
 			elina = in[3];
 			moritz = elina;
-			elina -= (int) in[0] & 0xFF;
-			moritz = funnyBytes[(int) moritz & 0xFF];
+			elina -= in[0] & 0xFF;
+			moritz = funnyBytes[moritz & 0xFF];
 			moritz += oldIv[x];
 			moritz ^= in[2];
 			in[2] = moritz;
-			elina += (int) funnyBytes[(int) anna & 0xFF] & 0xFF;
+			elina += funnyBytes[anna & 0xFF] & 0xFF;
 			in[3] = elina;
 
-			int merry = ((int) in[0]) & 0xFF;
+			int merry = (in[0]) & 0xFF;
 			merry |= (in[1] << 8) & 0xFF00;
 			merry |= (in[2] << 16) & 0xFF0000;
 			merry |= (in[3] << 24) & 0xFF000000;
@@ -279,7 +279,7 @@ public class MapleAESOFB {
 					cur += dataLength;
 					cur ^= remember;
 					remember = cur;
-					cur = BitTools.rollRight(cur, (int)dataLength & 0xFF);
+					cur = BitTools.rollRight(cur, dataLength & 0xFF);
 					cur = ((byte) ((~cur) & 0xFF));
 					cur += 0x48;
 					dataLength--;
@@ -319,7 +319,7 @@ public class MapleAESOFB {
 					byte cur = data[i];
 					cur -= 0x48;
 					cur = ((byte) ((~cur) & 0xFF));
-					cur = BitTools.rollLeft(cur, (int)dataLength & 0xFF);
+					cur = BitTools.rollLeft(cur, dataLength & 0xFF);
 					nextRemember = cur;
 					cur ^= remember;
 					remember = nextRemember;

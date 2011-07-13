@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 public class ClientLoginPacketProcessor extends ClientPacketProcessor<LoginClient> {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
+	@Override
 	public void process(LittleEndianReader reader, LoginClient lc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.LOGIN_PASSWORD:

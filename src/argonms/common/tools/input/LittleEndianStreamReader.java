@@ -39,6 +39,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		this.is = is;
 	}
 
+	@Override
 	protected int read() {
 		try {
 			return is.read();
@@ -48,6 +49,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		}
 	}
 
+	@Override
 	protected byte[] read(int amount) {
 		byte[] ret = new byte[amount];
 		try {
@@ -58,6 +60,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		return ret;
 	}
 
+	@Override
 	public void skip(int amount) {
 		try {
 			is.skip(amount);
@@ -66,6 +69,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		}
 	}
 
+	@Override
 	public int available() {
 		try {
 			return is.available();
@@ -75,6 +79,7 @@ public class LittleEndianStreamReader extends LittleEndianReader {
 		}
 	}
 
+	@Override
 	public void dispose() {
 		try {
 			is.close();

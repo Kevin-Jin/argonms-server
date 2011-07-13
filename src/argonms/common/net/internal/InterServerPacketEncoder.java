@@ -31,6 +31,7 @@ import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
  * @author GoldenKevin
  */
 public class InterServerPacketEncoder extends OneToOneEncoder {
+	@Override
 	protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
 		byte[] content = (byte[]) msg;
 		ChannelBuffer buf = ChannelBuffers.buffer(ByteOrder.LITTLE_ENDIAN, content.length + 4);

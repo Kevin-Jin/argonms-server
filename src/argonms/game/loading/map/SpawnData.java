@@ -127,6 +127,7 @@ public class SpawnData {
 		return rx1;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("type=").append(type);

@@ -44,6 +44,7 @@ public class TamingMob extends Equip {
 		this.tiredness = tiredness;
 	}
 
+	@Override
 	public ItemType getType() {
 		return ItemType.MOUNT;
 	}
@@ -72,6 +73,7 @@ public class TamingMob extends Equip {
 		this.tiredness = tiredness;
 	}
 
+	@Override
 	public TamingMob clone() {
 		TamingMob copy = new TamingMob(getDataId());
 		copy.setExpiration(getExpiration());

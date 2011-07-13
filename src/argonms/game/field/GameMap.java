@@ -273,6 +273,7 @@ public class GameMap {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
 			//when canceled, so should we just use a WeakReference to player?
 			ScheduledFuture<?> future = Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
 				public void run() {
 					p.changeMap(stats.getForcedReturn());
 					p.getClient().getSession().send(writeShowTimeLimit(0));
@@ -283,6 +284,7 @@ public class GameMap {
 		}
 		if (decHpTasks != null) {
 			ScheduledFuture<?> future = Scheduler.getInstance().runRepeatedly(new Runnable() {
+				@Override
 				public void run() {
 					p.doDecHp(stats.getProtectItem(), stats.getDecHp());
 				}
@@ -319,6 +321,7 @@ public class GameMap {
 			checkForItemTriggeredReactors(d);
 		final Integer eid = Integer.valueOf(d.getId());
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				ItemDrop d = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eid);
 				if (d != null) {
@@ -375,6 +378,7 @@ public class GameMap {
 		//expire every drop at once in the same Runnable rather than have a
 		//separate Runnable job for each drop running in parallel.
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				for (Integer eId : dropped) {
 					ItemDrop drop = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eId.intValue());
@@ -409,6 +413,7 @@ public class GameMap {
 		final ScheduledFuture<?> poisonSchedule;
 		if (mist.getMistType() == Mist.POISON_MIST) {
 			Runnable poisonTask = new Runnable() {
+				@Override
 				public void run() {
 					List<MapEntity> affectedMonsters = getMapEntitiesInRect(mist.getBox(), EnumSet.of(EntityType.MONSTER));
 					for (MapEntity mo : affectedMonsters) {
@@ -494,6 +499,7 @@ public class GameMap {
 		destroyEntity(r);
 		if (r.getDelay() > 0) {
 			Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
 				public void run() {
 					respawnReactor(r);
 				}
@@ -781,6 +787,7 @@ public class GameMap {
 			mob.setPosition(new Point(pos));
 			spawnedMonsters.incrementAndGet();
 			mob.addDeathHook(new MobDeathHook() {
+				@Override
 				public void monsterKilled(GameCharacter highestAttacker, GameCharacter finalAttacker) {
 					//this has to be atomic, so I had to do away with assigning
 					//nextPossibleSpawn more than once.
@@ -799,6 +806,7 @@ public class GameMap {
 			return mob;
 		}
 
+		@Override
 		public int compareTo(MonsterSpawn m) {
 			int aliveDelta = spawnedMonsters.get() - m.spawnedMonsters.get();
 			if (aliveDelta == 0)
@@ -871,10 +879,6 @@ public class GameMap {
 			return nextEntId;
 		}
 
-		public MapEntity getById(int entityId) {
-			return entities.get(Integer.valueOf(entityId));
-		}
-
 		public MapEntity getByIdSafely(int entityId) {
 			return entities.getWhenSafe(Integer.valueOf(entityId));
 		}
@@ -883,20 +887,8 @@ public class GameMap {
 			entities.put(Integer.valueOf(ent.getId()), ent);
 		}
 
-		public void addSafely(MapEntity ent) {
-			entities.putWhenSafe(Integer.valueOf(ent.getId()), ent);
-		}
-
-		public void removeById(int entityId) {
-			entities.remove(Integer.valueOf(entityId));
-		}
-
 		public void removeByIdSafely(int entityId) {
 			entities.removeWhenSafe(Integer.valueOf(entityId));
-		}
-
-		public int getSize() {
-			return entities.size();
 		}
 
 		public int getSizeSafely() {

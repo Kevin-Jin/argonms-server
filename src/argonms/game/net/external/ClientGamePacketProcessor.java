@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient> {
 	private static final Logger LOG = Logger.getLogger(ClientPacketProcessor.class.getName());
 
+	@Override
 	public void process(LittleEndianReader reader, GameClient gc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.SERVERLIST_REREQUEST:

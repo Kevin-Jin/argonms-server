@@ -64,6 +64,7 @@ public class AreaData {
 		return y2;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder ret = new StringBuilder();
 		ret.append('(').append(x1).append(", ").append(y1).append("), (").append(x2).append(", ").append(y2).append(")");

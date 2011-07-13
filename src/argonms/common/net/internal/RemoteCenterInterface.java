@@ -62,6 +62,7 @@ public abstract class RemoteCenterInterface {
 			)
 		);
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+			@Override
 			public ChannelPipeline getPipeline() throws Exception {
 				ChannelPipeline pipeline = Channels.pipeline();
 				pipeline.addLast("decoder", new InterServerPacketDecoder());
@@ -128,29 +129,35 @@ public abstract class RemoteCenterInterface {
 	protected abstract byte getServerId();
 
 	private class InterServerHandler extends SimpleChannelUpstreamHandler {
+		@Override
 		public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Trying to connect to center server from {0}", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Connected to center server at {0}", e.getChannel().getRemoteAddress());
 			ch = e.getChannel();
 			init();
 		}
 
+		@Override
 		public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINE, "Disconnected from center server at {0}", e.getChannel().getRemoteAddress());
 			disconnected();
 		}
 
+		@Override
 		public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 			LOG.log(Level.FINEST, "Removing center server from {0}", e.getChannel().getRemoteAddress());
 		}
 
+		@Override
 		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
 			process((byte[]) e.getMessage());
 		}
 
+		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 			LOG.log(Level.FINE, "Exception raised in internal network facing code (center server)", e.getCause());
 		}

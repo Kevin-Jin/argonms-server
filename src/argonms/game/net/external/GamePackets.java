@@ -797,6 +797,7 @@ public class GamePackets {
 		long updateMask = 0;
 		Map<PlayerStatusEffect, PlayerStatusEffectValues> statusEffects = new TreeMap<PlayerStatusEffect, PlayerStatusEffectValues>(new Comparator<PlayerStatusEffect>() {
 			//sort by value order (i.e. 5,6,7,8,1,2,3,4), then by mask (i.e. enum order)
+			@Override
 			public int compare(PlayerStatusEffect k1, PlayerStatusEffect k2) {
 				int diff = k1.getValueOrder() - k2.getValueOrder();
 				if (diff == 0) //if k1 and k2 share the same value order
@@ -859,7 +860,7 @@ public class GamePackets {
 		lew.writeInt(p.getItemEffect());
 		lew.writeInt(p.getChair());
 		lew.writePos(p.getPosition());
-		lew.writeByte((byte) p.getStance());
+		lew.writeByte(p.getStance());
 		lew.writeShort(p.getFoothold());
 		lew.writeByte((byte) 0);
 		for (Pet pet : p.getPets()) {

@@ -43,6 +43,7 @@ public class GameCenterInterface extends RemoteCenterInterface {
 		this.world = world;
 	}
 
+	@Override
 	public byte getServerId() {
 		return serverId;
 	}
@@ -51,10 +52,12 @@ public class GameCenterInterface extends RemoteCenterInterface {
 		return world;
 	}
 
+	@Override
 	protected void init() {
 		send(auth(serverId, getInterserverPwd(), world, local.getChannels().keySet()));
 	}
 
+	@Override
 	public void serverReady() {
 		send(serverReady(local.getExternalIp(), world, local.getClientPorts()));
 	}
@@ -91,6 +94,7 @@ public class GameCenterInterface extends RemoteCenterInterface {
 		return lew.getBytes();
 	}
 
+	@Override
 	public LocalServer getLocalServer() {
 		return local;
 	}

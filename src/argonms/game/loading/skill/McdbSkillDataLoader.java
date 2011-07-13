@@ -40,6 +40,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		
 	}
 
+	@Override
 	protected void loadPlayerSkill(int skillid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -62,6 +63,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		skillStats.put(Integer.valueOf(skillid), stats);
 	}
 
+	@Override
 	protected void loadMobSkill(short skillid) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -84,6 +86,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		mobSkillStats.put(Short.valueOf(skillid), stats);
 	}
 
+	@Override
 	public boolean loadAll() {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -118,6 +121,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
+	@Override
 	public boolean canLoadPlayerSkill(int skillid) {
 		if (skillStats.containsKey(Integer.valueOf(skillid)))
 			return true;
@@ -140,6 +144,7 @@ public class McdbSkillDataLoader extends SkillDataLoader {
 		return exists;
 	}
 
+	@Override
 	public boolean canLoadMobSkill(short skillid) {
 		if (mobSkillStats.containsKey(Short.valueOf(skillid)))
 			return true;

@@ -29,10 +29,12 @@ import java.util.List;
  * @author GoldenKevin
  */
 public class SearchCommandHandler extends AbstractCommandDefinition {
+	@Override
 	public String getHelpMessage() {
 		return "Look up the WZ data ID of an object based on its name.";
 	}
 
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
 	}
@@ -48,6 +50,7 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 		return sb.substring(0, sb.length() - 1); //assume we have at least one arg
 	}
 
+	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 3) {
 			resp.printErr("Invalid usage. " + getUsage());

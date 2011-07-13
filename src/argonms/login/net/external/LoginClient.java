@@ -243,14 +243,17 @@ public class LoginClient extends RemoteClient {
 		return false;
 	}
 
+	@Override
 	public LoginCharacter getPlayer() {
 		return null;
 	}
 
+	@Override
 	public byte getServerId() {
 		return ServerType.LOGIN;
 	}
 
+	@Override
 	public void disconnected() {
 		stopPingTask();
 		getSession().removeClient();

@@ -63,8 +63,8 @@ public class JumpDownMovement extends AbstractLifeMovement {
 		lew.writeByte(getType());
 		lew.writePos(getPosition());
 		lew.writePos(pixelsPerSecond);
-		lew.writeShort((short) unk);
-		lew.writeShort((short) fh);
+		lew.writeShort(unk);
+		lew.writeShort(fh);
 		lew.writeByte(getNewstate());
 		lew.writeShort(getDuration());
 	}

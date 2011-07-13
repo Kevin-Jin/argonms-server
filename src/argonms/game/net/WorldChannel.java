@@ -72,6 +72,7 @@ public class WorldChannel {
 	public void listen(boolean useNio) {
 		try {
 			handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
+				@Override
 				public GameClient newInstance(byte world, byte client) {
 					return new GameClient(world, client);
 				}
@@ -88,6 +89,7 @@ public class WorldChannel {
 			return;
 		}
 		Scheduler.getInstance().runRepeatedly(new Runnable() {
+			@Override
 			public void run() {
 				for (GameMap map : mapFactory.getMaps().values())
 					map.respawnMobs();
@@ -128,6 +130,7 @@ public class WorldChannel {
 
 	public void requestChannelChange(final GameCharacter p, byte destCh) {
 		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
 			public void run() {
 				channelChangeError(p);
 			}
