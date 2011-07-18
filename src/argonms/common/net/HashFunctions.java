@@ -18,8 +18,8 @@
 
 package argonms.common.net;
 
-import argonms.common.tools.HexTool;
-import argonms.common.tools.Rng;
+import argonms.common.util.HexTool;
+import argonms.common.util.Rng;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

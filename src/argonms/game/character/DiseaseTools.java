@@ -18,7 +18,7 @@
 
 package argonms.game.character;
 
-import argonms.common.tools.Scheduler;
+import argonms.common.util.Scheduler;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 

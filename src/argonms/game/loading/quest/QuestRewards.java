@@ -25,7 +25,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
-import argonms.common.tools.TimeUtil;
+import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.inventory.ItemTools;
@@ -113,7 +113,7 @@ public class QuestRewards {
 	}
 
 	protected void setEndDate(int idate) {
-		endDate = TimeUtil.intDateToCalendar(idate).getTimeInMillis();
+		endDate = TimeTool.intDateToCalendar(idate).getTimeInMillis();
 	}
 
 	protected void setRepeatInterval(int interval) {

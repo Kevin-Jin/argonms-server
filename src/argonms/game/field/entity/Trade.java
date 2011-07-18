@@ -25,7 +25,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.net.external.GamePackets;

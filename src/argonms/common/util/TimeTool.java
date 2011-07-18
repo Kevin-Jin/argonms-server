@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools;
+package argonms.common.util;
 
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -25,7 +25,7 @@ import java.util.TimeZone;
  *
  * @author GoldenKevin
  */
-public final class TimeUtil {
+public final class TimeTool {
 	/**
 	 * Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
 	 */
@@ -41,7 +41,7 @@ public final class TimeUtil {
 	static {
 		TimeZone tz = Calendar.getInstance().getTimeZone();
 		TIME_ZONE_OFFSET = tz.getRawOffset() + tz.getDSTSavings();
-		NO_EXPIRATION = 3439756800000L - TimeUtil.TIME_ZONE_OFFSET;
+		NO_EXPIRATION = 3439756800000L - TimeTool.TIME_ZONE_OFFSET;
 	}
 
 	/**

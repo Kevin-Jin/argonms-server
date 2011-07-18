@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools;
+package argonms.common.util;
 
 /**
  * Provides static methods for working with raw byte sequences.
@@ -27,53 +27,9 @@ package argonms.common.tools;
  * @since Revision 206
  * @version 1.1
  */
-public final class BitTools {
-	private BitTools() {
+public final class BitTool {
+	private BitTool() {
 		//uninstantiable...
-	}
-
-	/**
-	 * Reads a short from <code>array</code> at <code>index</code>
-	 * 
-	 * @param array The byte array to read the short integer from.
-	 * @param index Where reading begins.
-	 * @return The short integer value.
-	 */
-	public static int getShort(byte array[], int index) {
-		int ret = array[index];
-		ret &= 0xFF;
-		ret |= (array[index + 1] << 8) & 0xFF00;
-		return ret;
-	}
-
-	/**
-	 * Reads a string from <code>array</code> at
-	 * <code>index</code> <code>length</code> in length.
-	 * 
-	 * @param array The array to read the string from.
-	 * @param index Where reading begins.
-	 * @param length The number of bytes to read.
-	 * @return The string read.
-	 */
-	public static String getString(byte[] array, int index, int length) {
-		char[] cret = new char[length];
-		for (int x = 0; x < length; x++) {
-			cret[x] = (char) array[x + index];
-		}
-		return String.valueOf(cret);
-	}
-
-	/**
-	 * Reads a maplestory-convention string from <code>array</code> at
-	 * <code>index</code>
-	 * 
-	 * @param array The byte array to read from.
-	 * @param index Where reading begins.
-	 * @return The string read.
-	 */
-	public static String getMapleString(byte[] array, int index) {
-		int length = (array[index] & 0xFF) | (array[index + 1] << 8 & 0xFF00);
-		return BitTools.getString(array, index + 2, length);
 	}
 
 	/**
@@ -114,20 +70,8 @@ public final class BitTools {
 	 */
 	public static byte[] multiplyBytes(byte[] in, int count, int mul) {
 		byte[] ret = new byte[count * mul];
-		for (int x = 0; x < count * mul; x++) {
-			ret[x] = in[x % count];
-		}
+		for (int i = 0; i < mul; i++)
+			System.arraycopy(in, 0, ret, i * count, count);
 		return ret;
-	}
-
-	/**
-	 * Turns a double-precision floating point integer into an integer.
-	 * 
-	 * @param d The double to transform.
-	 * @return The converted integer.
-	 */
-	public static int doubleToShortBits(double d) {
-		long l = Double.doubleToLongBits(d);
-		return (int) (l >> 48);
 	}
 }

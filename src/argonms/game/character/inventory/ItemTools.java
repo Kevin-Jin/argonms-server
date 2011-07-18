@@ -24,7 +24,7 @@ import argonms.common.character.Skills;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.item.ItemEffectsData;
-import argonms.common.tools.Scheduler;
+import argonms.common.util.Scheduler;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;

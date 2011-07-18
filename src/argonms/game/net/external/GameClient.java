@@ -19,8 +19,8 @@
 package argonms.game.net.external;
 
 import argonms.common.net.external.RemoteClient;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.script.NpcConversationActions;

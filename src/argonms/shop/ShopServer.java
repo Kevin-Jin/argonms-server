@@ -27,9 +27,9 @@ import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.PlayerLog;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
-import argonms.common.tools.Scheduler;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.common.util.Scheduler;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
@@ -115,8 +115,30 @@ public class ShopServer implements LocalServer {
 		}
 		try {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, null, DatabaseManager.getConnection(DatabaseType.STATE));
-			if (mcdb)
-				DatabaseManager.cleanup(DatabaseType.WZ, null, null, DatabaseManager.getConnection(DatabaseType.WZ));
+			if (mcdb) {
+				Connection con = null;
+				PreparedStatement ps = null;
+				ResultSet rs = null;
+				try {
+					con = DatabaseManager.getConnection(DatabaseType.WZ);
+					ps = con.prepareStatement("SELECT `version`,`subversion`,`maple_version` FROM `mcdb_info`");
+					rs = ps.executeQuery();
+					if (rs.next()) {
+						int realVersion = rs.getInt(1);
+						int realSubversion = rs.getInt(2);
+						int realGameVersion = rs.getInt(3);
+						if (realVersion != GlobalConstants.MCDB_VERSION || realSubversion != GlobalConstants.MCDB_SUBVERSION) {
+							LOG.log(Level.SEVERE, "MCDB version imcompatible. Expected: {0}.{1} Have: {2}.{3}", new Object[] { GlobalConstants.MCDB_VERSION, GlobalConstants.MCDB_SUBVERSION, realVersion, realSubversion });
+							System.exit(3);
+							return;
+						}
+						if (realGameVersion != GlobalConstants.MAPLE_VERSION) //carry on despite the warning...
+							LOG.log(Level.WARNING, "Your copy of MCDB is based on an incongruent version of the WZ files. ArgonMS: {0} MCDB: {1}", new Object[] { GlobalConstants.MAPLE_VERSION, realGameVersion });
+					}
+				} finally {
+					DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
+				}
+			}
 		} catch (SQLException e) {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
 			System.exit(3);
@@ -151,17 +173,12 @@ public class ShopServer implements LocalServer {
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		Scheduler.enable();
-		try {
-			handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
-				@Override
-				public ShopClient newInstance(byte world, byte client) {
-					return new ShopClient();
-				}
-			});
-		} catch (NoSuchMethodException e) {
-			LOG.log(Level.SEVERE, "\"new ShopClient(byte world, byte channel)\" constructor missing!");
-			System.exit(5);
-		}
+		handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+			@Override
+			public ShopClient newInstance(byte world, byte client) {
+				return new ShopClient();
+			}
+		});
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "Shop Server is online.");
 			sci.serverReady();

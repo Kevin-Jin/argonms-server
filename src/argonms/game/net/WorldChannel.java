@@ -23,9 +23,9 @@ import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.Scheduler;
-import argonms.common.tools.collections.Pair;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.Scheduler;
+import argonms.common.util.collections.Pair;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerContinuation;
@@ -70,18 +70,12 @@ public class WorldChannel {
 	}
 
 	public void listen(boolean useNio) {
-		try {
-			handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
-				@Override
-				public GameClient newInstance(byte world, byte client) {
-					return new GameClient(world, client);
-				}
-			});
-		} catch (NoSuchMethodException e) {
-			LOG.log(Level.SEVERE, "\"new GameClient(byte world, byte channel)\" constructor missing!");
-			shutdown();
-			return;
-		}
+		handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
+			@Override
+			public GameClient newInstance(byte world, byte client) {
+				return new GameClient(world, client);
+			}
+		});
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "World {0} Channel {1} is online.", new Object[] { world, channel });
 		} else {

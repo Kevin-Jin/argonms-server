@@ -22,8 +22,8 @@ import argonms.center.CenterServer;
 import argonms.common.ServerType;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.input.LittleEndianReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.util.HashMap;
 import java.util.Map;
 

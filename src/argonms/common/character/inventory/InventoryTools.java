@@ -25,11 +25,10 @@ import argonms.common.character.inventory.Equip.WeaponType;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
-import argonms.common.tools.Rng;
+import argonms.common.util.Rng;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -201,36 +200,18 @@ public class InventoryTools {
 		} else if (quantity > 0) {
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
-
+			boolean updateUid = isCashItem(itemid);
 			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
-			if (!equip && !pet && !rechargeable) {
-				for (Short s : inv.getItemSlots(itemid)) {
-					InventorySlot slot = inv.get(s.shortValue());
-					if (slot.getQuantity() < slotMax) {
-						int delta = Math.min(slotMax - slot.getQuantity(), quantity);
-						quantity -= delta;
-						slot.setQuantity((short) (slot.getQuantity() + delta));
-						modifiedSlots.add(s);
-						if (quantity == 0)
-							break;
-					}
-				}
-			}
-
-			if (quantity > 0) {
-				boolean updateUid = isCashItem(itemid);
-				int slotsNeeded = ((quantity - 1) / slotMax) + 1; //ceiling
-				List<Short> freeSlots = inv.getFreeSlots(slotsNeeded);
-				Iterator<Short> i = freeSlots.iterator();
-				while (i.hasNext()) {
-					short s = i.next().shortValue();
-					short slotAmt = (short) Math.min(slotMax, quantity);
-					quantity -= slotAmt;
-					if (!equip && !pet)
-						item.setQuantity(slotAmt);
-					inv.put(s, item);
-					insertedSlots.add(s);
-					if (i.hasNext()) {
+			short invEnd = inv.getMaxSlots();
+			boolean clone = false;
+			InventorySlot slotItem;
+			short slotQty;
+			int qtyDelta;
+			for (short i = 1; i <= invEnd && quantity > 0; i++) {
+				slotItem = inv.get(i);
+				slotQty = slotItem.getQuantity();
+				if (slotItem == null) {
+					if (clone) {
 						item = item.clone();
 						if (updateUid) {
 							try {
@@ -240,6 +221,20 @@ public class InventoryTools {
 							}
 						}
 					}
+					clone = true;
+					inv.put(i, item);
+
+					qtyDelta = Math.min(slotMax, quantity);
+					quantity -= qtyDelta;
+					if (!equip && !pet)
+						item.setQuantity((short) qtyDelta);
+					insertedSlots.add(i);
+				} else if (slotItem.getDataId() == itemid && slotQty < slotMax) {
+					qtyDelta = Math.min(slotMax - slotQty, quantity);
+					quantity -= qtyDelta;
+					//assert (!equip && !pet);
+					slotItem.setQuantity((short) (slotQty + qtyDelta));
+					modifiedSlots.add(i);
 				}
 			}
 		}

@@ -19,7 +19,7 @@
 package argonms.common.net.internal;
 
 import argonms.common.LocalServer;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

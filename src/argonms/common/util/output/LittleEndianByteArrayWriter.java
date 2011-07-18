@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools.output;
+package argonms.common.util.output;
 
-import argonms.common.tools.HexTool;
+import argonms.common.util.HexTool;
 
 /**
  *

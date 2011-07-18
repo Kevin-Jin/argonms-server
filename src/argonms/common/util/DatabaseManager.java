@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools;
+package argonms.common.util;
 
-import argonms.common.tools.collections.LockableList;
+import argonms.common.util.collections.LockableList;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;

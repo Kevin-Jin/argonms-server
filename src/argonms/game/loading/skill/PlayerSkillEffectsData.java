@@ -23,7 +23,7 @@ import argonms.common.character.Skills;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData.BuffsData;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
-import argonms.common.tools.Rng;
+import argonms.common.util.Rng;
 import java.awt.Point;
 
 /**

@@ -22,7 +22,7 @@ import argonms.common.GlobalConstants;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
-import argonms.common.tools.TimeUtil;
+import argonms.common.util.TimeTool;
 import argonms.game.character.GameCharacter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,7 +108,7 @@ public class QuestChecks {
 	}
 
 	protected void setEndDate(int idate) {
-		endDate = TimeUtil.intDateToCalendar(idate).getTimeInMillis();
+		endDate = TimeTool.intDateToCalendar(idate).getTimeInMillis();
 	}
 
 	protected void setStartScript(String scriptName) {

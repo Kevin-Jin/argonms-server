@@ -18,8 +18,8 @@
 
 package argonms.game.loading.quest;
 
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.game.loading.quest.QuestRewards.SkillReward;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

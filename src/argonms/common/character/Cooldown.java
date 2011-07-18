@@ -18,7 +18,7 @@
 
 package argonms.common.character;
 
-import argonms.common.tools.Scheduler;
+import argonms.common.util.Scheduler;
 import java.util.concurrent.ScheduledFuture;
 
 /**

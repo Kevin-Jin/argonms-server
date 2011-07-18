@@ -22,7 +22,7 @@ import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
 import argonms.common.character.inventory.InventoryTools;
-import argonms.common.tools.Rng;
+import argonms.common.util.Rng;
 import argonms.game.GameServer;
 import argonms.game.field.Element;
 import java.util.ArrayList;

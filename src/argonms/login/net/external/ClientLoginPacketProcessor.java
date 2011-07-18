@@ -20,7 +20,7 @@ package argonms.login.net.external;
 
 import argonms.common.net.external.ClientPacketProcessor;
 import argonms.common.net.external.ClientRecvOps;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.login.net.external.handler.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;

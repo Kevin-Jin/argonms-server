@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools.input;
+package argonms.common.util.input;
 
-import argonms.common.tools.HexTool;
+import argonms.common.util.HexTool;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;

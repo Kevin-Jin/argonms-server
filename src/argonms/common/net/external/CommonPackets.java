@@ -34,9 +34,9 @@ import argonms.common.character.inventory.InventorySlot.ItemType;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.Ring;
-import argonms.common.tools.TimeUtil;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.common.tools.output.LittleEndianWriter;
+import argonms.common.util.TimeTool;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianWriter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -74,8 +74,8 @@ public class CommonPackets {
 	 */
 	public static void writeItemExpire(LittleEndianWriter lew, long time, boolean show) {
 		if (!show || time <= 0)
-			time = TimeUtil.NO_EXPIRATION;
-		lew.writeLong(TimeUtil.unixToWindowsTime(time));
+			time = TimeTool.NO_EXPIRATION;
+		lew.writeLong(TimeTool.unixToWindowsTime(time));
 	}
 
 	public static void writeCharStats(LittleEndianWriter lew, Player p) {
@@ -354,7 +354,7 @@ public class CommonPackets {
 		lew.writeShort((short) completed.size());
 		for (Entry<Short, QuestEntry> completedQuest : completed.entrySet()) {
 			lew.writeShort(completedQuest.getKey().shortValue());
-			lew.writeLong(TimeUtil.unixToWindowsTime(completedQuest.getValue().getCompletionTime()));
+			lew.writeLong(TimeTool.unixToWindowsTime(completedQuest.getValue().getCompletionTime()));
 		}
 
 		//dude, what the fuck was that guy who wrote this smoking?

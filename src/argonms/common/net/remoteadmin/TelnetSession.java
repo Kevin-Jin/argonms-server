@@ -20,8 +20,8 @@ package argonms.common.net.remoteadmin;
 
 import argonms.common.UserPrivileges;
 import argonms.common.net.HashFunctions;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

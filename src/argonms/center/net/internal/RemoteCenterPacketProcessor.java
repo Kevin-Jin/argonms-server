@@ -18,7 +18,7 @@
 
 package argonms.center.net.internal;
 
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 
 /**
  *

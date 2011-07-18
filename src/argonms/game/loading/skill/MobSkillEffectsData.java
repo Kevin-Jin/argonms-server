@@ -21,7 +21,7 @@ package argonms.game.loading.skill;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
-import argonms.common.tools.Rng;
+import argonms.common.util.Rng;
 import argonms.game.field.MobSkills;
 import java.awt.Point;
 import java.util.EnumSet;

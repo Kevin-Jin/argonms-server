@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.tools.input;
+package argonms.common.util.input;
 
 import java.io.IOException;
 import java.io.InputStream;
