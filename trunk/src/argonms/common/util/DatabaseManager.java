@@ -206,7 +206,9 @@ public class DatabaseManager {
 			Connection con = get();
 			if (con == null) {
 				remove();
-				throw exceptions.get();
+				SQLException ex = exceptions.get();
+				exceptions.remove();
+				throw ex;
 			}
 			if (connectionCheck(con)) {
 				taken.incrementAndGet();

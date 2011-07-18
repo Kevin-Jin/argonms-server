@@ -168,7 +168,7 @@ public class InventoryTools {
 	 * be placed in the inventory until it is full. The quantity of the given
 	 * InventorySlot will be ignored, and the object itself will be placed in
 	 * the first slot added once all other slots with the same item id are full.
-	 * 
+	 *
 	 * If breakRechargeableStack is false and the given item is a rechargeable,
 	 * then the entire quantity will be placed into one slot. Useful for
 	 * preserving a stack of stars/bullets when items are transferred from a
@@ -209,7 +209,6 @@ public class InventoryTools {
 			int qtyDelta;
 			for (short i = 1; i <= invEnd && quantity > 0; i++) {
 				slotItem = inv.get(i);
-				slotQty = slotItem.getQuantity();
 				if (slotItem == null) {
 					if (clone) {
 						item = item.clone();
@@ -229,7 +228,7 @@ public class InventoryTools {
 					if (!equip && !pet)
 						item.setQuantity((short) qtyDelta);
 					insertedSlots.add(i);
-				} else if (slotItem.getDataId() == itemid && slotQty < slotMax) {
+				} else if (slotItem.getDataId() == itemid && (slotQty = slotItem.getQuantity()) < slotMax) {
 					qtyDelta = Math.min(slotMax - slotQty, quantity);
 					quantity -= qtyDelta;
 					//assert (!equip && !pet);
@@ -398,7 +397,7 @@ public class InventoryTools {
 	/**
 	 * Remove a piece of equipment from a player's equipped inventory and move
 	 * it to their equipment inventory.
-	 * 
+	 *
 	 * @param equipped the inventory to remove the piece of equipment from
 	 * @param equips the inventory to move the piece of equipment to
 	 * @param src the slot of the piece of equipment in the equipped inventory

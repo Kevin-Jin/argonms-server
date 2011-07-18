@@ -72,8 +72,8 @@ public class WorldChannel {
 	public void listen(boolean useNio) {
 		handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
 			@Override
-			public GameClient newInstance(byte world, byte client) {
-				return new GameClient(world, client);
+			public GameClient newInstance(byte world, byte channel) {
+				return new GameClient(world, channel);
 			}
 		});
 		if (handler.bind(port)) {

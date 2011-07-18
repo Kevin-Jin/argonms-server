@@ -1096,6 +1096,31 @@
 	* TimeUtil renamed to TimeTool.
 	* argonms.common.tools renamed to argonms.common.util.
 
+2011-07-18  GoldenKevin  (revision 53)
+
+	* Fixed NullPointerException in InventoryTools.
+
+2011-07-18  GoldenKevin  (revision 54)
+
+	* Renamed MapleAESOFB to MapleAesOfb. Initialisms of three or more letters should be camel case instead of upper case.
+
+2011-07-18  GoldenKevin  (revision 55)
+
+	* Anonymous instances of ClientFactory use the correct argument names.
+	* References to MapleAESOFB now reference MapleAesOfb.
+	* NpcMiniroomHandler no longer prints out debug messages when withdrawing
+	from the storage.
+	* DatabaseManager.ThreadLocalConnections now removes exceptions that have
+	already been thrown from getConnection().
+	* AES-OFB cipher is tested on external facing servers at initialization, so
+	initialization can be stopped if it is discovered that the JCE Unlimited
+	Strength files are not installed. Exception handling in MapleAesOfb is now
+	simpler. AES key should be thread safe, so it is now a static variable that
+	is only instantiated once (instead of one per instance of MapleAesOfb as
+	before). Access to non thread-safe Cipher in MapleAesOfb now is in a
+	synchronized block, as calls to MapleAesOfb.crypt are not necessary
+	thread-safe.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
