@@ -19,7 +19,7 @@
 package argonms.shop.net.external.handler;
 
 import argonms.common.net.external.RemoteClient;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.shop.ShopServer;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.external.ShopClient;

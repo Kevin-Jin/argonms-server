@@ -25,7 +25,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.ItemDrop;

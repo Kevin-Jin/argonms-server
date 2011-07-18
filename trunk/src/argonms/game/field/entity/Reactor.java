@@ -18,7 +18,7 @@
 
 package argonms.game.field.entity;
 
-import argonms.common.tools.collections.Pair;
+import argonms.common.util.collections.Pair;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
 import argonms.game.loading.reactor.ReactorStats;

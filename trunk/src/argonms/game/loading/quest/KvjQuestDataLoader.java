@@ -18,8 +18,8 @@
 
 package argonms.game.loading.quest;
 
-import argonms.common.tools.input.LittleEndianByteArrayReader;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianByteArrayReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.game.loading.quest.QuestRewards.SkillReward;
 import java.io.File;
 import java.io.IOException;

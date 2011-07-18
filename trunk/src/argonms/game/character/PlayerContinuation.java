@@ -20,7 +20,7 @@ package argonms.game.character;
 
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
-import argonms.common.tools.Scheduler;
+import argonms.common.util.Scheduler;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;

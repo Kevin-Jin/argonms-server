@@ -19,10 +19,10 @@
 package argonms.game.net.internal;
 
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.collections.Pair;
-import argonms.common.tools.input.LittleEndianReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.common.tools.output.LittleEndianWriter;
+import argonms.common.util.collections.Pair;
+import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;

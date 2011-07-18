@@ -24,9 +24,9 @@ import argonms.common.ServerType;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
-import argonms.common.tools.Scheduler;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.common.util.Scheduler;
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.npc.NpcDataLoader;
@@ -159,8 +159,30 @@ public class GameServer implements LocalServer {
 		}
 		try {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, null, DatabaseManager.getConnection(DatabaseType.STATE));
-			if (mcdb)
-				DatabaseManager.cleanup(DatabaseType.WZ, null, null, DatabaseManager.getConnection(DatabaseType.WZ));
+			if (mcdb) {
+				Connection con = null;
+				PreparedStatement ps = null;
+				ResultSet rs = null;
+				try {
+					con = DatabaseManager.getConnection(DatabaseType.WZ);
+					ps = con.prepareStatement("SELECT `version`,`subversion`,`maple_version` FROM `mcdb_info`");
+					rs = ps.executeQuery();
+					if (rs.next()) {
+						int realVersion = rs.getInt(1);
+						int realSubversion = rs.getInt(2);
+						int realGameVersion = rs.getInt(3);
+						if (realVersion != GlobalConstants.MCDB_VERSION || realSubversion != GlobalConstants.MCDB_SUBVERSION) {
+							LOG.log(Level.SEVERE, "MCDB version imcompatible. Expected: {0}.{1} Have: {2}.{3}", new Object[] { GlobalConstants.MCDB_VERSION, GlobalConstants.MCDB_SUBVERSION, realVersion, realSubversion });
+							System.exit(3);
+							return;
+						}
+						if (realGameVersion != GlobalConstants.MAPLE_VERSION) //carry on despite the warning...
+							LOG.log(Level.WARNING, "Your copy of MCDB is based on an incongruent version of the WZ files. ArgonMS: {0} MCDB: {1}", new Object[] { GlobalConstants.MAPLE_VERSION, realGameVersion });
+					}
+				} finally {
+					DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
+				}
+			}
 		} catch (SQLException e) {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
 			System.exit(3);

@@ -106,17 +106,10 @@ public class StorageInventory implements IInventory {
 	public void remove(InventoryType inv, short position) {
 		writeLock.lock();
 		try {
-			if (alreadyTouched.contains(inv)) {
-				InventorySlot removed = realItems.get(inv).remove(position);
-				int i;
-				for (i = 0; i < startItems.length && !removed.equals(startItems[i]); i++);
-				if (i < startItems.length)
-					startItems[i] = null;
-			} else {
-				InventorySlot removed = startItems[position];
-				startItems[position] = null;
-				realItems.get(inv).remove(removed);
-			}
+			if (alreadyTouched.contains(inv))
+				realItems.get(inv).remove(position);
+			else
+				realItems.get(inv).remove(startItems[position]);
 			occupied--;
 		} finally {
 			writeLock.unlock();

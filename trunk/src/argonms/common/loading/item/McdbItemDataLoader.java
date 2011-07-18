@@ -20,8 +20,8 @@ package argonms.common.loading.item;
 
 import argonms.common.StatEffect;
 import argonms.common.character.inventory.InventoryTools;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

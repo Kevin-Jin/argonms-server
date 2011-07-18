@@ -24,10 +24,10 @@ import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.RemoteClient;
-import argonms.common.tools.Rng;
-import argonms.common.tools.TimeUtil;
-import argonms.common.tools.input.LittleEndianReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.Rng;
+import argonms.common.util.TimeTool;
+import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.SkillMacro;
@@ -142,7 +142,7 @@ public class GameEnterHandler {
 
 		CommonPackets.writeCharData(lew, p);
 
-		lew.writeLong(TimeUtil.unixToWindowsTime(System.currentTimeMillis()));
+		lew.writeLong(TimeTool.unixToWindowsTime(System.currentTimeMillis()));
 		return lew.getBytes();
 	}
 

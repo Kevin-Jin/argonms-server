@@ -22,7 +22,7 @@ import argonms.common.LocalServer;
 import argonms.common.ServerType;
 import argonms.common.net.internal.RemoteCenterInterface;
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.shop.ShopServer;
 
 /**

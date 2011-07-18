@@ -20,7 +20,7 @@ package argonms.center.net.internal;
 
 import argonms.center.CenterServer;
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 
 /**
  * Processes packet sent from the shop server and received at the center

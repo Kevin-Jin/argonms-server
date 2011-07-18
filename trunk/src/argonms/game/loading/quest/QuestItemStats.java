@@ -18,8 +18,8 @@
 
 package argonms.game.loading.quest;
 
-import argonms.common.tools.Rng;
-import argonms.common.tools.TimeUtil;
+import argonms.common.util.Rng;
+import argonms.common.util.TimeTool;
 
 /**
  *
@@ -78,7 +78,7 @@ public class QuestItemStats {
 	}
 
 	protected void setDateExpire(int dateExpire) {
-		expireTime = TimeUtil.intDateToCalendar(dateExpire).getTimeInMillis();
+		expireTime = TimeTool.intDateToCalendar(dateExpire).getTimeInMillis();
 	}
 
 	protected boolean notExpired() {

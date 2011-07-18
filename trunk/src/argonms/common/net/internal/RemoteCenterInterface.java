@@ -19,8 +19,8 @@
 package argonms.common.net.internal;
 
 import argonms.common.LocalServer;
-import argonms.common.tools.input.LittleEndianByteArrayReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.input.LittleEndianByteArrayReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.Executors;

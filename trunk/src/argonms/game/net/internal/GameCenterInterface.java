@@ -21,7 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.LocalServer;
 import argonms.common.net.internal.RemoteCenterInterface;
 import argonms.common.net.internal.RemoteCenterOps;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import java.util.Map;
 import java.util.Map.Entry;

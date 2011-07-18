@@ -19,7 +19,7 @@
 package argonms.common.net.external;
 
 import argonms.common.GlobalConstants;
-import argonms.common.tools.Rng;
+import argonms.common.util.Rng;
 import java.net.SocketAddress;
 import java.util.Random;
 import org.jboss.netty.channel.Channel;

@@ -18,8 +18,8 @@
 
 package argonms.common.net.external;
 
-import argonms.common.tools.BitTools;
-import argonms.common.tools.HexTool;
+import argonms.common.util.BitTool;
+import argonms.common.util.HexTool;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
@@ -133,7 +133,7 @@ public class MapleAESOFB {
 		int llength = 0x5B0;
 		int start = 0;
 		while (remaining > 0) {
-			byte[] myIv = BitTools.multiplyBytes(this.iv, 4, 4);
+			byte[] myIv = BitTool.multiplyBytes(this.iv, 4, 4);
 			if (remaining < llength)
 				llength = remaining;
 			for (int x = 0; x < llength; x++) {
@@ -275,11 +275,11 @@ public class MapleAESOFB {
 			if (j % 2 == 0) {
 				for (int i = 0; i < data.length; i++) {
 					byte cur = data[i];
-					cur = BitTools.rollLeft(cur, 3);
+					cur = BitTool.rollLeft(cur, 3);
 					cur += dataLength;
 					cur ^= remember;
 					remember = cur;
-					cur = BitTools.rollRight(cur, dataLength & 0xFF);
+					cur = BitTool.rollRight(cur, dataLength & 0xFF);
 					cur = ((byte) ((~cur) & 0xFF));
 					cur += 0x48;
 					dataLength--;
@@ -288,12 +288,12 @@ public class MapleAESOFB {
 			} else {
 				for (int i = data.length - 1; i >= 0; i--) {
 					byte cur = data[i];
-					cur = BitTools.rollLeft(cur, 4);
+					cur = BitTool.rollLeft(cur, 4);
 					cur += dataLength;
 					cur ^= remember;
 					remember = cur;
 					cur ^= 0x13;
-					cur = BitTools.rollRight(cur, 3);
+					cur = BitTool.rollRight(cur, 3);
 					dataLength--;
 					data[i] = cur;
 				}
@@ -319,25 +319,25 @@ public class MapleAESOFB {
 					byte cur = data[i];
 					cur -= 0x48;
 					cur = ((byte) ((~cur) & 0xFF));
-					cur = BitTools.rollLeft(cur, dataLength & 0xFF);
+					cur = BitTool.rollLeft(cur, dataLength & 0xFF);
 					nextRemember = cur;
 					cur ^= remember;
 					remember = nextRemember;
 					cur -= dataLength;
-					cur = BitTools.rollRight(cur, 3);
+					cur = BitTool.rollRight(cur, 3);
 					data[i] = cur;
 					dataLength--;
 				}
 			} else {
 				for (int i = data.length - 1; i >= 0; i--) {
 					byte cur = data[i];
-					cur = BitTools.rollLeft(cur, 3);
+					cur = BitTool.rollLeft(cur, 3);
 					cur ^= 0x13;
 					nextRemember = cur;
 					cur ^= remember;
 					remember = nextRemember;
 					cur -= dataLength;
-					cur = BitTools.rollRight(cur, 4);
+					cur = BitTool.rollRight(cur, 4);
 					data[i] = cur;
 					dataLength--;
 				}

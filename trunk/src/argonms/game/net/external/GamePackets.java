@@ -32,10 +32,10 @@ import argonms.common.field.MonsterStatusEffect;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
-import argonms.common.tools.Rng;
-import argonms.common.tools.TimeUtil;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
-import argonms.common.tools.output.LittleEndianWriter;
+import argonms.common.util.Rng;
+import argonms.common.util.TimeTool;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
@@ -462,7 +462,7 @@ public class GamePackets {
 		lew.writeByte(PacketSubHeaders.STATUS_INFO_QUEST);
 		lew.writeShort(questId);
 		lew.writeByte(QuestEntry.STATE_COMPLETED);
-		lew.writeLong(TimeUtil.unixToWindowsTime(status.getCompletionTime()));
+		lew.writeLong(TimeTool.unixToWindowsTime(status.getCompletionTime()));
 
 		return lew.getBytes();
 	}
@@ -718,7 +718,7 @@ public class GamePackets {
 		lew.writeShort(p.getHp()); // hp (???)
 		lew.writeByte((byte) 0);
 		//long questMask = 0x1FFFFFFFFFFFFFFL;
-		long questMask = TimeUtil.unixToWindowsTime(System.currentTimeMillis());
+		long questMask = TimeTool.unixToWindowsTime(System.currentTimeMillis());
 		lew.writeLong(questMask);
 
 		return lew.getBytes();

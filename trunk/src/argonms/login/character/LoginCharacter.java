@@ -23,8 +23,8 @@ import argonms.common.character.Player.LimitedActionCharacter;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventoryTools;
-import argonms.common.tools.DatabaseManager;
-import argonms.common.tools.DatabaseManager.DatabaseType;
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.login.net.external.LoginClient;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -45,6 +45,46 @@ import java.util.logging.Logger;
  */
 public class LoginCharacter extends LimitedActionCharacter {
 	private static final Logger LOG = Logger.getLogger(LoginCharacter.class.getName());
+
+	private static final Map<Byte, KeyBinding> defaultBindings;
+
+	static {
+		Map<Byte, KeyBinding> bindings = new HashMap<Byte, KeyBinding>();
+		bindings.put(Byte.valueOf((byte) 2), new KeyBinding((byte) 4, 10));
+		bindings.put(Byte.valueOf((byte) 3), new KeyBinding((byte) 4, 12));
+		bindings.put(Byte.valueOf((byte) 4), new KeyBinding((byte) 4, 13));
+		bindings.put(Byte.valueOf((byte) 5), new KeyBinding((byte) 4, 18));
+		bindings.put(Byte.valueOf((byte) 6), new KeyBinding((byte) 4, 21));
+		bindings.put(Byte.valueOf((byte) 16), new KeyBinding((byte) 4, 8));
+		bindings.put(Byte.valueOf((byte) 17), new KeyBinding((byte) 4, 5));
+		bindings.put(Byte.valueOf((byte) 18), new KeyBinding((byte) 4, 0));
+		bindings.put(Byte.valueOf((byte) 19), new KeyBinding((byte) 4, 4));
+		bindings.put(Byte.valueOf((byte) 23), new KeyBinding((byte) 4, 1));
+		bindings.put(Byte.valueOf((byte) 25), new KeyBinding((byte) 4, 19));
+		bindings.put(Byte.valueOf((byte) 26), new KeyBinding((byte) 4, 14));
+		bindings.put(Byte.valueOf((byte) 27), new KeyBinding((byte) 4, 15));
+		bindings.put(Byte.valueOf((byte) 29), new KeyBinding((byte) 5, 52));
+		bindings.put(Byte.valueOf((byte) 31), new KeyBinding((byte) 4, 2));
+		bindings.put(Byte.valueOf((byte) 34), new KeyBinding((byte) 4, 17));
+		bindings.put(Byte.valueOf((byte) 35), new KeyBinding((byte) 4, 11));
+		bindings.put(Byte.valueOf((byte) 37), new KeyBinding((byte) 4, 3));
+		bindings.put(Byte.valueOf((byte) 38), new KeyBinding((byte) 4, 20));
+		bindings.put(Byte.valueOf((byte) 40), new KeyBinding((byte) 4, 16));
+		bindings.put(Byte.valueOf((byte) 43), new KeyBinding((byte) 4, 9));
+		bindings.put(Byte.valueOf((byte) 44), new KeyBinding((byte) 5, 50));
+		bindings.put(Byte.valueOf((byte) 45), new KeyBinding((byte) 5, 51));
+		bindings.put(Byte.valueOf((byte) 46), new KeyBinding((byte) 4, 6));
+		bindings.put(Byte.valueOf((byte) 50), new KeyBinding((byte) 4, 7));
+		bindings.put(Byte.valueOf((byte) 56), new KeyBinding((byte) 5, 53));
+		bindings.put(Byte.valueOf((byte) 59), new KeyBinding((byte) 6, 100));
+		bindings.put(Byte.valueOf((byte) 60), new KeyBinding((byte) 6, 101));
+		bindings.put(Byte.valueOf((byte) 61), new KeyBinding((byte) 6, 102));
+		bindings.put(Byte.valueOf((byte) 62), new KeyBinding((byte) 6, 103));
+		bindings.put(Byte.valueOf((byte) 63), new KeyBinding((byte) 6, 104));
+		bindings.put(Byte.valueOf((byte) 64), new KeyBinding((byte) 6, 105));
+		bindings.put(Byte.valueOf((byte) 65), new KeyBinding((byte) 6, 106));
+		defaultBindings = Collections.unmodifiableMap(bindings);
+	}
 
 	private LoginClient client;
 
@@ -226,40 +266,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 		InventoryTools.addToInventory(etc, 4161001, 1);
 		p.addInventories(inventories);
 
-		p.bindings = new HashMap<Byte, KeyBinding>();
-		p.bindings.put(Byte.valueOf((byte) 2), new KeyBinding((byte) 4, 10));
-		p.bindings.put(Byte.valueOf((byte) 3), new KeyBinding((byte) 4, 12));
-		p.bindings.put(Byte.valueOf((byte) 4), new KeyBinding((byte) 4, 13));
-		p.bindings.put(Byte.valueOf((byte) 5), new KeyBinding((byte) 4, 18));
-		p.bindings.put(Byte.valueOf((byte) 6), new KeyBinding((byte) 4, 21));
-		p.bindings.put(Byte.valueOf((byte) 16), new KeyBinding((byte) 4, 8));
-		p.bindings.put(Byte.valueOf((byte) 17), new KeyBinding((byte) 4, 5));
-		p.bindings.put(Byte.valueOf((byte) 18), new KeyBinding((byte) 4, 0));
-		p.bindings.put(Byte.valueOf((byte) 19), new KeyBinding((byte) 4, 4));
-		p.bindings.put(Byte.valueOf((byte) 23), new KeyBinding((byte) 4, 1));
-		p.bindings.put(Byte.valueOf((byte) 25), new KeyBinding((byte) 4, 19));
-		p.bindings.put(Byte.valueOf((byte) 26), new KeyBinding((byte) 4, 14));
-		p.bindings.put(Byte.valueOf((byte) 27), new KeyBinding((byte) 4, 15));
-		p.bindings.put(Byte.valueOf((byte) 29), new KeyBinding((byte) 5, 52));
-		p.bindings.put(Byte.valueOf((byte) 31), new KeyBinding((byte) 4, 2));
-		p.bindings.put(Byte.valueOf((byte) 34), new KeyBinding((byte) 4, 17));
-		p.bindings.put(Byte.valueOf((byte) 35), new KeyBinding((byte) 4, 11));
-		p.bindings.put(Byte.valueOf((byte) 37), new KeyBinding((byte) 4, 3));
-		p.bindings.put(Byte.valueOf((byte) 38), new KeyBinding((byte) 4, 20));
-		p.bindings.put(Byte.valueOf((byte) 40), new KeyBinding((byte) 4, 16));
-		p.bindings.put(Byte.valueOf((byte) 43), new KeyBinding((byte) 4, 9));
-		p.bindings.put(Byte.valueOf((byte) 44), new KeyBinding((byte) 5, 50));
-		p.bindings.put(Byte.valueOf((byte) 45), new KeyBinding((byte) 5, 51));
-		p.bindings.put(Byte.valueOf((byte) 46), new KeyBinding((byte) 4, 6));
-		p.bindings.put(Byte.valueOf((byte) 50), new KeyBinding((byte) 4, 7));
-		p.bindings.put(Byte.valueOf((byte) 56), new KeyBinding((byte) 5, 53));
-		p.bindings.put(Byte.valueOf((byte) 59), new KeyBinding((byte) 6, 100));
-		p.bindings.put(Byte.valueOf((byte) 60), new KeyBinding((byte) 6, 101));
-		p.bindings.put(Byte.valueOf((byte) 61), new KeyBinding((byte) 6, 102));
-		p.bindings.put(Byte.valueOf((byte) 62), new KeyBinding((byte) 6, 103));
-		p.bindings.put(Byte.valueOf((byte) 63), new KeyBinding((byte) 6, 104));
-		p.bindings.put(Byte.valueOf((byte) 64), new KeyBinding((byte) 6, 105));
-		p.bindings.put(Byte.valueOf((byte) 65), new KeyBinding((byte) 6, 106));
+		p.bindings = defaultBindings;
 
 		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 		boolean prevAutoCommit = true;

@@ -19,7 +19,7 @@
 
 package argonms.game.field.movement;
 
-import argonms.common.tools.output.LittleEndianWriter;
+import argonms.common.util.output.LittleEndianWriter;
 import java.awt.Point;
 
 /**

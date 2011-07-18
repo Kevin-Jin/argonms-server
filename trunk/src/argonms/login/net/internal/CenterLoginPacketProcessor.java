@@ -21,7 +21,7 @@ package argonms.login.net.internal;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.CenterRemotePacketProcessor;
 import argonms.common.net.internal.RemoteCenterInterface;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.login.LoginServer;
 import java.util.HashMap;
 import java.util.Map;

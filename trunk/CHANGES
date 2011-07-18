@@ -1076,6 +1076,26 @@
 	implemented methods (only allowed in Java 6, but it's okay since there's
 	quite a lot of Java 5 incompatible code in the source anyway).
 
+2011-07-18  GoldenKevin  (revision 53)
+
+	* Added in MCDB version checks.
+	* Login character uses a single copy of the default key bindings that are to
+	be saved to the database with new characters, since all new characters
+	should share the same initial key map. Should speed up character creation.
+	* InventoryTools.addToInventory updated to use an algorithm that the client
+	would more likely expect. Instead of filling all existing slots of a certain
+	item first and then filling in empty slots from the start of the inventory,
+	it now iterates over the slots in order and fills them, no matter if they're
+	previously partially filled by the same item or empty.
+	* Simplified StorageInventory.remove. The inferred contract of startedItems
+	(based on its name) is that it should not be altered except when opening the
+	storage keeper.
+	* Fixed some strange compile errors around ClientListener instantiations
+	that NetBeans did not catch earlier.
+	* Removed unused methods from BitTools, and renamed it to BitTool.
+	* TimeUtil renamed to TimeTool.
+	* argonms.common.tools renamed to argonms.common.util.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

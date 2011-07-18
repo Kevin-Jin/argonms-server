@@ -19,8 +19,8 @@
 package argonms.common.net.external;
 
 import argonms.common.GlobalConstants;
-import argonms.common.tools.input.LittleEndianByteArrayReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.input.LittleEndianByteArrayReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.Executors;
@@ -55,7 +55,7 @@ import org.jboss.netty.util.HashedWheelTimer;
  */
 public class ClientListener<T extends RemoteClient> {
 	public interface ClientFactory<T extends RemoteClient> {
-		public T newInstance(byte world, byte client);
+		public T newInstance(byte world, byte channel);
 	}
 
 	private static final Logger LOG = Logger.getLogger(ClientListener.class.getName());
@@ -64,8 +64,8 @@ public class ClientListener<T extends RemoteClient> {
 	private byte world, channel;
 	private ClientPacketProcessor<T> pp;
 
-	public ClientListener(byte world, byte channel, boolean useNio, ClientPacketProcessor<T> packetProcessor, ClientFactory<T> clientClass) throws NoSuchMethodException {
-		this.clientCtor = clientClass;
+	public ClientListener(byte world, byte channel, boolean useNio, ClientPacketProcessor<T> packetProcessor, ClientFactory<T> clientFactory) {
+		this.clientCtor = clientFactory;
 		this.world = world;
 		this.channel = channel;
 		this.pp = packetProcessor;

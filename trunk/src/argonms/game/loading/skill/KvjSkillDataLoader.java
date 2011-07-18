@@ -19,8 +19,8 @@
 package argonms.game.loading.skill;
 
 import argonms.common.loading.KvjEffects;
-import argonms.common.tools.input.LittleEndianByteArrayReader;
-import argonms.common.tools.input.LittleEndianReader;
+import argonms.common.util.input.LittleEndianByteArrayReader;
+import argonms.common.util.input.LittleEndianReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;

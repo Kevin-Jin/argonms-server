@@ -20,8 +20,8 @@ package argonms.game.net.external.handler;
 
 import argonms.common.GlobalConstants;
 import argonms.common.net.external.ClientSendOps;
-import argonms.common.tools.input.LittleEndianReader;
-import argonms.common.tools.output.LittleEndianByteArrayWriter;
+import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Npc;
