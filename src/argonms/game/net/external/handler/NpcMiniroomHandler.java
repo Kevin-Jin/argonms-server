@@ -205,7 +205,6 @@ public class NpcMiniroomHandler {
 				InventoryType invType = InventoryType.valueOf(packet.readByte());
 				Inventory destInv = p.getInventory(invType);
 				byte slot = packet.readByte();
-				System.err.println(slot);
 				if (p.getMesos() < keeper.getWithdrawCost()) {
 					gc.getSession().send(writeStorageInsufficientFunds());
 					return;

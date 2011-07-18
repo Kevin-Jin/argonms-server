@@ -30,7 +30,7 @@ import org.jboss.netty.channel.Channel;
  */
 public class ClientSession<T extends RemoteClient> {
 	private Channel ch;
-	private MapleAESOFB sendCypher, recvCypher;
+	private MapleAesOfb sendCypher, recvCypher;
 	private T client;
 
 	public ClientSession(Channel ch, T client) {
@@ -40,17 +40,17 @@ public class ClientSession<T extends RemoteClient> {
 		byte[] ivRecv = { 70, 114, 122, (byte) generator.nextInt(256) };
 		byte[] ivSend = { 82, 48, 120, (byte) generator.nextInt(256) };
 
-		this.recvCypher = new MapleAESOFB(ivRecv, GlobalConstants.MAPLE_VERSION);
-		this.sendCypher = new MapleAESOFB(ivSend, (short) (0xFFFF - GlobalConstants.MAPLE_VERSION));
+		this.recvCypher = new MapleAesOfb(ivRecv, GlobalConstants.MAPLE_VERSION);
+		this.sendCypher = new MapleAesOfb(ivSend, (short) (0xFFFF - GlobalConstants.MAPLE_VERSION));
 
 		this.client = client;
 	}
 
-	public MapleAESOFB getRecvCypher() {
+	public MapleAesOfb getRecvCypher() {
 		return recvCypher;
 	}
 
-	public MapleAESOFB getSendCypher() {
+	public MapleAesOfb getSendCypher() {
 		return sendCypher;
 	}
 

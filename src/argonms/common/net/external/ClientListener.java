@@ -117,11 +117,11 @@ public class ClientListener<T extends RemoteClient> {
 
 			buf.markReaderIndex();
 			byte[] message = new byte[4];
-			MapleAESOFB recvCypher = sessions.get(channel).getRecvCypher();
+			MapleAesOfb recvCypher = sessions.get(channel).getRecvCypher();
 			buf.readBytes(message);
 
 			if (recvCypher.checkPacket(message)) {
-				int length = MapleAESOFB.getPacketLength(message);
+				int length = MapleAesOfb.getPacketLength(message);
 
 				if (buf.readableBytes() < length) {
 					buf.resetReaderIndex();
@@ -131,7 +131,7 @@ public class ClientListener<T extends RemoteClient> {
 				message = new byte[length];
 				buf.readBytes(message);
 
-				return MapleAESOFB.decryptData(recvCypher.crypt(message));
+				return MapleAesOfb.decryptData(recvCypher.crypt(message));
 			} else {
 				LOG.log(Level.FINE, "Client from {0} failed packet check -> Disconnecting.", channel.getRemoteAddress());
 				sessions.get(channel).close();
@@ -146,12 +146,12 @@ public class ClientListener<T extends RemoteClient> {
 			ClientSession<T> session = sessions.get(channel);
 			if (session != null) {
 				byte[] input = (byte[]) msg;
-				MapleAESOFB sendCypher = session.getSendCypher();
+				MapleAesOfb sendCypher = session.getSendCypher();
 				int length = input.length;
 				byte[] header = sendCypher.getPacketHeader(length);
 				byte[] body = new byte[length];
 				System.arraycopy(input, 0, body, 0, length);
-				sendCypher.crypt(MapleAESOFB.encryptData(body));
+				sendCypher.crypt(MapleAesOfb.encryptData(body));
 				return ChannelBuffers.copiedBuffer(header, body);
 			} else {
 				byte[] input = (byte[]) msg;
@@ -209,7 +209,7 @@ public class ClientListener<T extends RemoteClient> {
 		}
 	}
 
-	private static byte[] getHello(MapleAESOFB recvCypher, MapleAESOFB sendCypher) {
+	private static byte[] getHello(MapleAesOfb recvCypher, MapleAesOfb sendCypher) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
 
 		lew.writeShort(GlobalConstants.MAPLE_VERSION);

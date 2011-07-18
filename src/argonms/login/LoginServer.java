@@ -25,6 +25,7 @@ import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.net.external.MapleAesOfb;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
@@ -150,6 +151,15 @@ public class LoginServer implements LocalServer {
 			return;
 		}
 		wzPath = System.getProperty("argonms.data.dir");
+
+		try {
+			MapleAesOfb.testCipher();
+		} catch (Exception ex) {
+			LOG.log(Level.SEVERE, "Error initalizing the encryption cipher.  Make sure you're using the Unlimited Strength cryptography jar files.", ex);
+			System.exit(6);
+			return;
+		}
+
 		lci = new LoginCenterInterface(authKey, this);
 		lci.connect(centerIp, centerPort);
 		System.exit(4); //connection with center server lost before we were able to shutdown
@@ -176,7 +186,7 @@ public class LoginServer implements LocalServer {
 		Scheduler.enable();
 		handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, useNio, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
 			@Override
-			public LoginClient newInstance(byte world, byte client) {
+			public LoginClient newInstance(byte world, byte channel) {
 				return new LoginClient();
 			}
 		});

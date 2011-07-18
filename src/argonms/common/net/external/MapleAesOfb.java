@@ -24,29 +24,43 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Provides a class for encrypting MapleStory packets with AES OFB encryption.
- * 
+ *
  * Taken and merged with MapleCustomEncryption from an OdinMS-derived source
  * with a few modifications.
- * 
+ *
  * @author Frz, GoldenKevin
  * @version 1.1
  * @since Revision 320
  */
-public class MapleAESOFB {
-	private static final Logger LOG = Logger.getLogger(MapleAESOFB.class.getName());
-	
-	private byte[] iv;
-	private Cipher cipher;
-	private short mapleVersion;
-	private static final byte[] funnyBytes = { (byte) 0xEC, 0x3F, 0x77, (byte) 0xA4, 0x45, (byte) 0xD0,
+public class MapleAesOfb {
+	private static final Logger LOG = Logger.getLogger(MapleAesOfb.class.getName());
+
+	private static final byte[] key = {
+		0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+		0x06, 0x00, 0x00, 0x00, (byte) 0xB4, 0x00, 0x00, 0x00,
+		0x1B, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00,
+		0x33, 0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00
+	};
+
+	private static final SecretKeySpec sKeySpec;
+
+	static {
+		sKeySpec = new SecretKeySpec(key, "AES");
+	}
+
+	public static void testCipher() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+		Cipher cipher = Cipher.getInstance("AES");
+		cipher.init(Cipher.ENCRYPT_MODE, sKeySpec);
+	}
+
+	private static final byte[] funnyBytes = {
+		(byte) 0xEC, 0x3F, 0x77, (byte) 0xA4, 0x45, (byte) 0xD0,
 		0x71, (byte) 0xBF, (byte) 0xB7, (byte) 0x98, 0x20, (byte) 0xFC, 0x4B, (byte) 0xE9, (byte) 0xB3, (byte) 0xE1,
 		0x5C, 0x22, (byte) 0xF7, 0x0C, 0x44, 0x1B, (byte) 0x81, (byte) 0xBD, 0x63, (byte) 0x8D, (byte) 0xD4,
 		(byte) 0xC3, (byte) 0xF2, 0x10, 0x19, (byte) 0xE0, (byte) 0xFB, (byte) 0xA1, 0x6E, 0x66, (byte) 0xEA,
@@ -69,44 +83,35 @@ public class MapleAESOFB {
 		0x32, 0x24, 0x50, 0x1F, 0x3A, 0x43, (byte) 0x8A, (byte) 0x96, 0x41, 0x74, (byte) 0xAC, 0x52, 0x33, (byte) 0xF0,
 		(byte) 0xD9, 0x29, (byte) 0x80, (byte) 0xB1, 0x16, (byte) 0xD3, (byte) 0xAB, (byte) 0x91, (byte) 0xB9,
 		(byte) 0x84, 0x7F, 0x61, 0x1E, (byte) 0xCF, (byte) 0xC5, (byte) 0xD1, 0x56, 0x3D, (byte) 0xCA, (byte) 0xF4,
-		0x05, (byte) 0xC6, (byte) 0xE5, 0x08, 0x49, 0x4F, 0x64, 0x69, 0x6E, 0x4D, 0x53, 0x7E, 0x46, 0x72, 0x7A };
-
-	private static final byte[] key = {
-		0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
-		0x06, 0x00, 0x00, 0x00, (byte) 0xB4, 0x00, 0x00, 0x00,
-		0x1B, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00,
-		0x33, 0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00
+		0x05, (byte) 0xC6, (byte) 0xE5, 0x08, 0x49, 0x4F, 0x64, 0x69, 0x6E, 0x4D, 0x53, 0x7E, 0x46, 0x72, 0x7A
 	};
+
+	private final Cipher cipher;
+	private byte[] iv;
+	private short mapleVersion;
 
 	/**
 	 * Class constructor - Creates an instance of the MapleStory encryption
 	 * cipher.
-	 * 
+	 *
 	 * @param iv The 4-byte IV to use.
 	 */
-	public MapleAESOFB(byte[] iv, short mapleVersion) {
-		SecretKeySpec skeySpec = new SecretKeySpec(key, "AES");
-
+	public MapleAesOfb(byte[] iv, short mapleVersion) {
+		Cipher cipher = null;
 		try {
 			cipher = Cipher.getInstance("AES");
-		} catch (NoSuchAlgorithmException e) {
-			LOG.log(Level.SEVERE, null, e);
-		} catch (NoSuchPaddingException e) {
-			LOG.log(Level.SEVERE, null, e);
+			cipher.init(Cipher.ENCRYPT_MODE, sKeySpec);
+		} catch (Exception ex) {
+			LOG.log(Level.SEVERE, "AesOfb", ex);
 		}
-		try {
-			cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-		} catch (InvalidKeyException e) {
-			LOG.log(Level.SEVERE, "Error initalizing the encryption cipher.  Make sure you're using the Unlimited Strength cryptography jar files.");
-		}
-
+		this.cipher = cipher;
 		this.setIv(iv);
 		this.mapleVersion = (short) (((mapleVersion >> 8) & 0xFF) | ((mapleVersion << 8) & 0xFF00));
 	}
 
 	/**
 	 * Sets the IV of this instance.
-	 * 
+	 *
 	 * @param iv The new IV.
 	 */
 	private void setIv(byte[] iv) {
@@ -115,7 +120,7 @@ public class MapleAESOFB {
 
 	/**
 	 * For debugging/testing purposes only.
-	 * 
+	 *
 	 * @return The IV.
 	 */
 	public byte[] getIv() {
@@ -124,7 +129,7 @@ public class MapleAESOFB {
 
 	/**
 	 * Encrypts <code>data</code> and generates a new IV.
-	 * 
+	 *
 	 * @param data The bytes to encrypt.
 	 * @return The encrypted bytes.
 	 */
@@ -139,12 +144,12 @@ public class MapleAESOFB {
 			for (int x = 0; x < llength; x++) {
 				int myIvIndex = x % myIv.length;
 				if (myIvIndex == 0) {
-					try {
-						System.arraycopy(cipher.doFinal(myIv), 0, myIv, 0, myIv.length);
-					} catch (IllegalBlockSizeException e) {
-						LOG.log(Level.WARNING, "Could not finish encryption.", e);
-					} catch (BadPaddingException e) {
-						LOG.log(Level.WARNING, "Could not finish encryption.", e);
+					synchronized (cipher) {
+						try {
+							System.arraycopy(cipher.doFinal(myIv), 0, myIv, 0, myIv.length);
+						} catch (Exception ex) {
+							LOG.log(Level.WARNING, "Could not encrypt mvIv", ex);
+						}
 					}
 				}
 				data[x + start] ^= myIv[myIvIndex];
@@ -167,7 +172,7 @@ public class MapleAESOFB {
 	/**
 	 * Generates a packet header for a packet that is <code>length</code>
 	 * long.
-	 * 
+	 *
 	 * @param length How long the packet that this header is for is.
 	 * @return The header.
 	 */
@@ -183,7 +188,7 @@ public class MapleAESOFB {
 
 	/**
 	 * Gets the packet length from a header.
-	 * 
+	 *
 	 * @param packetHeader The bytes of the header.
 	 * @return The length of the packet.
 	 */
@@ -196,7 +201,7 @@ public class MapleAESOFB {
 
 	/**
 	 * Check the packet to make sure it has a header and verify it is valid.
-	 * 
+	 *
 	 * @param packet The packet to check.
 	 * @return <code>True</code> if the packet has a correct header,
 	 *         <code>false</code> otherwise.
@@ -208,7 +213,7 @@ public class MapleAESOFB {
 
 	/**
 	 * Gets a new IV from <code>oldIv</code>
-	 * 
+	 *
 	 * @param oldIv The old IV to get a new IV from.
 	 * @return The new IV.
 	 */

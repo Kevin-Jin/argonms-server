@@ -26,6 +26,7 @@ import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.net.external.MapleAesOfb;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
@@ -145,6 +146,15 @@ public class ShopServer implements LocalServer {
 			return;
 		}
 		wzPath = System.getProperty("argonms.data.dir");
+
+		try {
+			MapleAesOfb.testCipher();
+		} catch (Exception ex) {
+			LOG.log(Level.SEVERE, "Error initalizing the encryption cipher.  Make sure you're using the Unlimited Strength cryptography jar files.", ex);
+			System.exit(6);
+			return;
+		}
+
 		sci = new ShopCenterInterface(authKey, this);
 		sci.connect(centerIp, centerPort);
 		System.exit(4); //connection with center server lost before we were able to shutdown
@@ -175,7 +185,7 @@ public class ShopServer implements LocalServer {
 		Scheduler.enable();
 		handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
 			@Override
-			public ShopClient newInstance(byte world, byte client) {
+			public ShopClient newInstance(byte world, byte channel) {
 				return new ShopClient();
 			}
 		});
