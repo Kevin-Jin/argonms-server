@@ -28,14 +28,23 @@ import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
 import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.ItemDrop;
+import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerNpc;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -201,6 +210,89 @@ public class CommandProcessor {
 				p.getMap().spawnPlayerNpc(npc);
 			}
 		}, "Spawn a temporary player NPC of yourself.", UserPrivileges.GM));
+		definitions.put("!cleardrops", new CommandDefinition(new CommandAction() {
+			private boolean contains(String[] array, String search) {
+				for (int i = 0; i < array.length; i++)
+					if (array[i].equals(search))
+						return true;
+				return false;
+			}
+
+			private void clearDrop(ItemDrop drop, GameCharacter p) {
+				synchronized (drop) {
+					drop.expire();
+					p.getMap().destroyEntity(drop);
+				}
+			}
+
+			@Override
+			public void doAction(final GameCharacter p, String[] args, ClientNoticeStream resp) {
+				Collection<MapEntity> drops = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.DROP));
+				if (contains(args, "-c")) {
+					//creating new thread pools is a real memory hog. this case
+					//is only needed while testing out the new message sending
+					//method. in more stable releases, remove the -c option.
+					ScheduledExecutorService ses = Executors.newScheduledThreadPool(drops.size());
+					long perform = System.nanoTime() + 1000;
+					for (final MapEntity ent : drops) {
+						ses.schedule(new Runnable() {
+							@Override
+							public void run() {
+								clearDrop((ItemDrop) ent, p);
+							}
+						}, perform - System.nanoTime(), TimeUnit.NANOSECONDS);
+					}
+				} else {
+					for (MapEntity ent : drops)
+						clearDrop((ItemDrop) ent, p);
+				}
+			}
+		}, "Expires all dropped items on the map either concurrently (specify with -c) or linearly.", UserPrivileges.GM));
+		definitions.put("!clearmobs", new CommandDefinition(new CommandAction() {
+			private boolean contains(String[] array, String search) {
+				for (int i = 0; i < array.length; i++)
+					if (array[i].equals(search))
+						return true;
+				return false;
+			}
+
+			private void clearMob(String[] args, GameCharacter p, Mob mob) {
+				if (contains(args, "-k")) {
+					synchronized (mob) {
+						mob.hurt(p, mob.getHp());
+						p.getMap().killMonster(mob, p);
+					}
+				} else {
+					synchronized (mob) {
+						mob.hurt(p, mob.getHp());
+						p.getMap().removeMonster(mob);
+					}
+				}
+			}
+
+			@Override
+			public void doAction(final GameCharacter p, final String[] args, ClientNoticeStream resp) {
+				Collection<MapEntity> monsters = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.MONSTER));
+				if (contains(args, "-c")) {
+					//creating new thread pools is a real memory hog. this case
+					//is only needed while testing out the new message sending
+					//method. in more stable releases, remove the -c option.
+					ScheduledExecutorService ses = Executors.newScheduledThreadPool(monsters.size());
+					long perform = System.nanoTime() + 1000;
+					for (final MapEntity ent : monsters) {
+						ses.schedule(new Runnable() {
+							@Override
+							public void run() {
+								clearMob(args, p, (Mob) ent);
+							}
+						}, perform - System.nanoTime(), TimeUnit.NANOSECONDS);
+					}
+				} else {
+					for (MapEntity ent : monsters)
+						clearMob(args, p, (Mob) ent);
+				}
+			}
+		}, "Removes all monsters on the map either concurrently (specify with -c) or linearly and either kill them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !info <player's name";

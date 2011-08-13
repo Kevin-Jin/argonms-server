@@ -18,10 +18,11 @@
 
 package argonms.common.net.external;
 
-import argonms.common.GlobalConstants;
 import argonms.common.util.Rng;
 import java.net.SocketAddress;
 import java.util.Random;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.netty.channel.Channel;
 
 /**
@@ -30,28 +31,54 @@ import org.jboss.netty.channel.Channel;
  */
 public class ClientSession<T extends RemoteClient> {
 	private Channel ch;
-	private MapleAesOfb sendCypher, recvCypher;
+	private byte[] recvIv, sendIv;
+	private Lock recvIvLock, sendIvLock;
 	private T client;
 
 	public ClientSession(Channel ch, T client) {
 		this.ch = ch;
 
 		Random generator = Rng.getGenerator();
-		byte[] ivRecv = { 70, 114, 122, (byte) generator.nextInt(256) };
-		byte[] ivSend = { 82, 48, 120, (byte) generator.nextInt(256) };
-
-		this.recvCypher = new MapleAesOfb(ivRecv, GlobalConstants.MAPLE_VERSION);
-		this.sendCypher = new MapleAesOfb(ivSend, (short) (0xFFFF - GlobalConstants.MAPLE_VERSION));
+		recvIv = new byte[4];
+		sendIv = new byte[4];
+		generator.nextBytes(recvIv);
+		generator.nextBytes(sendIv);
+		recvIvLock = new ReentrantLock();
+		sendIvLock = new ReentrantLock();
 
 		this.client = client;
 	}
 
-	public MapleAesOfb getRecvCypher() {
-		return recvCypher;
+	public void lockRecv() {
+		recvIvLock.lock();
 	}
 
-	public MapleAesOfb getSendCypher() {
-		return sendCypher;
+	public byte[] getRecvIv() {
+		return recvIv;
+	}
+
+	public void setRecvIv(byte[] iv) {
+		recvIv = iv;
+	}
+
+	public void unlockRecv() {
+		recvIvLock.unlock();
+	}
+
+	public void lockSend() {
+		sendIvLock.lock();
+	}
+
+	public byte[] getSendIv() {
+		return sendIv;
+	}
+
+	public void setSendIv(byte[] iv) {
+		sendIv = iv;
+	}
+
+	public void unlockSend() {
+		sendIvLock.unlock();
 	}
 
 	public T getClient() {
@@ -71,7 +98,27 @@ public class ClientSession<T extends RemoteClient> {
 	}
 
 	public void send(byte[] input) {
-		ch.write(input);
+		//for some strange reason, client doesn't like it at all when we send
+		//packets concurrently, even if we sync up the IV perfectly. it'll drop
+		//packets left and right. so, we'll have to mutex each write request,
+		//which shouldn't be noticeable ever in normal gameplay. just beware if
+		//you want to schedule a million threads that send a message to the
+		//player at the exact same time. if those messages don't freeze the
+		//client, then the client will probably not receive all those messages
+		//at the exact same time as you intended. mutexing here also makes the
+		//access to the only server-side critical section in sending (i.e.
+		//getting the send IV and then updating it) thread-safe, since
+		//Channel.write directly invokes the channel pipeline on the current
+		//thread without queueing it on a worker thread (I believe the pipeline
+		//is handled in the current thread, while non-blocking writes are queued
+		//in a worker thread), so locking here will lock in the critical section
+		//in MaplePacketEncoder.encode for this write request.
+		lockSend();
+		try {
+			ch.write(input);
+		} finally {
+			unlockSend();
+		}
 	}
 
 	public void close() {

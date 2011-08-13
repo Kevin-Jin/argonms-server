@@ -72,6 +72,10 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 				p.setSp((short) Math.min(val, Short.MAX_VALUE));
 			} else if (stat.equalsIgnoreCase("level")) {
 				p.setLevel((short) Math.min(val, GlobalConstants.MAX_LEVEL));
+				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
+					p.setExp(Math.min(p.getExp(), ExpTables.getForLevel(p.getLevel()) - 1));
+				else
+					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("exp")) {
 				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
 					p.setExp(Math.min(val, ExpTables.getForLevel(p.getLevel()) - 1));
@@ -110,9 +114,15 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 				p.setSp((short) Math.min(p.getSp() + val, Short.MAX_VALUE));
 			} else if (stat.equalsIgnoreCase("level")) {
 				p.setLevel((short) Math.min(p.getLevel() + val, GlobalConstants.MAX_LEVEL));
+				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
+					p.setExp(Math.min(p.getExp(), ExpTables.getForLevel(p.getLevel()) - 1));
+				else
+					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("exp")) {
 				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
 					p.setExp(Math.min(p.getExp() + val, ExpTables.getForLevel(p.getLevel()) - 1));
+				else if (p.getExp() + val == 0)
+					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("maxhp")) {
 				p.setMaxHp((short) Math.min(p.getMaxHp() + val, 30000));
 			} else if (stat.equalsIgnoreCase("maxmp")) {

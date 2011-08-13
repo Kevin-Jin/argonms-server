@@ -222,6 +222,11 @@ public class Mob extends MapEntity {
 		hooks.add(hook);
 	}
 
+	public void executeDeathHooksNoRewards() {
+		for (MobDeathHook hook : hooks)
+			hook.monsterKilled(null, null);
+	}
+
 	public GameCharacter getController() {
 		return controller.get();
 	}

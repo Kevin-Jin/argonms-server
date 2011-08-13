@@ -117,25 +117,37 @@ public class ClientListener<T extends RemoteClient> {
 
 			buf.markReaderIndex();
 			byte[] message = new byte[4];
-			MapleAesOfb recvCypher = sessions.get(channel).getRecvCypher();
 			buf.readBytes(message);
 
-			if (recvCypher.checkPacket(message)) {
-				int length = MapleAesOfb.getPacketLength(message);
+			ClientSession<T> session = sessions.get(channel);
+			boolean recvIvUnlocked = false;
+			session.lockRecv();
+			try {
+				byte[] iv = session.getRecvIv();
+				if (MapleAesOfb.checkPacket(message, iv)) {
+					int length = MapleAesOfb.getPacketLength(message);
 
-				if (buf.readableBytes() < length) {
-					buf.resetReaderIndex();
+					if (buf.readableBytes() < length) {
+						buf.resetReaderIndex();
+						return null;
+					}
+					session.setRecvIv(MapleAesOfb.nextIv(iv));
+					session.unlockRecv();
+					recvIvUnlocked = true;
+
+					message = new byte[length];
+					buf.readBytes(message);
+
+					MapleAesOfb.aesCrypt(message, iv);
+					return MapleAesOfb.mapleDecrypt(message);
+				} else {
+					LOG.log(Level.FINE, "Client from {0} failed packet check -> Disconnecting.", channel.getRemoteAddress());
+					sessions.get(channel).close();
 					return null;
 				}
-
-				message = new byte[length];
-				buf.readBytes(message);
-
-				return MapleAesOfb.decryptData(recvCypher.crypt(message));
-			} else {
-				LOG.log(Level.FINE, "Client from {0} failed packet check -> Disconnecting.", channel.getRemoteAddress());
-				sessions.get(channel).close();
-				return null;
+			} finally {
+				if (!recvIvUnlocked)
+					session.unlockRecv();
 			}
 		}
 	}
@@ -143,15 +155,43 @@ public class ClientListener<T extends RemoteClient> {
 	private final class MaplePacketEncoder extends OneToOneEncoder {
 		@Override
 		protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
+			//we mutexed ClientSession.send as a temporary solution to the
+			//packet dropping problem, but that is highly inefficient as it also
+			//mutexes the code in the Netty pipeline and it doesn't allow
+			//array copying, Maple custom encoding, and AES encoding to be done
+			//in parallel. As long as we have unique IVs per send and messages
+			//are sent in the order that their IVs are updated, we should get
+			//away with performing these expensive operations in parallel. find
+			//a way to queue messages to send such that messages are sent in the
+			//order that they updated the send IV.
 			ClientSession<T> session = sessions.get(channel);
 			if (session != null) {
 				byte[] input = (byte[]) msg;
-				MapleAesOfb sendCypher = session.getSendCypher();
 				int length = input.length;
-				byte[] header = sendCypher.getPacketHeader(length);
 				byte[] body = new byte[length];
 				System.arraycopy(input, 0, body, 0, length);
-				sendCypher.crypt(MapleAesOfb.encryptData(body));
+				MapleAesOfb.mapleEncrypt(body);
+
+				//I'm not sure whether it's because a set of parallel calls to
+				//ChannelBuffers.copiedBuffer finishes in a different order than
+				//when write was called and that the mixed up order messes up
+				//the IV stuff, or whether it's just that the client can't
+				//handle the send rate and that synchronizing this whole area
+				//gives enough delay on the throughput, but if we only consider
+				//getSendIv() and setSendIv() as critical code and allow the
+				//rest to execute in parallel with other send message tasks, the
+				//client starts dropping packets when there's a lot of
+				//concurrent sending.
+				byte[] iv;
+				//session.lockSend();
+				//try {
+					iv = session.getSendIv();
+					session.setSendIv(MapleAesOfb.nextIv(iv));
+				//} finally {
+					//session.unlockSend();
+				//}
+				byte[] header = MapleAesOfb.getPacketHeader(length, iv);
+				MapleAesOfb.aesCrypt(body, iv);
 				return ChannelBuffers.copiedBuffer(header, body);
 			} else {
 				byte[] input = (byte[]) msg;
@@ -175,7 +215,7 @@ public class ClientListener<T extends RemoteClient> {
 			T client = clientCtor.newInstance(world, channel);
 			ClientSession<T> session = new ClientSession<T>(e.getChannel(), client);
 			client.setSession(session);
-			e.getChannel().write(getHello(session.getRecvCypher(), session.getSendCypher()));
+			e.getChannel().write(getHello(session.getRecvIv(), session.getSendIv()));
 			sessions.set(e.getChannel(), session);
 		}
 
@@ -209,13 +249,13 @@ public class ClientListener<T extends RemoteClient> {
 		}
 	}
 
-	private static byte[] getHello(MapleAesOfb recvCypher, MapleAesOfb sendCypher) {
+	private static byte[] getHello(byte[] recvIv, byte[] sendIv) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
 
 		lew.writeShort(GlobalConstants.MAPLE_VERSION);
 		lew.writeShort((short) 0);
-		lew.writeBytes(recvCypher.getIv());
-		lew.writeBytes(sendCypher.getIv());
+		lew.writeBytes(recvIv);
+		lew.writeBytes(sendIv);
 		lew.writeByte((byte) 8);
 
 		return lew.getBytes();

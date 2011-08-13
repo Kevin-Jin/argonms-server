@@ -56,7 +56,6 @@ import argonms.game.net.external.GamePackets;
 import argonms.game.script.PortalScriptManager;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -172,6 +171,10 @@ public class GameMap {
 	 */
 	public MapEntity getEntityById(EntityType type, int eId) {
 		return entPools.get(type).getByIdSafely(eId);
+	}
+
+	public Collection<MapEntity> getAllEntities(EntityType type) {
+		return entPools.get(type).allEnts();
 	}
 
 	public int getPlayerCount() {
@@ -351,17 +354,11 @@ public class GameMap {
 			sendToAll(drop.getDisappearMessage());
 	}
 
-	//FIXME: temporary fix to the client freeze when expiring more than one item
-	//drop from the same monster at the same time. I believe it is a thread
-	//concurrency issue (although this is faster than having each drop have its
-	//own expiration Runnable if we called drop(ItemDrop), the issue at hand is
-	//the fact we have the concurrency issues, not the performance).
 	public void drop(List<ItemDrop> drops, MapEntity ent, byte pickupAllow, int owner) {
 		Point entPos = ent.getPosition(), dropPos = new Point(entPos);
 		int entX = entPos.x;
 		int width = pickupAllow != ItemDrop.PICKUP_EXPLOSION ? 25 : 40;
 		int dropNum = 0, delta;
-		final List<Integer> dropped = new ArrayList<Integer>(drops.size());
 		for (ItemDrop drop : drops) {
 			dropNum++;
 			delta = width * (dropNum / 2);
@@ -370,25 +367,8 @@ public class GameMap {
 			else //drop odd numbered drops left
 				dropPos.x = entX - delta;
 			drop.init(owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
-			spawnEntity(drop);
-			if (drop.getDropType() == ItemDrop.ITEM)
-				checkForItemTriggeredReactors(drop);
-			dropped.add(Integer.valueOf(drop.getId()));
+			drop(drop);
 		}
-		//expire every drop at once in the same Runnable rather than have a
-		//separate Runnable job for each drop running in parallel.
-		Scheduler.getInstance().runAfterDelay(new Runnable() {
-			@Override
-			public void run() {
-				for (Integer eId : dropped) {
-					ItemDrop drop = (ItemDrop) entPools.get(EntityType.DROP).getByIdSafely(eId.intValue());
-					if (drop != null) {
-						drop.expire();
-						destroyEntity(drop);
-					}
-				}
-			}
-		}, DROP_EXPIRE);
 	}
 
 	public final void addMonsterSpawn(MobStats stats, Point pos, short fh, int mobTime) {
@@ -491,6 +471,14 @@ public class GameMap {
 		if (monster.getController() != null)
 			monster.getController().uncontrolMonster(monster);
 		monster.died(killer);
+		destroyEntity(monster);
+		monsters.decrementAndGet();
+	}
+
+	public void removeMonster(Mob monster) {
+		if (monster.getController() != null)
+			monster.getController().uncontrolMonster(monster);
+		monster.executeDeathHooksNoRewards();
 		destroyEntity(monster);
 		monsters.decrementAndGet();
 	}
