@@ -1121,6 +1121,38 @@
 	synchronized block, as calls to MapleAesOfb.crypt are not necessary
 	thread-safe.
 
+2011-08-13  GoldenKevin  (revision 56)
+
+	* Renamed BitTool to ByteTool since it only performs operations on 8-bit
+	integers.
+	* Greatly simplified and cleaned up MapleAesOfb.getNewIv. The random
+	variable names were really bugging me, so I took the time to decode what the
+	method was doing and reworked it to my standards. Took some hints from Vana
+	to simplify getPacketHeader and checkPacket.
+	* Formatted the key constants in MapleAesOfb to align with each other, even
+	if there was an unnecessary byte cast. Removed the last 10 bytes from
+	"funnyBytes" (now renamed ivKeys) as it was impossible to access them, since
+	the index range was 0 to 255 (the expression used by the only accessors of
+	the array is (byte & 0xFF)).
+	* Temporary fix for a race condition in MapleAesOfb where the IV was not
+	updated before the next send/receive operation started. This caused the
+	client to seemingly drop all packets when at least two packets were sent in
+	parallel, such as the drop expire tasks when there are a large amount of
+	drops made in the exact same time (i.e. when a monster dies) and they all
+	expire at the same time on different threads. Removed the hack in the
+	GameMap.drop overload that accepted a list of drops.
+	* In order to fix the race condition in MapleAesOfb in the most efficient
+	way possible, I had to move the IVs to ClientSession and pass them to
+	MapleAesOfb methods instead of storing them as instance variables. I found a
+	way to use GlobalConstants.MAPLE_VERSION directly instead of keeping a copy
+	of it as MapleAesOfb state. MapleAesOfb is now effectively stateless, so I
+	turned it into a static class.
+	* MapleAesOfb now uses ThreadLocal Ciphers for a thread-safe method of
+	encrypting data using AES, as it is impossible to continue using
+	synchronized Cipher per MapleAesOfb instance since MapleAesOfb is now a
+	static class. Should cut instances of MapleAesOfb by half when using OIO,
+	and cut it to the amount of worker threads when using NIO.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -23,7 +23,7 @@ package argonms.common;
  * @author GoldenKevin
  */
 public final class GlobalConstants {
-	public static final byte MAPLE_VERSION = 62;
+	public static final short MAPLE_VERSION = 62;
 	public static final int MCDB_VERSION = 3, MCDB_SUBVERSION = 0;
 	public static final boolean TEST_SERVER = false;
 

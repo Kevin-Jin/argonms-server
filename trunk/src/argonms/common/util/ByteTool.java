@@ -27,8 +27,8 @@ package argonms.common.util;
  * @since Revision 206
  * @version 1.1
  */
-public final class BitTool {
-	private BitTool() {
+public final class ByteTool {
+	private ByteTool() {
 		//uninstantiable...
 	}
 
