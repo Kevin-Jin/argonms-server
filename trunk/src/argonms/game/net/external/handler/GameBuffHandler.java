@@ -20,9 +20,11 @@ package argonms.game.net.external.handler;
 
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -106,8 +108,13 @@ public class GameBuffHandler {
 		/*int tickCount = */packet.readInt();
 		short slot = packet.readShort();
 		int itemId = packet.readInt();
-		//TODO: hacking if item's id at slot does not match itemId
-		InventorySlot changed = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), slot, (short) 1);
+		Inventory inv = p.getInventory(InventoryType.USE);
+		InventorySlot changed = inv.get(slot);
+		if (changed == null || changed.getDataId() != itemId || changed.getQuantity() < 1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant consume item");
+			return;
+		}
+		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
 		if (changed != null)
 			gc.getSession().send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
 		else

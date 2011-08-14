@@ -21,6 +21,7 @@ package argonms.game.net.external.handler;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -176,7 +177,8 @@ public class MiniroomHandler {
 				if (p.getInventory(InventoryType.CASH).getItemSlots(itemId).contains(Short.valueOf(slot))) {
 					room = new PlayerStore(p, text, itemId);
 				} else {
-					//TODO: hacking
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to open player shop without permit");
+					return;
 				}
 				p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
@@ -191,7 +193,8 @@ public class MiniroomHandler {
 				if (p.getInventory(InventoryType.CASH).getItemSlots(itemId).contains(Short.valueOf(slot))) {
 					room = new HiredMerchant(p, text, itemId);
 				} else {
-					//TODO: hacking
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to open hired merchant without permit");
+					return;
 				}
 				//p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
@@ -266,7 +269,7 @@ public class MiniroomHandler {
 		Inventory inv = p.getInventory(type);
 		InventorySlot item = inv.get(slot);
 		if (item == null || item.getQuantity() < quantity) {
-			//TODO: hacking
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistant item");
 			return;
 		}
 		InventorySlot itemToPut;
@@ -290,7 +293,7 @@ public class MiniroomHandler {
 			Trade room = (Trade) p.getMiniRoom();
 			room.addMesos(p, mesosAmt);
 		} else {
-			//TODO: hacking
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistant mesos");
 		}
 	}
 

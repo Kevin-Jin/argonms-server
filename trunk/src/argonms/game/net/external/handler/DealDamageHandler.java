@@ -25,6 +25,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.WeaponClass;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Rng;
 import argonms.common.util.Scheduler;
@@ -52,6 +53,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+//TODO: log any suspicious damages (must calculate max damage first)
 /**
  *
  * @author GoldenKevin
@@ -90,8 +92,10 @@ public class DealDamageHandler {
 			boolean shadowStars = attack.weaponClass == WeaponClass.CLAW && p.isEffectActive(PlayerStatusEffect.SHADOW_STARS);
 			if (!shadowStars) { //consume ammo if shadow claw is not active
 				InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
-				if (slot == null || slot.getQuantity() < useQty)
-					return; //TODO: hacking
+				if (slot == null || slot.getQuantity() < useQty) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant ranged weapon ammunition");
+					return;
+				}
 				attack.ammoItemId = slot.getDataId();
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
 				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(attack.ammoItemId)) {
@@ -103,8 +107,10 @@ public class DealDamageHandler {
 			}
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
 				InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
-				if (slot == null)
-					return; //TODO: hacking
+				if (slot == null) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant cash shop stars");
+					return;
+				}
 				attack.ammoItemId = slot.getDataId();
 			}
 			switch (attack.skill) { //skills that do not show visible projectiles
@@ -162,7 +168,7 @@ public class DealDamageHandler {
 				//apparently chakra does not show a prepared skill effect to the map.
 			}
 		} else {
-			//TODO: hacking
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to charge non-prepared skill");
 		}
 	}
 
@@ -374,7 +380,6 @@ public class DealDamageHandler {
 		}
 	}
 
-	//TODO: handle skills
 	private static void applyAttack(AttackInfo attack, final GameCharacter player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();

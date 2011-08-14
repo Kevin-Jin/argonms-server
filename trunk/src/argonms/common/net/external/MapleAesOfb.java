@@ -153,6 +153,50 @@ public class MapleAesOfb {
 		}
 	}
 
+	/**
+	 * Generates a packet header for a packet that is <code>length</code>
+	 * long.
+	 *
+	 * @param length How long the packet that this header is for is.
+	 * @return The header.
+	 */
+	public static byte[] getPacketHeader(int length, byte[] iv) {
+		int v = (((iv[3] & 0xFF) << 8) + (iv[2] & 0xFF)) ^ -(GlobalConstants.MAPLE_VERSION + 1); //version
+		int l = v ^ length; //length
+		//write v and l as two 16-bit little-endian integers
+		return new byte[] {
+			(byte) (v & 0xFF), (byte) ((v >>> 8) & 0xFF),
+			(byte) (l & 0xFF), (byte) ((l >>> 8) & 0xFF)
+		};
+	}
+
+	/**
+	 * Gets the packet length from a header.
+	 *
+	 * @param packetHeader The bytes of the header.
+	 * @return The length of the packet.
+	 */
+	public static int getPacketLength(byte[] packetHeader) {
+		//read two 16-bit little-endian integers and XOR them.
+		return (((packetHeader[0] & 0xFF) + ((packetHeader[1] & 0xFF) << 8)) ^
+				((packetHeader[2] & 0xFF) + ((packetHeader[3] & 0xFF) << 8)));
+	}
+
+	/**
+	 * Check the packet to make sure it has a header and verify it is valid.
+	 *
+	 * @param packet The packet to check.
+	 * @return <code>True</code> if the packet has a correct header,
+	 *         <code>false</code> otherwise.
+	 */
+	public static boolean checkPacket(byte[] packetHeader, byte[] iv) {
+		return ((((packetHeader[0] ^ iv[2]) & 0xFF) == (GlobalConstants.MAPLE_VERSION & 0xFF)) &&
+				(((packetHeader[1] ^ iv[3]) & 0xFF) == ((GlobalConstants.MAPLE_VERSION & 0xFF) >> 8)));
+	}
+
+	//The below aren't actually AESOFB, they're just MapleStory's custom
+	//encryption routines (that's why we named the class MapleAESOFB, not just
+	//AESOFB!)
 	public static byte[] nextIv(byte[] oldIv) {
 		byte[] newIv = { (byte) 0xF2, (byte) 0x53, (byte) 0x50, (byte) 0xC6 };
 		for (int x = 0; x < oldIv.length; x++) {
@@ -188,50 +232,6 @@ public class MapleAesOfb {
 		return newIv;
 	}
 
-	/**
-	 * Generates a packet header for a packet that is <code>length</code>
-	 * long.
-	 *
-	 * @param length How long the packet that this header is for is.
-	 * @return The header.
-	 */
-	public static byte[] getPacketHeader(int length, byte[] iv) {
-		int v = (((iv[3] & 0xFF) << 8) + (iv[2] & 0xFF)) ^ -(GlobalConstants.MAPLE_VERSION + 1); //version
-		int l = v ^ length; //length
-		//write a and b as two 16-bit little-endian integers
-		return new byte[] {
-			(byte) (v & 0xFF), (byte) ((v >>> 8) & 0xFF),
-			(byte) (l & 0xFF), (byte) ((l >>> 8) & 0xFF)
-		};
-	}
-
-	/**
-	 * Gets the packet length from a header.
-	 *
-	 * @param packetHeader The bytes of the header.
-	 * @return The length of the packet.
-	 */
-	public static int getPacketLength(byte[] packetHeader) {
-		//read two 16-bit little-endian integers and XOR them.
-		return (((packetHeader[0] & 0xFF) + ((packetHeader[1] & 0xFF) << 8)) ^
-				((packetHeader[2] & 0xFF) + ((packetHeader[3] & 0xFF) << 8)));
-	}
-
-	/**
-	 * Check the packet to make sure it has a header and verify it is valid.
-	 *
-	 * @param packet The packet to check.
-	 * @return <code>True</code> if the packet has a correct header,
-	 *         <code>false</code> otherwise.
-	 */
-	public static boolean checkPacket(byte[] packetHeader, byte[] iv) {
-		return ((((packetHeader[0] ^ iv[2]) & 0xFF) == (GlobalConstants.MAPLE_VERSION & 0xFF)) &&
-				(((packetHeader[1] ^ iv[3]) & 0xFF) == ((GlobalConstants.MAPLE_VERSION & 0xFF) >> 8)));
-	}
-
-	//The below aren't actually AESOFB, they're just MapleStory's custom
-	//encryption routines (that's why we named the class MapleAESOFB, not just
-	//AESOFB!)
 	/**
 	 * Encrypts <code>data</code> with Maple's encryption routines.
 	 *

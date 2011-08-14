@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.character.Skills;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
@@ -39,8 +40,10 @@ public class StatAllocationHandler {
 		int updateMask = packet.readInt();
 		Map<ClientUpdateKey, Short> updatedStats = new EnumMap<ClientUpdateKey, Short>(ClientUpdateKey.class);
 		for (ClientUpdateKey key : ClientUpdateKey.valueOf(updateMask)) {
-			if (p.getAp() <= 0)
-				return; //TODO: hacking
+			if (p.getAp() <= 0) {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant AP");
+				return;
+			}
 			switch (key) {
 				case STR:
 					if (p.getStr() < Short.MAX_VALUE) {
@@ -98,12 +101,16 @@ public class StatAllocationHandler {
 		/*int time = */packet.readInt();
 		int skillId = packet.readInt();
 		byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
-		if (newLevel <= p.getMasterSkillLevel(skillId)) {
-			p.setSkillLevel(skillId, newLevel, (byte) -1);
-			if (!Skills.isBeginnerSkill(skillId))
-				p.setSp((short) (p.getSp() - 1));
+		if (p.getSp() > 0 || Skills.isBeginnerSkill(skillId)) {
+			if (newLevel <= p.getMasterSkillLevel(skillId)) {
+				p.setSkillLevel(skillId, newLevel, (byte) -1);
+				if (!Skills.isBeginnerSkill(skillId))
+					p.setSp((short) (p.getSp() - 1));
+			} else {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
+			}
 		} else {
-			//TODO: hacking
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
 		}
 	}
 }

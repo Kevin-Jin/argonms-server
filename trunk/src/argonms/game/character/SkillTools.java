@@ -24,6 +24,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.character.inventory.InventoryTools.WeaponClass;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Scheduler;
@@ -108,7 +109,7 @@ public class SkillTools {
 					ammoPrefix = 2330;
 					break;
 				default:
-					//TODO: hacking
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use ranged buff skill without ranged weapon");
 					return;
 			}
 			InventorySlot slot;
@@ -150,6 +151,8 @@ public class SkillTools {
 					ses.send(GamePackets.writeInventoryClearSlot(InventoryType.USE, pos));
 				}
 				p.itemCountChanged(removeItemId);
+			} else {
+				CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use buff skill without meeting the cast costs");
 			}
 		}
 	}

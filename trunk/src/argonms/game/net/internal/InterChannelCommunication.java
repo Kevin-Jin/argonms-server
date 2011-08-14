@@ -18,6 +18,7 @@
 
 package argonms.game.net.internal;
 
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -123,7 +124,7 @@ public class InterChannelCommunication {
 			for (Byte ch : remoteChannelPorts.keySet()) //recipients on another process
 				getCenterComm().send(writePrivateChatMessage(getCenterComm().getWorld(), ch.byteValue(), type, recipients, name, message));
 		} else {
-			//most likely hacking
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send private chat to a nonexistant group");
 		}
 	}
 
@@ -138,7 +139,7 @@ public class InterChannelCommunication {
 			for (Byte ch : remoteChannelPorts.keySet()) //recipient on another process
 				getCenterComm().send(writeSpouseChatMessage(getCenterComm().getWorld(), ch.byteValue(), recipient, name, message));
 		} else {
-			//most likely hacking
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send spouse chat to a nonexistant spouse");
 		}
 	}
 
