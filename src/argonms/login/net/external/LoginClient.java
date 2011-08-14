@@ -20,14 +20,20 @@ package argonms.login.net.external;
 
 import argonms.common.ServerType;
 import argonms.common.net.HashFunctions;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.common.util.TimeTool;
 import argonms.login.character.LoginCharacter;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,78 +54,220 @@ public class LoginClient extends RemoteClient {
 	private byte gender;
 	private int birthday;
 	private byte chars;
-	private int banExpire;
+	private long banExpire;
+	/**
+	 * 00 = This is an ID that has been deleted or blocked from connection
+	 * 01 = Your account has been blocked for hacking or illegal use of third-party programs
+	 * 02 = Your account has been blocked for using macro/auto-keyboard
+	 * 03 = Your account has been blocked for illicit promotion or advertising
+	 * 04 = Your account has been blocked for harassment
+	 * 05 = Your account has been blocked for using profane language
+	 * 06 = Your account has been blocked for scamming
+	 * 07 = Your account has been blocked for misconduct
+	 * 08 = Your account has been blocked for illegal cash transaction
+	 * 09 = Your account has been blocked for illegal charging/funding. Please contact customer support for further details
+	 * 10 = Your account has been blocked for temporary request. Please contact customer support for further details
+	 * 11 = Your account has been blocked for impersonating GM
+	 * 12 = Your account has been blocked for using illegal programs or violating the game policy
+	 * 13 = Your account has been blocked for one of cursing, scamming, or illegal trading via Megaphones.
+	 */
 	private byte banReason;
 	private byte gm;
 
-	/*
+	/**
+	 * Get the network address of the remote client.
+	 * @return the IP address of the remote client in big-endian
+	 * byte order.
+	 */
+	private long getIpAddress() {
+		byte[] bigEndian = ((InetSocketAddress) getSession().getAddress()).getAddress().getAddress();
+
+		//IP addresses are just 4-byte (32-bit) integers represented by 4 bytes
+		//in big endian
+		//since singed ints can only hold 31-bit without overflow, and Java
+		//doesn't have unsigned int, use signed long (63-bit)
+		long longValue = 0;
+		for (int byt = 0, bitShift = 24; byt < 4; byt++, bitShift -= 8)
+			longValue += (long) (bigEndian[byt] & 0xFF) << bitShift;
+		return longValue;
+	}
+
+	private CheatTracker.Infraction loadBanStatusInternal(Connection con, ResultSet rs) throws SQLException {
+		EnumMap<CheatTracker.Infraction, Integer> infractionPoints = new EnumMap<CheatTracker.Infraction, Integer>(CheatTracker.Infraction.class);
+		int highestPoints = 0;
+		CheatTracker.Infraction mainBanReason = null;
+
+		//there could be multiple bans (account bans, some mac, and others IP)
+		//if that's the case, load all of them and calculate the longest lasting
+		//infraction and the most outstanding infraction reason from a union
+		//of the infractions of all bans.
+		while (rs.next()) {
+			PreparedStatement ips = null;
+			ResultSet irs = null;
+			try {
+				//load only non-expired infractions - even though the ban
+				//may have been given with infractions that have already
+				//expired, the longest lasting infraction will still remain
+				//the same, and we could just choose the most outstanding
+				//points from the active infractions to send to the client
+				ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
+				ips.setInt(1, rs.getInt(1));
+				irs = ips.executeQuery();
+				while (irs.next()) {
+					long infractionExpire = irs.getLong(1);
+					CheatTracker.Infraction infractionReason = CheatTracker.Infraction.valueOf(irs.getByte(2));
+					//ban expire time is based on the longest lasting
+					//infraction instead of stacking infraction durations
+					if (infractionExpire > banExpire)
+						banExpire = infractionExpire;
+					//meanwhile, the ban reason sent the client doesn't have
+					//to be paired up to the longest lasting ban. instead,
+					//send the reason that is most responsible for the ban
+					//(i.e. the reason that has the highest sum of points)
+					Integer runningPoints = infractionPoints.get(infractionReason);
+					int updatedPoints = ((runningPoints != null ? runningPoints.intValue() : 0) + irs.getShort(3));
+					infractionPoints.put(infractionReason, Integer.valueOf(updatedPoints));
+					if (updatedPoints > highestPoints) {
+						highestPoints = updatedPoints;
+						mainBanReason = infractionReason;
+					}
+				}
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
+			}
+		}
+		return mainBanReason;
+	}
+
+	private void loadBanStatusFromIdAndIp(Connection con) throws SQLException {
+		banExpire = 0;
+
+		CheatTracker.Infraction banStatus;
+
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement("SELECT `accountid` FROM `bans` WHERE `accountid` = ? OR `ip` = ?");
+			ps.setInt(1, getAccountId());
+			ps.setLong(2, getIpAddress());
+			rs = ps.executeQuery();
+			banStatus = loadBanStatusInternal(con, rs);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
+		}
+		banReason = banStatus == null ? 0 : banStatus.byteValue();
+	}
+
+	private void loadBanStatusFromBanId(Connection con, int banId) throws SQLException {
+		banExpire = 0;
+
+		CheatTracker.Infraction banStatus;
+
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement("SELECT `accountid` FROM `bans` WHERE `banid` = ?");
+			ps.setInt(1, banId);
+			rs = ps.executeQuery();
+			banStatus = loadBanStatusInternal(con, rs);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
+		}
+		banReason = banStatus == null ? 0 : banStatus.byteValue();
+	}
+
+	//TODO: Maybe we shouldn't reload all of the account data if we already
+	//tried logging in during this session.
+	/**
 	 * 0 = ok
 	 * 2 = banned
 	 * 4 = wrong password
 	 * 5 = no account exists
 	 * 7 = already logged in
 	 * 8 = system error
-	 * Maybe we shouldn't reload all of the account data if we already tried
-	 * logging in during this session.
 	 */
 	public byte loginResult(String pwd) {
-		boolean hashUpdate = false;
-		byte result = 0;
+		byte result;
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`banexpire`,`banreason`,`gm` FROM `accounts` WHERE `name` = ?");
+			ps = con.prepareStatement("SELECT `id`,`password`,`salt`,`pin`,`gender`,`birthday`,`characters`,`connected`,`gm` FROM `accounts` WHERE `name` = ?");
 			ps.setString(1, getAccountName());
 			rs = ps.executeQuery();
 			if (rs.next()) {
 				setAccountId(rs.getInt(1));
-				String passhash = rs.getString(2);
-				String salt = rs.getString(3);
+				byte[] passhash = rs.getBytes(2);
+				byte[] salt = rs.getBytes(3);
 				pin = rs.getString(4);
 				gender = rs.getByte(5);
-				if (rs.wasNull())
-					gender = GENDER_UNDEFINED;
 				birthday = rs.getInt(6);
 				chars = rs.getByte(7);
-				if (rs.wasNull())
-					chars = 3;
 				byte onlineStatus = rs.getByte(8);
-				banExpire = rs.getInt(9);
-				banReason = rs.getByte(10);
-				gm = rs.getByte(11);
-				if ((salt == null || salt.length() == 0) && (passhash.equals(pwd) || HashFunctions.checkSha1Hash(passhash, pwd))) {
-					hashUpdate = true;
-				} else if (!HashFunctions.checkSaltedSha512Hash(passhash, pwd, salt)) {
-					result = 4;
-				} else if (onlineStatus != STATUS_NOTLOGGEDIN) {
-					//TODO: there is a high chance that the player is not really
-					//in game if they have an onlineStatus of STATUS_MIGRATION.
-					//Make a way to check if they really are/will be connected
-					//to a server
-					result = 7;
-				} else if (banExpire > 0) {
-					result = 2;
-				}
+				gm = rs.getByte(9);
+				loadBanStatusFromIdAndIp(con);
 
-				if (result == 0) {
-					rs.close();
-					ps.close();
-					if (hashUpdate) {
-						salt = HashFunctions.makeSalt();
-						passhash = HashFunctions.makeSaltedSha512Hash(pwd, salt);
-						ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?, `password` = ?, `salt` = ? WHERE `id` = ?");
-						ps.setByte(1, STATUS_INLOGIN);
-						ps.setString(2, passhash);
-						ps.setString(3, salt);
-						ps.setInt(4, getAccountId());
+				boolean correct, hashUpdate, hasSalt = (salt != null);
+				switch (passhash.length) {
+					case 20: //sha-1 (160 bits = 20 bytes)
+						correct = hasSalt && HashFunctions.checkSaltedSha1Hash(passhash, pwd, salt) || !hasSalt && HashFunctions.checkSha1Hash(passhash, pwd);
+						//only update to SHA512 w/ salt if we are sure the given password matches the SHA1 hash
+						hashUpdate = correct;
+						break;
+					case 64: //sha-512 (512 bits = 64 bytes)
+						correct = hasSalt && HashFunctions.checkSaltedSha512Hash(passhash, pwd, salt) || !hasSalt && HashFunctions.checkSha512Hash(passhash, pwd);
+						//only update to SHA512 w/ salt if we are sure the given password matches and we don't already have a salt
+						hashUpdate = correct && !hasSalt;
+						break;
+					case 5:
+					case 6:
+					case 7:
+					case 8:
+					case 9:
+					case 10:
+					case 11:
+					case 12: //plaintext - client only sends password (5 <= chars <= 12)
+						correct = new String(passhash, HashFunctions.ASCII).equals(pwd);
+						//only update to SHA512 w/ salt if we are sure the given password matches the plaintext
+						hashUpdate = correct;
+						break;
+					default:
+						correct = false;
+						//don't update to SHA512 w/ salt if we can't verify the given password
+						hashUpdate = false;
+						break;
+				}
+				if (correct) {
+					if (onlineStatus != STATUS_NOTLOGGEDIN) {
+						//TODO: there is a high chance that the player is not really
+						//in game if they have an onlineStatus of STATUS_MIGRATION.
+						//Make a way to check if they really are/will be connected
+						//to a server
+						result = 7;
+					} else if (banExpire > System.currentTimeMillis()) {
+						result = 2;
 					} else {
-						ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
-						ps.setByte(1, STATUS_INLOGIN);
-						ps.setInt(2, getAccountId());
+						rs.close();
+						ps.close();
+						if (hashUpdate) {
+							salt = HashFunctions.makeSalt();
+							passhash = HashFunctions.makeSaltedSha512Hash(pwd, salt);
+							ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ?, `password` = ?, `salt` = ? WHERE `id` = ?");
+							ps.setByte(1, STATUS_INLOGIN);
+							ps.setBytes(2, passhash);
+							ps.setBytes(3, salt);
+							ps.setInt(4, getAccountId());
+						} else {
+							ps = con.prepareStatement("UPDATE `accounts` SET `connected` = ? WHERE `id` = ?");
+							ps.setByte(1, STATUS_INLOGIN);
+							ps.setInt(2, getAccountId());
+						}
+						ps.executeUpdate();
+						result = 0;
 					}
-					ps.executeUpdate();
+				} else {
+					result = 4;
 				}
 			} else {
 				result = 5;
@@ -145,8 +293,8 @@ public class LoginClient extends RemoteClient {
 		return banReason;
 	}
 
-	public int getBanExpiration() {
-		return banExpire;
+	public long getBanExpiration() {
+		return TimeTool.unixToWindowsTime(banExpire);
 	}
 
 	public String getPin() {
@@ -216,31 +364,68 @@ public class LoginClient extends RemoteClient {
 		return status;
 	}
 
-	//TODO: I guess we're gonna have to save the mac address to the SQL so we
-	//can unban them when they're not logged in...
+	private byte[] macStringToBytes(String str) {
+		//MAC addresses are just 6-byte (48-bit) integers commonly notated by 6
+		//hexadecimal bytes in big endian, delimited by a single character
+		//(hyphens in MapleStory)
+		byte[] bytes = new byte[6];
+		for (int byt = 0, strStart = 0; byt < 6; byt++, strStart += 3)
+			bytes[byt] = (byte) Short.parseShort(str.substring(strStart, strStart + 2), 16);
+		return bytes;
+	}
+
 	public boolean hasBannedMac(String macData) {
-		String[] macAddresses = macData.split(", ");
-		StringBuilder query = new StringBuilder("SELECT COUNT(*) FROM `macbans` WHERE `mac` IN (");
-		for (int i = 0; i < macAddresses.length; i++)
-			query.append("?, ");
+		//storing macs in binary saves us 2 bytes per address compared to if we
+		//used a more readable 8-byte/64-bit signed integer
+		String[] macStrings = macData.split(", ");
+		byte[][] macListArray = new byte[macStrings.length][];
+		byte[] macListCombined = new byte[macStrings.length * 6];
+		StringBuilder checkBanQuery = new StringBuilder("SELECT `banid` FROM `macbans` WHERE `mac` IN (");
+		byte[] mac;
+		for (int i = 0; i < macListArray.length; i++) {
+			mac = macStringToBytes(macStrings[i]);
+			System.arraycopy(mac, 0, macListCombined, i * 6, 6);
+			macListArray[i] = mac;
+			checkBanQuery.append("?, ");
+		}
+		if (macListArray.length > 0) {
+			int length = checkBanQuery.length();
+			checkBanQuery.replace(length - 2, length, ")");
+		}
 
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement(query.replace(query.length() - 2, query.length(), ")").toString());
-			for (int i = 0; i < macAddresses.length; i++)
-				ps.setString(i + 1, macAddresses[i]);
+
+			ps = con.prepareStatement("UPDATE `accounts` SET `recentmacs` = ?, `recentip` = ? WHERE `id` = ?");
+			ps.setBytes(1, macListCombined);
+			ps.setLong(2, getIpAddress());
+			ps.setInt(3, getAccountId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement(checkBanQuery.toString());
+			for (int i = 0; i < macListArray.length; i++)
+				ps.setBytes(i + 1, macListArray[i]);
 			rs = ps.executeQuery();
-			if (rs.next() && rs.getInt(1) > 0)
-				return true;
+			//don't load duplicate ban ids
+			Set<Integer> banIds = new HashSet<Integer>();
+			while (rs.next())
+				banIds.add(Integer.valueOf(rs.getInt(1)));
+			for (Integer banId : banIds) {
+				loadBanStatusFromBanId(con, banId.intValue());
+				if (banExpire > System.currentTimeMillis())
+					return true;
+			}
+			return false;
 		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Could not update MAC addresses of account " + getAccountId(), e);
+			LOG.log(Level.WARNING, "Could not update and check MAC addresses of account " + getAccountId(), e);
+			return false;
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
-		return false;
 	}
 
 	@Override

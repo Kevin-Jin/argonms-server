@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -37,18 +38,37 @@ public class GamePlayerMiscHandler {
 	;
 
 	public static void handleReplenishHpMp(LittleEndianReader packet, GameClient gc) {
+		long now = System.currentTimeMillis();
 		GameCharacter p = gc.getPlayer();
 		packet.skip(4);
 		short hp = packet.readShort();
 		short mp = packet.readShort();
+		//TODO: use MP recovery and HP recovery skill levels to determine if the
+		//proper amount of HP/MP is being recovered
 		if (p.getHp() == 0 || hp > 400 || mp > 1000 || (hp > 0 && mp > 0)) {
-			//TODO: hacking
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish too much HP/MP at once");
 			return;
 		}
-		if (hp > 0)
+		if (hp > 0) {
+			CheatTracker ct = CheatTracker.get(gc);
+			long last = ct.getLoggedTime("hpr");
+			ct.logTime("hpr", now);
+			if (now - last < 9500) { //9.5 seconds, give some leniency since time recording isn't always accurate w/ latency
+				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish HP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
+				return;
+			}
 			p.gainHp(hp);
-		if (mp > 0)
+		}
+		if (mp > 0) {
+			CheatTracker ct = CheatTracker.get(gc);
+			long last = ct.getLoggedTime("mpr");
+			ct.logTime("mpr", now);
+			if (now - last < 9500) { //9.5 seconds, give some leniency since time recording isn't always accurate w/ latency
+				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish MP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
+				return;
+			}
 			p.gainMp(mp);
+		}
 	}
 
 	public static void handleEmote(LittleEndianReader packet, GameClient gc) {
@@ -57,7 +77,7 @@ public class GamePlayerMiscHandler {
 		if (emote > 7) { //cash emotes
 			int itemid = 5159992 + emote;
 			if (p.getInventory(InventoryType.CASH).hasItem(itemid, 1)) {
-				//TODO: hacking
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use cash shop emote without owning the item");
 				return;
 			}
 		}

@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.GlobalConstants;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -70,7 +71,7 @@ public class GameNpcHandler {
 				if (QuestDataLoader.getInstance().canStartQuest(player, questId)) {
 					player.startQuest(questId, npcId);
 				} else {
-					//TODO: hacking
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to start quest without meeting requirements");
 				}
 				break;
 			} case 2 : { //complete quest
@@ -81,13 +82,13 @@ public class GameNpcHandler {
 					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
 						player.completeQuest(questId, npcId, selection);
 					} else {
-						//TODO: hacking
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
 					}
 				} else {
 					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
 						player.completeQuest(questId, npcId, -1);
 					} else {
-						//TODO: hacking
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
 					}
 				}
 				break;
@@ -100,7 +101,7 @@ public class GameNpcHandler {
 				if (QuestDataLoader.getInstance().canStartQuest(player, questId)) {
 					NpcScriptManager.getInstance().runStartQuestScript(npcId, questId, gc);
 				} else {
-					//TODO: hacking
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to start quest without meeting requirements");
 				}
 				break;
 			} case 5 : { //scripted quest completed
@@ -109,7 +110,7 @@ public class GameNpcHandler {
 				if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
 					NpcScriptManager.getInstance().runCompleteQuestScript(npcId, questId, gc);
 				} else {
-					//TODO: hacking
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
 				}
 				break;
 			}

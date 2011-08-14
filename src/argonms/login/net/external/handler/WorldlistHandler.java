@@ -20,6 +20,7 @@ package argonms.login.net.external.handler;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerJob;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
@@ -279,9 +280,7 @@ public class WorldlistHandler {
 					top, bottom, shoes, weapon);
 			writeCharEntry(lew, p);
 		} else {
-			LOG.log(Level.WARNING, "Player from account {0} tried to create a "
-					+ "stats hacked character named {1} ",
-					new Object[] { lc.getAccountId(), name });
+			CheatTracker.get(lc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to create a stats hacked character (" + name + ")");
 		}
 		lc.getSession().send(lew.getBytes());
 	}

@@ -1152,6 +1152,31 @@
 	synchronized Cipher per MapleAesOfb instance since MapleAesOfb is now a
 	static class. Should cut instances of MapleAesOfb by half when using OIO,
 	and cut it to the amount of worker threads when using NIO.
+	* Added !clearmobs and !cleardrops commands. !stat command now sets the EXP
+	to a valid EXP for a particular level when setting or adding levels.
+
+2011-08-14  GoldenKevin  (revision 57)
+
+	* Password hashes and salts are now stored in raw binary in the accounts
+	table. This should reduce the space used for password data in half. Also
+	salt is now a fixed size BINARY instead of VARBINARY, since its size is
+	always 16 bytes, so it will save an extra length byte for each account with
+	a non-null salt. Only disadvantages are more difficult reading (hexadecimal
+	is better suited for reading binary, and raw binary can result in
+	non-printable ASCII chars), and inability to use SHA1 hash generators online
+	to paste for an account using MySQL Query Browser (which is mitigated by the
+	allowance of plaintext in the password field for new accounts. it can still
+	be done by executing the query "UDPATE `accounts` SET `password` = X'hash'",
+	replacing hash with the hexadecimal hash. This works for INSERT INTO too).
+	* Rewrote LoginClient's authentication method. Fixed NullPointerExceptions
+	when a user with a non-SHA512 password and a null salt enters an incorrect
+	password.
+	* TelnetSession updated to support new authentication. Also added a "help"
+	command.
+	* HashFunctions rewritten to reduce instantiation costs (MessageDigest
+	instances are now thread-local) and to support the new password hash format.
+	* Implemented CheatTracker. Replaced all "TODO: hacking"s.
+	* RankingWorker updated to support new banning format.
 
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are

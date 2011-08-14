@@ -18,60 +18,90 @@
 
 package argonms.common.net;
 
-import argonms.common.util.HexTool;
 import argonms.common.util.Rng;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
- * Taken from an OdinMS-derived source, originally named LoginCrypto.
- * @author Frz
+ *
+ * @author GoldenKevin
  */
 public class HashFunctions {
-	private HashFunctions() {
-	}
+	public static final Charset ASCII = Charset.forName("US-ASCII");
 
-	private static String toSimpleHexString(byte[] bytes) {
-		return HexTool.toStringNoSpaces(bytes).toLowerCase();
-	}
-
-	private static String hashWithDigest(String in, String digest) {
-		try {
-			MessageDigest Digester = MessageDigest.getInstance(digest);
-			Digester.update(in.getBytes("UTF-8"), 0, in.length());
-			byte[] sha1Hash = Digester.digest();
-			return toSimpleHexString(sha1Hash);
-		} catch (NoSuchAlgorithmException ex) {
-			throw new RuntimeException("Hashing the password failed", ex);
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException("Encoding the string failed", e);
+	private static ThreadLocal<MessageDigest> sha1digest = new ThreadLocal<MessageDigest>() {
+		@Override
+		public MessageDigest initialValue() {
+			try {
+				return MessageDigest.getInstance("SHA-1");
+			} catch (NoSuchAlgorithmException ex) {
+				//assert false; //should never happen
+				return null;
+			}
 		}
+	};
+
+	private static ThreadLocal<MessageDigest> sha512digest = new ThreadLocal<MessageDigest>() {
+		@Override
+		public MessageDigest initialValue() {
+			try {
+				return MessageDigest.getInstance("SHA-512");
+			} catch (NoSuchAlgorithmException ex) {
+				//assert false; //should never happen
+				return null;
+			}
+		}
+	};
+
+	private HashFunctions() {
+		
 	}
 
-	public static String hexSha1(String in) {
-		return hashWithDigest(in, "SHA-1");
+	private static byte[] hashWithDigest(byte[] in, MessageDigest digester) {
+		digester.update(in, 0, in.length);
+		return digester.digest();
 	}
 
-	private static String hexSha512(String in) {
-		return hashWithDigest(in, "SHA-512");
+	private static byte[] hexSha1(byte[] in) {
+		return hashWithDigest(in, sha1digest.get());
 	}
 
-	public static boolean checkSha1Hash(String hash, String password) {
-		return hash.equals(hexSha1(password));
+	private static byte[] hexSha512(byte[] in) {
+		return hashWithDigest(in, sha512digest.get());
 	}
 
-	public static boolean checkSaltedSha512Hash(String hash, String password, String salt) {
-		return hash.equals(makeSaltedSha512Hash(password, salt));
+	public static boolean checkSha1Hash(byte[] actualHash, String check) {
+		return Arrays.equals(actualHash, hexSha1(check.getBytes(ASCII)));
 	}
 
-	public static String makeSaltedSha512Hash(String password, String salt) {
-		return hexSha512(password + salt);
+	public static boolean checkSha512Hash(byte[] actualHash, String check) {
+		return Arrays.equals(actualHash, hexSha512(check.getBytes(ASCII)));
 	}
 
-	public static String makeSalt() {
+	private static byte[] concat(String password, byte[] salt) {
+		byte[] concat = new byte[password.length() + salt.length];
+		System.arraycopy(password.getBytes(ASCII), 0, concat, 0, password.length());
+		System.arraycopy(salt, 0, concat, password.length(), salt.length);
+		return concat;
+	}
+
+	public static boolean checkSaltedSha1Hash(byte[] actualHash, String check, byte[] salt) {
+		return Arrays.equals(actualHash, hexSha1(concat(check, salt)));
+	}
+
+	public static boolean checkSaltedSha512Hash(byte[] actualHash, String check, byte[] salt) {
+		return Arrays.equals(actualHash, hexSha512(concat(check, salt)));
+	}
+
+	public static byte[] makeSalt() {
 		byte[] salt = new byte[16];
 		Rng.getGenerator().nextBytes(salt);
-		return toSimpleHexString(salt);
+		return salt;
+	}
+
+	public static byte[] makeSaltedSha512Hash(String password, byte[] salt) {
+		return hexSha512(concat(password, salt));
 	}
 }

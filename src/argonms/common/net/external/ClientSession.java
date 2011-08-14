@@ -113,6 +113,7 @@ public class ClientSession<T extends RemoteClient> {
 		//is handled in the current thread, while non-blocking writes are queued
 		//in a worker thread), so locking here will lock in the critical section
 		//in MaplePacketEncoder.encode for this write request.
+		//TODO: allow parallel encrypting/array copying - only lock IV fetch
 		lockSend();
 		try {
 			ch.write(input);

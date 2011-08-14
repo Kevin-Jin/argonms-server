@@ -55,13 +55,13 @@ public class AuthHandler {
 			writer.writeInt(lc.getAccountId());
 			writer.writeByte(lc.getGender()); //0 = male, 1 = female, 0x0A = ask gender, 0x0B = ask pin
 			writer.writeByte((byte) 0); //Admin byte, allows client to use "/". Used for logging commands I guess. Disables any player interactions though.
-			writer.writeByte((byte) 0x4E);
+			writer.writeByte((byte) 0x4E); //TODO: what does thie byte do? o.o
 			writer.writeLengthPrefixedString(login);
-			writer.writeBytes(new byte[]{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte) 0xDC, 0x3D, 0x0B, 0x28, 0x64, (byte) 0xC5, 1, 8, 0, 0, 0});
+			//TODO: we really ought to decode this random stream of bytes here
+			writer.writeBytes(new byte[] { 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (byte) 0xDC, 0x3D, 0x0B, 0x28, 0x64, (byte) 0xC5, 1, 8, 0, 0, 0 });
 		} else if (result == 2) {
 			writer.writeByte(lc.getBanReason());
-			writer.writeInt(0);
-			writer.writeInt(lc.getBanExpiration());
+			writer.writeLong(lc.getBanExpiration());
 		}
 
 		lc.getSession().send(writer.getBytes());
@@ -113,13 +113,11 @@ public class AuthHandler {
 	}
 
 	public static void handlePinRegister(LittleEndianReader packet, LoginClient lc) {
-		byte c2 = packet.readByte();
-		if (c2 != 0) {
+		byte op1 = packet.readByte();
+		if (op1 != 0) {
 			String pin = packet.readLengthPrefixedString();
-			if (pin != null) {
-				lc.setPin(pin);
-				lc.getSession().send(pinRegistered());
-			}
+			lc.setPin(pin);
+			lc.getSession().send(pinRegistered());
 		}
 		lc.updateState(RemoteClient.STATUS_NOTLOGGEDIN);
 	}

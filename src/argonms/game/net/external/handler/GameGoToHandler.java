@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -26,6 +27,7 @@ import argonms.game.loading.map.PortalData;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.util.Map;
 
 /**
  *
@@ -73,15 +75,16 @@ public class GameGoToHandler {
 		String portalName = packet.readLengthPrefixedString();
 
 		GameCharacter p = gc.getPlayer();
-		PortalData portal = p.getMap().getStaticData().getPortals().get(Byte.valueOf(p.getMap().getPortalIdByName(portalName)));
+		Map<Byte, PortalData> mapPortals = p.getMap().getStaticData().getPortals();
+		PortalData portal = mapPortals.get(Byte.valueOf(p.getMap().getPortalIdByName(portalName)));
 		Point startPos = packet.readPos();
 		Point endPos = packet.readPos();
 		if (portal == null) {
-			//TODO: hacking
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to enter nonexistant portal");
 		} else if (portal.getPosition().distanceSq(startPos) > (150 * 150) || portal.getPosition().distanceSq(p.getPosition()) > (150 * 150)) {
-			//TODO: hacking
-		} else if (!p.getMap().getStaticData().getPortals().get(Byte.valueOf(p.getMap().getPortalIdByName(portal.getTargetName()))).getPosition().equals(endPos)) {
-			//TODO: hacking
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use faraway portal");
+		} else if (!mapPortals.get(Byte.valueOf(p.getMap().getPortalIdByName(portal.getTargetName()))).getPosition().equals(endPos)) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to teleport to wrong position");
 		}
 	}
 

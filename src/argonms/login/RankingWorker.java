@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//TODO: doesn't check recent macs and mac bans
 /**
  * Offloads all calculation to the MySQL server so less data (or even none
  * entirely) will have to be transferred between the MySQL server and the login
@@ -38,37 +39,47 @@ import java.util.logging.Logger;
 public class RankingWorker implements Runnable {
 	private static final Logger LOG = Logger.getLogger(RankingWorker.class.getName());
 
+	//note that with the exclusions, a character will retain its previous rank,
+	//and will not have its rank set to 0 (or some other sentinel value for
+	//"not on the ranks") if it is supposed to be non-ranked (e.g. GMs, banned
+	//players, low-levels)
+	//exclusions are there just so that the query filters them out in select
+	//so that rank is not incremented for them. in the actual ranking interface
+	//on a website or something, you have to make sure to also include these
+	//same exclusions so that they will not be included in the rankings. do not
+	//just query "WHERE `rank` != 0" to exclude non-ranked players.
 	private void updateLevelBasedRank(Connection con, String additionalConstraints, String updatedRankColumn, String oldRankColumn, String exceptionMessage) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("SET @rank := @real_rank := 0, @level := @exp := -1;");
+			ps = con.prepareStatement("SET @rank := @real_rank := 0, @level := @exp := -1, @banexpire := null;");
 			ps.executeUpdate();
 			ps = con.prepareStatement(
 				"UPDATE `characters` `target`"
 				+ "	INNER JOIN ("
-				+ "		SELECT `c`.`id`,"
+				+ "		SELECT DISTINCT `c`.`id`,"
 							//actual rank calculating
 				+ "			GREATEST("
 				+ "				@rank := IF(`level` <> 200 AND @level = `level` AND @exp = `exp`, @rank, @real_rank + 1),"
-				+ "				LEAST(0, @real_rank := @real_rank + 1),"
-				+ "				LEAST(0, @level := `level`),"
-				+ "				LEAST(0, @exp := `exp`)"
-				+ "			) AS `rank`"
-							//`source`.`rank` = Max((`level` != 200 && @level == `level` && @exp == `exp`) ? @rank : (@real_rank + 1), Min(0, ++@real_rank), Min(0, @level = `level`), Min(0, @exp = `exp`))
+				+ "				LEAST(0, @real_rank := @real_rank + 1)," //will always be 0. this is just a fancy way to update a variable in a select statement
+				+ "				LEAST(0, @level := `level`)," //will always be 0. this is just a fancy way to update a variable in a select statement
+				+ "				LEAST(0, @exp := `exp`)" //will always be 0. this is just a fancy way to update a variable in a select statement
+				+ "			) AS `rank`" //this whole thing will always = @rank (after it's been updated). the rest of the block is just for updating the other variables
+							//(`source`.`rank` = `level` != 200 && @level == `level` && @exp == `exp`) ? @rank : (@real_rank + 1); @real_rank++; @level = `level`; @exp = `exp`;
 				+ "		FROM `characters` `c`"
 				+ "		LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`"
+				+ "		LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`"
 				+ "		WHERE" //constraints/exclusions
-				+ "			(`a`.`banexpire` DIV 1000) < UNIX_TIMESTAMP()" //do not count banned players
-				+ "			AND `a`.`gm` = 0" //do not count GMs
-				+ "			AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))" //only count non-beginners or beginners above level 9
+				+ "			`a`.`gm` = 0" //do not update GMs
+				+ "			AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))" //only update non-beginners or beginners above level 9
+				+ "			AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()" //do not update banned players
 				+ additionalConstraints
 				+ "		ORDER BY"
 				+ "			`c`.`level` DESC," //highest levels go on top
 				+ "			`c`.`exp` DESC" //followed by higher exp if two players have same level
 				+ "	) AS `source` ON `source`.`id` = `target`.`id`"
-				+ "	SET"
-				+ "		`target`." + oldRankColumn + " = `target`." + updatedRankColumn + ","
-				+ "		`target`." + updatedRankColumn + " = `source`.rank"
+				+ "SET"
+				+ "	`target`.`" + oldRankColumn + "` = `target`.`" + updatedRankColumn + "`,"
+				+ "	`target`.`" + updatedRankColumn + "` = `source`.`rank`"
 			);
 			ps.executeUpdate();
 		} catch (SQLException e) {
@@ -83,7 +94,7 @@ public class RankingWorker implements Runnable {
 	}
 
 	private void updateWorld(Connection con, byte worldId) throws SQLException {
-		updateLevelBasedRank(con, "AND c.`world`", "worldrankcurrentpos", "worldrankoldpos", "Error updating character world " + worldId + " rankings.");
+		updateLevelBasedRank(con, "AND c.`world` = " + worldId, "worldrankcurrentpos", "worldrankoldpos", "Error updating character world " + worldId + " rankings.");
 	}
 
 	private void updateJob(Connection con, byte prefix) throws SQLException {
@@ -93,30 +104,31 @@ public class RankingWorker implements Runnable {
 	private void updateFame(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("SET @rank := @real_rank := 0, @level := @exp := -1;");
+			ps = con.prepareStatement("SET @rank := 0, @banexpire := null;");
 			ps.executeUpdate();
 			ps = con.prepareStatement(
 				"UPDATE `characters` `target`"
 				+ "	INNER JOIN ("
-				+ "		SELECT `c`.`id`,"
+				+ "		SELECT DISTINCT `c`.`id`,"
 							//actual rank calculating
 				+ "			(@rank := @rank + 1) AS `rank`"
-							//`source`.`rank` = ++@rank
+							//`source`.`rank` = @rank++
 				+ "		FROM `characters` `c`"
 				+ "		LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`"
+				+ "		LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`"
 				+ "		WHERE" //constraints/exclusions
-				+ "			(`a`.`banexpire` DIV 1000) < UNIX_TIMESTAMP()" //do not count banned players
-				+ "			AND `a`.`gm` = 0" //do not count GMs
-				+ "			AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))" //only count non-beginners or beginners above level 9
-				+ "			AND fame > 0" //only count players who have some fame
+				+ "			`a`.`gm` = 0" //do not update GMs
+				+ "			AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))" //only update non-beginners or beginners above level 9
+				+ "			AND `fame` > 0" //only update players who have some fame
+				+ "			AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()" //do not update banned players
 				+ "		ORDER BY"
 				+ "			`c`.`fame` DESC," //highest famed players go on top
 				+ "			`c`.`level` DESC," //followed by higher level if two players have same fame
 				+ "			`c`.`exp` DESC" //followed by higher exp if two players have same level
 				+ "	) AS `source` ON `source`.`id` = `target`.`id`"
-				+ "	SET"
-				+ "		`target`.`famerankoldpos` = `target`.`famerankcurrentpos`,"
-				+ "		`target`.`famerankcurrentpos` = `source`.`rank`"
+				+ "SET"
+				+ "	`target`.`famerankoldpos` = `target`.`famerankcurrentpos`,"
+				+ "	`target`.`famerankcurrentpos` = `source`.`rank`"
 			);
 			ps.executeUpdate();
 		} catch (SQLException e) {

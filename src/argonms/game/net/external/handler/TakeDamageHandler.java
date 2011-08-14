@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -72,7 +73,7 @@ public class TakeDamageHandler {
 			Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, ent);
 			if (m != null) { //lag...
 				if (m.getDataId() != mobid) {
-					//TODO: hacking
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to spoof mob attack");
 					return;
 				}
 				if (attack != BUMP_DAMAGE) {
@@ -98,7 +99,7 @@ public class TakeDamageHandler {
 				}
 				stance = packet.readByte();
 				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.STANCE)) {
-					//TODO: hacking
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power stance without being buff being cast");
 					return;
 				}
 			}
