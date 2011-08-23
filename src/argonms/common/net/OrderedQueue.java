@@ -110,8 +110,7 @@ public class OrderedQueue {
 	}
 
 	/**
-	 * This method is NOT thread-safe. Access to this method must be
-	 * synchronized if multiple threads can access it.
+	 * This method is thread safe.
 	 * @return a list of ByteBuffers in order of the order number passed to
 	 * insert(). The list has no gaps in order numbers.
 	 */

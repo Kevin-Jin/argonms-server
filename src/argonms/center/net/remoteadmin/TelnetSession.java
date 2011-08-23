@@ -30,6 +30,8 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -59,6 +61,7 @@ public class TelnetSession implements Session {
 	private final OrderedQueue sendQueue;
 
 	private final CommandReceivedDelegate commandHandler;
+	private final Lock readLock;
 	private final StringBuilder inputBuffer;
 	private int inputCount;
 	private int inputCursor;
@@ -75,6 +78,7 @@ public class TelnetSession implements Session {
 		closeEventsTriggered = new AtomicBoolean(false);
 		readBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 		sendQueue = new OrderedQueue();
+		readLock = new ReentrantLock();
 		inputBuffer = new StringBuilder(BUFFER_SIZE);
 
 		this.commChn = channel;
@@ -116,7 +120,8 @@ public class TelnetSession implements Session {
 				break;
 			case MESSAGE:
 				commandHandler.lineReceived(line, client);
-				client.writePrompt();
+				if (commChn.isOpen())
+					client.writePrompt();
 				break;
 		}
 	}
@@ -131,13 +136,19 @@ public class TelnetSession implements Session {
 	}
 
 	@Override
-	public void close() {
+	public void close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
 			} catch (IOException e) {
-				LOG.log(Level.WARNING, "Error closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
+				LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
 			}
+
+			if (reasonExc == null)
+				LOG.log(Level.FINE, "Telnet client {0} ({1}) disconnected: {2}", new Object[] { getClient().getAccountName(), getAddress(), reason });
+			else
+				LOG.log(Level.FINE, "Telnet client " + getClient().getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			client.disconnected();
 			onClose.closed(this);
 		}
 	}
@@ -171,13 +182,92 @@ public class TelnetSession implements Session {
 			return true;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			LOG.log(Level.WARNING, "Error writing message to telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", ex);
-			close();
+			close("Error while writing", ex);
 			return false;
 		} finally {
 			sendQueue.incrementPopCursor(i);
 			sendQueue.setCanWrite();
 		}
+	}
+
+	private int asciiControlCodesAndVt100(byte[] message, int i, ByteArrayOutputStream echo) {
+		switch (message[i]) {
+			case '\r':
+			case '\n': //new line
+				echo.write(message[i]);
+				inputBuffer.insert(inputCursor, (char) message[i]);
+				inputCursor++;
+				inputCount++;
+				break;
+			case 0x1B: //Esc - swallow the ones we don't care about
+				if (i + 1 < message.length) {
+					switch (message[i + 1]) {
+						case 0x1B:
+							//function keys
+							if (i + 3 < message.length && i + 1 == 0x31 && i + 3 == '~')
+								i += 3;
+							break;
+						case '[':
+							//vt100 escape sequences
+							if (i + 2 < message.length) {
+								switch (message[i + 2]) {
+									case 'A':
+										//cursor up
+										//TODO: set cursor just to the right of
+										//name>, then echo { 0x1B, '[', 'K' },
+										//then echo the last line from history,
+										//and finally set cursor just to right
+										//of brought up text
+										i += 2;
+										break;
+									case 'B':
+										//cursor down
+										i += 2;
+										break;
+									case 'C':
+										//cursor right
+										if (inputCursor < inputCount) {
+											echo.write(message, i, 3);
+											inputCursor++;
+										}
+										i += 2;
+										break;
+									case 'D':
+										//cursor left
+										//TODO: this should insert chars and
+										//shift existing chars to right instead
+										//of replacing existing chars when
+										//typing after shifting cursor. wrong
+										//VT100 codes perhaps? Windows Telnet
+										//server and client have it right, so I
+										//guess I'll packet sniff them.
+										if (inputCursor > 0) {
+											echo.write(message, i, 3);
+											inputCursor--;
+										}
+										i += 2;
+										break;
+								}
+							}
+							break;
+					}
+				}
+				break;
+			case '\b': //ASCII non-destructive backspace (Windows telnet)
+				if (inputCursor <= 0)
+					break;
+				echo.write(message[i]);
+				echo.write(' ');
+			case 0x7F: //Ctrl-? destructive backspace (PuTTY)
+				if (inputCursor > 0) {
+					inputCursor--;
+					inputCount--;
+					inputBuffer.deleteCharAt(inputCursor);
+					echo.write(message[i]);
+				}
+				break;
+		}
+		return i;
 	}
 
 	/**
@@ -186,117 +276,42 @@ public class TelnetSession implements Session {
 	 */
 	/* package-private */ void processRead(byte[] message) {
 		ByteArrayOutputStream echo = new ByteArrayOutputStream(message.length);
-		for (int i = 0; i < message.length; i++) {
-			if (message[i] > 0x1F && message[i] < 0x7F) {
-				//7-bit ASCII printable characters
-				echo.write(message[i]);
-				//since it's 7-bit ASCII, we just cast the byte to char without
-				//having to worry about wide chars.
-				inputBuffer.insert(inputCursor, (char) message[i]);
-				inputCursor++;
-				inputCount++;
-			} else if (message[i] == TelnetClient.IAC) {
-				//Telnet commands
-				i += client.protocolCmd(message, i + 1);
-			} else {
-				//7-bit ASCII control characters
-				switch (message[i]) {
-					case '\r':
-					case '\n': //new line
-						echo.write(message[i]);
-						inputBuffer.insert(inputCursor, (char) message[i]);
-						inputCursor++;
-						inputCount++;
-						break;
-					case 0x1B: //Esc - swallow the ones we don't care about
-						if (i + 1 < message.length) {
-							switch (message[i + 1]) {
-								case 0x1B:
-									//function keys
-									if (i + 3 < message.length && i + 1 == 0x31
-											&& i + 3 == '~')
-										i += 3;
-									break;
-								case '[':
-									//vt100 escape sequences
-									if (i + 2 < message.length) {
-										switch (message[i + 2]) {
-											case 'A':
-												//cursor up
-												//TODO: set cursor just to the
-												//right of name>, then echo
-												//{ 0x1B, '[', 'K' }, then echo
-												//the last line from history,
-												//and finally set cursor just to
-												//right of brought up text
-												i += 2;
-												break;
-											case 'B':
-												//cursor down
-												i += 2;
-												break;
-											case 'C':
-												//cursor right
-												if (inputCursor < inputCount) {
-													echo.write(message, i, 3);
-													inputCursor++;
-												}
-												i += 2;
-												break;
-											case 'D':
-												//cursor left
-												//TODO: this should insert chars
-												//and shift existing chars to
-												//right instead of replacing
-												//existing chars when typing
-												//after shifting cursor. wrong
-												//VT100 codes perhaps? Windows
-												//Telnet server and client have
-												//it right, so I guess I'll
-												//packet sniff them.
-												if (inputCursor > 0) {
-													echo.write(message, i, 3);
-													inputCursor--;
-												}
-												i += 2;
-												break;
-										}
-									}
-									break;
-							}
-						}
-						break;
-					case '\b': //ASCII non-destructive backspace (Windows telnet)
-						if (inputCursor <= 0)
-							break;
-						echo.write(message[i]);
-						echo.write(' ');
-					case 0x7F: //Ctrl-? destructive backspace (PuTTY)
-						if (inputCursor > 0) {
-							inputCursor--;
-							inputCount--;
-							inputBuffer.deleteCharAt(inputCursor);
-							echo.write(message[i]);
-						}
-						break;
+		readLock.lock();
+		try { //only one thread altering inputBuffer please.
+			for (int i = 0; i < message.length; i++) {
+				if (message[i] > 0x1F && message[i] < 0x7F) {
+					//7-bit ASCII printable characters
+					echo.write(message[i]);
+					//since it's 7-bit ASCII, we just cast the byte to char without
+					//having to worry about wide chars.
+					inputBuffer.insert(inputCursor, (char) message[i]);
+					inputCursor++;
+					inputCount++;
+				} else if (message[i] == TelnetClient.IAC) {
+					//Telnet commands
+					i += client.protocolCmd(message, i + 1);
+				} else {
+					//7-bit ASCII control characters
+					i = asciiControlCodesAndVt100(message, i, echo);
 				}
 			}
-		}
 
-		if (client.willEcho())
-			send(ByteBuffer.wrap(echo.toByteArray()));
-		String[] statements = newLineRegex.split(inputBuffer, -1);
-		String statement;
-		int cutTo = 0;
-		for (int i = 0; i < statements.length - 1; i++) {
-			statement = statements[i];
-			processLine(statement);
-			int size = statement.length() + newLineLength;
-			cutTo += size;
-			inputCursor -= size;
-			inputCount -= size;
+			if (client.willEcho())
+				send(ByteBuffer.wrap(echo.toByteArray()));
+			String[] statements = newLineRegex.split(inputBuffer, -1);
+			String statement;
+			int cutTo = 0;
+			for (int i = 0; i < statements.length - 1; i++) {
+				statement = statements[i];
+				processLine(statement);
+				cutTo += statement.length() + newLineLength;
+			}
+			inputCursor -= cutTo;
+			inputCount -= cutTo;
+			inputBuffer.delete(0, cutTo);
+		} finally {
+			readLock.unlock();
 		}
-		inputBuffer.delete(0, cutTo);
 	}
 
 	/**
@@ -315,7 +330,7 @@ public class TelnetSession implements Session {
 	/* package-private */ byte[] readMessage(int readBytes) {
 		if (readBytes == -1) {
 			//connection closed
-			close();
+			close("EOF received", null);
 			return null;
 		}
 		byte[] message = new byte[readBytes];

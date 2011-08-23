@@ -18,6 +18,7 @@
 
 package argonms.common.net.external;
 
+import argonms.common.net.SessionCreator;
 import argonms.common.net.external.ClientSession.CloseListener;
 import argonms.common.util.input.LittleEndianByteArrayReader;
 import java.io.IOException;
@@ -41,7 +42,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ClientListener<T extends RemoteClient> {
+public class ClientListener<T extends RemoteClient> implements SessionCreator {
 	public interface ClientFactory<T extends RemoteClient> {
 		public T newInstance(byte world, byte channel);
 	}
@@ -133,9 +134,6 @@ public class ClientListener<T extends RemoteClient> {
 											ClientSession<T> session = new ClientSession<T>(client, acceptedKey, clientState, new CloseListener<T>() {
 												@Override
 												public void closed(ClientSession<T> session) {
-													LOG.log(Level.FINE, "Client from {0} disconnected", client.socket().getRemoteSocketAddress());
-													clientState.disconnected();
-
 													connected.remove(acceptedKey);
 													acceptedKey.cancel();
 												}
@@ -144,7 +142,7 @@ public class ClientListener<T extends RemoteClient> {
 											connected.put(acceptedKey, session);
 											session.sendInitPacket();
 										} catch (IOException ex) {
-											LOG.log(Level.WARNING, "Error accepting client", ex);
+											LOG.log(Level.FINE, "Error while accepting client", ex);
 										}
 									}
 								} else {
@@ -181,8 +179,7 @@ public class ClientListener<T extends RemoteClient> {
 											}
 										} catch (IOException ex) {
 											//does an IOException in read always mean an invalid channel?
-											LOG.log(Level.WARNING, "Error reading message from client " + session.getAccountName() + " (" + session.getAddress() + ")", ex);
-											session.close();
+											session.close("Error while reading", ex);
 										}
 									}
 									if (key.isValid() && key.isWritable())

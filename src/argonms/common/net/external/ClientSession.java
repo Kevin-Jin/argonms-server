@@ -167,14 +167,22 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		heartbeatTask.stop();
 	}
 
-	public void close() {
+	@Override
+	public void close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
-			} catch (IOException e) {
-				LOG.log(Level.WARNING, "Error closing client " + getAccountName() + " (" + getAddress() + ")", e);
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
+			idleTaskFuture.cancel(false);
+
+			if (reasonExc == null)
+				LOG.log(Level.FINE, "Client {0} ({1}) disconnected: {2}", new Object[] { getAccountName(), getAddress(), reason });
+			else
+				LOG.log(Level.FINE, "Client " + getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			client.disconnected();
 			onClose.closed(this);
 		}
 	}
@@ -208,8 +216,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 			return true;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			LOG.log(Level.WARNING, "Error writing message to client " + getAccountName() + " (" + getAddress() + ")", ex);
-			close();
+			close("Error while writing", ex);
 			return false;
 		} finally {
 			sendQueue.incrementPopCursor(i);
@@ -266,7 +273,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close();
+			close("EOF received", null);
 			return null;
 		}
 		if (readBytes < nextMessageExpectedLength) {
@@ -280,8 +287,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				readBuffer.flip();
 				readBuffer.get(message);
 				if (!MapleAesOfb.checkPacket(message, recvIv)) {
-					LOG.log(Level.WARNING, "Client failed packet test -> disconnecting");
-					close();
+					close("Failed packet test", null);
 					return null;
 				}
 				int length = MapleAesOfb.getPacketLength(message);
@@ -339,9 +345,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 		@Override
 		public void run() {
-			LOG.log(Level.FINE, "Account {0} timed out after " + TIMEOUT
-					+ " milliseconds -> Disconnecting.", getAccountName());
-			close();
+			close("Timed out after " + TIMEOUT + " milliseconds", null);
 		}
 
 		public void receivedPong() {

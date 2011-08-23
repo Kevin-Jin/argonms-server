@@ -20,6 +20,7 @@ package argonms.center.net.remoteadmin;
 
 import argonms.center.net.internal.RemoteServerListener;
 import argonms.center.net.remoteadmin.TelnetSession.CloseListener;
+import argonms.common.net.SessionCreator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -39,7 +40,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class TelnetListener {
+public class TelnetListener implements SessionCreator {
 	private static final Logger LOG = Logger.getLogger(RemoteServerListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
 	private final TelnetCommandProcessor packetProc;
@@ -128,16 +129,13 @@ public class TelnetListener {
 											TelnetSession session = new TelnetSession(client, acceptedKey, clientState, packetDelegate, new CloseListener() {
 												@Override
 												public void closed(TelnetSession session) {
-													LOG.log(Level.FINE, "Telnet client from {0} disconnected", client.socket().getRemoteSocketAddress());
-													clientState.disconnected();
-
 													acceptedKey.cancel();
 												}
 											});
 											clientState.setSession(session);
 											acceptedKey.attach(session);
 										} catch (IOException ex) {
-											LOG.log(Level.WARNING, "Error accepting telnet client", ex);
+											LOG.log(Level.FINE, "Error while accepting telnet client", ex);
 										}
 									}
 								} else {
@@ -161,8 +159,7 @@ public class TelnetListener {
 											}
 										} catch (IOException ex) {
 											//does an IOException in read always mean an invalid channel?
-											LOG.log(Level.WARNING, "Error reading message from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
-											session.close();
+											session.close("Error while reading", ex);
 										}
 									}
 									if (key.isValid() && key.isWritable())

@@ -19,6 +19,7 @@
 package argonms.center.net.internal;
 
 import argonms.center.net.internal.CenterRemoteSession.CloseListener;
+import argonms.common.net.SessionCreator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -38,7 +39,7 @@ import java.util.logging.Logger;
  * 
  * @author GoldenKevin
  */
-public class RemoteServerListener {
+public class RemoteServerListener implements SessionCreator {
 	private static final Logger LOG = Logger.getLogger(RemoteServerListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
 	private String interServerPassword;
@@ -119,16 +120,11 @@ public class RemoteServerListener {
 											acceptedKey.attach(new CenterRemoteSession(client, acceptedKey, interServerPassword, new CloseListener() {
 												@Override
 												public void closed(CenterRemoteSession session) {
-													LOG.log(Level.FINE, "Remote server from {0} disconnected", client.socket().getRemoteSocketAddress());
-													CenterRemoteInterface clientState = session.getModel();
-													if (clientState != null)
-														clientState.disconnected();
-
 													acceptedKey.cancel();
 												}
 											}));
 										} catch (IOException ex) {
-											LOG.log(Level.WARNING, "Error accepting remote server", ex);
+											LOG.log(Level.FINE, "Error while accepting remote server", ex);
 										}
 									}
 								} else {
@@ -162,8 +158,7 @@ public class RemoteServerListener {
 											}
 										} catch (IOException ex) {
 											//does an IOException in read always mean an invalid channel?
-											LOG.log(Level.WARNING, "Error reading message from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
-											session.close();
+											session.close("Error while reading", ex);
 										}
 									}
 									if (key.isValid() && key.isWritable())

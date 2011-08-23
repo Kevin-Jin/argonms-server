@@ -39,6 +39,7 @@ public class LoginCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		switch (packet.readByte()) {
 			case RemoteCenterOps.PING:
 				r.getSession().send(pongMessage());
+				break;
 			case RemoteCenterOps.PONG:
 				r.getSession().receivedPong();
 				break;

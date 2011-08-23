@@ -42,9 +42,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -211,13 +208,6 @@ public class CommandProcessor {
 			}
 		}, "Spawn a temporary player NPC of yourself.", UserPrivileges.GM));
 		definitions.put("!cleardrops", new CommandDefinition(new CommandAction() {
-			private boolean contains(String[] array, String search) {
-				for (int i = 0; i < array.length; i++)
-					if (array[i].equals(search))
-						return true;
-				return false;
-			}
-
 			private void clearDrop(ItemDrop drop, GameCharacter p) {
 				synchronized (drop) {
 					drop.expire();
@@ -228,26 +218,10 @@ public class CommandProcessor {
 			@Override
 			public void doAction(final GameCharacter p, String[] args, ClientNoticeStream resp) {
 				Collection<MapEntity> drops = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.DROP));
-				if (contains(args, "-c")) {
-					//creating new thread pools is a real memory hog. this case
-					//is only needed while testing out the new message sending
-					//method. in more stable releases, remove the -c option.
-					ScheduledExecutorService ses = Executors.newScheduledThreadPool(drops.size());
-					long perform = System.nanoTime() + 1000;
-					for (final MapEntity ent : drops) {
-						ses.schedule(new Runnable() {
-							@Override
-							public void run() {
-								clearDrop((ItemDrop) ent, p);
-							}
-						}, perform - System.nanoTime(), TimeUnit.NANOSECONDS);
-					}
-				} else {
-					for (MapEntity ent : drops)
-						clearDrop((ItemDrop) ent, p);
-				}
+				for (MapEntity ent : drops)
+					clearDrop((ItemDrop) ent, p);
 			}
-		}, "Expires all dropped items on the map either concurrently (specify with -c) or linearly.", UserPrivileges.GM));
+		}, "Expires all dropped items on the map.", UserPrivileges.GM));
 		definitions.put("!clearmobs", new CommandDefinition(new CommandAction() {
 			private boolean contains(String[] array, String search) {
 				for (int i = 0; i < array.length; i++)
@@ -273,26 +247,10 @@ public class CommandProcessor {
 			@Override
 			public void doAction(final GameCharacter p, final String[] args, ClientNoticeStream resp) {
 				Collection<MapEntity> monsters = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.MONSTER));
-				if (contains(args, "-c")) {
-					//creating new thread pools is a real memory hog. this case
-					//is only needed while testing out the new message sending
-					//method. in more stable releases, remove the -c option.
-					ScheduledExecutorService ses = Executors.newScheduledThreadPool(monsters.size());
-					long perform = System.nanoTime() + 1000;
-					for (final MapEntity ent : monsters) {
-						ses.schedule(new Runnable() {
-							@Override
-							public void run() {
-								clearMob(args, p, (Mob) ent);
-							}
-						}, perform - System.nanoTime(), TimeUnit.NANOSECONDS);
-					}
-				} else {
-					for (MapEntity ent : monsters)
-						clearMob(args, p, (Mob) ent);
-				}
+				for (MapEntity ent : monsters)
+					clearMob(args, p, (Mob) ent);
 			}
-		}, "Removes all monsters on the map either concurrently (specify with -c) or linearly and either kill them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
+		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Syntax: !info <player's name";

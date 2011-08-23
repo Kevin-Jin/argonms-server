@@ -169,7 +169,7 @@ public class WorldlistHandler {
 
 	private static void sendToGameServer(LoginClient c, int charid, String macs) {
 		if (c.hasBannedMac(macs)) {
-			c.getSession().close();
+			c.getSession().close("Banned", null);
 			return;
 		}
 		LoginWorld w = LoginServer.getInstance().getWorld(c.getWorld());
