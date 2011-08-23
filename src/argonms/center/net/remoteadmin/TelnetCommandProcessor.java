@@ -16,27 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.net.internal;
-
-import java.nio.ByteOrder;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+package argonms.center.net.remoteadmin;
 
 /**
- * Prepends the length of the packet in a 4-byte integer using little endian
- * byte order.
+ *
  * @author GoldenKevin
  */
-public class InterServerPacketEncoder extends OneToOneEncoder {
-	@Override
-	protected Object encode(ChannelHandlerContext ctx, Channel channel, Object msg) throws Exception {
-		byte[] content = (byte[]) msg;
-		ChannelBuffer buf = ChannelBuffers.buffer(ByteOrder.LITTLE_ENDIAN, content.length + 4);
-		buf.writeInt(content.length);
-		buf.writeBytes(content);
-		return buf;
+public class TelnetCommandProcessor {
+	public void process(String message, TelnetClient client) {
+		if (message.equals("exit") || message.equals("quit")) {
+			client.getSession().close();
+			return;
+		} else if (message.equals("help")) {
+			client.getSession().send("EXIT\t\tCloses the current telnet session.\r\n"
+					+ "HELP\t\tDisplays this message.\r\n"
+					+ "\r\n");
+		} else if (!message.trim().isEmpty()) {
+			client.getSession().send('\'' + message.trim().split(" ")[0] + "\' is not recognized as a command. Type 'HELP' for a list of accepted commands.\r\n\r\n");
+		}
 	}
 }

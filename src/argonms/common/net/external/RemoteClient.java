@@ -19,14 +19,12 @@
 package argonms.common.net.external;
 
 import argonms.common.character.Player;
+import argonms.common.net.SessionDataModel;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
-import argonms.common.util.Scheduler;
-import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,9 +32,8 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public abstract class RemoteClient {
+public abstract class RemoteClient implements SessionDataModel {
 	private static final Logger LOG = Logger.getLogger(RemoteClient.class.getName());
-	private static final int TIMEOUT = 15000; //in milliseconds
 	public static final byte
 		STATUS_NOTLOGGEDIN = 0,
 		STATUS_MIGRATION = 1,
@@ -45,16 +42,11 @@ public abstract class RemoteClient {
 		STATUS_INSHOP = 4
 	;
 
+	private ClientSession<?> session;
 	private int id;
 	private String name;
-	private ClientSession<?> session;
 	private byte world, channel;
-	private KeepAliveTask heartbeatTask;
 	private boolean serverTransition;
-
-	public RemoteClient() {
-		heartbeatTask = new KeepAliveTask();
-	}
 
 	public int getAccountId() {
 		return id;
@@ -72,11 +64,12 @@ public abstract class RemoteClient {
 		this.name = name;
 	}
 
+	@Override
 	public ClientSession<?> getSession() {
 		return session;
 	}
 
-	public void setSession(ClientSession<?> s) {
+	protected void setSession(ClientSession<?> s) {
 		this.session = s;
 	}
 
@@ -94,19 +87,6 @@ public abstract class RemoteClient {
 
 	public void setChannel(byte channel) {
 		this.channel = channel;
-	}
-
-	public void receivedPong() {
-		heartbeatTask.receivedPong();
-	}
-
-	public void startPingTask() {
-		heartbeatTask.waitForPong();
-		heartbeatTask.sendPing();
-	}
-
-	public void stopPingTask() {
-		heartbeatTask.stop();
 	}
 
 	public void clientError(String message) {
@@ -147,41 +127,6 @@ public abstract class RemoteClient {
 	 * DO NOT USE THIS METHOD TO FORCE THE CLIENT TO CLOSE ITSELF. USE
 	 * getSession().close() INSTEAD.
 	 */
+	@Override
 	public abstract void disconnected();
-
-	private static byte[] pingMessage() {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(2);
-		lew.writeShort(ClientSendOps.PING);
-		return lew.getBytes();
-	}
-
-	private class KeepAliveTask implements Runnable {
-		private ScheduledFuture<?> future;
-
-		public void sendPing() {
-			session.send(pingMessage());
-		}
-
-		public void waitForPong() {
-			future = Scheduler.getInstance().runAfterDelay(this, TIMEOUT);
-		}
-
-		@Override
-		public void run() {
-			LOG.log(Level.INFO, "Account {0} timed out after " + TIMEOUT
-					+ " milliseconds -> Disconnecting.", getAccountName());
-			getSession().close();
-		}
-
-		public void receivedPong() {
-			stop();
-		}
-
-		public void stop() {
-			if (future != null) {
-				future.cancel(true);
-				future = null;
-			}
-		}
-	}
 }

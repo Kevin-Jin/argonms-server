@@ -39,7 +39,7 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 				ShopHandler.handlePlayerConnection(reader, sc);
 				break;
 			case ClientRecvOps.PONG:
-				sc.receivedPong();
+				sc.getSession().receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
 				sc.clientError(reader.readLengthPrefixedString());

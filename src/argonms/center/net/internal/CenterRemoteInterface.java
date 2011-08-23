@@ -19,13 +19,14 @@
 package argonms.center.net.internal;
 
 import argonms.common.ServerType;
+import argonms.common.net.SessionDataModel;
 
 /**
  *
  * @author GoldenKevin
  */
-public abstract class CenterRemoteInterface {
-	private CenterRemoteSession session;
+public abstract class CenterRemoteInterface implements SessionDataModel {
+	private final CenterRemoteSession session;
 	protected boolean online;
 	protected boolean disconnecting;
 
@@ -33,6 +34,7 @@ public abstract class CenterRemoteInterface {
 		this.session = session;
 	}
 
+	@Override
 	public CenterRemoteSession getSession() {
 		return session;
 	}
@@ -53,10 +55,17 @@ public abstract class CenterRemoteInterface {
 
 	public abstract RemoteCenterPacketProcessor getPacketProcessor();
 
+	public abstract String getServerName();
+
 	public void serverOnline() {
 		online = true;
 	}
 
+	/**
+	 * DO NOT USE THIS METHOD TO FORCE THE CLIENT TO CLOSE ITSELF. USE
+	 * getSession().close() INSTEAD.
+	 */
+	@Override
 	public abstract void disconnected();
 
 	public static CenterRemoteInterface makeByServerId(byte serverId, CenterRemoteSession session) {

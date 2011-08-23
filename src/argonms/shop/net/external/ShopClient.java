@@ -78,7 +78,6 @@ public class ShopClient extends RemoteClient {
 
 	@Override
 	public void disconnected() {
-		stopPingTask();
 		if (player != null) {
 			player.close();
 			ShopServer.getInstance().removePlayer(player);

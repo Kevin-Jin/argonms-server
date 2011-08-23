@@ -84,7 +84,7 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor<LoginClien
 				WorldlistHandler.handleDeleteChar(reader, lc);
 				break;
 			case ClientRecvOps.PONG:
-				lc.receivedPong();
+				lc.getSession().receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
 				lc.clientError(reader.readLengthPrefixedString());

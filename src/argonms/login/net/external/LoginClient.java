@@ -440,7 +440,6 @@ public class LoginClient extends RemoteClient {
 
 	@Override
 	public void disconnected() {
-		stopPingTask();
 		getSession().removeClient();
 		setSession(null);
 		if (!isMigrating() && getAccountId() != 0)

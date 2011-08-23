@@ -48,6 +48,11 @@ public class CenterGameInterface extends CenterRemoteInterface {
 		return pp;
 	}
 
+	@Override
+	public String getServerName() {
+		return "Game" + serverId;
+	}
+
 	public byte getServerId() {
 		return serverId;
 	}

@@ -47,7 +47,7 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 				GameEnterHandler.handlePlayerConnection(reader, gc);
 				break;
 			case ClientRecvOps.PONG:
-				gc.receivedPong();
+				gc.getSession().receivedPong();
 				break;
 			case ClientRecvOps.CLIENT_ERROR:
 				gc.clientError(reader.readLengthPrefixedString());

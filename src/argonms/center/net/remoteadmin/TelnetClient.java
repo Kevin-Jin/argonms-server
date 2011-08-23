@@ -16,31 +16,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.net.remoteadmin;
+package argonms.center.net.remoteadmin;
 
 import argonms.common.UserPrivileges;
 import argonms.common.net.HashFunctions;
+import argonms.common.net.SessionDataModel;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.jboss.netty.channel.Channel;
 
-//TODO: do not echo \b (backspace char) if no more user typed characters left
-//(use a counter of user typed characters, adding to it when a character is
-//typed and removing when a \b is typed; when the counter <= 0, don't echo \b)
 /**
  *
  * @author GoldenKevin
  */
-public class TelnetSession {
-	private static final Logger LOG = Logger.getLogger(TelnetSession.class.getName());
+public class TelnetClient implements SessionDataModel {
+	private static final Logger LOG = Logger.getLogger(TelnetClient.class.getName());
 
-	private enum State { LOGIN, PASSWORD, MESSAGE }
+	public enum State { LOGIN, PASSWORD, MESSAGE }
+
+	private enum TelnetOptions { ECHO }
 
 	public static final byte
 		IAC = (byte) 0xFF,
@@ -59,19 +60,31 @@ public class TelnetSession {
 		TERMINAL_TYPE = 24,
 		NAWS = 31,
 		TERMINAL_SPEED = 32,
+		LINEMODE = 34,
 		AUTHENTICATION = 37,
 		NEW_ENVIRON = 39
 	;
 
-	private Channel ch;
+	private TelnetSession session;
 	private String username;
 	private State state;
+	private Set<TelnetOptions> flags;
 
-	public TelnetSession(Channel channel) {
-		this.ch = channel;
-		this.state = State.LOGIN;
-		channel.write("Please use the same credentials as your in-game account.\r\n");
-		channel.write("Login: ");
+	/* package-private */ TelnetClient() {
+		flags = EnumSet.of(TelnetOptions.ECHO);
+	}
+
+	/* package-private */ void setSession(TelnetSession session) {
+		this.session = session;
+
+		//just to make sure - may have established this earlier during the
+		//handshake, but we sure as hell don't want the client to local echo
+		//when the password comes up
+		session.send(new byte[] { IAC, WILL, ECHO });
+
+		session.send("Please use the same credentials as your in-game account.\r\n");
+		session.send("Login: ");
+		state = State.LOGIN;
 	}
 
 	public int protocolCmd(byte[] array, int index) {
@@ -80,6 +93,10 @@ public class TelnetSession {
 			case WILL:
 				delta++;
 				switch (array[index + 1]) {
+					case LINEMODE:
+						flags.remove(TelnetOptions.ECHO);
+						session.send(new byte[] { IAC, DO, LINEMODE });
+						break;
 					case TERMINAL_TYPE:
 						break;
 					case NAWS:
@@ -89,7 +106,7 @@ public class TelnetSession {
 					case NEW_ENVIRON:
 						break;
 					case SUPPRESS_GO_AHEAD:
-						ch.write(new byte[] { IAC, DO, SUPPRESS_GO_AHEAD });
+						session.send(new byte[] { IAC, DO, SUPPRESS_GO_AHEAD });
 						break;
 				}
 				break;
@@ -97,10 +114,20 @@ public class TelnetSession {
 				delta++;
 				switch (array[index + 1]) {
 					case ECHO:
-						ch.write(new byte[] { IAC, WILL, ECHO });
+						flags.add(TelnetOptions.ECHO);
+						session.send(new byte[] { IAC, WILL, ECHO });
 						break;
 					case SUPPRESS_GO_AHEAD:
-						ch.write(new byte[] { IAC, WILL, SUPPRESS_GO_AHEAD });
+						session.send(new byte[] { IAC, WILL, SUPPRESS_GO_AHEAD });
+						break;
+				}
+				break;
+			case DONT:
+				delta++;
+				switch (array[index + 1]) {
+					case ECHO:
+						flags.remove(TelnetOptions.ECHO);
+						session.send(new byte[] { IAC, WONT, ECHO });
 						break;
 				}
 				break;
@@ -108,31 +135,28 @@ public class TelnetSession {
 		return delta;
 	}
 
-	public boolean willEcho() {
-		return state != State.PASSWORD;
+	public State getState() {
+		return state;
 	}
 
-	public void process(String message) {
-		switch (state) {
-			case LOGIN:
-				this.username = message;
-				ch.write("Password: ");
-				this.state = State.PASSWORD;
-				break;
-			case PASSWORD:
-				ch.write("\r\n");
-				authenticate(message);
-				break;
-			case MESSAGE:
-				processCommand(message);
-				break;
-		}
+	public void setUsername(String username) {
+		this.username = username;
+		session.send("Password: ");
+		state = State.PASSWORD;
+	}
+
+	public String getAccountName() {
+		return username;
+	}
+
+	public void writePrompt() {
+		session.send(username + ">");
 	}
 
 	private void loginRetry(String message) {
 		this.state = State.LOGIN;
-		ch.write(message + "\r\n\r\n");
-		ch.write("Login: ");
+		session.send(message + "\r\n\r\n");
+		session.send("Login: ");
 	}
 
 	private long loadBanExpire(Connection con, int accountId) throws SQLException {
@@ -171,7 +195,7 @@ public class TelnetSession {
 		return banExpire;
 	}
 
-	private void authenticate(String pwd) {
+	public void authenticate(String pwd) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -234,8 +258,8 @@ public class TelnetSession {
 							ps.executeUpdate();
 						}
 						this.state = State.MESSAGE;
-						ch.write("Welcome, " + username + "!\r\n\r\n");
-						ch.write(username + ">");
+						session.send("\r\n*======================\r\n Welcome, " + username + "!\r\n*======================\r\n");
+						session.send(username + ">");
 					}
 				} else {
 					loginRetry("You have entered the wrong password. Try again.");
@@ -251,17 +275,21 @@ public class TelnetSession {
 		}
 	}
 
-	private void processCommand(String message) {
-		if (message.equals("exit") || message.equals("quit")) {
-			ch.close();
-			return;
-		} else if (message.equals("help")) {
-			ch.write("EXIT\t\tCloses the current telnet session.\r\n"
-					+ "HELP\t\tDisplays this message.\r\n"
-					+ "\r\n");
-		} else if (!message.trim().isEmpty()) {
-			ch.write('\'' + message.trim().split(" ")[0] + "\' is not recognized as a command.\r\n\r\n");
-		}
-		ch.write(username + ">");
+	public boolean willEcho() {
+		return flags.contains(TelnetOptions.ECHO) && state != State.PASSWORD;
+	}
+
+	@Override
+	public TelnetSession getSession() {
+		return session;
+	}
+
+	/**
+	 * DO NOT USE THIS METHOD TO FORCE THE CLIENT TO CLOSE ITSELF. USE
+	 * getSession().close() INSTEAD.
+	 */
+	@Override
+	public void disconnected() {
+		
 	}
 }

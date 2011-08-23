@@ -20,6 +20,7 @@ package argonms.common.net.internal;
 
 import argonms.common.LocalServer;
 import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,5 +39,11 @@ public abstract class CenterRemotePacketProcessor {
 			LOG.log(Level.SEVERE, "Unable to auth with center server: {0}", error);
 		else
 			ls.centerConnected();
+	}
+
+	protected static byte[] pongMessage() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
+		lew.writeByte(RemoteCenterOps.PONG);
+		return lew.getBytes();
 	}
 }

@@ -37,6 +37,12 @@ public class ShopCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	@Override
 	public void process(LittleEndianReader packet) {
 		switch (packet.readByte()) {
+			case RemoteCenterOps.PING:
+				r.getSession().send(pongMessage());
+				break;
+			case RemoteCenterOps.PONG:
+				r.getSession().receivedPong();
+				break;
 			case RemoteCenterOps.ONLINE:
 				serverOnline(packet);
 				break;

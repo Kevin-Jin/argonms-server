@@ -23,12 +23,13 @@ import argonms.center.net.internal.CenterLoginInterface;
 import argonms.center.net.internal.CenterRemoteInterface;
 import argonms.center.net.internal.CenterShopInterface;
 import argonms.center.net.internal.RemoteServerListener;
+import argonms.center.net.remoteadmin.TelnetListener;
 import argonms.common.ServerType;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.CenterRemoteOps;
-import argonms.common.net.remoteadmin.TelnetListener;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.common.util.Scheduler;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.io.FileReader;
 import java.io.IOException;
@@ -121,6 +122,8 @@ public class CenterServer {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
+		Scheduler.enable(true, true);
+
 		listener = new RemoteServerListener(authKey, useNio);
 		if (listener.bind(port))
 			LOG.log(Level.INFO, "Center Server is online.");

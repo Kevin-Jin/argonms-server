@@ -26,6 +26,7 @@ import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.MapleAesOfb;
+import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
@@ -159,9 +160,14 @@ public class LoginServer implements LocalServer {
 			System.exit(6);
 			return;
 		}
+		Scheduler.enable(true, true);
 
-		lci = new LoginCenterInterface(authKey, this);
-		lci.connect(centerIp, centerPort);
+		lci = new LoginCenterInterface(this);
+		RemoteCenterSession<LoginCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, lci);
+		if (session != null) {
+			session.awaitClose();
+			LOG.log(Level.SEVERE, "Lost connection with center server!");
+		}
 		System.exit(4); //connection with center server lost before we were able to shutdown
 	}
 
@@ -183,8 +189,7 @@ public class LoginServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
-		Scheduler.enable();
-		handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, useNio, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+		handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
 			@Override
 			public LoginClient newInstance(byte world, byte channel) {
 				return new LoginClient();

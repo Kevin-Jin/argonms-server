@@ -1178,6 +1178,41 @@
 	* Implemented CheatTracker. Replaced all "TODO: hacking"s.
 	* RankingWorker updated to support new banning format.
 
+2011-08-23  GoldenKevin  (revision 58)
+
+	* Rewrote all networking classes to be independent of Netty. I realized the
+	Netty pipeline wasn't flexible enough for me to ensure that messages were
+	being sent in order to the message queue and being sent in order from out of
+	the message queue, so I decided to forgo using the library altogether and
+	write my own server socket code (even writing my own hashed wheel timer for
+	idle checks). Currently only uses NIO for *Listeners and OIO for connectors,
+	but I'll probably support both in both situations later on. May write a NIO2
+	asynchronous IO wrapper as well once Java 7 becomes more widely deployed.
+	* Reorganized all networking classes to be consistent across all protocols
+	used (MapleStory client protocol, ArgonMS interprocess protocol - acceptor,
+	ArgonMS interprocess protocol - connector, and Telnet protocol), so each
+	protocol type has analog classes with each other. *Session instances contain
+	the low level networking socket state (the new Session interface is meant to
+	relate this), while *Interface/*Client instances the higher level
+	non-networking state (all implement the SessionDataModel interface). For
+	acceptors, *Listener instances keep track and create/destroy *Session
+	instances as connections come and go. For connectors, *Session classes have
+	a static connect() method.
+	* Moved Telnet listener package from argonms.common to argonms.center. Split
+	TelnetSession class into TelnetClient to separate socket networking and
+	higher-level protocols (it's not perfect right now and will have to be
+	improved, but it's getting there). Improved the virtual terminal
+	capabilities as well.
+	* Parallel read and writes are now more elegantly handled for ClientSession
+	as an in-house solution is much more flexible (in fact, now we don't even
+	need receive IV locks because it's all done on the Selector loop thread). So
+	far, the performance is looking to be as good as Netty (probably from the
+	directness of the code, being all hard-coded, and the lack of unused and
+	boilerplate code for unneeded features, considering the fact that I'll never
+	match the prowess of these networking experts, especially Trustin Lee. Just
+	watch out for race conditions because I may have missed something.
+	* Amount of external libraries has been reduced to two!
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

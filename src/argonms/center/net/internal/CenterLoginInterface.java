@@ -43,6 +43,11 @@ public class CenterLoginInterface extends CenterRemoteInterface {
 		return pp;
 	}
 
+	@Override
+	public String getServerName() {
+		return "Login";
+	}
+
 	public void setHost(String host) {
 		this.host = host;
 	}
