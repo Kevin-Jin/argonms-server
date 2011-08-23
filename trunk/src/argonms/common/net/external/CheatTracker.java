@@ -248,7 +248,7 @@ public class CheatTracker {
 			if (totalPoints >= TOLERANCE) {
 				ban(con);
 				if (dcOnBan)
-					client.getSession().close();
+					client.getSession().close("Banned", null);
 			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cheatlog for account "

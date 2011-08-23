@@ -154,14 +154,22 @@ public class CenterRemoteSession implements Session {
 	}
 
 	@Override
-	public void close() {
+	public void close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
 			} catch (IOException ex) {
-				LOG.log(Level.WARNING, "Error closing remote server " + getServerName() + " (" + getAddress() + ")", ex);
+				LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
+			idleTaskFuture.cancel(false);
+
+			if (reasonExc == null)
+				LOG.log(Level.FINE, "{0} server ({1}) disconnected: {2}", new Object[] { getServerName(), getAddress(), reason });
+			else
+				LOG.log(Level.FINE, getServerName() + " server (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			if (cri != null)
+				cri.disconnected();
 			onClose.closed(this);
 		}
 	}
@@ -193,8 +201,7 @@ public class CenterRemoteSession implements Session {
 			return true;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			LOG.log(Level.WARNING, "Error writing message to remote server " + getServerName() + " (" + getAddress() + ")", ex);
-			close();
+			close("Error while writing", ex);
 			return false;
 		} finally {
 			writeInProgress.set(false);
@@ -202,7 +209,7 @@ public class CenterRemoteSession implements Session {
 	}
 
 	private void recvInitPacket(LittleEndianReader packet) {
-		String error;
+		String response, localError = null;
 
 		if (packet.available() >= 4 && packet.readByte() == RemoteCenterOps.AUTH) {
 			byte serverId = packet.readByte();
@@ -210,7 +217,7 @@ public class CenterRemoteSession implements Session {
 				if (!CenterServer.getInstance().isServerConnected(serverId)) {
 					cri = CenterRemoteInterface.makeByServerId(serverId, this);
 					cri.makePacketProcessor(); //don't leak Interface reference in its constructor
-					error = null;
+					response = null;
 					if (ServerType.isGame(serverId)) {
 						byte world = packet.readByte();
 						byte[] channels = new byte[packet.readByte()];
@@ -233,31 +240,30 @@ public class CenterRemoteSession implements Session {
 							for (Byte ch : conflicts)
 								sb.append(ch).append(", ");
 							String list = sb.substring(0, sb.length() - 2);
-							LOG.log(Level.FINE, "{0} server is trying to add duplicate {2}", new Object[] { ServerType.getName(serverId), list });
-							error = list + " already connected.";
+							localError = "Trying to add duplicate " + list;
+							response = list + " already connected.";
 						}
 					}
 				} else {
-					LOG.log(Level.FINE, "Duplicate {0} server from {1} is trying to connect -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
-					error = ServerType.getName(serverId) + " server already connected.";
+					localError = "Another server with the same ID is already connected";
+					response = ServerType.getName(serverId) + " server already connected.";
 				}
 			} else {
-				LOG.log(Level.FINE, "{0} server from {1} did not supply the correct auth password -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
-				error = "Wrong auth password.";
+				localError = "Supplied wrong auth password";
+				response = "Wrong auth password.";
 			}
 		} else {
-			LOG.log(Level.FINE, "Expected auth packet from remote server at {0} -> Disconnecting.", getAddress());
-			error = "Invalid auth packet.";
+			localError = "Malformed auth packet";
+			response = "Invalid auth packet.";
 		}
 
-		LittleEndianByteArrayWriter response = new LittleEndianByteArrayWriter(error == null ? 3 : 3 + error.length());
-		response.writeByte(CenterRemoteOps.AUTH_RESPONSE);
-		response.writeLengthPrefixedString(error == null ? "" : error);
-		send(response.getBytes());
-		if (error == null) {
-		} else {
+		LittleEndianByteArrayWriter responsePacket = new LittleEndianByteArrayWriter(response == null ? 3 : 3 + response.length());
+		responsePacket.writeByte(CenterRemoteOps.AUTH_RESPONSE);
+		responsePacket.writeLengthPrefixedString(response == null ? "" : response);
+		send(responsePacket.getBytes());
+		if (response != null) {
+			close(localError, null);
 			cri = null;
-			close();
 			return;
 		}
 	}
@@ -281,7 +287,7 @@ public class CenterRemoteSession implements Session {
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close();
+			close("EOF received", null);
 			return null;
 		}
 		if (readBytes < nextMessageExpectedLength) {
@@ -329,18 +335,6 @@ public class CenterRemoteSession implements Session {
 		return list;
 	}
 
-	/**
-	 * This may only be called from the RemoteServerListener boss thread, in the
-	 * Selector loop.
-	 * @return 
-	 */
-	/* package-private */ void returnSend(List<ByteBuffer> toReturn) {
-		//unlike client IO with all their IV stuff that depends a lot on order,
-		//it doesn't matter if messages are actually sent out of order of when
-		//send was called, so just append them to the end of the queue.
-		sendQueue.addAll(toReturn);
-	}
-
 	private static byte[] pingMessage() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
 		lew.writeByte(CenterRemoteOps.PING);
@@ -364,9 +358,7 @@ public class CenterRemoteSession implements Session {
 
 		@Override
 		public void run() {
-			LOG.log(Level.FINE, "Server {0} timed out after " + TIMEOUT
-					+ " milliseconds -> Disconnecting.", getServerName());
-			close();
+			close("Timed out after " + TIMEOUT + " milliseconds", null);
 		}
 
 		public void receivedPong() {

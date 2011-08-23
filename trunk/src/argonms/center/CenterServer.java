@@ -158,8 +158,7 @@ public class CenterServer {
 	}
 
 	public void loginConnected(CenterLoginInterface remote) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
-			ServerType.getName(ServerType.LOGIN), remote.getSession().getAddress() });
+		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
 		writeLock.lock();
 		try {
 			loginServer = remote;
@@ -172,8 +171,7 @@ public class CenterServer {
 
 	public void gameConnected(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
-			ServerType.getName(serverId), remote.getSession().getAddress() });
+		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
@@ -187,8 +185,7 @@ public class CenterServer {
 	}
 
 	public void shopConnected(CenterShopInterface remote) {
-		LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] {
-			ServerType.getName(ServerType.SHOP), remote.getSession().getAddress() });
+		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
 		writeLock.lock();
 		try {
 			shopServer = remote;
@@ -201,7 +198,7 @@ public class CenterServer {
 	}
 
 	public void loginDisconnected() {
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.LOGIN));
+		LOG.log(Level.INFO, "Lost link with {0} server.", ServerType.getName(ServerType.LOGIN));
 		writeLock.lock();
 		try {
 			loginServer = null;
@@ -212,7 +209,7 @@ public class CenterServer {
 
 	public void gameDisconnected(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(remote.getServerId()));
+		LOG.log(Level.INFO, "Lost link with {0} server.", remote.getServerName());
 		writeLock.lock();
 		try {
 			notifyGameDisconnected(remote.getWorld(), serverId);
@@ -223,7 +220,7 @@ public class CenterServer {
 	}
 
 	public void shopDisconnected() {
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(ServerType.SHOP));
+		LOG.log(Level.INFO, "Lost link with {0} server.", ServerType.getName(ServerType.SHOP));
 		writeLock.lock();
 		try {
 			notifyShopDisconnected();

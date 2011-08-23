@@ -1213,6 +1213,32 @@
 	watch out for race conditions because I may have missed something.
 	* Amount of external libraries has been reduced to two!
 
+2011-08-23  GoldenKevin  (revision 59)
+
+	* Fixed idle tasks being triggered after a session has closed.
+	* A bit of code cleanup.
+	* Fixed login and game servers disconnecting from center server because of a
+	false ping timeout.
+	* Fixed Center Server always giving a stack trace when a telnet user types
+	EXIT instead of closing their client by other means.
+	* Removed the -c option from !cleardrops and !clearmobs because I think that
+	all encryption concurrency issues are fixed, and it was primarily a
+	debugging tool.
+	* Added SessionCreator interface to relate *Listeners and the *Session
+	classes that have a static connect method.
+	* To remedy the large amount of lines being logged everytime a user
+	disconnects, Session.close now accepts a disconnect reason so that the
+	caller doesn't have to log extra lines with redundant information. This
+	means that some socket read/write/accept/close IOExceptions may be logged at
+	the FINE level, which should be okay because most of them can be ignored.
+	These exceptions are very common as they are received everytime a remote
+	process is killed before its socket can send an EOF and shutdown gracefully.
+	* Only Session.close logs messages with the word "disconnected" now. The
+	wording of the messages of interserver connections and disconnections use
+	the word "link", and do not log the socket address as it is redundant with
+	the "connected" log message in the SessionCreator classes.
+	* Fixed a possible race condition in TelnetSession.processRead.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

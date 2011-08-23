@@ -19,6 +19,7 @@
 package argonms.common.net.internal;
 
 import argonms.common.net.Session;
+import argonms.common.net.SessionCreator;
 import argonms.common.util.Scheduler;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import java.io.IOException;
@@ -41,7 +42,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class RemoteCenterSession<T extends RemoteCenterInterface> implements Session {
+public class RemoteCenterSession<T extends RemoteCenterInterface> implements Session, SessionCreator {
 	private static final Logger LOG = Logger.getLogger(RemoteCenterSession.class.getName());
 	private static final int HEADER_LENGTH = 4;
 	//1kb as the initial buffer size for each client isn't too unreasonable...
@@ -53,7 +54,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	private final SocketChannel commChn;
 	private final AtomicBoolean closeEventsTriggered;
 	private ByteBuffer readBuffer;
-	private final CloseListener onClose;
+	private final CloseListener<T> onClose;
 	private final T server;
 
 	private KeepAliveTask heartbeatTask;
@@ -71,11 +72,11 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	private final ExecutorService workerThreadPool;
 	private String interServerPwd;
 
-	private interface CloseListener {
-		public void closed(RemoteCenterSession session);
+	private interface CloseListener<T extends RemoteCenterInterface> {
+		public void closed(RemoteCenterSession<T> session);
 	}
 
-	private RemoteCenterSession(SocketChannel channel, T server, String password, ExecutorService workerThreadPool, CloseListener onClose) {
+	private RemoteCenterSession(SocketChannel channel, T server, String password, ExecutorService workerThreadPool, CloseListener<T> onClose) {
 		closeEventsTriggered = new AtomicBoolean(false);
 		heartbeatTask = new KeepAliveTask();
 
@@ -125,8 +126,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			while (buf.remaining() != commChn.write(buf));
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			LOG.log(Level.WARNING, "Error writing message to center server (" + getAddress() + ")", ex);
-			close();
+			close("Error while writing", ex);
 		}
 	}
 
@@ -144,14 +144,21 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	}
 
 	@Override
-	public void close() {
+	public void close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
 			} catch (IOException ex) {
-				LOG.log(Level.WARNING, "Error closing center server ( " + getAddress() + ")", ex);
+				LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
 			}
 			stopPingTask();
+			idleTaskFuture.cancel(false);
+
+			if (reasonExc == null)
+				LOG.log(Level.FINE, "Disconnected from center server ({0}): {1}", new Object[] { getAddress(), reason });
+			else
+				LOG.log(Level.FINE, "Disconnected from center server (" + getAddress() + "): " + reason, reasonExc);
+			server.disconnected();
 			onClose.closed(this);
 		}
 	}
@@ -189,7 +196,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close();
+			close("EOF received", null);
 			return null;
 		}
 		if (readBytes < nextMessageExpectedLength) {
@@ -251,9 +258,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 
 		@Override
 		public void run() {
-			LOG.log(Level.FINE, "Center server timed out after " + TIMEOUT
-					+ " milliseconds -> Disconnecting.");
-			close();
+			close("Timed out after " + TIMEOUT + " milliseconds", null);
 		}
 
 		public void receivedPong() {
@@ -299,14 +304,13 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			center.socket().setTcpNoDelay(false);
 			center.configureBlocking(true);
 			center.connect(new InetSocketAddress(ip, port));
-			final RemoteCenterSession<T> session = new RemoteCenterSession<T>(center, serverState, authKey, workerThreadPool, new CloseListener() {
+			final RemoteCenterSession<T> session = new RemoteCenterSession<T>(center, serverState, authKey, workerThreadPool, new CloseListener<T>() {
 				@Override
-				public void closed(RemoteCenterSession session) {
-					session.getModel().disconnected();
+				public void closed(RemoteCenterSession<T> session) {
 				}
 			});
 			serverState.setSession(session);
-			LOG.log(Level.FINE, "Connected to center server at {0}", session.getAddress());
+			LOG.log(Level.FINE, "Connected to Center server at {0}", session.getAddress());
 			workerThreadPool.submit(new Runnable() {
 				@Override
 				public void run() {
@@ -320,13 +324,12 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 								try {
 									serverState.process(message);
 								} catch (Exception ex) {
-									LOG.log(Level.WARNING, "Uncaught exception while processing packet from center server (" + session.getAddress() + ")", ex);
+									LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
 								}
 							}
 						} catch (IOException ex) {
 							//does an IOException in read always mean an invalid channel?
-							LOG.log(Level.WARNING, "Error reading message from center server (" + session.getAddress() + ")", ex);
-							session.close();
+							session.close("Error while reading", ex);
 						}
 					}
 				}

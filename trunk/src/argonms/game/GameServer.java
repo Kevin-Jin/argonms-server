@@ -279,7 +279,7 @@ public class GameServer implements LocalServer {
 	@Override
 	public void centerDisconnected() {
 		if (centerConnected) {
-			LOG.log(Level.SEVERE, "Center server disconnected.");
+			LOG.log(Level.SEVERE, "Lost link with Center server.");
 			centerConnected = false;
 		}
 	}
@@ -290,26 +290,26 @@ public class GameServer implements LocalServer {
 			remoteGameChannelMapping.put(Byte.valueOf(serverId), ports.keySet());
 			for (WorldChannel ch : channels.values())
 				ch.getInterChannelInterface().addRemoteChannels(ip, ports);
-			LOG.log(Level.INFO, "{0} server accepted from {1}.", new Object[] { ServerType.getName(serverId), host });
+			LOG.log(Level.INFO, "{0} server''s external address is {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
-			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(world)
-					+ " server because its address could not be resolved!", e);
+			LOG.log(Level.INFO, "Could not accept shop server because its"
+					+ " address could not be resolved!", e);
 		}
 	}
 
 	public void gameDisconnected(byte serverId) {
-		LOG.log(Level.INFO, "{0} server disconnected.", ServerType.getName(serverId));
+		LOG.log(Level.INFO, "{0} server went offline.", ServerType.getName(serverId));
 		Set<Byte> remove = remoteGameChannelMapping.remove(Byte.valueOf(serverId));
 		for (WorldChannel ch : channels.values())
 			ch.getInterChannelInterface().removeRemoteChannels(remove);
 	}
 
 	public void shopConnected(String host, int port) {
-		LOG.log(Level.INFO, "Shop server accepted from {0}:{1}.", new Object[] { host, port });
+		LOG.log(Level.INFO, "Shop server''s external address is {0}:{1}.", new Object[] { host, port });
 	}
 
 	public void shopDisconnected() {
-		LOG.log(Level.INFO, "Shop server disconnected.");
+		LOG.log(Level.INFO, "Shop server went offline.");
 	}
 
 	@Override

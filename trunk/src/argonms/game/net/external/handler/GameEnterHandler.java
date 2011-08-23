@@ -60,9 +60,7 @@ public class GameEnterHandler {
 		//other world). Remember to check local process and remote processes.
 		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
 		if (!allowLogin) {
-			LOG.log(Level.WARNING, "Player {0} tried to double login on world"
-					+ " {1}", new Object[] { player.getName(), gc.getWorld() });
-			gc.getSession().close();
+			gc.getSession().close("Player " + player.getName() + " tried to double login on world " + gc.getWorld(), null);
 			return;
 		}
 		gc.updateState(RemoteClient.STATUS_INGAME);

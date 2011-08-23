@@ -16,23 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.net.remoteadmin;
+package argonms.common.net;
 
 /**
  *
  * @author GoldenKevin
  */
-public class TelnetCommandProcessor {
-	public void process(String message, TelnetClient client) {
-		if (message.equals("exit") || message.equals("quit")) {
-			client.getSession().close("User typed '" + message + "'", null);
-			return;
-		} else if (message.equals("help")) {
-			client.getSession().send("EXIT\t\tCloses the current telnet session.\r\n"
-					+ "HELP\t\tDisplays this message.\r\n"
-					+ "\r\n");
-		} else if (!message.trim().isEmpty()) {
-			client.getSession().send('\'' + message.trim().split(" ")[0] + "\' is not recognized as a command. Type 'HELP' for a list of accepted commands.\r\n\r\n");
-		}
-	}
+public interface SessionCreator {
+
 }

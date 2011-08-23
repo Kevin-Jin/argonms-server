@@ -30,5 +30,5 @@ public interface Session {
 
 	public SocketAddress getAddress();
 	public void send(byte[] b);
-	public void close();
+	public void close(String reason, Throwable reasonExc);
 }
