@@ -16,33 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.net.internal;
+package argonms.common.net;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
+import java.net.SocketAddress;
 
 /**
- * Reads in a packet that is prefixed with its length in a 4-byte integer.
+ * Contains the low level networking state of connections of a certain protocol.
+ * May also contain 
  * @author GoldenKevin
  */
-public class InterServerPacketDecoder extends FrameDecoder {
-	@Override
-	protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buf) throws Exception {
-		if (buf.readableBytes() < 4)
-			return null;
+public interface Session {
+	public enum MessageType { HEADER, BODY }
 
-		buf.markReaderIndex();
-		int length = buf.readInt();
-
-		if (buf.readableBytes() < length) {
-			buf.resetReaderIndex();
-			return null;
-		}
-
-		byte[] message = new byte[length];
-		buf.readBytes(message);
-		return message;
-	}
+	public SocketAddress getAddress();
+	public void send(byte[] b);
+	public void close();
 }

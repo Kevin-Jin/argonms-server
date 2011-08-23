@@ -103,7 +103,6 @@ public class GameClient extends RemoteClient {
 
 	@Override
 	public void disconnected() {
-		stopPingTask();
 		if (npc != null)
 			npc.endConversation();
 		if (player != null) {

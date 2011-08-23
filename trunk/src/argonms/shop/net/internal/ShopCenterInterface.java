@@ -32,8 +32,8 @@ import argonms.shop.ShopServer;
 public class ShopCenterInterface extends RemoteCenterInterface {
 	private ShopServer local;
 
-	public ShopCenterInterface(String password, ShopServer ss) {
-		super(password, new CenterShopPacketProcessor(ss));
+	public ShopCenterInterface(ShopServer ss) {
+		super(new CenterShopPacketProcessor(ss));
 		this.local = ss;
 	}
 
@@ -44,7 +44,7 @@ public class ShopCenterInterface extends RemoteCenterInterface {
 
 	@Override
 	public void serverReady() {
-		send(serverReady(local.getExternalIp(), local.getClientPort()));
+		getSession().send(serverReady(local.getExternalIp(), local.getClientPort()));
 	}
 
 	private static byte[] serverReady(String ip, int port) {

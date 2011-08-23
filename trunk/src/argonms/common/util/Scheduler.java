@@ -29,10 +29,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class Scheduler {
 	private static Scheduler instance;
+	private static Scheduler hashedWheel;
+
 	private ScheduledExecutorService timer;
 
-	private Scheduler() {
-		timer = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+	private Scheduler(ScheduledExecutorService impl) {
+		timer = impl;
 	}
 
 	public ScheduledFuture<?> runAfterDelay(Runnable r, long delay) {
@@ -47,11 +49,18 @@ public class Scheduler {
 		timer.shutdown();
 	}
 
-	public static void enable() {
-		instance = new Scheduler();
+	public static void enable(boolean enableGeneral, boolean enableHashedWheel) {
+		if (enableGeneral)
+			instance = new Scheduler(Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()));
+		if (enableHashedWheel)
+			hashedWheel = new Scheduler(new ScheduledHashedWheelExecutor());
 	}
 
 	public static Scheduler getInstance() {
 		return instance;
+	}
+
+	public static Scheduler getWheelTimer() {
+		return hashedWheel;
 	}
 }

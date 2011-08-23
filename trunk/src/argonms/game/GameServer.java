@@ -25,6 +25,7 @@ import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.MapleAesOfb;
+import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
@@ -199,9 +200,14 @@ public class GameServer implements LocalServer {
 			System.exit(6);
 			return;
 		}
+		Scheduler.enable(true, true);
 
-		gci = new GameCenterInterface(serverId, world, authKey, this);
-		gci.connect(centerIp, centerPort);
+		gci = new GameCenterInterface(serverId, world, this);
+		RemoteCenterSession<GameCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, gci);
+		if (session != null) {
+			session.awaitClose();
+			LOG.log(Level.SEVERE, "Lost connection with center server!");
+		}
 		System.exit(4); //connection with center server lost before we were able to shutdown
 	}
 
@@ -258,7 +264,6 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
-		Scheduler.enable();
 		boolean doingWork = false;
 		for (WorldChannel ch : channels.values()) {
 			ch.listen(useNio);

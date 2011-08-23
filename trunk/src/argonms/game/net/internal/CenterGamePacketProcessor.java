@@ -48,6 +48,12 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.AUTH_RESPONSE:
 				processAuthResponse(packet, r.getLocalServer());
 				break;
+			case CenterRemoteOps.PING:
+				r.getSession().send(pongMessage());
+				break;
+			case CenterRemoteOps.PONG:
+				r.getSession().receivedPong();
+				break;
 			case CenterRemoteOps.GAME_CONNECTED:
 				processGameConnected(packet);
 				break;

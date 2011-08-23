@@ -28,6 +28,7 @@ import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.MapleAesOfb;
 import argonms.common.net.external.PlayerLog;
+import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
@@ -154,9 +155,14 @@ public class ShopServer implements LocalServer {
 			System.exit(6);
 			return;
 		}
+		Scheduler.enable(true, true);
 
-		sci = new ShopCenterInterface(authKey, this);
-		sci.connect(centerIp, centerPort);
+		sci = new ShopCenterInterface(this);
+		RemoteCenterSession<ShopCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, sci);
+		if (session != null) {
+			session.awaitClose();
+			LOG.log(Level.SEVERE, "Lost connection with center server!");
+		}
 		System.exit(4); //connection with center server lost before we were able to shutdown
 	}
 
@@ -182,8 +188,7 @@ public class ShopServer implements LocalServer {
 		LOG.log(Level.FINE, "Link with Center server established.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
-		Scheduler.enable();
-		handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, useNio, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+		handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
 			@Override
 			public ShopClient newInstance(byte world, byte channel) {
 				return new ShopClient();

@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.center.net.internal;
+package argonms.center.net.remoteadmin;
 
-import argonms.center.net.internal.CenterRemoteSession.CloseListener;
+import argonms.center.net.internal.RemoteServerListener;
+import argonms.center.net.remoteadmin.TelnetSession.CloseListener;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -35,16 +36,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * 
+ *
  * @author GoldenKevin
  */
-public class RemoteServerListener {
+public class TelnetListener {
 	private static final Logger LOG = Logger.getLogger(RemoteServerListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
-	private String interServerPassword;
+	private final TelnetCommandProcessor packetProc;
+	private final TelnetSession.CommandReceivedDelegate packetDelegate;
 	private ServerSocketChannel listener;
 
-	public RemoteServerListener(String password, boolean useNio) {
+	public TelnetListener(boolean useNio) {
 		bossThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			private final ThreadGroup group;
 
@@ -85,7 +87,13 @@ public class RemoteServerListener {
 			}
 		});
 
-		this.interServerPassword = password;
+		this.packetProc = new TelnetCommandProcessor();
+		this.packetDelegate = new TelnetSession.CommandReceivedDelegate() {
+			@Override
+			public void lineReceived(String message, TelnetClient client) {
+				packetProc.process(message, client);
+			}
+		};
 	}
 
 	public boolean bind(int port) {
@@ -114,55 +122,46 @@ public class RemoteServerListener {
 											final SocketChannel client = listener.accept();
 											client.socket().setTcpNoDelay(false);
 											client.configureBlocking(false);
-											LOG.log(Level.FINE, "Remote server connected from {0}", client.socket().getRemoteSocketAddress());
+											LOG.log(Level.FINE, "Telnet client connected from {0}", client.socket().getRemoteSocketAddress());
 											final SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
-											acceptedKey.attach(new CenterRemoteSession(client, acceptedKey, interServerPassword, new CloseListener() {
+											final TelnetClient clientState = new TelnetClient();
+											TelnetSession session = new TelnetSession(client, acceptedKey, clientState, packetDelegate, new CloseListener() {
 												@Override
-												public void closed(CenterRemoteSession session) {
-													LOG.log(Level.FINE, "Remote server from {0} disconnected", client.socket().getRemoteSocketAddress());
-													CenterRemoteInterface clientState = session.getModel();
-													if (clientState != null)
-														clientState.disconnected();
+												public void closed(TelnetSession session) {
+													LOG.log(Level.FINE, "Telnet client from {0} disconnected", client.socket().getRemoteSocketAddress());
+													clientState.disconnected();
 
 													acceptedKey.cancel();
 												}
-											}));
+											});
+											clientState.setSession(session);
+											acceptedKey.attach(session);
 										} catch (IOException ex) {
-											LOG.log(Level.WARNING, "Error accepting remote server", ex);
+											LOG.log(Level.WARNING, "Error accepting telnet client", ex);
 										}
 									}
 								} else {
 									SocketChannel client = (SocketChannel) key.channel();
-									final CenterRemoteSession session = (CenterRemoteSession) key.attachment();
+									final TelnetSession session = (TelnetSession) key.attachment();
 									if (key.isValid() && key.isReadable()) {
 										try {
 											int read = client.read(session.readBuffer());
-											byte[] message = session.readMessage(read);
-											if (message != null) {
-												//the header or the body was received successfully
-												if (message.length == 0) {
-													//header received, try a non-blocking read to see if we also got the message body
-													read = client.read(session.readBuffer());
-													message = session.readMessage(read);
-												}
-												if (message != null) {
-													final byte[] body = message;
-													//handle the body on a worker thread
-													workerThreadPool.submit(new Runnable() {
-														@Override
-														public void run() {
-															try {
-																session.process(body);
-															} catch (Exception ex) {
-																LOG.log(Level.WARNING, "Uncaught exception while processing packet from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
-															}
+											final byte[] message = session.readMessage(read);
+											if (message != null && message.length > 0) {
+												workerThreadPool.submit(new Runnable() {
+													@Override
+													public void run() {
+														try {
+															session.processRead(message);
+														} catch (Exception ex) {
+															LOG.log(Level.WARNING, "Uncaught exception while processing packet from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
 														}
-													});
-												}
+													}
+												});
 											}
 										} catch (IOException ex) {
 											//does an IOException in read always mean an invalid channel?
-											LOG.log(Level.WARNING, "Error reading message from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
+											LOG.log(Level.WARNING, "Error reading message from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
 											session.close();
 										}
 									}
@@ -173,11 +172,11 @@ public class RemoteServerListener {
 							}
 						}
 					} catch (IOException ex) {
-						LOG.log(Level.WARNING, "Internal-facing selector error", ex);
+						LOG.log(Level.WARNING, "Telnet selector error", ex);
 						try {
 							listener.close();
 						} catch (IOException e) {
-							LOG.log(Level.WARNING, "Could not close internal-facing selector", e);
+							LOG.log(Level.WARNING, "Could not close telnet selector", e);
 						}
 					}
 				}

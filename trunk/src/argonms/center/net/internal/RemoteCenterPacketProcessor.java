@@ -18,7 +18,9 @@
 
 package argonms.center.net.internal;
 
+import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 
 /**
  *
@@ -26,4 +28,10 @@ import argonms.common.util.input.LittleEndianReader;
  */
 public abstract class RemoteCenterPacketProcessor {
 	public abstract void process(LittleEndianReader packet);
+
+	protected static byte[] pongMessage() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
+		lew.writeByte(CenterRemoteOps.PONG);
+		return lew.getBytes();
+	}
 }

@@ -99,7 +99,7 @@ public class InterChannelCommunication {
 				return;
 			}
 		}
-		getCenterComm().send(writePlayerContext(getCenterComm().getWorld(), destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
+		getCenterComm().getSession().send(writePlayerContext(getCenterComm().getWorld(), destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
@@ -122,7 +122,7 @@ public class InterChannelCommunication {
 			for (byte ch : localChannels) //recipients on same process
 				GameServer.getChannel(ch).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
 			for (Byte ch : remoteChannelPorts.keySet()) //recipients on another process
-				getCenterComm().send(writePrivateChatMessage(getCenterComm().getWorld(), ch.byteValue(), type, recipients, name, message));
+				getCenterComm().getSession().send(writePrivateChatMessage(getCenterComm().getWorld(), ch.byteValue(), type, recipients, name, message));
 		} else {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send private chat to a nonexistant group");
 		}
@@ -137,7 +137,7 @@ public class InterChannelCommunication {
 			for (byte ch : localChannels) //recipient on same process
 				GameServer.getChannel(ch).getInterChannelInterface().receivedSpouseChat(recipient, name, message);
 			for (Byte ch : remoteChannelPorts.keySet()) //recipient on another process
-				getCenterComm().send(writeSpouseChatMessage(getCenterComm().getWorld(), ch.byteValue(), recipient, name, message));
+				getCenterComm().getSession().send(writeSpouseChatMessage(getCenterComm().getWorld(), ch.byteValue(), recipient, name, message));
 		} else {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send spouse chat to a nonexistant spouse");
 		}
@@ -152,7 +152,7 @@ public class InterChannelCommunication {
 				return;
 			}
 		}
-		getCenterComm().send(writePlayerContextAccepted(getCenterComm().getWorld(), fromCh, playerId));
+		getCenterComm().getSession().send(writePlayerContextAccepted(getCenterComm().getWorld(), fromCh, playerId));
 	}
 
 	public void acceptedInboundPlayer(int playerId) {

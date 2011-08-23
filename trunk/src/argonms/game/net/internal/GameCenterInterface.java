@@ -36,8 +36,8 @@ public class GameCenterInterface extends RemoteCenterInterface {
 	private byte serverId;
 	private byte world;
 
-	public GameCenterInterface(byte serverId, byte world, String password, GameServer gs) {
-		super(password, new CenterGamePacketProcessor(gs));
+	public GameCenterInterface(byte serverId, byte world, GameServer gs) {
+		super(new CenterGamePacketProcessor(gs));
 		this.local = gs;
 		this.serverId = serverId;
 		this.world = world;
@@ -53,16 +53,8 @@ public class GameCenterInterface extends RemoteCenterInterface {
 	}
 
 	@Override
-	protected void init() {
-		send(auth(serverId, getInterserverPwd(), world, local.getChannels().keySet()));
-	}
-
-	@Override
-	public void serverReady() {
-		send(serverReady(local.getExternalIp(), world, local.getClientPorts()));
-	}
-
-	private static byte[] auth(byte serverId, String pwd, byte world, Set<Byte> channels) {
+	protected byte[] auth(String pwd) {
+		Set<Byte> channels = local.getChannels().keySet();
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6
 				+ pwd.length() + channels.size());
 
@@ -75,6 +67,11 @@ public class GameCenterInterface extends RemoteCenterInterface {
 			lew.writeByte(ch.byteValue());
 
 		return lew.getBytes();
+	}
+
+	@Override
+	public void serverReady() {
+		getSession().send(serverReady(local.getExternalIp(), world, local.getClientPorts()));
 	}
 
 	private static byte[] serverReady(String ip, byte world, Map<Byte, Integer> ports) {

@@ -43,6 +43,11 @@ public class CenterShopInterface extends CenterRemoteInterface {
 		return pp;
 	}
 
+	@Override
+	public String getServerName() {
+		return "Shop";
+	}
+
 	public void setHost(String host) {
 		this.host = host;
 	}

@@ -70,7 +70,7 @@ public class WorldChannel {
 	}
 
 	public void listen(boolean useNio) {
-		handler = new ClientListener<GameClient>(world, channel, useNio, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
+		handler = new ClientListener<GameClient>(world, channel, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
 			@Override
 			public GameClient newInstance(byte world, byte channel) {
 				return new GameClient(world, channel);
@@ -171,7 +171,7 @@ public class WorldChannel {
 		lew.writeByte(RemoteCenterOps.POPULATION_CHANGED);
 		lew.writeByte(channel);
 		lew.writeShort(now);
-		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
+		GameServer.getInstance().getCenterInterface().getSession().send(lew.getBytes());
 	}
 
 	public void startup(int port) {
@@ -195,7 +195,7 @@ public class WorldChannel {
 		lew.writeByte(world);
 		lew.writeByte(channel);
 		lew.writeInt(port);
-		GameServer.getInstance().getCenterInterface().send(lew.getBytes());
+		GameServer.getInstance().getCenterInterface().getSession().send(lew.getBytes());
 	}
 
 	public int getPort() {

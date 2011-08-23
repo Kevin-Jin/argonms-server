@@ -33,8 +33,8 @@ import argonms.login.LoginServer;
 public class LoginCenterInterface extends RemoteCenterInterface {
 	private LoginServer local;
 
-	public LoginCenterInterface(String password, LoginServer ls) {
-		super(password, new CenterLoginPacketProcessor(ls));
+	public LoginCenterInterface(LoginServer ls) {
+		super(new CenterLoginPacketProcessor(ls));
 		this.local = ls;
 	}
 
@@ -45,7 +45,7 @@ public class LoginCenterInterface extends RemoteCenterInterface {
 
 	@Override
 	public void serverReady() {
-		send(serverReady(local.getExternalIp(), local.getClientPort()));
+		getSession().send(serverReady(local.getExternalIp(), local.getClientPort()));
 	}
 
 	private static byte[] serverReady(String ip, int port) {

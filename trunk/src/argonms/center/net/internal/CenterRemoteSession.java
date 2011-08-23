@@ -20,116 +20,363 @@ package argonms.center.net.internal;
 
 import argonms.center.CenterServer;
 import argonms.common.ServerType;
+import argonms.common.net.Session;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.RemoteCenterOps;
+import argonms.common.util.Scheduler;
 import argonms.common.util.input.LittleEndianByteArrayReader;
+import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.jboss.netty.channel.Channel;
 
 /**
  *
  * @author GoldenKevin
  */
-public class CenterRemoteSession {
+public class CenterRemoteSession implements Session {
 	private static final Logger LOG = Logger.getLogger(CenterRemoteSession.class.getName());
+	private static final int HEADER_LENGTH = 4;
+	//1kb as the initial buffer size for each client isn't too unreasonable...
+	private static final int DEFAULT_BUFFER_SIZE = 1024;
+	private static final byte[] EMPTY_ARRAY = new byte[0];
+	private static final int IDLE_TIME = 15000; //in milliseconds
+	private static final int TIMEOUT = 15000; //in milliseconds
 
-	private String interServerPwd;
-	private Channel commChn;
+	private final SocketChannel commChn;
+	private final AtomicBoolean closeEventsTriggered;
+	private ByteBuffer readBuffer;
+	private final CloseListener onClose;
 	private CenterRemoteInterface cri;
 
-	public CenterRemoteSession(Channel channel, String authKey) {
+	private final SelectionKey selectionKey;
+	private final Queue<ByteBuffer> sendQueue;
+
+	private KeepAliveTask heartbeatTask;
+	private final Runnable idleTask = new Runnable() {
+		@Override
+		public void run() {
+			startPingTask();
+		}
+	};
+	private ScheduledFuture<?> idleTaskFuture;
+
+	private MessageType nextMessageType;
+	private int nextMessageExpectedLength;
+
+	private final String interServerPwd;
+	private final AtomicBoolean writeInProgress;
+
+	/* package-private */ interface CloseListener {
+		public void closed(CenterRemoteSession session);
+	}
+
+	/* package-private */ CenterRemoteSession(SocketChannel channel, SelectionKey key, String authKey, CloseListener onClose) {
+		closeEventsTriggered = new AtomicBoolean(false);
+		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
+		readBuffer.order(ByteOrder.LITTLE_ENDIAN);
+		readBuffer.limit(HEADER_LENGTH);
+		sendQueue = new ConcurrentLinkedQueue<ByteBuffer>();
+		heartbeatTask = new KeepAliveTask();
+		nextMessageType = MessageType.HEADER;
+		nextMessageExpectedLength = HEADER_LENGTH;
+		writeInProgress = new AtomicBoolean(false);
+
 		this.commChn = channel;
+		this.onClose = onClose;
+		this.selectionKey = key;
 		this.interServerPwd = authKey;
+
+		idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 	}
 
+	public CenterRemoteInterface getModel() {
+		return cri;
+	}
+
+	@Override
 	public SocketAddress getAddress() {
-		return commChn.getRemoteAddress();
+		return commChn.socket().getRemoteSocketAddress();
 	}
 
-	public void process(byte[] message) {
+	public String getServerName() {
+		return cri != null ? cri.getServerName() : null;
+	}
+
+	@Override
+	public void send(byte[] b) {
+		ByteBuffer buf = ByteBuffer.allocate(b.length + HEADER_LENGTH);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		buf.putInt(b.length);
+		buf.put(b);
+		buf.flip();
+		sendQueue.add(buf);
+		if (!sendMessages() && selectionKey.isValid()) {
+			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
+			selectionKey.selector().wakeup();
+		}
+	}
+
+	/* package-private */ void process(byte[] message) {
 		LittleEndianByteArrayReader packet = new LittleEndianByteArrayReader(message);
 		if (cri != null) {
 			cri.getPacketProcessor().process(packet);
 		} else {
-			String error;
+			recvInitPacket(packet);
+		}
+	}
 
-			if (packet.available() >= 4 && packet.readByte() == RemoteCenterOps.AUTH) {
-				byte serverId = packet.readByte();
-				if (packet.readLengthPrefixedString().equals(interServerPwd)) {
-					if (!CenterServer.getInstance().isServerConnected(serverId)) {
-						cri = CenterRemoteInterface.makeByServerId(serverId, this);
-						cri.makePacketProcessor(); //don't leak Interface reference in its constructor
-						error = null;
-						if (ServerType.isGame(serverId)) {
-							byte world = packet.readByte();
-							byte[] channels = new byte[packet.readByte()];
-							for (int i = 0; i < channels.length; i++)
-								channels[i] = packet.readByte();
-							List<CenterGameInterface> servers = CenterServer.getInstance().getAllServersOfWorld(world, serverId);
-							List<Byte> conflicts = new ArrayList<Byte>();
-							for (CenterGameInterface server : servers) {
-								if (!server.isShuttingDown()) {
-									for (int i = 0; i < channels.length; i++) {
-										Byte ch = Byte.valueOf(channels[i]);
-										if (server.getChannels().contains(ch))
-											conflicts.add(ch);
-									}
+	public void receivedPong() {
+		heartbeatTask.receivedPong();
+	}
+
+	private void startPingTask() {
+		heartbeatTask.waitForPong();
+		heartbeatTask.sendPing();
+	}
+
+	private void stopPingTask() {
+		heartbeatTask.stop();
+	}
+
+	@Override
+	public void close() {
+		if (closeEventsTriggered.compareAndSet(false, true)) {
+			try {
+				commChn.close();
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error closing remote server " + getServerName() + " (" + getAddress() + ")", ex);
+			}
+			stopPingTask();
+			onClose.closed(this);
+		}
+	}
+
+	/**
+	 *
+	 * @return false if these messages needs to remain on the queue, or if there
+	 * was a write error. Please make sure to check selectionKey.isValid() if
+	 * false is returned before adding this message to this queue or else you
+	 * may get a CancelledKeyException.
+	 */
+	/* package-private */ boolean sendMessages() {
+		if (!writeInProgress.compareAndSet(false, true))
+			return true;
+		int i = 0;
+		try {
+			Iterator<ByteBuffer> iter = sendableMessages().iterator();
+			while (iter.hasNext()) {
+				ByteBuffer buf = iter.next();
+				if (buf.remaining() == commChn.write(buf)) {
+					i++;
+				} else {
+					sendQueue.add(buf);
+					while (iter.hasNext())
+						sendQueue.add(iter.next());
+					return false;
+				}
+			}
+			return true;
+		} catch (IOException ex) {
+			//does an IOException in write always mean an invalid channel?
+			LOG.log(Level.WARNING, "Error writing message to remote server " + getServerName() + " (" + getAddress() + ")", ex);
+			close();
+			return false;
+		} finally {
+			writeInProgress.set(false);
+		}
+	}
+
+	private void recvInitPacket(LittleEndianReader packet) {
+		String error;
+
+		if (packet.available() >= 4 && packet.readByte() == RemoteCenterOps.AUTH) {
+			byte serverId = packet.readByte();
+			if (packet.readLengthPrefixedString().equals(interServerPwd)) {
+				if (!CenterServer.getInstance().isServerConnected(serverId)) {
+					cri = CenterRemoteInterface.makeByServerId(serverId, this);
+					cri.makePacketProcessor(); //don't leak Interface reference in its constructor
+					error = null;
+					if (ServerType.isGame(serverId)) {
+						byte world = packet.readByte();
+						byte[] channels = new byte[packet.readByte()];
+						for (int i = 0; i < channels.length; i++)
+							channels[i] = packet.readByte();
+						List<CenterGameInterface> servers = CenterServer.getInstance().getAllServersOfWorld(world, serverId);
+						List<Byte> conflicts = new ArrayList<Byte>();
+						for (CenterGameInterface server : servers) {
+							if (!server.isShuttingDown()) {
+								for (int i = 0; i < channels.length; i++) {
+									Byte ch = Byte.valueOf(channels[i]);
+									if (server.getChannels().contains(ch))
+										conflicts.add(ch);
 								}
 							}
-							if (!conflicts.isEmpty()) {
-								StringBuilder sb = new StringBuilder("World ").append(world).append(", ").append("channel");
-								sb.append(conflicts.size() == 1 ? " " : "s ");
-								for (Byte ch : conflicts)
-									sb.append(ch).append(", ");
-								String list = sb.substring(0, sb.length() - 2);
-								LOG.log(Level.FINE, "{0} server is trying to add duplicate {2}", new Object[] { ServerType.getName(serverId), list });
-								error = list + " already connected.";
-							}
 						}
-					} else {
-						LOG.log(Level.FINE, "Duplicate {0} server from {1} is trying to connect -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
-						error = ServerType.getName(serverId) + " server already connected.";
+						if (!conflicts.isEmpty()) {
+							StringBuilder sb = new StringBuilder("World ").append(world).append(", ").append("channel");
+							sb.append(conflicts.size() == 1 ? " " : "s ");
+							for (Byte ch : conflicts)
+								sb.append(ch).append(", ");
+							String list = sb.substring(0, sb.length() - 2);
+							LOG.log(Level.FINE, "{0} server is trying to add duplicate {2}", new Object[] { ServerType.getName(serverId), list });
+							error = list + " already connected.";
+						}
 					}
 				} else {
-					LOG.log(Level.FINE, "{0} server from {1} did not supply the correct auth password -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
-					error = "Wrong auth password.";
+					LOG.log(Level.FINE, "Duplicate {0} server from {1} is trying to connect -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
+					error = ServerType.getName(serverId) + " server already connected.";
 				}
 			} else {
-				LOG.log(Level.FINE, "Expected auth packet from remote server at {0} -> Disconnecting.", getAddress());
-				error = "Invalid auth packet.";
+				LOG.log(Level.FINE, "{0} server from {1} did not supply the correct auth password -> Disconnecting.", new Object[] { ServerType.getName(serverId), getAddress() });
+				error = "Wrong auth password.";
 			}
+		} else {
+			LOG.log(Level.FINE, "Expected auth packet from remote server at {0} -> Disconnecting.", getAddress());
+			error = "Invalid auth packet.";
+		}
 
-			LittleEndianByteArrayWriter response = new LittleEndianByteArrayWriter(error == null ? 3 : 3 + error.length());
-			response.writeByte(CenterRemoteOps.AUTH_RESPONSE);
-			response.writeLengthPrefixedString(error == null ? "" : error);
-			send(response.getBytes());
-			if (error != null) {
-				cri = null;
-				close();
-				return;
+		LittleEndianByteArrayWriter response = new LittleEndianByteArrayWriter(error == null ? 3 : 3 + error.length());
+		response.writeByte(CenterRemoteOps.AUTH_RESPONSE);
+		response.writeLengthPrefixedString(error == null ? "" : error);
+		send(response.getBytes());
+		if (error == null) {
+		} else {
+			cri = null;
+			close();
+			return;
+		}
+	}
+
+	/**
+	 * This may only be called from the RemoteServerListener boss thread, in the
+	 * Selector loop.
+	 */
+	/* package-private */ ByteBuffer readBuffer() {
+		return readBuffer;
+	}
+
+	/**
+	 * This may only be called from the RemoteServerListener boss thread, in the
+	 * Selector loop.
+	 * @param readBytes
+	 * @return null if nothing was processed, an array of length 0 if the header
+	 * was fully read, or the just received message if the body was fully read.
+	 */
+	/* package-private */ byte[] readMessage(int readBytes) {
+		idleTaskFuture.cancel(false);
+		if (readBytes == -1) {
+			//connection closed
+			close();
+			return null;
+		}
+		if (readBytes < nextMessageExpectedLength) {
+			//continue reading
+			idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
+			return null;
+		}
+		switch (nextMessageType) {
+			case HEADER: {
+				readBuffer.flip();
+				int length = readBuffer.getInt();
+
+				readBuffer.clear();
+				if (length > readBuffer.remaining()) {
+					readBuffer = ByteBuffer.allocate(length);
+					readBuffer.order(ByteOrder.LITTLE_ENDIAN);
+				}
+				readBuffer.limit(length);
+				nextMessageExpectedLength = length;
+				nextMessageType = MessageType.BODY;
+				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
+				return EMPTY_ARRAY;
+			} case BODY: {
+				byte[] message = new byte[nextMessageExpectedLength];
+				readBuffer.flip();
+				readBuffer.get(message);
+				readBuffer.clear();
+				readBuffer.limit(HEADER_LENGTH);
+				nextMessageExpectedLength = HEADER_LENGTH;
+				nextMessageType = MessageType.HEADER;
+				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
+				return message;
+			} default: {
+				return null;
 			}
 		}
 	}
 
-	public void send(byte[] b) {
-		commChn.write(b);
+	private List<ByteBuffer> sendableMessages() {
+		List<ByteBuffer> list = new ArrayList<ByteBuffer>(sendQueue);
+		//sendQueue could've been modified since we created the List, so instead
+		//of clearing everything, only remove the stuff in the List since those
+		//are the only messages that we're sending and want to be removed.
+		sendQueue.removeAll(list);
+		return list;
 	}
 
 	/**
-	 * DO NOT USE THIS METHOD TO FORCE CLOSE THE CONNECTION. USE close()
-	 * INSTEAD.
+	 * This may only be called from the RemoteServerListener boss thread, in the
+	 * Selector loop.
+	 * @return 
 	 */
-	public void disconnected() {
-		if (cri != null)
-			cri.disconnected();
+	/* package-private */ void returnSend(List<ByteBuffer> toReturn) {
+		//unlike client IO with all their IV stuff that depends a lot on order,
+		//it doesn't matter if messages are actually sent out of order of when
+		//send was called, so just append them to the end of the queue.
+		sendQueue.addAll(toReturn);
 	}
 
-	public void close() {
-		commChn.disconnect();
+	private static byte[] pingMessage() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(1);
+		lew.writeByte(CenterRemoteOps.PING);
+		return lew.getBytes();
+	}
+
+	private class KeepAliveTask implements Runnable {
+		private final AtomicReference<ScheduledFuture<?>> future;
+
+		public KeepAliveTask() {
+			future = new AtomicReference<ScheduledFuture<?>>(null);
+		}
+
+		public void sendPing() {
+			send(pingMessage());
+		}
+
+		public void waitForPong() {
+			future.set(Scheduler.getWheelTimer().runAfterDelay(this, TIMEOUT));
+		}
+
+		@Override
+		public void run() {
+			LOG.log(Level.FINE, "Server {0} timed out after " + TIMEOUT
+					+ " milliseconds -> Disconnecting.", getServerName());
+			close();
+		}
+
+		public void receivedPong() {
+			stop();
+		}
+
+		public void stop() {
+			ScheduledFuture<?> old = future.getAndSet(null);
+			if (old != null)
+				old.cancel(false);
+		}
 	}
 }

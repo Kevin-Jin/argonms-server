@@ -1,4 +1,5 @@
 /*
+/*
  * ArgonMS MapleStory server emulator written in Java
  * Copyright (C) 2011  GoldenKevin
  *
@@ -16,26 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.net.internal;
+package argonms.common.net;
 
 /**
- * Opcodes for packets sent from a remote server and received on the center
- * server.
+ *
  * @author GoldenKevin
  */
-public class RemoteCenterOps {
-	public static final byte
-		AUTH = 0x00,
-		PING = 0x01,
-		PONG = 0x02,
-		ONLINE = 0x03,
-		POPULATION_CHANGED = 0x04,
-		MODIFY_CHANNEL_PORT = 0x05,
-		INTER_CHANNEL = 0x06,
-		INTER_CHANNEL_ALL = 0x07
-	;
-
-	private RemoteCenterOps() {
-		//uninstantiable...
-	}
+public interface SessionDataModel {
+	public Session getSession();
+	public void disconnected();
 }
