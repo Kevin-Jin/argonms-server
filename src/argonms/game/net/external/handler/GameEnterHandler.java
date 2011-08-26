@@ -36,16 +36,12 @@ import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GameClient;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameEnterHandler {
-	private static final Logger LOG = Logger.getLogger(GameEnterHandler.class.getName());
-
 	public static void handlePlayerConnection(LittleEndianReader packet, GameClient gc) {
 		int cid = packet.readInt();
 		GameCharacter player = null;

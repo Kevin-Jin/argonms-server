@@ -482,8 +482,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		ResultSet rs = null, irs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`storageslots`,"
-					+ "`a`.`storagemesos` FROM `characters` `c` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,"
+					+ "`a`.`storageslots`,`a`.`storagemesos` FROM `characters` `c` "
 					+ "LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
@@ -549,7 +549,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			p.inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
 			p.buddies = new BuddyList(rs.getShort(32));
 			p.gm = rs.getByte(33);
-			p.storage = new StorageInventory(rs.getShort(42), rs.getInt(43));
+			c.setAccountName(rs.getString(42));
+			p.storage = new StorageInventory(rs.getShort(43), rs.getInt(44));
 			rs.close();
 			ps.close();
 
@@ -727,7 +728,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			getClient().getSession().send(GamePackets.writeShowExpGain(gain, isKiller, fromQuest));
 
 			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
-			long newExp = exp + gain; //should solve many overflow errors
+			long newExp = (long) exp + gain; //should solve many overflow errors
 			if (newExp >= ExpTables.getForLevel(level))
 				newExp = levelUp(newExp, updatedStats);
 			updatedStats.put(ClientUpdateKey.EXP, Integer.valueOf(exp = (int) newExp));
@@ -1740,8 +1741,6 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 		status.setCompletionTime(System.currentTimeMillis());
 		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
-		if (next != 0)
-			localStartQuest(next);
 
 		//see if one req of another quest was completing this one...
 		questStatusChanged(questId, QuestEntry.STATE_COMPLETED);

@@ -145,7 +145,7 @@ public class Mob extends MapEntity {
 			attackerLevel = attacker.getLevel();
 			attackerParty = attacker.getParty();
 
-			int exp = (int) (stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10);
+			long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
 			if (attackerParty != null) {
 				partyExp = parties.get(attackerParty);
 				if (partyExp == null) {
@@ -160,7 +160,7 @@ public class Mob extends MapEntity {
 				//exp = exp * getTauntEffect() / 100;
 				exp *= GameServer.getVariables().getExpRate();
 				exp += ((exp * hsRate) / 100);
-				attacker.gainExp(exp, attacker == killer, false);
+				attacker.gainExp((int) Math.min(exp, Integer.MAX_VALUE), attacker == killer, false);
 			}
 		}
 		if (!parties.isEmpty()) {
@@ -178,13 +178,13 @@ public class Mob extends MapEntity {
 				for (GameCharacter member : members) {
 					attackerLevel = member.getLevel();
 					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5)) {
-						int exp = (stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10);
+						long exp = (long) stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10;
 						int hsRate = member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
 								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
 						//exp = exp * getTauntEffect() / 100;
 						exp *= GameServer.getVariables().getExpRate();
 						exp += ((exp * hsRate) / 100);
-						member.gainExp(exp, member == killer, false);
+						member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
 					}
 				}
 			}

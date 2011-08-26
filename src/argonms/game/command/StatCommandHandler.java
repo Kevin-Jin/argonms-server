@@ -120,7 +120,7 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("exp")) {
 				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
-					p.setExp(Math.min(p.getExp() + val, ExpTables.getForLevel(p.getLevel()) - 1));
+					p.setExp(Math.min((int) Math.min((long) p.getExp() + val, Integer.MAX_VALUE), ExpTables.getForLevel(p.getLevel()) - 1));
 				else if (p.getExp() + val == 0)
 					p.setExp(0);
 			} else if (stat.equalsIgnoreCase("maxhp")) {

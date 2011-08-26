@@ -26,7 +26,6 @@ import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
  * @author GoldenKevin
  */
 public class MonsterStatusEffectValues {
-
 	private final MonsterStatusEffectsData e;
 	private final short mod;
 

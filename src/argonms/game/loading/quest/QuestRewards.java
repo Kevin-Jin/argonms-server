@@ -134,13 +134,14 @@ public class QuestRewards {
 	}
 
 	private void giveItem(GameCharacter p, int itemId, short quantity, int period) {
-		//TODO: set InventorySlot's expiration using item.getPeriod();
 		ClientSession<?> ses = p.getClient().getSession();
 		InventoryType type = InventoryTools.getCategory(itemId);
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
-		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+		InventorySlot slot = InventoryTools.makeItemWithId(itemId);
+		//period is stored in minutes for quests
+		slot.setExpiration(System.currentTimeMillis() + (period * 1000 * 60));
+		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, slot, quantity, true);
 		short pos;
-		InventorySlot slot;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
 			slot = inv.get(pos);
@@ -215,9 +216,9 @@ public class QuestRewards {
 		for (SkillReward skill : skillChanges)
 			skill.applyTo(p);
 		if (giveExp != 0)
-			p.gainExp(giveExp * GameServer.getVariables().getExpRate(), false, true);
+			p.gainExp((int) Math.min((long) giveExp * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
 		if (giveMesos != 0)
-			p.gainMesos(giveMesos * GameServer.getVariables().getMesoRate(), true);
+			p.gainMesos((int) Math.min((long) giveMesos * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
 		if (giveBuff != 0)
 			ItemTools.useItem(p, giveBuff);
 		if (givePetTameness != 0) {

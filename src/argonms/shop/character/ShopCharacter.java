@@ -119,7 +119,9 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT * FROM `characters` WHERE `id` = ?");
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name` FROM `characters` `c` "
+					+ "LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
+					+ "WHERE `id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
@@ -136,7 +138,8 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 			p.client = c;
 			loadPlayerStats(rs, id, p);
 			p.mesos = rs.getInt(26);
-			p.maxBuddies = rs.getShort(31);
+			p.maxBuddies = rs.getShort(32);
+			c.setAccountName(rs.getString(42));
 			rs.close();
 			ps.close();
 

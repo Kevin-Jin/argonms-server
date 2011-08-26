@@ -1239,6 +1239,47 @@
 	the "connected" log message in the SessionCreator classes.
 	* Fixed a possible race condition in TelnetSession.processRead.
 
+2011-08-26  GoldenKevin  (revision 60)
+
+	* The nuances of updating and accessing MySQL's user defined variables in
+	the same statement broke RankingWorker because of the join on the accounts
+	table, so I reworked the ordering of the statement a bit (hopefully, future
+	versions of MySQL won't break it again if they start optimizing and
+	evaluating in a different sequence). I moved it to a stored procedure in the
+	SQL file so that it is defined only once. This is beneficial as the
+	statement doesn't have to be transferred from the Login server to the MySQL
+	server ever. Also, it can be executed from anywhere, so if it is desired to
+	refresh the rankings immediately, you do not have to tinker with the Login
+	server.
+	* RankingWorker will no longer check for IP bans, only account bans. Once
+	bans are implemented, GMs, at their discretion, will be able to easily ban
+	any accounts that share recent IPs or MACs in order to get all characters of
+	the user off the rankings and as an unbypassable measure to forbid the user
+	from logging onto any of its other registered accounts (spoofing your MAC or
+	IP won't help if your account is banned!)
+	* Added two stored procedures to the SQL file. `updateranks` will update a
+	particular rank list, specified by its parameters, while `fetchranks` will
+	return a result set of a particular rank list, specified by its parameters.
+	Be sure to execute the new SQL or else your Login server's RankingWorker
+	will spew out errors.
+	* Account name is now set on the Game server.
+	* Fixed exception when player logs off with a summon active.
+	* Fixed quest starting automatically even if user clicked Decline when
+	completing a quest that automatically starts the script of a "next quest".
+	This fixed the starting act of an autostarted quest being performed twice.
+	* Expiration time is now applied to items rewarded from a quest. Although
+	as of the moment, items don't expire (probably will get working on that when
+	writing the cash shop).
+	* Fixed GameCharacter.gainExp overflow. All calls to gainExp and gainMesos
+	are overflow-conscious when sending the gain value.
+	* Fixed ScheduledHashWheelExecutor misbehaving when scheduling without a
+	period (caused it to infinitely reschedule a task). Calling shutdown on it
+	will no longer immediately shut it down, but will only cause the service to
+	stop accepting tasks, as the documentation for ExecutorService states. The
+	service will never die if a task throws an exception. HashedWheelFuture's
+	cancel method now responds to the mayInterruptIfRunning parameter. Fixed a
+	couple of race conditions as well, although most likely not all of them.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
