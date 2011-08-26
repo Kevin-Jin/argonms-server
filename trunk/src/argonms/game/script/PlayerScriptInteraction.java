@@ -44,11 +44,11 @@ public abstract class PlayerScriptInteraction {
 	}
 
 	public void giveExp(int gain) {
-		client.getPlayer().gainExp(gain * GameServer.getVariables().getExpRate(), false, true);
+		client.getPlayer().gainExp((int) Math.min((long) gain * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
 	}
 
 	public void giveMesos(int gain) {
-		client.getPlayer().gainMesos(gain * GameServer.getVariables().getMesoRate(), true);
+		client.getPlayer().gainMesos((int) Math.min((long) gain * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
 	}
 
 	public boolean playerHasItem(int itemid, int quantity) {

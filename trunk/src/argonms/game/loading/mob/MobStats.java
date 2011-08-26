@@ -294,7 +294,7 @@ public class MobStats {
 			if (generator.nextInt(1000000) < mesoDrop.getDropChance()) {
 				int min = mesoDrop.getMinMesoDrop();
 				int max = mesoDrop.getMaxMesoDrop();
-				return ((generator.nextInt(max - min + 1) + min) * multiplier);
+				return (int) Math.min((long) (generator.nextInt(max - min + 1) + min) * multiplier, Integer.MAX_VALUE);
 			}
 			return 0;
 		}

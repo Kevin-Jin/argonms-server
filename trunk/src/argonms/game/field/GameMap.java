@@ -439,9 +439,9 @@ public class GameMap {
 	}
 
 	public void removePlayer(GameCharacter p) {
+		destroyEntity(p);
 		for (PlayerSkillSummon summon : p.summonsList())
 			destroyEntity(summon);
-		destroyEntity(p);
 		LockableList<Mob> controlledMobs = p.getControlledMobs();
 		controlledMobs.lockWrite();
 		try {

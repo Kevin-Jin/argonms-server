@@ -288,3 +288,168 @@ CREATE TABLE `uniqueid` (
   `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
   PRIMARY KEY (`nextuid`)
 ) ENGINE=InnoDB;
+
+DROP PROCEDURE IF EXISTS `updateranks`;
+DELIMITER $$
+CREATE PROCEDURE `updateranks` (`type` ENUM('overall', 'world', 'job', 'fame'), `value` TINYINT(2))
+BEGIN
+  CASE `type`
+    WHEN 'overall' THEN
+      SET @lastrank := @rankcount := 0, @lastlevel := @lastexp := -1;
+      UPDATE `characters` `target`
+        INNER JOIN (
+          SELECT DISTINCT `c`.`id`
+          FROM `characters` `c`
+          LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          WHERE (
+            `a`.`gm` = 0
+            AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+            AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+          )
+          ORDER BY
+            `c`.`level` DESC,
+            `c`.`exp` DESC
+        ) AS `source` ON `source`.`id` = `target`.`id`
+      SET
+        `target`.`overallrankoldpos` = `target`.`overallrankcurrentpos`,
+        `target`.`overallrankcurrentpos` = GREATEST(
+          @lastrank := IF(`level` <> 200 AND @lastlevel = `level` AND @lastexp = `exp`, @lastrank, @rankcount + 1),
+          LEAST(0, @rankcount := @rankcount + 1),
+          LEAST(0, @lastlevel := `level`),
+          LEAST(0, @lastexp := `exp`)
+        )
+      ;
+    WHEN 'world' THEN
+      SET @lastrank := @rankcount := 0, @lastlevel := @lastexp := -1;
+      UPDATE `characters` `target`
+        INNER JOIN (
+          SELECT DISTINCT `c`.`id`
+          FROM `characters` `c`
+          LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          WHERE
+            `c`.`world` = `value`
+            AND `a`.`gm` = 0
+            AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+            AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+          ORDER BY
+            `c`.`level` DESC,
+            `c`.`exp` DESC
+        ) AS `source` ON `source`.`id` = `target`.`id`
+      SET
+       `target`.`worldrankoldpos` = `target`.`worldrankcurrentpos`,
+       `target`.`worldrankcurrentpos` = GREATEST(
+          @lastrank := IF(`level` <> 200 AND @lastlevel = `level` AND @lastexp = `exp`, @lastrank, @rankcount + 1),
+          LEAST(0, @rankcount := @rankcount + 1),
+          LEAST(0, @lastlevel := `level`),
+          LEAST(0, @lastexp := `exp`)
+        )
+      ;
+    WHEN 'job' THEN
+      SET @lastrank := @rankcount := 0, @lastlevel := @lastexp := -1;
+      UPDATE `characters` `target`
+        INNER JOIN (
+          SELECT DISTINCT `c`.`id`
+          FROM `characters` `c`
+          LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          WHERE
+            (`c`.`job` DIV 100) = `value`
+            AND `a`.`gm` = 0
+            AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+            AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+          ORDER BY
+            `c`.`level` DESC,
+            `c`.`exp` DESC
+        ) AS `source` ON `source`.`id` = `target`.`id`
+      SET
+       `target`.`jobrankoldpos` = `target`.`jobrankcurrentpos`,
+       `target`.`jobrankcurrentpos` = GREATEST(
+          @lastrank := IF(`level` <> 200 AND @lastlevel = `level` AND @lastexp = `exp`, @lastrank, @rankcount + 1),
+          LEAST(0, @rankcount := @rankcount + 1),
+          LEAST(0, @lastlevel := `level`),
+          LEAST(0, @lastexp := `exp`)
+        )
+      ;
+    WHEN 'fame' THEN
+      SET @rankcount := 0;
+      UPDATE `characters` `target`
+        INNER JOIN (
+          SELECT DISTINCT `c`.`id`
+          FROM `characters` `c`
+          LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
+          WHERE
+            `c`.`fame` > 0
+            AND `a`.`gm` = 0
+            AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+            AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+          ORDER BY
+            `c`.`fame` DESC,
+            `c`.`level` DESC,
+            `c`.`exp` DESC
+        ) AS `source` ON `source`.`id` = `target`.`id`
+      SET
+       `target`.`famerankoldpos` = `target`.`famerankcurrentpos`,
+       `target`.`famerankcurrentpos` = (@rankcount := @rankcount + 1)
+      ;
+  END CASE;
+END $$
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `fetchranks`;
+DELIMITER $$
+CREATE PROCEDURE `fetchranks` (`type` ENUM('overall', 'world', 'job', 'fame'), `value` TINYINT(2), `lowerbound` INT(11), `upperbound` INT(11))
+BEGIN
+  CASE `type`
+    WHEN 'overall' THEN
+      SELECT `c`.`overallrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
+      LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      WHERE
+        (ISNULL(`lowerbound`) OR `c`.`overallrankcurrentpos` >= `lowerbound`)
+        AND (ISNULL(`upperbound`) OR `c`.`overallrankcurrentpos` <= `upperbound`)
+        AND `a`.`gm` = 0
+        AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+        AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+      ORDER BY `c`.`overallrankcurrentpos` ASC;
+    WHEN 'world' THEN
+      SELECT `c`.`worldrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
+      LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      WHERE
+        `c`.`world` = `value`
+        AND (ISNULL(`lowerbound`) OR `c`.`worldrankcurrentpos` >= `lowerbound`)
+        AND (ISNULL(`upperbound`) OR `c`.`worldrankcurrentpos` <= `upperbound`)
+        AND `a`.`gm` = 0
+        AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+        AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+      ORDER BY `c`.`worldrankcurrentpos` ASC;
+    WHEN 'job' THEN
+      SELECT `c`.`jobrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
+      LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      WHERE
+        (`c`.`job` DIV 100) = `value`
+        AND (ISNULL(`lowerbound`) OR `c`.`jobrankcurrentpos` >= `lowerbound`)
+        AND (ISNULL(`upperbound`) OR `c`.`jobrankcurrentpos` <= `upperbound`)
+        AND `a`.`gm` = 0
+        AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+        AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+      ORDER BY `c`.`jobrankcurrentpos` ASC;
+    WHEN 'fame' THEN
+      SELECT `c`.`famerankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`fame`,`c`.`level`,`c`.`exp` FROM `characters` `c`
+      LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      WHERE
+        `c`.`fame` > 0
+        AND (ISNULL(`lowerbound`) OR `c`.`famerankcurrentpos` >= `lowerbound`)
+        AND (ISNULL(`upperbound`) OR `c`.`famerankcurrentpos` <= `upperbound`)
+        AND `a`.`gm` = 0
+        AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
+        AND IF(ISNULL(@banexpire := (SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = `b`.`accountid`)), 0, @banexpire DIV 1000) < UNIX_TIMESTAMP()
+      ORDER BY `c`.`famerankcurrentpos` ASC;
+  END CASE;
+END $$
+DELIMITER ;

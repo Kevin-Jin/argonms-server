@@ -23,16 +23,12 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.shop.ShopServer;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.external.ShopClient;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ShopHandler {
-	private static final Logger LOG = Logger.getLogger(ShopHandler.class.getName());
-
 	public static void handlePlayerConnection(LittleEndianReader packet, ShopClient sc) {
 		int cid = packet.readInt();
 		/*Pair<Byte, Boolean> info = ShopServer.getInstance().getChannelInfo(cid);
