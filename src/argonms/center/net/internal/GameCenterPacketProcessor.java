@@ -75,7 +75,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			clientPorts.put(Byte.valueOf(packet.readByte()), packet.readInt());
 		r.setWorld(world);
 		r.setClientPorts(clientPorts);
-		CenterServer.getInstance().gameConnected(r);
+		CenterServer.getInstance().registerGame(r);
 	}
 
 	private void processPopulationChange(LittleEndianReader packet) {
@@ -97,14 +97,13 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	}
 
 	private void processInterChannel(LittleEndianReader packet) {
-		byte world = packet.readByte();
 		byte channel = packet.readByte();
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(packet.available() + 2);
 		lew.writeByte(CenterRemoteOps.INTER_CHANNEL_RELAY);
 		lew.writeByte(channel);
 		lew.writeBytes(packet.readBytes(packet.available()));
 		byte[] message = lew.getBytes();
-		for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(world, ServerType.UNDEFINED))
+		for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED))
 			if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(channel)))
 				cgi.getSession().send(message);
 	}

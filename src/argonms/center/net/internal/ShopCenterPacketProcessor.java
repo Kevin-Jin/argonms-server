@@ -53,6 +53,6 @@ public class ShopCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		r.setHost(packet.readLengthPrefixedString());
 		int port = packet.readInt();
 		r.setClientPort(port);
-		CenterServer.getInstance().shopConnected(r);
+		CenterServer.getInstance().registerShop(r);
 	}
 }

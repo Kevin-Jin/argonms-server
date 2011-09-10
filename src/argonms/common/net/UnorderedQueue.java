@@ -22,35 +22,20 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * All methods of this class are thread safe.
  * @author GoldenKevin
  */
-public class OrderedQueue {
-	private final SortedMap<Integer, ByteBuffer> queued;
-	private final AtomicInteger nextPopCursor, nextPushCursor;
+public class UnorderedQueue {
+	private final ConcurrentLinkedQueue<ByteBuffer> queued;
 	private final AtomicBoolean writeInProgress;
 
-	public OrderedQueue() {
-		queued = new ConcurrentSkipListMap<Integer, ByteBuffer>();
-		nextPopCursor = new AtomicInteger(0);
-		nextPushCursor = new AtomicInteger(0);
+	public UnorderedQueue() {
+		queued = new ConcurrentLinkedQueue<ByteBuffer>();
 		writeInProgress = new AtomicBoolean(false);
-	}
-
-	/**
-	 *
-	 * @return a unique value that relates to the order of this call to this
-	 * method compared to other calls to this same method.
-	 */
-	public int getNextPush() {
-		return nextPushCursor.getAndIncrement();
 	}
 
 	/**
@@ -58,16 +43,8 @@ public class OrderedQueue {
 	 * @param orderNo a unique value received from getNextPush()
 	 * @param element the ByteBuffer to queue
 	 */
-	public void insert(int orderNo, ByteBuffer element) {
-		queued.put(Integer.valueOf(orderNo), element);
-	}
-
-	public int currentPopBlock() {
-		return nextPopCursor.get();
-	}
-
-	public void incrementPopCursor(int amount) {
-		nextPopCursor.addAndGet(amount);
+	public void insert(ByteBuffer element) {
+		queued.add(element);
 	}
 
 	public boolean shouldWrite() {
@@ -79,25 +56,18 @@ public class OrderedQueue {
 	}
 
 	public boolean willBlock() {
-		return !queued.containsKey(Integer.valueOf(nextPopCursor.get()));
+		return queued.isEmpty();
 	}
 
 	/**
 	 *
-	 * @return a list of ByteBuffers in order of the order number passed to
-	 * insert(). The list has no gaps in order numbers.
+	 * @return a list of all ByteBuffers queued as of this moment.
 	 */
 	public List<ByteBuffer> pop() {
 		List<ByteBuffer> consecutive = new ArrayList<ByteBuffer>();
-		Iterator<Entry<Integer, ByteBuffer>> elements = queued.entrySet().iterator();
-		if (elements.hasNext()) {
-			Entry<Integer, ByteBuffer> lastPopped = elements.next();
-			for (int i = nextPopCursor.get(); lastPopped.getKey().intValue() == i; i++) {
-				consecutive.add(lastPopped.getValue());
-				elements.remove();
-				if (elements.hasNext())
-					lastPopped = elements.next();
-			}
+		for (Iterator<ByteBuffer> iter = queued.iterator(); iter.hasNext(); ) {
+			consecutive.add(iter.next());
+			iter.remove();
 		}
 		return consecutive;
 	}

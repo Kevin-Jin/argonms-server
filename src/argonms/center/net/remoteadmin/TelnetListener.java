@@ -163,7 +163,7 @@ public class TelnetListener implements SessionCreator {
 										}
 									}
 									if (key.isValid() && key.isWritable())
-										if (session.sendMessages() && key.isValid())
+										if (session.tryFlushSendQueue() == 1)
 											key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 								}
 							}

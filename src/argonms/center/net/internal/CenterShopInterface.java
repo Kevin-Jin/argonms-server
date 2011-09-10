@@ -69,7 +69,7 @@ public class CenterShopInterface extends CenterRemoteInterface {
 		if (online) {
 			online = false;
 			disconnecting = true;
-			CenterServer.getInstance().shopDisconnected();
+			CenterServer.getInstance().unregisterShop();
 		}
 	}
 }

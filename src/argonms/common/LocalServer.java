@@ -23,7 +23,7 @@ package argonms.common;
  * @author GoldenKevin
  */
 public interface LocalServer {
-	public void centerConnected();
-	public void centerDisconnected();
+	public void registerCenter();
+	public void unregisterCenter();
 	public String getExternalIp();
 }
