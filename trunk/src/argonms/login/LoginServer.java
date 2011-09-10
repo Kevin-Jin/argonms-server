@@ -185,8 +185,8 @@ public class LoginServer implements LocalServer {
 	}
 
 	@Override
-	public void centerConnected() {
-		LOG.log(Level.FINE, "Link with Center server established.");
+	public void registerCenter() {
+		LOG.log(Level.INFO, "Center server registered.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
@@ -205,9 +205,9 @@ public class LoginServer implements LocalServer {
 	}
 
 	@Override
-	public void centerDisconnected() {
+	public void unregisterCenter() {
 		if (centerConnected) {
-			LOG.log(Level.SEVERE, "Lost link with Center server.");
+			LOG.log(Level.INFO, "Center server unregistered.");
 			centerConnected = false;
 		}
 	}
@@ -221,7 +221,7 @@ public class LoginServer implements LocalServer {
 				onlineWorlds.put(Byte.valueOf(world), w);
 			}
 			w.addGameServer(ip, ports, serverId);
-			LOG.log(Level.INFO, "{0} server''s external address is {1}.", new Object[] { ServerType.getName(serverId), host });
+			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(serverId)
 					+ " server because its address could not be resolved!", e);
@@ -229,7 +229,7 @@ public class LoginServer implements LocalServer {
 	}
 
 	public void gameDisconnected(byte serverId, byte world) {
-		LOG.log(Level.INFO, "{0} server went offline.", ServerType.getName(serverId));
+		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(serverId));
 		Byte oW = Byte.valueOf(world);
 		LoginWorld w = onlineWorlds.get(oW);
 		w.removeGameServer(serverId);

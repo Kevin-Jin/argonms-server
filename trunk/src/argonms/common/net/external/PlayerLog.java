@@ -41,7 +41,7 @@ public class PlayerLog<T extends Player> {
 	}
 
 	public void deletePlayer(T p) {
-		nameToPlayerMapping.remove(p.getName());
+		nameToPlayerMapping.remove(p.getName().toLowerCase());
 		idToPlayerMapping.remove(Integer.valueOf(p.getDataId()));
 	}
 

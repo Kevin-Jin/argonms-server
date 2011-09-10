@@ -347,6 +347,9 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 				} catch (InterruptedException e) {
 					if (shutdownImmediately)
 						return -1;
+					//propagate the interrupted status further up to our worker
+					//executor service and see if they care - we don't care
+					Thread.currentThread().interrupt();
 				}
 			}
 			return scheduledTime;

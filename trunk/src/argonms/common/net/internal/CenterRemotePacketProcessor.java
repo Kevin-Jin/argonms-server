@@ -38,7 +38,7 @@ public abstract class CenterRemotePacketProcessor {
 		if (error.length() != 0)
 			LOG.log(Level.SEVERE, "Unable to auth with Center server: {0}", error);
 		else
-			ls.centerConnected();
+			ls.registerCenter();
 	}
 
 	protected static byte[] pongMessage() {

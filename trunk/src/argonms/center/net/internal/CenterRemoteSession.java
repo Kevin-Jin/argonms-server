@@ -21,6 +21,7 @@ package argonms.center.net.internal;
 import argonms.center.CenterServer;
 import argonms.common.ServerType;
 import argonms.common.net.Session;
+import argonms.common.net.UnorderedQueue;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.Scheduler;
@@ -36,8 +37,6 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,7 +63,7 @@ public class CenterRemoteSession implements Session {
 	private CenterRemoteInterface cri;
 
 	private final SelectionKey selectionKey;
-	private final Queue<ByteBuffer> sendQueue;
+	private final UnorderedQueue sendQueue;
 
 	private KeepAliveTask heartbeatTask;
 	private final Runnable idleTask = new Runnable() {
@@ -79,7 +78,6 @@ public class CenterRemoteSession implements Session {
 	private int nextMessageExpectedLength;
 
 	private final String interServerPwd;
-	private final AtomicBoolean writeInProgress;
 
 	/* package-private */ interface CloseListener {
 		public void closed(CenterRemoteSession session);
@@ -90,11 +88,10 @@ public class CenterRemoteSession implements Session {
 		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 		readBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		readBuffer.limit(HEADER_LENGTH);
-		sendQueue = new ConcurrentLinkedQueue<ByteBuffer>();
+		sendQueue = new UnorderedQueue();
 		heartbeatTask = new KeepAliveTask();
 		nextMessageType = MessageType.HEADER;
 		nextMessageExpectedLength = HEADER_LENGTH;
-		writeInProgress = new AtomicBoolean(false);
 
 		this.commChn = channel;
 		this.onClose = onClose;
@@ -124,8 +121,8 @@ public class CenterRemoteSession implements Session {
 		buf.putInt(b.length);
 		buf.put(b);
 		buf.flip();
-		sendQueue.add(buf);
-		if (!sendMessages() && selectionKey.isValid()) {
+		sendQueue.insert(buf);
+		if (tryFlushSendQueue() == 0) {
 			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 			selectionKey.selector().wakeup();
 		}
@@ -175,36 +172,37 @@ public class CenterRemoteSession implements Session {
 	}
 
 	/**
-	 *
-	 * @return false if these messages needs to remain on the queue, or if there
-	 * was a write error. Please make sure to check selectionKey.isValid() if
-	 * false is returned before adding this message to this queue or else you
-	 * may get a CancelledKeyException.
+	 * @return 0 if not all queued messages could be sent in a non-blocking
+	 * manner, 1 if all queued messages have been successfully sent, -1 if there
+	 * is another flush attempt in progress, or -2 if there's an error and the
+	 * channel is closed.
 	 */
-	/* package-private */ boolean sendMessages() {
-		if (!writeInProgress.compareAndSet(false, true))
-			return true;
-		int i = 0;
+	/* package-private */ int tryFlushSendQueue() {
+		if (!sendQueue.shouldWrite())
+			return -1;
 		try {
-			Iterator<ByteBuffer> iter = sendableMessages().iterator();
-			while (iter.hasNext()) {
-				ByteBuffer buf = iter.next();
-				if (buf.remaining() == commChn.write(buf)) {
-					i++;
-				} else {
-					sendQueue.add(buf);
-					while (iter.hasNext())
-						sendQueue.add(iter.next());
-					return false;
+			do {
+				int success = 0;
+				Iterator<ByteBuffer> iter = sendQueue.pop().iterator();
+				while (iter.hasNext()) {
+					ByteBuffer buf = iter.next();
+					if (buf.remaining() == commChn.write(buf)) {
+						success++;
+					} else {
+						sendQueue.insert(buf);
+						while (iter.hasNext())
+							sendQueue.insert(iter.next());
+						return 0;
+					}
 				}
-			}
-			return true;
+			} while (!sendQueue.willBlock());
+			return 1;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
 			close("Error while writing", ex);
-			return false;
+			return -2;
 		} finally {
-			writeInProgress.set(false);
+			sendQueue.setCanWrite();
 		}
 	}
 
@@ -324,15 +322,6 @@ public class CenterRemoteSession implements Session {
 				return null;
 			}
 		}
-	}
-
-	private List<ByteBuffer> sendableMessages() {
-		List<ByteBuffer> list = new ArrayList<ByteBuffer>(sendQueue);
-		//sendQueue could've been modified since we created the List, so instead
-		//of clearing everything, only remove the stuff in the List since those
-		//are the only messages that we're sending and want to be removed.
-		sendQueue.removeAll(list);
-		return list;
 	}
 
 	private static byte[] pingMessage() {

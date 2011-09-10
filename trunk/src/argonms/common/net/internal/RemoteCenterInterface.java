@@ -71,6 +71,6 @@ public abstract class RemoteCenterInterface implements SessionDataModel {
 	 */
 	@Override
 	public void disconnected() {
-		getLocalServer().centerDisconnected();
+		getLocalServer().unregisterCenter();
 	}
 }

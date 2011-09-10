@@ -157,8 +157,8 @@ public class CenterServer {
 		}
 	}
 
-	public void loginConnected(CenterLoginInterface remote) {
-		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
+	public void registerLogin(CenterLoginInterface remote) {
+		LOG.log(Level.INFO, "{0} server registered.", remote.getServerName());
 		writeLock.lock();
 		try {
 			loginServer = remote;
@@ -169,9 +169,9 @@ public class CenterServer {
 		}
 	}
 
-	public void gameConnected(CenterGameInterface remote) {
+	public void registerGame(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
-		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
+		LOG.log(Level.INFO, "{0} server registered.", remote.getServerName());
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
@@ -184,8 +184,8 @@ public class CenterServer {
 		}
 	}
 
-	public void shopConnected(CenterShopInterface remote) {
-		LOG.log(Level.INFO, "Link with {0} server established.", remote.getServerName());
+	public void registerShop(CenterShopInterface remote) {
+		LOG.log(Level.INFO, "{0} server registered.", remote.getServerName());
 		writeLock.lock();
 		try {
 			shopServer = remote;
@@ -197,8 +197,8 @@ public class CenterServer {
 		}
 	}
 
-	public void loginDisconnected() {
-		LOG.log(Level.INFO, "Lost link with {0} server.", ServerType.getName(ServerType.LOGIN));
+	public void unregisterLogin() {
+		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(ServerType.LOGIN));
 		writeLock.lock();
 		try {
 			loginServer = null;
@@ -207,9 +207,9 @@ public class CenterServer {
 		}
 	}
 
-	public void gameDisconnected(CenterGameInterface remote) {
+	public void unregisterGame(CenterGameInterface remote) {
 		byte serverId = remote.getServerId();
-		LOG.log(Level.INFO, "Lost link with {0} server.", remote.getServerName());
+		LOG.log(Level.INFO, "{0} server unregistered.", remote.getServerName());
 		writeLock.lock();
 		try {
 			notifyGameDisconnected(remote.getWorld(), serverId);
@@ -219,8 +219,8 @@ public class CenterServer {
 		}
 	}
 
-	public void shopDisconnected() {
-		LOG.log(Level.INFO, "Lost link with {0} server.", ServerType.getName(ServerType.SHOP));
+	public void unregisterShop() {
+		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(ServerType.SHOP));
 		writeLock.lock();
 		try {
 			notifyShopDisconnected();

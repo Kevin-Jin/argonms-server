@@ -375,7 +375,7 @@ public class WorldlistHandler {
 			lew.writeBool(true);
 			lew.writeInt(p.getWorldRank());
 			lew.writeInt(p.getWorldRankChange());
-			lew.writeInt(p.getJob());
+			lew.writeInt(p.getJobRank());
 			lew.writeInt(p.getJobRankChange());
 		} else {
 			lew.writeBool(false);

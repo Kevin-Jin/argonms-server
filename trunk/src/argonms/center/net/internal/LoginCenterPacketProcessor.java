@@ -53,6 +53,6 @@ public class LoginCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		r.setHost(packet.readLengthPrefixedString());
 		int port = packet.readInt();
 		r.setClientPort(port);
-		CenterServer.getInstance().loginConnected(r);
+		CenterServer.getInstance().registerLogin(r);
 	}
 }

@@ -39,6 +39,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -52,28 +55,42 @@ public class InterChannelCommunication {
 		SPOUSE_CHAT = 4
 	;
 
-	private byte[] localChannels;
-	private Map<Byte, Integer> remoteChannelPorts;
-	private Map<Byte, byte[]> remoteChannelAddresses;
-	private WorldChannel self;
+	private final byte[] localChannels;
+	private final WorldChannel self;
+	private final Map<Byte, Integer> remoteChannelPorts;
+	private final Map<Byte, byte[]> remoteChannelAddresses;
+	private final Lock readLock, writeLock;
 
 	public InterChannelCommunication(byte[] local, WorldChannel channel) {
 		this.localChannels = local;
+		this.self = channel;
 		this.remoteChannelPorts = new HashMap<Byte, Integer>();
 		this.remoteChannelAddresses = new HashMap<Byte, byte[]>();
-		this.self = channel;
+		ReadWriteLock rwLock = new ReentrantReadWriteLock();
+		readLock = rwLock.readLock();
+		writeLock = rwLock.writeLock();
 	}
 
 	public void addRemoteChannels(byte[] host, Map<Byte, Integer> ports) {
-		remoteChannelPorts.putAll(ports);
-		for (Byte ch : ports.keySet())
-			remoteChannelAddresses.put(ch, host);
+		writeLock.lock();
+		try {
+			remoteChannelPorts.putAll(ports);
+			for (Byte ch : ports.keySet())
+				remoteChannelAddresses.put(ch, host);
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
 	public void removeRemoteChannels(Set<Byte> channels) {
-		for (Byte ch : channels) {
-			remoteChannelPorts.remove(ch);
-			remoteChannelAddresses.remove(ch);
+		writeLock.lock();
+		try {
+			for (Byte ch : channels) {
+				remoteChannelPorts.remove(ch);
+				remoteChannelAddresses.remove(ch);
+			}
+		} finally {
+			writeLock.unlock();
 		}
 	}
 
@@ -88,8 +105,13 @@ public class InterChannelCommunication {
 				return new Pair<byte[], Integer>(address, Integer.valueOf(GameServer.getChannel(ch).getPort()));
 			}
 		}
-		Integer port = remoteChannelPorts.get(Byte.valueOf(ch));
-		return new Pair<byte[], Integer>(remoteChannelAddresses.get(Byte.valueOf(ch)), port != null ? port : Integer.valueOf(-1));
+		readLock.lock();
+		try {
+			Integer port = remoteChannelPorts.get(Byte.valueOf(ch));
+			return new Pair<byte[], Integer>(remoteChannelAddresses.get(Byte.valueOf(ch)), port != null ? port : Integer.valueOf(-1));
+		} finally {
+			readLock.unlock();
+		}
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
@@ -99,7 +121,7 @@ public class InterChannelCommunication {
 				return;
 			}
 		}
-		getCenterComm().getSession().send(writePlayerContext(getCenterComm().getWorld(), destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
+		getCenterComm().getSession().send(writePlayerContext(destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
@@ -122,7 +144,7 @@ public class InterChannelCommunication {
 			for (byte ch : localChannels) //recipients on same process
 				GameServer.getChannel(ch).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
 			for (Byte ch : remoteChannelPorts.keySet()) //recipients on another process
-				getCenterComm().getSession().send(writePrivateChatMessage(getCenterComm().getWorld(), ch.byteValue(), type, recipients, name, message));
+				getCenterComm().getSession().send(writePrivateChatMessage(ch.byteValue(), type, recipients, name, message));
 		} else {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send private chat to a nonexistant group");
 		}
@@ -133,13 +155,18 @@ public class InterChannelCommunication {
 		String name = p.getName();
 		int recipient = p.getSpouseId();
 		if (recipient != 0) {
-			receivedSpouseChat(recipient, name, message); //recipient could be on same channel
-			for (byte ch : localChannels) //recipient on same process
-				GameServer.getChannel(ch).getInterChannelInterface().receivedSpouseChat(recipient, name, message);
-			for (Byte ch : remoteChannelPorts.keySet()) //recipient on another process
-				getCenterComm().getSession().send(writeSpouseChatMessage(getCenterComm().getWorld(), ch.byteValue(), recipient, name, message));
-		} else {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send spouse chat to a nonexistant spouse");
+			if (receivedSpouseChat(recipient, name, message)) //recipient could be on same channel
+				return;
+			for (byte ch : localChannels) //recipient could be on same process
+				if (GameServer.getChannel(ch).getInterChannelInterface().receivedSpouseChat(recipient, name, message))
+					return;
+			readLock.lock();
+			try {
+				for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
+					getCenterComm().getSession().send(writeSpouseChatMessage(ch.byteValue(), recipient, name, message));
+			} finally {
+				readLock.unlock();
+			}
 		}
 	}
 
@@ -152,14 +179,14 @@ public class InterChannelCommunication {
 				return;
 			}
 		}
-		getCenterComm().getSession().send(writePlayerContextAccepted(getCenterComm().getWorld(), fromCh, playerId));
+		getCenterComm().getSession().send(writePlayerContextAccepted(fromCh, playerId));
 	}
 
-	public void acceptedInboundPlayer(int playerId) {
+	private void acceptedInboundPlayer(int playerId) {
 		self.performChannelChange(playerId);
 	}
 
-	public void receivedPrivateChat(byte type, int[] recipients, String name, String message) {
+	private void receivedPrivateChat(byte type, int[] recipients, String name, String message) {
 		GameCharacter p;
 		for (int i = 0; i < recipients.length; i++) {
 			p = self.getPlayerById(recipients[i]);
@@ -168,21 +195,23 @@ public class InterChannelCommunication {
 		}
 	}
 
-	public void receivedSpouseChat(int recipient, String name, String message) {
+	private boolean receivedSpouseChat(int recipient, String name, String message) {
 		GameCharacter p = self.getPlayerById(recipient);
-		if (p != null)
+		if (p != null) {
 			p.getClient().getSession().send(GamePackets.writeSpouseChatMessage(name, message));
+			return true;
+		}
+		return false;
 	}
 
-	private static void writeHeader(LittleEndianWriter lew, byte world, byte channel) {
+	private static void writeHeader(LittleEndianWriter lew, byte channel) {
 		lew.writeByte(RemoteCenterOps.INTER_CHANNEL);
-		lew.writeByte(world);
 		lew.writeByte(channel);
 	}
 
-	private static byte[] writePlayerContext(byte world, byte channel, byte src, int playerId, PlayerContinuation context) {
+	private static byte[] writePlayerContext(byte channel, byte src, int playerId, PlayerContinuation context) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		writeHeader(lew, world, channel);
+		writeHeader(lew, channel);
 		lew.writeByte(INBOUND_PLAYER);
 		lew.writeByte(src);
 		lew.writeInt(playerId);
@@ -220,18 +249,18 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
-	private static byte[] writePlayerContextAccepted(byte world, byte channel, int playerId) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
-		writeHeader(lew, world, channel);
+	private static byte[] writePlayerContextAccepted(byte channel, int playerId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		writeHeader(lew, channel);
 		lew.writeByte(INBOUND_PLAYER_ACCEPTED);
 		lew.writeInt(playerId);
 		return lew.getBytes();
 	}
 
-	private static byte[] writePrivateChatMessage(byte world, byte channel, byte type, int[] recipients, String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+	private static byte[] writePrivateChatMessage(byte channel, byte type, int[] recipients, String name, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9
 				+ 4 * recipients.length + name.length() + message.length());
-		writeHeader(lew, world, channel);
+		writeHeader(lew, channel);
 		lew.writeByte(MULTI_CHAT);
 		lew.writeByte(type);
 		lew.writeByte((byte) recipients.length);
@@ -242,10 +271,10 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeSpouseChatMessage(byte world, byte channel, int recipient, String name, String message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12
+	private static byte[] writeSpouseChatMessage(byte channel, int recipient, String name, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11
 				+ name.length() + message.length());
-		writeHeader(lew, world, channel);
+		writeHeader(lew, channel);
 		lew.writeByte(SPOUSE_CHAT);
 		lew.writeInt(recipient);
 		lew.writeLengthPrefixedString(name);

@@ -124,7 +124,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 	private void send(int queueInsertNo, ByteBuffer buf) {
 		sendQueue.insert(queueInsertNo, buf);
-		if (sendQueue.willBlock() || !sendMessages() && selectionKey.isValid()) {
+		if (!sendQueue.willBlock() && tryFlushSendQueue() == 0) {
 			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 			selectionKey.selector().wakeup();
 		}
@@ -188,38 +188,41 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	}
 
 	/**
-	 *
-	 * @return false if these messages needs to remain on the queue, or if there
-	 * was a write error. Please make sure to check selectionKey.isValid() if
-	 * false is returned before adding this message to this queue or else you
-	 * may get a CancelledKeyException.
+	 * @return 0 if not all queued messages could be sent in a non-blocking
+	 * manner, 1 if all queued messages have been successfully sent, -1 if there
+	 * is another flush attempt in progress, or -2 if there's an error and the
+	 * channel is closed.
 	 */
-	/* package-private */ boolean sendMessages() {
+	/* package-private */ byte tryFlushSendQueue() {
 		if (!sendQueue.shouldWrite())
-			return true;
-		int i = 0;
+			return -1;
 		try {
-			Iterator<ByteBuffer> iter = sendQueue.pop().iterator();
-			while (iter.hasNext()) {
-				ByteBuffer buf = iter.next();
-				if (buf.remaining() == commChn.write(buf)) {
-					i++;
-				} else {
-					int start = sendQueue.currentPopBlock() + i;
-					int j = 0;
-					sendQueue.insert(start + j++, buf);
-					while (iter.hasNext())
-						sendQueue.insert(start + j++, iter.next());
-					return false;
+			do {
+				int success = 0;
+				try {
+					Iterator<ByteBuffer> iter = sendQueue.pop().iterator();
+					while (iter.hasNext()) {
+						ByteBuffer buf = iter.next();
+						if (buf.remaining() == commChn.write(buf)) {
+							success++;
+						} else {
+							int i = sendQueue.currentPopBlock() + success;
+							sendQueue.insert(i++, buf);
+							while (iter.hasNext())
+								sendQueue.insert(i++, iter.next());
+							return 0;
+						}
+					}
+				} finally {
+					sendQueue.incrementPopCursor(success);
 				}
-			}
-			return true;
+			} while (!sendQueue.willBlock());
+			return 1;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
 			close("Error while writing", ex);
-			return false;
+			return -2;
 		} finally {
-			sendQueue.incrementPopCursor(i);
 			sendQueue.setCanWrite();
 		}
 	}
@@ -242,7 +245,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		buf.putShort((short) body.length);
 		buf.put(body);
 		buf.flip();
-		//assert sendIvLock is not taken
 		send(sendQueue.getNextPush(), buf);
 
 		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);

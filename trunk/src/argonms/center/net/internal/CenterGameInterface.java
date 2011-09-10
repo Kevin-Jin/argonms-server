@@ -90,7 +90,7 @@ public class CenterGameInterface extends CenterRemoteInterface {
 		if (online) {
 			online = false;
 			disconnecting = true;
-			CenterServer.getInstance().gameDisconnected(this);
+			CenterServer.getInstance().unregisterGame(this);
 		}
 	}
 }

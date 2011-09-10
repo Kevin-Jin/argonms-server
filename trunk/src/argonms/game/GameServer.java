@@ -260,8 +260,8 @@ public class GameServer implements LocalServer {
 	}
 
 	@Override
-	public void centerConnected() {
-		LOG.log(Level.FINE, "Link with Center server established.");
+	public void registerCenter() {
+		LOG.log(Level.INFO, "Center server registered.");
 		centerConnected = true;
 		initializeData(preloadAll, wzType, wzPath);
 		boolean doingWork = false;
@@ -277,39 +277,39 @@ public class GameServer implements LocalServer {
 	}
 
 	@Override
-	public void centerDisconnected() {
+	public void unregisterCenter() {
 		if (centerConnected) {
-			LOG.log(Level.SEVERE, "Lost link with Center server.");
+			LOG.log(Level.INFO, "Center server unregistered.");
 			centerConnected = false;
 		}
 	}
 
-	public void gameConnected(byte serverId, String host, Map<Byte, Integer> ports) {
+	public void registerGame(byte serverId, String host, Map<Byte, Integer> ports) {
 		try {
 			byte[] ip = InetAddress.getByName(host).getAddress();
 			remoteGameChannelMapping.put(Byte.valueOf(serverId), ports.keySet());
 			for (WorldChannel ch : channels.values())
 				ch.getInterChannelInterface().addRemoteChannels(ip, ports);
-			LOG.log(Level.INFO, "{0} server''s external address is {1}.", new Object[] { ServerType.getName(serverId), host });
+			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept shop server because its"
 					+ " address could not be resolved!", e);
 		}
 	}
 
-	public void gameDisconnected(byte serverId) {
-		LOG.log(Level.INFO, "{0} server went offline.", ServerType.getName(serverId));
+	public void unregisterGame(byte serverId) {
+		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(serverId));
 		Set<Byte> remove = remoteGameChannelMapping.remove(Byte.valueOf(serverId));
 		for (WorldChannel ch : channels.values())
 			ch.getInterChannelInterface().removeRemoteChannels(remove);
 	}
 
-	public void shopConnected(String host, int port) {
-		LOG.log(Level.INFO, "Shop server''s external address is {0}:{1}.", new Object[] { host, port });
+	public void registerShop(String host, int port) {
+		LOG.log(Level.INFO, "Shop server registered as {0}:{1}.", new Object[] { host, port });
 	}
 
-	public void shopDisconnected() {
-		LOG.log(Level.INFO, "Shop server went offline.");
+	public void unregisterShop() {
+		LOG.log(Level.INFO, "Shop server unregistered.");
 	}
 
 	@Override
