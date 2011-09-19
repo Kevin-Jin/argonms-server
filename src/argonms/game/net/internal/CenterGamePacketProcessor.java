@@ -21,6 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.CenterRemotePacketProcessor;
 import argonms.common.net.internal.RemoteCenterInterface;
+import argonms.common.util.input.LittleEndianByteArrayReader;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
 import argonms.game.net.WorldChannel;
@@ -105,8 +106,9 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 	private void processInterChannelMessage(LittleEndianReader packet) {
 		byte channel = packet.readByte();
 		if (channel == (byte) -1) { //all channels
+			byte[] array = packet.readBytes(packet.available());
 			for (WorldChannel ch : local.getChannels().values())
-				ch.getInterChannelInterface().receivedPacket(packet);
+				ch.getInterChannelInterface().receivedPacket(new LittleEndianByteArrayReader(array));
 		} else {
 			GameServer.getChannel(channel).getInterChannelInterface().receivedPacket(packet);
 		}

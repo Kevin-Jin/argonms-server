@@ -91,6 +91,18 @@ CREATE TABLE `characters` (
   CONSTRAINT `characters_ibfk_1` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS `buddyentries`;
+CREATE TABLE `buddyentries` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `owner` INT(11) NOT NULL,
+  `buddy` INT(11) NOT NULL,
+  `buddyname` VARCHAR(12) NOT NULL,
+  `status` TINYINT(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `owner` (`owner`),
+  CONSTRAINT `buddyentries_ibfk_1` FOREIGN KEY (`owner`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `cooldowns`;
 CREATE TABLE `cooldowns` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,

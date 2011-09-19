@@ -139,8 +139,20 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.QUEST_ACTION:
 				GameNpcHandler.handleQuestAction(reader, gc);
 				break;
+			case ClientRecvOps.PARTYCHAT:
+				GameChatHandler.handlePrivateChat(reader, gc);
+				break;
+			case ClientRecvOps.CLIENT_COMMAND:
+				GameChatHandler.handleClientCommand(reader, gc);
+				break;
+			case ClientRecvOps.SPOUSECHAT:
+				GameChatHandler.handleSpouseChat(reader, gc);
+				break;
 			case ClientRecvOps.MINIROOM_ACT:
 				MiniroomHandler.handleAction(reader, gc);
+				break;
+			case ClientRecvOps.BUDDYLIST_MODIFY:
+				BuddyListHandler.handleListModification(reader, gc);
 				break;
 			case ClientRecvOps.CHANGE_BINDING:
 				GamePlayerMiscHandler.handleBindingChange(reader, gc);

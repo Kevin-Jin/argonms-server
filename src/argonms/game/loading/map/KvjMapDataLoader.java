@@ -62,7 +62,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 
 		MapStats stats = null;
 		try {
-			File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(id).append(".img.kvj").toString());
+			File f = new File(new StringBuilder(dataPath).append("Map.wz").append(File.separator).append("Map").append(File.separator).append("Map").append(id.substring(0, 1)).append(File.separator).append(id).append(".img.kvj").toString());
 			if (f.exists()) {
 				stats = new MapStats(mapid);
 				doWork(new LittleEndianByteArrayReader(f), stats);

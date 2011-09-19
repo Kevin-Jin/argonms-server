@@ -76,7 +76,6 @@ public interface Player {
 	public byte getSpawnPoint();
 	public Inventory getInventory(InventoryType type);
 	public byte getPrivilegeLevel();
-	public void close();
 
 	public interface LoggedInPlayer extends Player {
 		public byte getBuddyListCapacity();

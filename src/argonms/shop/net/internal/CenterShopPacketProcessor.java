@@ -74,12 +74,12 @@ public class CenterShopPacketProcessor extends CenterRemotePacketProcessor {
 		Map<Byte, Integer> ports = new HashMap<Byte, Integer>(size);
 		for (int i = 0; i < size; i++)
 			ports.put(Byte.valueOf(packet.readByte()), Integer.valueOf(packet.readInt()));
-		local.gameConnected(serverId, world, host, ports);
+		local.registerGame(serverId, world, host, ports);
 	}
 
 	private void processGameDisconnected(LittleEndianReader packet) {
 		byte serverId = packet.readByte();
 		byte world = packet.readByte();
-		local.gameDisconnected(serverId, world);
+		local.unregisterGame(serverId, world);
 	}
 }

@@ -184,33 +184,38 @@ public class ShopServer implements LocalServer {
 	}
 
 	@Override
-	public void centerConnected() {
-		LOG.log(Level.FINE, "Link with Center server established.");
+	public void registerCenter() {
+		LOG.log(Level.INFO, "Center server registered.");
 		centerConnected = true;
-		initializeData(preloadAll, wzType, wzPath);
-		handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+		new Thread(new Runnable() {
 			@Override
-			public ShopClient newInstance(byte world, byte channel) {
-				return new ShopClient();
+			public void run() {
+				initializeData(preloadAll, wzType, wzPath);
+				handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+					@Override
+					public ShopClient newInstance(byte world, byte channel) {
+						return new ShopClient();
+					}
+				});
+				if (handler.bind(port)) {
+					LOG.log(Level.INFO, "Shop Server is online.");
+					sci.serverReady();
+				} else {
+					System.exit(5);
+				}
 			}
-		});
-		if (handler.bind(port)) {
-			LOG.log(Level.INFO, "Shop Server is online.");
-			sci.serverReady();
-		} else {
-			System.exit(5);
-		}
+		}).start();
 	}
 
 	@Override
-	public void centerDisconnected() {
+	public void unregisterCenter() {
 		if (centerConnected) {
-			LOG.log(Level.SEVERE, "Lost link with Center server.");
+			LOG.log(Level.INFO, "Center server unregistered.");
 			centerConnected = false;
 		}
 	}
 
-	public void gameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
+	public void registerGame(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		try {
 			byte[] ip = InetAddress.getByName(host).getAddress();
 			ShopWorld w = onlineWorlds.get(Byte.valueOf(world));
@@ -219,15 +224,15 @@ public class ShopServer implements LocalServer {
 				onlineWorlds.put(Byte.valueOf(world), w);
 			}
 			w.addGameServer(ip, ports, serverId);
-			LOG.log(Level.INFO, "{0} server''s external address is {1}.", new Object[] { ServerType.getName(serverId), host });
+			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(serverId)
 					+ " server because its address could not be resolved!", e);
 		}
 	}
 
-	public void gameDisconnected(byte serverId, byte world) {
-		LOG.log(Level.INFO, "{0} server went offline.", ServerType.getName(serverId));
+	public void unregisterGame(byte serverId, byte world) {
+		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(serverId));
 		Byte oW = Byte.valueOf(world);
 		ShopWorld w = onlineWorlds.get(oW);
 		w.removeGameServer(serverId);

@@ -33,6 +33,17 @@ import argonms.game.net.external.GamePackets;
  * @author GoldenKevin
  */
 public class GameChatHandler {
+	private static final byte
+		COMMAND_FIND = 5,
+		COMMAND_WHISPER = 6
+	;
+
+	private static final byte
+		FIND_RESPONSE_MAP = 1,
+		FIND_RESPONSE_CASH_SHOP = 2,
+		FIND_RESPONSE_CHANNEL = 3
+	;
+
 	public static void handleMapChat(LittleEndianReader packet, GameClient gc) {
 		String message = packet.readLengthPrefixedString();
 		byte show = packet.readByte();
@@ -51,6 +62,34 @@ public class GameChatHandler {
 		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
 			GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
+	}
+
+	public static void handleClientCommand(LittleEndianReader reader, GameClient gc) {
+		switch (reader.readByte()) {
+			case COMMAND_FIND: {
+				String toFind = reader.readLengthPrefixedString();
+				byte channel = GameServer.getChannel(gc.getChannel()).getInterChannelInterface().getChannelOfPlayer(toFind);
+				if (channel == gc.getChannel()) {
+					gc.getSession().send(writeFindResultSameChannel(toFind, GameServer.getChannel(channel).getPlayerByName(toFind).getMapId()));
+				} else if (channel != 0) {
+					gc.getSession().send(writeFindResultDiffChannel(toFind, channel));
+				} else {
+					//TODO: try shop server (which is not interchannel...)
+					gc.getSession().send(writeWhisperOutcome(toFind, false));
+				}
+				break;
+			} case COMMAND_WHISPER: {
+				String recipient = reader.readLengthPrefixedString();
+				String message = reader.readLengthPrefixedString();
+				GameCharacter p = gc.getPlayer();
+
+				if (!commandProcessed(p, message)) {
+					boolean result = GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendWhisper(recipient, p, message);
+					gc.getSession().send(writeWhisperOutcome(recipient, result));
+				}
+				break;
+			}
+		}
 	}
 
 	public static void handleSpouseChat(LittleEndianReader packet, GameClient gc) {
@@ -131,5 +170,56 @@ public class GameChatHandler {
 			default:
 				return null;
 		}
+	}
+
+	private static byte[] writeFindResultSameChannel(String name, int map) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(18
+				+ name.length());
+
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 9);
+		lew.writeLengthPrefixedString(name);
+		lew.writeByte(FIND_RESPONSE_MAP);
+		lew.writeInt(map);
+		lew.writeLong(0);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeFindResultCashShop(String name) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 9);
+		lew.writeLengthPrefixedString(name);
+		lew.writeByte(FIND_RESPONSE_CASH_SHOP);
+		lew.writeInt(-1);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeFindResultDiffChannel(String name, byte channel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+				+ name.length());
+
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 9);
+		lew.writeLengthPrefixedString(name);
+		lew.writeByte(FIND_RESPONSE_CHANNEL);
+		lew.writeInt(channel - 1);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeWhisperOutcome(String to, boolean success) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6
+				+ to.length());
+
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 0x0A);
+		lew.writeLengthPrefixedString(to);
+		lew.writeBool(success);
+
+		return lew.getBytes();
 	}
 }

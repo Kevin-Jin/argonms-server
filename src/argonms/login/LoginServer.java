@@ -188,20 +188,25 @@ public class LoginServer implements LocalServer {
 	public void registerCenter() {
 		LOG.log(Level.INFO, "Center server registered.");
 		centerConnected = true;
-		initializeData(preloadAll, wzType, wzPath);
-		handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+		new Thread(new Runnable() {
 			@Override
-			public LoginClient newInstance(byte world, byte channel) {
-				return new LoginClient();
+			public void run() {
+				initializeData(preloadAll, wzType, wzPath);
+				handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+					@Override
+					public LoginClient newInstance(byte world, byte channel) {
+						return new LoginClient();
+					}
+				});
+				if (handler.bind(port)) {
+					LOG.log(Level.INFO, "Login Server is online.");
+					lci.serverReady();
+				} else {
+					System.exit(5);
+				}
+				Scheduler.getInstance().runRepeatedly(new RankingWorker(), rankingPeriod, rankingPeriod);
 			}
-		});
-		if (handler.bind(port)) {
-			LOG.log(Level.INFO, "Login Server is online.");
-			lci.serverReady();
-		} else {
-			System.exit(5);
-		}
-		Scheduler.getInstance().runRepeatedly(new RankingWorker(), rankingPeriod, rankingPeriod);
+		}).start();
 	}
 
 	@Override
