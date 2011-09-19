@@ -19,6 +19,8 @@
 package argonms.game.net.external;
 
 import argonms.common.GlobalConstants;
+import argonms.common.character.BuddyList;
+import argonms.common.character.BuddyListEntry;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.Inventory;
@@ -56,6 +58,7 @@ import argonms.game.field.entity.Reactor;
 import argonms.game.field.movement.LifeMovementFragment;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShop.ShopSlot;
+import argonms.game.net.external.handler.BuddyListHandler;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -762,6 +765,76 @@ public class GamePackets {
 		}
 	}
 
+	private static void writeBuddyListEntry(LittleEndianWriter lew, BuddyListEntry entry) {
+		lew.writeInt(entry.getId());
+		lew.writePaddedAsciiString(entry.getName(), 13);
+		lew.writeByte(entry.getStatus());
+		switch (entry.getStatus()) {
+			case BuddyListHandler.STATUS_HALF_OPEN:
+				lew.writeShort((short) 0);
+				lew.writeByte((byte) 0xF0);
+				lew.writeByte((byte) 0xB2);
+				break;
+			case BuddyListHandler.STATUS_INVITED:
+				lew.writeByte((byte) 0x1F);
+				//intentional fallthrough to lew.writeInt(buddy.getChannel() - 1);
+			case BuddyListHandler.STATUS_MUTUAL:
+				//I believe that client recognizes -1 as offline (no channel)
+				//and 20 as cash shop
+				lew.writeInt(entry.getChannel() - 1);
+				break;
+		}
+	}
+
+	public static byte[] writeBuddyList(byte op, BuddyList bList) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.BUDDY_LIST);
+		lew.writeByte(op);
+		lew.writeByte((byte) bList.getBuddies().size());
+		for (BuddyListEntry buddy : bList.getBuddies())
+			writeBuddyListEntry(lew, buddy);
+		for (int i = 0; i < bList.getCapacity(); i++)
+			lew.writeInt(0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuddyInvite(int from, String fromName) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(32 + fromName.length());
+
+		lew.writeShort(ClientSendOps.BUDDY_LIST);
+		lew.writeByte(BuddyListHandler.INVITE_RECEIVED);
+		lew.writeInt(from);
+		lew.writeLengthPrefixedString(fromName);
+
+		writeBuddyListEntry(lew, new BuddyListEntry(from, fromName, BuddyListHandler.STATUS_INVITED));
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuddyLoggedIn(BuddyListEntry entry) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+
+		lew.writeShort(ClientSendOps.BUDDY_LIST);
+		lew.writeByte(BuddyListHandler.BUDDY_LOGGED_IN);
+		lew.writeInt(entry.getId());
+		lew.writeByte((byte) 0);
+		lew.writeInt(entry.getChannel() - 1);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeSimpleBuddyListMessage(byte opCode) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.BUDDY_LIST);
+		lew.writeByte(opCode);
+		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowPlayer(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -1381,6 +1454,19 @@ public class GamePackets {
 		lew.writeShort(ClientSendOps.PRIVATE_CHAT);
 		lew.writeByte(type);
 		lew.writeLengthPrefixedString(name);
+		lew.writeLengthPrefixedString(message);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeWhisperMessage(String name, String message, byte srcCh) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9
+				+ name.length() + message.length());
+
+		lew.writeShort(ClientSendOps.WHISPER);
+		lew.writeByte((byte) 0x12);
+		lew.writeLengthPrefixedString(name);
+		lew.writeShort((short) (srcCh - 1));
 		lew.writeLengthPrefixedString(message);
 
 		return lew.getBytes();

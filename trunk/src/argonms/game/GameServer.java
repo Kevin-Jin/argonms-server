@@ -263,17 +263,22 @@ public class GameServer implements LocalServer {
 	public void registerCenter() {
 		LOG.log(Level.INFO, "Center server registered.");
 		centerConnected = true;
-		initializeData(preloadAll, wzType, wzPath);
-		boolean doingWork = false;
-		for (WorldChannel ch : channels.values()) {
-			ch.listen(useNio);
-			if (ch.getPort() != -1)
-				doingWork = true;
-		}
-		if (doingWork)
-			gci.serverReady();
-		else
-			System.exit(5);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				initializeData(preloadAll, wzType, wzPath);
+				boolean doingWork = false;
+				for (WorldChannel ch : channels.values()) {
+					ch.listen(useNio);
+					if (ch.getPort() != -1)
+						doingWork = true;
+				}
+				if (doingWork)
+					gci.serverReady();
+				else
+					System.exit(5);
+			}
+		}).start();
 	}
 
 	@Override

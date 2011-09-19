@@ -79,7 +79,6 @@ public class ShopClient extends RemoteClient {
 	@Override
 	public void disconnected() {
 		if (player != null) {
-			player.close();
 			ShopServer.getInstance().removePlayer(player);
 			player = null;
 		}

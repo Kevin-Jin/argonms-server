@@ -103,16 +103,17 @@ public class GameClient extends RemoteClient {
 
 	@Override
 	public void disconnected() {
+		boolean changingChannels = isMigrating();
 		if (npc != null)
 			npc.endConversation();
 		if (player != null) {
-			player.close();
+			player.close(changingChannels);
 			GameServer.getChannel(getChannel()).removePlayer(player);
 			player = null;
 		}
 		getSession().removeClient();
 		setSession(null);
-		if (!isMigrating())
+		if (!changingChannels)
 			updateState(STATUS_NOTLOGGEDIN);
 	}
 }

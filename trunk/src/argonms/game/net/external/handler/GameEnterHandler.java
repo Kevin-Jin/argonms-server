@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
+import argonms.common.character.BuddyList;
 import argonms.common.character.KeyBinding;
 import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
@@ -34,7 +35,9 @@ import argonms.game.character.SkillMacro;
 import argonms.game.character.SkillTools;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 
 /**
@@ -64,61 +67,39 @@ public class GameEnterHandler {
 		WorldChannel cserv = GameServer.getChannel(gc.getChannel());
 		cserv.addPlayer(player);
 		gc.getSession().send(writeEnterMap(player));
-		cserv.applyBuffsFromLastChannel(player);
+		//TODO: although shop server is not interchannel, we still have to keep
+		//track of the PlayerContext in shop so that non-expired buffs from
+		//before we entered the shop could be applied
+		boolean firstLogIn = !cserv.applyBuffsFromLastChannel(player);
 		if (player.isVisible() && player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
 
-		/*try {
-			Collection<BuddylistEntry> buddies = player.getBuddyList().getBuddies();
-			int buddyIds[] = player.getBuddylist().getBuddyIds();
-
-			cserv.getWorldInterface().loggedOn(player.getName(), player.getId(), c.getChannel(), buddyIds);
-			if (player.getParty() != null) {
-				channelServer.getWorldInterface().updateParty(player.getParty().getId(), PartyOperation.LOG_ONOFF, new MaplePartyCharacter(player));
-			}
-
-			CharacterIdChannelPair[] onlineBuddies = cserv.getWorldInterface().multiBuddyFind(player.getId(), buddyIds);
-			for (CharacterIdChannelPair onlineBuddy : onlineBuddies) {
-				BuddylistEntry ble = player.getBuddylist().get(onlineBuddy.getCharacterId());
-				ble.setChannel(onlineBuddy.getChannel());
-				player.getBuddylist().put(ble);
-			}
-			c.getSession().write(MaplePacketCreator.updateBuddylist(buddies));
-
-			if (player.getGuildId() > 0) {
-				c.getChannelServer().getWorldInterface().setGuildMemberOnline(
-						player.getMGC(), true, c.getChannel());
-				c.getSession().write(MaplePacketCreator.showGuildInfo(player));
-			}
-		} catch (RemoteException e) {
-			LOG.info("REMOTE THROW", e);
-			channelServer.reconnectWorld();
+		//TODO: although shop server is not interchannel, we need to fetch
+		//online buddies in the shop server to display on the buddy list
+		BuddyList bList = player.getBuddyList();
+		if (firstLogIn) {
+			gc.getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+			for (Entry<Integer, String> invite : bList.getInvites())
+				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
+		}
+		cserv.getInterChannelInterface().sendBuddyOnline(player, firstLogIn);
+		/*if (player.getParty() != null)
+			cserv.getInterChannelInterface().updateParty(player, PartyOperation.LOG_ONOFF);
+		if (player.getGuildId() > 0) {
+			cserv.getInterChannelInterface().setGuildMemberOnline(
+					player.getMGC(), true, gc.getChannel());
+			gc.getSession().send(GamePackets.writeGuildInfo(player));
 		}
 		player.updatePartyMemberHP();
-		try {
-			c.getPlayer().showNote();
-		} catch (SQLException e) {
-			LOG.error("LOADING NOTE", e);
-		}*/
+
+		c.getPlayer().showNote();*/
 		gc.getSession().send(writeKeymap(player.getKeyMap()));
 		gc.getSession().send(writeMacros(player.getMacros()));
 
-		/*for (MapleQuestStatus status : player.getStartedQuests()) {
-			if (status.hasMobKills()) {
-				c.getSession().write(MaplePacketCreator.updateQuestMobKills(status));
-			}
-		}
-
-		CharacterNameAndId pendingBuddyRequest = player.getBuddylist().pollPendingRequest();
-		if (pendingBuddyRequest != null) {
-			player.getBuddylist().put(new BuddylistEntry(pendingBuddyRequest.getName(), pendingBuddyRequest.getId(), -1, false));
-			c.getSession().write(MaplePacketCreator.requestBuddylistAdd(pendingBuddyRequest.getId(), pendingBuddyRequest.getName()));
-		}
-
-		player.checkMessenger();
+		/*player.checkMessenger();
 		player.checkBerserk();
-		player.expirationTask();*/
+		player.itemExpireTask();*/
 	}
 
 	private static byte[] writeEnterMap(GameCharacter p) {

@@ -16,12 +16,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
+package argonms.common.character;
 
 /**
  *
  * @author GoldenKevin
  */
 public class BuddyListEntry {
+	private final int id;
+	private final String name;
+	private byte channel;
+	private byte status;
 
+	/**
+	 *
+	 * @param id
+	 * @param name
+	 * @param status
+	 */
+	public BuddyListEntry(int id, String name, byte status) {
+		this.id = id;
+		this.name = name;
+		this.status = status;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 *
+	 * @return the channel that this buddy is on. If the buddy is offline, 0
+	 * will be returned. If the buddy is in the cash shop, 21 will be returned.
+	 */
+	public byte getChannel() {
+		return channel;
+	}
+
+	public void setChannel(byte channel) {
+		this.channel = channel;
+	}
+
+	public byte getStatus() {
+		return status;
+	}
+
+	public void setStatus(byte status) {
+		this.status = status;
+	}
 }

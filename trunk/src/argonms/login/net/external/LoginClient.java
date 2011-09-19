@@ -104,6 +104,7 @@ public class LoginClient extends RemoteClient {
 		while (rs.next()) {
 			PreparedStatement ips = null;
 			ResultSet irs = null;
+			boolean release = true;
 			try {
 				//load only non-expired infractions - even though the ban
 				//may have been given with infractions that have already
@@ -111,9 +112,10 @@ public class LoginClient extends RemoteClient {
 				//the same, and we could just choose the most outstanding
 				//points from the active infractions to send to the client
 				ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
-				ips.setInt(1, rs.getInt(1));
+				ips.setInt(1, rs.getInt(2));
 				irs = ips.executeQuery();
 				while (irs.next()) {
+					release = false;
 					long infractionExpire = irs.getLong(1);
 					CheatTracker.Infraction infractionReason = CheatTracker.Infraction.valueOf(irs.getByte(2));
 					//ban expire time is based on the longest lasting
@@ -132,6 +134,12 @@ public class LoginClient extends RemoteClient {
 						mainBanReason = infractionReason;
 					}
 				}
+				if (release) {
+					ips.close();
+					ips = con.prepareStatement("DELETE FROM `bans` WHERE `banid` = ?");
+					ips.setInt(1, rs.getInt(1));
+					ips.executeUpdate();
+				}
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 			}
@@ -147,7 +155,7 @@ public class LoginClient extends RemoteClient {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("SELECT `accountid` FROM `bans` WHERE `accountid` = ? OR `ip` = ?");
+			ps = con.prepareStatement("SELECT `banid`,`accountid` FROM `bans` WHERE `accountid` = ? OR `ip` = ?");
 			ps.setInt(1, getAccountId());
 			ps.setLong(2, getIpAddress());
 			rs = ps.executeQuery();

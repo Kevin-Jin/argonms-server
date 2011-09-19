@@ -18,8 +18,9 @@
 
 package argonms.game.character;
 
+import argonms.common.character.BuddyList;
 import argonms.common.GlobalConstants;
-import argonms.common.ServerType;
+import argonms.common.character.BuddyListEntry;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
 import argonms.common.character.Player.LoggedInPlayer;
@@ -63,6 +64,7 @@ import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.BuddyListHandler;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -175,13 +177,12 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			updateDbAccount(con);
 			updateDbStats(con);
 			updateDbInventory(con);
-			if (ServerType.isGame(client.getServerId())) {
-				updateDbSkills(con);
-				updateDbCooldowns(con);
-				updateDbBindings(con);
-				updateDbQuests(con);
-				updateDbMinigameStats(con);
-			}
+			updateDbSkills(con);
+			updateDbCooldowns(con);
+			updateDbBindings(con);
+			updateDbBuddies(con);
+			updateDbQuests(con);
+			updateDbMinigameStats(con);
 			con.commit();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not save character " + getDataId()
@@ -405,6 +406,36 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	private void updateDbBuddies(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `buddyentries` WHERE "
+					+ "`owner` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `buddyentries` (`owner`,"
+					+ "`buddy`,`buddyname`,`status`) VALUES (?,?,?,?)");
+			ps.setInt(1, getDataId());
+			for (BuddyListEntry buddy : buddies.getBuddies()) {
+				ps.setInt(2, buddy.getId());
+				ps.setString(3, buddy.getName());
+				ps.setByte(4, buddy.getStatus());
+				ps.addBatch();
+			}
+			ps.setByte(4, BuddyListHandler.STATUS_INVITED);
+			for (Entry<Integer, String> invite : buddies.getInvites()) {
+				ps.setInt(2, invite.getKey().intValue());
+				ps.setString(3, invite.getValue());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
 	private void updateDbQuests(Connection con) throws SQLException {
 		PreparedStatement ps = null, mps = null;
 		try {
@@ -609,6 +640,24 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 				p.skillMacros.add(new SkillMacro(rs.getString(1),
 						rs.getBoolean(2), rs.getInt(3), rs.getInt(4),
 						rs.getInt(5)));
+			}
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `e`.`buddy` AS `id`, "
+					+ "IF(ISNULL(`c`.`name`), `e`.`buddyname`, `c`.`name`) AS "
+					+ "`name`, `e`.`status` FROM `buddyentries` `e` LEFT JOIN "
+					+ "`characters` `c` ON `c`.`id` = `e`.`buddy` WHERE "
+					+ "`owner` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				byte status = rs.getByte(3);
+				if (status != BuddyListHandler.STATUS_INVITED)
+					p.buddies.addBuddy(new BuddyListEntry(rs.getInt(1),
+							rs.getString(2), status));
+				else
+					p.buddies.addInvite(rs.getInt(1), rs.getString(2));
 			}
 			rs.close();
 			ps.close();
@@ -1553,13 +1602,17 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		this.miniroom = room;
 	}
 
-	public void close() {
+	public void close(boolean changingChannels) {
+		//TODO: need to save debuffs in database so players cannot exploit
+		//logging off and then on to get rid of debuffs...
 		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
 			cancelTask.right.cancel(true);
 		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
 			cancelTask.right.cancel(true);
 		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
 			cancelTask.right.cancel(true);
+		if (!changingChannels)
+			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		leaveMapRoutines();
 		if (map != null)
 			map.removePlayer(this);

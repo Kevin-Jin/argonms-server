@@ -201,6 +201,7 @@ public class InventoryTools {
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
 			boolean updateUid = isCashItem(itemid);
+			//TODO: getPersonalSlotMax, but this is in argonms.common. X.X
 			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
 			short invEnd = inv.getMaxSlots();
 			boolean clone = false;

@@ -118,11 +118,6 @@ public class LoginCharacter extends LimitedActionCharacter {
 		return jobRankingChange;
 	}
 
-	@Override
-	public void close() {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
-
 	public static LoginCharacter loadPlayer(LoginClient c, int id) {
 		Connection con = null;
 		PreparedStatement ps = null;

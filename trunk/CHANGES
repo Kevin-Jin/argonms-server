@@ -1280,6 +1280,51 @@
 	cancel method now responds to the mayInterruptIfRunning parameter. Fixed a
 	couple of race conditions as well, although most likely not all of them.
 
+2011-09-10  GoldenKevin  (revision 61)
+
+	* All swallowed InterruptedExceptions should now be handled properly.
+	* TelnetSession and ClientSession sendMessages methods tweaked a bit to use
+	one less variable.
+	* Fixed logic errors and simplified code using OrderedQueue.
+	* OrderedQueue.getNextPush() now uses an AtomicInteger so all methods of
+	OrderedQueue are now thread-safe Simplifies TelnetSession somewhat.
+	(ClientSession still needs it under a mutex so that it corresponds with the
+	IV update order, though).
+	* UnorderedQueue class created to be symmetric with OrderedQueue in other
+	Session classes. pop() has been improved from the old sendableMessages() by
+	having it iterate only once through the queue rather than twice (i.e. once
+	in ArrayList's constructor and another in ConcurrentLinkedQueue.removeAll).
+	* Removed redundant passing of world ID in interchannel communications.
+	* InterChannelCommunication is now thread-safe - remote channels can be
+	safely registered while other tasks are being processed.
+	* Changed the log text again for associating internal network servers as I
+	feel it is more symmetrical ([un]registered) and less confusing.
+	* Fixed PlayerLog not properly removing players from the name lookup table.
+	* Fixed login server giving incorrect job rank in character select screen.
+
+2011-09-19  GoldenKevin  (revision 62)
+
+	* Fixed ShopServer class.
+	* Implemented buddy lists.
+	* Fixed packet reading issue when using INTER_CHANNEL_ALL.
+	* Buddy chat now works, as will party and guild chat in the future when they
+	are implemented. Also linked spouse chat handler with the packet processor.
+	* Implemented /whisper and /find client commands.
+	* Changed contract of entries in bans table in database. Entries are removed
+	at login if all of the account's infractions are pardoned or expired. This
+	way, the user won't be banned after every infraction that occurs once they
+	are unbanned. The side effect of this is that pardoning is essentially
+	irreversible once the user logs in for the first time after they are
+	unbanned, unless the bans table is altered. They can still be rebanned,
+	however, if their infractions points goes over the limit again.
+	* Because *Server.initializeData is so heavily IO bound and can run for an
+	indeterminate amount of time, it is executed in a new thread so it does not
+	delay the worker thread pool of RemoteCenterSession. For a single thread
+	worker thread pool, this can make RemoteCenterSession unresponsive to other
+	messages, result in disconnection if initializeData does not complete in 30
+	seconds (idle + ping timeout time).
+	* Fixed Map loading from Kvj files if not using preloadAll.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
