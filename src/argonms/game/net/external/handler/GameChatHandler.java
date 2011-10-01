@@ -48,7 +48,7 @@ public class GameChatHandler {
 		String message = packet.readLengthPrefixedString();
 		byte show = packet.readByte();
 		GameCharacter p = gc.getPlayer();
-		if (!commandProcessed(p, message))
+		if (!commandProcessed(p, message) && p.isVisible())
 			p.getMap().sendToAll(writeMapChat(p, message, show, p.getPrivilegeLevel() > UserPrivileges.USER));
 	}
 

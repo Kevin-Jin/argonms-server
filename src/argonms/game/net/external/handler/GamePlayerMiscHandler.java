@@ -18,6 +18,7 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
@@ -53,7 +54,10 @@ public class GamePlayerMiscHandler {
 			CheatTracker ct = CheatTracker.get(gc);
 			long last = ct.getLoggedTime("hpr");
 			ct.logTime("hpr", now);
-			if (now - last < 9500) { //9.5 seconds, give some leniency since time recording isn't always accurate w/ latency
+			//give some leniency of 0.5 seconds since time recording isn't always accurate w/ latency
+			//(it's not documented in the skill description, but having at least
+			//level 1 Improved HP Recovery will double recover rate to 5 seconds)
+			if (now - last < 9500 && !(p.getSkillLevel(Skills.IMPROVED_HP_RECOVERY) > 0 && now - last > 4500)) {
 				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish HP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
 				return;
 			}

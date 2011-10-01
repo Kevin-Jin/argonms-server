@@ -37,7 +37,9 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,23 +70,25 @@ public class CommandProcessor {
 		definitions.put("!stat", new StatCommandHandler());
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !tp [name of player to warp] [name of player to warp to]";
+				return "Usage: !TP {name of player to warp} {name of player to warp to}";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3) {
-					resp.printErr("Invalid usage. " + getUsage());
+					resp.printErr(getUsage());
 					return;
 				}
 				GameCharacter warpee = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
 				if (warpee == null) {
 					resp.printErr("No player named " + args[1] + " is online on this channel.");
+					resp.printErr(getUsage());
 					return;
 				}
 				GameCharacter warpTo = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[2]);
 				if (warpTo == null) {
 					resp.printErr("No player named " + args[2] + " is online on this channel.");
+					resp.printErr(getUsage());
 					return;
 				}
 				GameMap map = warpTo.getMap();
@@ -94,13 +98,13 @@ public class CommandProcessor {
 		definitions.put("!town", new TownCommandHandler());
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !skill [skillid] [level] <master level>";
+				return "Usage: !SKILL {skillid} {level} [master level]";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3) {
-					resp.printErr("Invalid usage. " + getUsage());
+					resp.printErr(getUsage());
 					return;
 				}
 				int skillId;
@@ -112,7 +116,8 @@ public class CommandProcessor {
 					if (s == null)
 						throw new NumberFormatException();
 				} catch (NumberFormatException e) {
-					resp.printErr(args[1] + " is not a valid skillid. " + getUsage());
+					resp.printErr(args[1] + " is not a valid skillid.");
+					resp.printErr(getUsage());
 					return;
 				}
 				try {
@@ -120,7 +125,8 @@ public class CommandProcessor {
 					if (skillLevel != 0 && s.getLevel(skillLevel) == null)
 						throw new NumberFormatException();
 				} catch (NumberFormatException e) {
-					resp.printErr(args[2] + " is not a valid level of skill " + skillId + ". " + getUsage());
+					resp.printErr(args[2] + " is not a valid level of skill " + skillId + ".");
+					resp.printErr(getUsage());
 					return;
 				}
 				if (args.length > 3) {
@@ -129,7 +135,8 @@ public class CommandProcessor {
 						if (masterLevel != 0 && s.getLevel(masterLevel) == null)
 							throw new NumberFormatException();
 					} catch (NumberFormatException e) {
-						resp.printErr(args[3] + " is not a valid master level of skill " + skillId + ". " + getUsage());
+						resp.printErr(args[3] + " is not a valid master level of skill " + skillId + ".");
+						resp.printErr(getUsage());
 						return;
 					}
 				}
@@ -138,13 +145,13 @@ public class CommandProcessor {
 		}, "Change the level of one of your skills", UserPrivileges.GM));
 		definitions.put("!give", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !give [itemid] <quantity>";
+				return "Usage: !GIVE {itemid} [quantity]";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 2) {
-					resp.printErr("Invalid usage. " + getUsage());
+					resp.printErr(getUsage());
 					return;
 				}
 				int itemId;
@@ -153,14 +160,16 @@ public class CommandProcessor {
 					itemId = Integer.parseInt(args[1]);
 					//TODO: check if item is valid. Throw NumberFormatException if not
 				} catch (NumberFormatException e) {
-					resp.printErr(args[1] + " is not a valid itemid. " + getUsage());
+					resp.printErr(args[1] + " is not a valid itemid.");
+					resp.printErr(getUsage());
 					return;
 				}
 				if (args.length > 2) {
 					try {
 						quantity = Short.parseShort(args[2]);
 					} catch (NumberFormatException e) {
-						resp.printErr(args[2] + " is not a valid item quantity. " + getUsage());
+						resp.printErr(args[2] + " is not a valid item quantity.");
+						resp.printErr(getUsage());
 						return;
 					}
 				}
@@ -185,7 +194,7 @@ public class CommandProcessor {
 		definitions.put("!spawn", new SpawnCommandHandler());
 		definitions.put("!playernpc", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !playernpc <scriptid>";
+				return "Usage: !PLAYERNPC [scriptid]";
 			}
 
 			@Override
@@ -199,7 +208,8 @@ public class CommandProcessor {
 							return;
 						}
 					} catch (NumberFormatException e) {
-						resp.printErr(args[2] + " is not a valid scriptid. " + getUsage());
+						resp.printErr(args[2] + " is not a valid scriptid.");
+						resp.printErr(getUsage());
 						return;
 					}
 				}
@@ -253,7 +263,7 @@ public class CommandProcessor {
 		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !info <player's name";
+				return "Usage: !INFO [player's name]";
 			}
 
 			@Override
@@ -272,13 +282,13 @@ public class CommandProcessor {
 		}, "Show location info of yourself or another player", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
-				return "Syntax: !rate [exp/meso/drop] [new rate]";
+				return "Usage: !RATE {EXP | MESO | DROP} {new rate}";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
 				if (args.length < 3 || !AbstractCommandDefinition.isNumber(args[2])) {
-					resp.printErr("Invalid usage. " + getUsage());
+					resp.printErr(getUsage());
 					return;
 				}
 				short rate = (short) Math.min(Integer.parseInt(args[2]), Short.MAX_VALUE);
@@ -295,12 +305,70 @@ public class CommandProcessor {
 					resp.printOut("The drop rate of this game server has been set to "
 							+ rate + ". Changes will be reverted on the next server restart.");
 				} else {
-					resp.printErr("Invalid usage. " + getUsage());
+					resp.printErr(getUsage());
 					return;
 				}
 			}
 		}, "Change the exp, meso, or drop rate of this game server.",
 				UserPrivileges.SUPER_GM));
+		definitions.put("!who", new CommandDefinition(new CommandAction() {
+			private String getUsage() {
+				return "Usage: !WHO [minimum privilege level]";
+			}
+
+			@Override
+			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+				byte privilegeLevelLimit = UserPrivileges.USER;
+				if (args.length > 1) {
+					try {
+						privilegeLevelLimit = Byte.parseByte(args[1]);
+					} catch (NumberFormatException e) {
+						resp.printErr(getUsage());
+						return;
+					}
+				}
+				StringBuilder sb = new StringBuilder();
+				for (GameCharacter c : GameServer.getChannel(p.getClient().getChannel()).getConnectedPlayers())
+					if (c.getPrivilegeLevel() >= privilegeLevelLimit)
+						sb.append(c.getName()).append(",");
+				if (sb.length() > 0) //remove terminal delimiter
+					sb.delete(sb.length() - 1, sb.length());
+				resp.printOut("Connected users: " + sb);
+			}
+		}, "Lists all online users in this channel (and optionally filter them by privilege level).",
+				UserPrivileges.GM));
+		definitions.put("!uptime", new CommandDefinition(new CommandAction() {
+			@Override
+			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+				long startMillis = GameServer.getChannel(p.getClient().getChannel()).getTimeStarted();
+				long upTimeMillis = System.currentTimeMillis() - startMillis;
+				Calendar startDate = Calendar.getInstance();
+				startDate.setTimeInMillis(startMillis);
+				DateFormat fmt = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.LONG);
+				resp.printOut("This game server was started on " + fmt.format(startDate.getTime()) + ".");
+
+				long upDays = upTimeMillis / (1000 * 60 * 60 * 24);
+				long upHours = (upTimeMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);
+				long upMinutes = ((upTimeMillis % (1000 * 60 * 60 * 24)) % (1000 * 60 * 60)) / (1000 * 60);
+				long upSeconds = (((upTimeMillis % (1000 * 60 * 60 * 24)) % (1000 * 60 * 60)) % (1000 * 60)) / 1000;
+				String upTimeStr = "It has been up for ";
+				if (upDays > 0)
+					upTimeStr += upDays + (upDays != 1 ? " days, " : " day, ");
+				if (upHours > 0)
+					upTimeStr += upHours + (upHours != 1 ? " hours, " : " hour, ");
+				if (upMinutes > 0)
+					upTimeStr += upMinutes + (upMinutes != 1 ? " minutes, " : " minute, ");
+				if (upSeconds > 0)
+					upTimeStr += upSeconds + (upSeconds != 1 ? " seconds, " : " second, ");
+				resp.printOut(upTimeStr.substring(0, upTimeStr.length() - 2) + ".");
+
+				long heapNow = Runtime.getRuntime().totalMemory() / (1024 * 1024);
+				long heapMax = Runtime.getRuntime().maxMemory() / (1024 * 1024);
+				long heapFree = Runtime.getRuntime().freeMemory() / (1024 * 1024);
+				resp.printOut("Current heap usage: " + (heapNow - heapFree) + "MB/" + heapNow + "MB. "
+						+ "Can add a max of " + (heapMax - (heapNow - heapFree)) + "MB to heap without OutOfMemoryError.");
+			}
+		}, "Print general info about the server's resource usage", UserPrivileges.ADMIN));
 		definitions.put("!help", new CommandDefinition(new HelpCommandHandler(),
 				"Displays this message", UserPrivileges.USER));
 	}

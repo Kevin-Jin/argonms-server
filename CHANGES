@@ -1325,6 +1325,18 @@
 	seconds (idle + ping timeout time).
 	* Fixed Map loading from Kvj files if not using preloadAll.
 
+2011-09-30  GoldenKevin  (revision 63)
+
+	* Hidden players no longer are echoed their text if they send a map chat.
+	It can be misleading if you see it in your chat box yet nobody else does.
+	* Client command syntax standards altered a bit. Heavily influenced by the
+	MySQL syntax pages on the web. All-caps signifies a literal string while
+	lowercase signifies a variable argument. Curly brackets around arguments
+	indicate a required argument while square brackets indicate optional ones.
+	Pipes are used to signify that more than one type of argument can be passed.
+	* Added !who and !uptime commands.
+	* Fixed wrongful auto bans when Improved HP Recovery is leveled up.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -422,14 +422,7 @@ public class GameMap {
 
 	public void spawnPlayerNpc(PlayerNpc n) {
 		spawnEntity(n);
-		EntityPool players = entPools.get(EntityType.PLAYER);
-		players.lockRead();
-		try {
-			for (MapEntity p : players.allEnts())
-				((GameCharacter) p).getClient().getSession().send(GamePackets.writePlayerNpcLook(n));
-		} finally {
-			players.unlockRead();
-		}
+		sendToAll(GamePackets.writePlayerNpcLook(n));
 	}
 
 	public void destroyEntity(MapEntity ent) {

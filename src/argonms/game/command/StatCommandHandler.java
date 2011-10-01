@@ -39,20 +39,20 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Syntax: !stat [set/add] [stat] [amount]";
+		return "Usage: !STAT {SET | ADD} {STR | DEX | INT | LUK | AP | SP | LEVEL | EXP | JOB | MAXHP | MAXMP | HP | MP | FAME | MESO} {amount}";
 	}
 
 	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 4) {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 		int val;
 		try {
 			val = Integer.parseInt(args[3]);
 		} catch (NumberFormatException e) {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 		String option = args[1];
@@ -140,7 +140,7 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 						+ "int, luk, ap, sp, level, exp, maxhp, maxmp, hp, mp, fame, meso");
 			}
 		} else {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 	}
