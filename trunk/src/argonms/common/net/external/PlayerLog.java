@@ -19,6 +19,7 @@
 package argonms.common.net.external;
 
 import argonms.common.character.Player;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,5 +56,9 @@ public class PlayerLog<T extends Player> {
 
 	public short getConnectedCount() {
 		return (short) nameToPlayerMapping.size();
+	}
+
+	public Collection<T> getConnectedPlayers() {
+		return nameToPlayerMapping.values();
 	}
 }

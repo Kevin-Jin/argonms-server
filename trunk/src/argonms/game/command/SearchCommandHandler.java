@@ -40,7 +40,7 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Syntax: !id [item/mob/map/skill/npc/quest] [name]";
+		return "Usage: !ID {ITEM | MOB | MAP | SKILL | NPC | QUEST} {name}";
 	}
 
 	private String restOfString(String[] splitted, int start) {
@@ -53,7 +53,7 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 3) {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 		String type = args[1];
@@ -81,7 +81,8 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 			matches = QuestDataLoader.getInstance().getSimilarNamedQuests(query);
 			typeName = "quests";
 		} else {
-			resp.printErr(type + " is not a valid search type. " + getUsage());
+			resp.printErr(type + " is not a valid search type.");
+			resp.printErr(getUsage());
 			return;
 		}
 

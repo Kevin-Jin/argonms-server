@@ -36,6 +36,7 @@ import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.internal.InterChannelCommunication;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -52,6 +53,7 @@ public class WorldChannel {
 
 	private final Map<Integer, PlayerContinuation> channelChangeData;
 	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
+	private long startTime;
 	private ClientListener<GameClient> handler;
 	private byte world, channel;
 	private int port;
@@ -82,6 +84,7 @@ public class WorldChannel {
 			shutdown();
 			return;
 		}
+		startTime = System.currentTimeMillis();
 		Scheduler.getInstance().runRepeatedly(new Runnable() {
 			@Override
 			public void run() {
@@ -93,6 +96,10 @@ public class WorldChannel {
 
 	public byte getChannelId() {
 		return channel;
+	}
+
+	public long getTimeStarted() {
+		return startTime;
 	}
 
 	public void addPlayer(GameCharacter p) {
@@ -115,6 +122,10 @@ public class WorldChannel {
 
 	public boolean isPlayerConnected(int characterid) {
 		return storage.getPlayer(characterid) != null;
+	}
+
+	public Collection<GameCharacter> getConnectedPlayers() {
+		return storage.getConnectedPlayers();
 	}
 
 	private void channelChangeError(GameCharacter p) {

@@ -69,7 +69,7 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Syntax: !town [list/name]";
+		return "Usage: !TOWN {LIST | name}";
 	}
 
 	private String getList() {
@@ -89,7 +89,7 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 2) {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 		if (args[1].equalsIgnoreCase("list")) {

@@ -42,13 +42,13 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Syntax: !spawn [mob/npc] [mob/npc WZ id] <mobtime>";
+		return "Usage: !SPAWN {MOB | NPC} {wz id} [mobtime]";
 	}
 
 	@Override
 	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 		if (args.length < 3) {
-			resp.printErr("Invalid usage. " + getUsage());
+			resp.printErr(getUsage());
 			return;
 		}
 		boolean mob;
@@ -57,21 +57,24 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		} else if (args[1].equalsIgnoreCase("npc")) {
 			mob = false;
 		} else {
-			resp.printErr(args[1] + " is not a valid spawn type. " + getUsage());
+			resp.printErr(args[1] + " is not a valid spawn type.");
+			resp.printErr(getUsage());
 			return;
 		}
 		int dataId;
 		try {
 			dataId = Integer.parseInt(args[2]);
 		} catch (NumberFormatException e) {
-			resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
+			resp.printErr(args[1] + " is not a valid " + args[1] + " id.");
+			resp.printErr(getUsage());
 			return;
 		}
 		GameMap map = p.getMap();
 		if (mob) {
 			MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
 			if (stats == null) {
-				resp.printErr(args[1] + " is not a valid " + args[1] + " id. " + getUsage());
+				resp.printErr(args[1] + " is not a valid " + args[1] + " id.");
+				resp.printErr(getUsage());
 				return;
 			}
 			Point pos = p.getPosition();
@@ -80,7 +83,8 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 				try {
 					mobtime = Integer.parseInt(args[3]);
 				} catch (NumberFormatException e) {
-					resp.printErr(args[3] + " is not a valid mobtime. " + getUsage());
+					resp.printErr(args[3] + " is not a valid mobtime.");
+					resp.printErr(getUsage());
 					return;
 				}
 			}
