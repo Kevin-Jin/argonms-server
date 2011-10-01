@@ -43,7 +43,7 @@ public final class ByteTool {
 	public static byte rollLeft(byte in, int count) {
 		int tmp = in & 0xFF;
 		tmp = tmp << (count % 8);
-		return (byte) ((tmp & 0xFF) | (tmp >> 8));
+		return (byte) (tmp | (tmp >> 8));
 	}
 
 	/**
@@ -57,7 +57,7 @@ public final class ByteTool {
 	public static byte rollRight(byte in, int count) {
 		int tmp = in & 0xFF;
 		tmp = (tmp << 8) >>> (count % 8);
-		return (byte) ((tmp & 0xFF) | (tmp >>> 8));
+		return (byte) (tmp | (tmp >>> 8));
 	}
 
 	/**

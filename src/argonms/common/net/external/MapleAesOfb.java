@@ -160,8 +160,8 @@ public class MapleAesOfb {
 	 * @param length How long the packet that this header is for is.
 	 * @return The header.
 	 */
-	public static byte[] getPacketHeader(int length, byte[] iv) {
-		int v = (((iv[3] & 0xFF) << 8) + (iv[2] & 0xFF)) ^ -(GlobalConstants.MAPLE_VERSION + 1); //version
+	public static byte[] makePacketHeader(int length, byte[] iv) {
+		int v = (((iv[3] & 0xFF) << 8) | (iv[2] & 0xFF)) ^ ~GlobalConstants.MAPLE_VERSION; //version
 		int l = v ^ length; //length
 		//write v and l as two 16-bit little-endian integers
 		return new byte[] {
@@ -178,8 +178,8 @@ public class MapleAesOfb {
 	 */
 	public static int getPacketLength(byte[] packetHeader) {
 		//read two 16-bit little-endian integers and XOR them.
-		return (((packetHeader[0] & 0xFF) + ((packetHeader[1] & 0xFF) << 8)) ^
-				((packetHeader[2] & 0xFF) + ((packetHeader[3] & 0xFF) << 8)));
+		return (((packetHeader[0] & 0xFF) | ((packetHeader[1] & 0xFF) << 8)) ^
+				((packetHeader[2] & 0xFF) | ((packetHeader[3] & 0xFF) << 8)));
 	}
 
 	/**
@@ -220,7 +220,7 @@ public class MapleAesOfb {
 			newIv[3] = temp1;
 
 			//treat newIv as a 32-bit little endian integer
-			int newIvInt = (newIv[0] & 0xFF) + ((newIv[1] & 0xFF) << 8) + ((newIv[2] & 0xFF) << 16) + ((newIv[3] & 0xFF) << 24);
+			int newIvInt = (newIv[0] & 0xFF) | ((newIv[1] & 0xFF) << 8) | ((newIv[2] & 0xFF) << 16) | ((newIv[3] & 0xFF) << 24);
 			//rotate newIv right 29 bits (or left 3 bits)
 			newIvInt = (newIvInt >>> 0x1D) | (newIvInt << 3);
 			//put newIvInt back into a byte array representing a 32-bit little endian integer
@@ -250,7 +250,7 @@ public class MapleAesOfb {
 					cur ^= remember;
 					remember = cur;
 					cur = ByteTool.rollRight(cur, dataLength & 0xFF);
-					cur = ((byte) ((~cur) & 0xFF));
+					cur = ((byte) (~cur & 0xFF));
 					cur += 0x48;
 					dataLength--;
 					data[i] = cur;
@@ -288,7 +288,7 @@ public class MapleAesOfb {
 				for (int i = 0; i < data.length; i++) {
 					byte cur = data[i];
 					cur -= 0x48;
-					cur = ((byte) ((~cur) & 0xFF));
+					cur = ((byte) (~cur & 0xFF));
 					cur = ByteTool.rollLeft(cur, dataLength & 0xFF);
 					nextRemember = cur;
 					cur ^= remember;

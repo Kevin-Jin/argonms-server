@@ -92,11 +92,29 @@ public class OrderedQueue {
 		Iterator<Entry<Integer, ByteBuffer>> elements = queued.entrySet().iterator();
 		if (elements.hasNext()) {
 			Entry<Integer, ByteBuffer> lastPopped = elements.next();
-			for (int i = nextPopCursor.get(); lastPopped.getKey().intValue() == i; i++) {
-				consecutive.add(lastPopped.getValue());
-				elements.remove();
-				if (elements.hasNext())
-					lastPopped = elements.next();
+			int smallestKey = lastPopped.getKey().intValue();
+			//caching nextPopCursor is safe since we mutexed the mutating of it
+			//with the AtomicBoolean writeInProgress.
+			int firstToPop = nextPopCursor.get();
+			if (smallestKey == firstToPop) {
+				for (int i = firstToPop; i == lastPopped.getKey().intValue(); i++) {
+					consecutive.add(lastPopped.getValue());
+					elements.remove();
+					if (elements.hasNext())
+						lastPopped = elements.next();
+				}
+			} else if (smallestKey < firstToPop) {
+				//nextPushCursor overflowed while we still have keys from before
+				//overflow (nextPopCursor still hasn't overflowed), so the
+				//newer, negative, overflowed keys now come before older ones.
+				//do a less efficient iteration that preserves ordering of all
+				//non-overflowed and overflowed keys until all non-overflowed
+				//keys have been processed and removed.
+				ByteBuffer buf;
+				for (int i = firstToPop; (buf = queued.get(Integer.valueOf(i))) != null; i++) {
+					consecutive.add(buf);
+					queued.remove(Integer.valueOf(i));
+				}
 			}
 		}
 		return consecutive;

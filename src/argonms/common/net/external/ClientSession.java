@@ -73,7 +73,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	private ScheduledFuture<?> idleTaskFuture;
 
 	private MessageType nextMessageType;
-	private int nextMessageExpectedLength;
 
 	private final Lock sendIvLock;
 	private byte[] recvIv, sendIv;
@@ -131,7 +130,9 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	}
 
 	@Override
-	public void send(byte[] input) {
+	public void send(byte[] message) {
+		byte[] input = new byte[message.length];
+		System.arraycopy(message, 0, input, 0, message.length);
 		//we will have to synchronize here because send can be called from any
 		//thread. we have to ensure that this message is sent before any shorter
 		//messages that use a newer IV are sent, so use an OrderedQueue.
@@ -145,7 +146,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		} finally {
 			sendIvLock.unlock();
 		}
-		byte[] header = MapleAesOfb.getPacketHeader(input.length, iv);
+		byte[] header = MapleAesOfb.makePacketHeader(input.length, iv);
 		byte[] output = new byte[header.length + input.length];
 		MapleAesOfb.mapleEncrypt(input);
 		MapleAesOfb.aesCrypt(input, iv);
@@ -249,7 +250,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 		readBuffer.limit(HEADER_LENGTH);
-		nextMessageExpectedLength = HEADER_LENGTH;
 		nextMessageType = MessageType.HEADER;
 		idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 	}
@@ -278,15 +278,15 @@ public class ClientSession<T extends RemoteClient> implements Session {
 			close("EOF received", null);
 			return null;
 		}
-		if (readBytes < nextMessageExpectedLength) {
-			//continue reading
+		if (readBuffer.remaining() != 0) { //buffer is still not full
+			//we limited buffer to the expected length of the next packet - continue reading
 			idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 			return null;
 		}
 		switch (nextMessageType) {
 			case HEADER: {
-				byte[] message = new byte[nextMessageExpectedLength];
 				readBuffer.flip();
+				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
 				if (!MapleAesOfb.checkPacket(message, recvIv)) {
 					close("Failed packet test", null);
@@ -298,13 +298,12 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				if (length > readBuffer.remaining())
 					readBuffer = ByteBuffer.allocate(length);
 				readBuffer.limit(length);
-				nextMessageExpectedLength = length;
 				nextMessageType = MessageType.BODY;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return EMPTY_ARRAY;
 			} case BODY: {
-				byte[] message = new byte[nextMessageExpectedLength];
 				readBuffer.flip();
+				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
 				//since recvIv can only be touched here (excluding the one-time
 				//initialization and sending to client), and this method can
@@ -314,7 +313,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				recvIv = MapleAesOfb.nextIv(iv);
 				readBuffer.clear();
 				readBuffer.limit(HEADER_LENGTH);
-				nextMessageExpectedLength = HEADER_LENGTH;
 				nextMessageType = MessageType.HEADER;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return new byte[][] { iv, message };
