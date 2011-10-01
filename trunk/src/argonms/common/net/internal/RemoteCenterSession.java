@@ -67,7 +67,6 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	private ScheduledFuture<?> idleTaskFuture;
 
 	private MessageType nextMessageType;
-	private int nextMessageExpectedLength;
 
 	private final ExecutorService workerThreadPool;
 	private String interServerPwd;
@@ -174,7 +173,6 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 		readBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		readBuffer.limit(HEADER_LENGTH);
-		nextMessageExpectedLength = HEADER_LENGTH;
 		nextMessageType = MessageType.HEADER;
 
 		idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
@@ -199,8 +197,8 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			close("EOF received", null);
 			return null;
 		}
-		if (readBytes < nextMessageExpectedLength) {
-			//continue reading
+		if (readBuffer.remaining() != 0) { //buffer is still not full
+			//we limited buffer to the expected length of the next packet - continue reading
 			idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 			return null;
 		}
@@ -215,17 +213,15 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 					readBuffer.order(ByteOrder.LITTLE_ENDIAN);
 				}
 				readBuffer.limit(length);
-				nextMessageExpectedLength = length;
 				nextMessageType = MessageType.BODY;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return EMPTY_ARRAY;
 			} case BODY: {
-				byte[] message = new byte[nextMessageExpectedLength];
 				readBuffer.flip();
+				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
 				readBuffer.clear();
 				readBuffer.limit(HEADER_LENGTH);
-				nextMessageExpectedLength = HEADER_LENGTH;
 				nextMessageType = MessageType.HEADER;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return message;

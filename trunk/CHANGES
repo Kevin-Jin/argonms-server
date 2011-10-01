@@ -1337,6 +1337,23 @@
 	* Added !who and !uptime commands.
 	* Fixed wrongful auto bans when Improved HP Recovery is leveled up.
 
+2011-09-30  GoldenKevin  (revision 64)
+
+	* Fixed a huge issue in ClientSession.send. The array is now copied before
+	being encrypted. This caused a problem when the array needed to be used
+	again after being sent (e.g. in GameMap.sendToAll with multiple players on
+	map).
+	* Fixed a busy wait in SessionCreator loops (Selector for *Listeners, the
+	read loop for RemoteCenterSession) if we did not receive the amount of bytes
+	we need in one read.
+	* OrderedQueue.pop() tweaked a bit to properly handle integer overflow of
+	the cursors.
+	* MapleAesOfb.getPacketHeader(), MapleAesOfb.getPacketLength(), and
+	argonms.common.util.input.* should use bitwise operations, not arithmetic
+	when working with byte splicing, just to make intentions clearer. Cleanup in
+	some other methods in MapleAesOfb and ByteTool.
+	* MapleAesOfb.getPacketHeader() renamed to makePacketHeader.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

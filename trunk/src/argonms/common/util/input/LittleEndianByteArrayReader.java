@@ -95,12 +95,12 @@ public class LittleEndianByteArrayReader extends LittleEndianReader {
 
 	@Override
 	public int readInt() {
-		return (read() + (read() << 8) + (read() << 16) + (read() << 24));
+		return (read() | (read() << 8) | (read() << 16) | (read() << 24));
 	}
 
 	@Override
 	public short readShort() {
-		return (short) (read() + (read() << 8));
+		return (short) (read() | (read() << 8));
 	}
 
 	/**

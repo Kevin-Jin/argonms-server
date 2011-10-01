@@ -333,8 +333,8 @@ public class TelnetSession implements Session {
 			close("EOF received", null);
 			return null;
 		}
-		byte[] message = new byte[readBytes];
 		readBuffer.flip();
+		byte[] message = new byte[readBuffer.remaining()];
 		readBuffer.get(message);
 		readBuffer.clear();
 		return message;

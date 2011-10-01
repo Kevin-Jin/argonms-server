@@ -75,7 +75,6 @@ public class CenterRemoteSession implements Session {
 	private ScheduledFuture<?> idleTaskFuture;
 
 	private MessageType nextMessageType;
-	private int nextMessageExpectedLength;
 
 	private final String interServerPwd;
 
@@ -91,7 +90,6 @@ public class CenterRemoteSession implements Session {
 		sendQueue = new UnorderedQueue();
 		heartbeatTask = new KeepAliveTask();
 		nextMessageType = MessageType.HEADER;
-		nextMessageExpectedLength = HEADER_LENGTH;
 
 		this.commChn = channel;
 		this.onClose = onClose;
@@ -288,8 +286,8 @@ public class CenterRemoteSession implements Session {
 			close("EOF received", null);
 			return null;
 		}
-		if (readBytes < nextMessageExpectedLength) {
-			//continue reading
+		if (readBuffer.remaining() != 0) { //buffer is still not full
+			//we limited buffer to the expected length of the next packet - continue reading
 			idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 			return null;
 		}
@@ -304,17 +302,15 @@ public class CenterRemoteSession implements Session {
 					readBuffer.order(ByteOrder.LITTLE_ENDIAN);
 				}
 				readBuffer.limit(length);
-				nextMessageExpectedLength = length;
 				nextMessageType = MessageType.BODY;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return EMPTY_ARRAY;
 			} case BODY: {
-				byte[] message = new byte[nextMessageExpectedLength];
 				readBuffer.flip();
+				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
 				readBuffer.clear();
 				readBuffer.limit(HEADER_LENGTH);
-				nextMessageExpectedLength = HEADER_LENGTH;
 				nextMessageType = MessageType.HEADER;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return message;
