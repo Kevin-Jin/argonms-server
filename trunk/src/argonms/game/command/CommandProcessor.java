@@ -143,6 +143,9 @@ public class CommandProcessor {
 				p.setSkillLevel(skillId, skillLevel, masterLevel);
 			}
 		}, "Change the level of one of your skills", UserPrivileges.GM));
+		definitions.put("!maxequips", new MaxStatCommandHandlers.MaxEquipStatsHandler());
+		definitions.put("!maxskills", new MaxStatCommandHandlers.MaxSkillsHandler());
+		definitions.put("!maxall", new MaxStatCommandHandlers.MaxAllHandler());
 		definitions.put("!give", new CommandDefinition(new CommandAction() {
 			private String getUsage() {
 				return "Usage: !GIVE {itemid} [quantity]";
@@ -181,7 +184,7 @@ public class CommandProcessor {
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					slot = inv.get(pos);
-					p.getClient().getSession().send(GamePackets.writeInventorySlotUpdate(type, pos, slot));
+					p.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
@@ -235,13 +238,13 @@ public class CommandProcessor {
 		definitions.put("!clearmobs", new CommandDefinition(new CommandAction() {
 			private boolean contains(String[] array, String search) {
 				for (int i = 0; i < array.length; i++)
-					if (array[i].equals(search))
+					if (array[i].equalsIgnoreCase(search))
 						return true;
 				return false;
 			}
 
 			private void clearMob(String[] args, GameCharacter p, Mob mob) {
-				if (contains(args, "-k")) {
+				if (contains(args, "-K")) {
 					synchronized (mob) {
 						mob.hurt(p, mob.getHp());
 						p.getMap().killMonster(mob, p);

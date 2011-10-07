@@ -223,4 +223,8 @@ public class StorageInventory implements IInventory {
 			writeLock.unlock();
 		}
 	}
+
+	public void increaseCapacity(short delta) {
+		capacity += delta;
+	}
 }

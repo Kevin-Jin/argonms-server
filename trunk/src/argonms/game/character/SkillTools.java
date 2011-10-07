@@ -68,7 +68,7 @@ public class SkillTools {
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				ses.send(GamePackets.writeInventorySlotUpdate(type, pos, inv.get(pos)));
+				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
@@ -144,7 +144,7 @@ public class SkillTools {
 				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, pos, inv.get(pos)));
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();

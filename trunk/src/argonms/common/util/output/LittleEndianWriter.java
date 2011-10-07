@@ -85,16 +85,18 @@ public abstract class LittleEndianWriter {
 	}
 
 	public LittleEndianWriter writeNullTerminatedString(String str) {
-		writeBytes(str.getBytes(asciiEncoder));
+		if (str != null)
+			writeBytes(str.getBytes(asciiEncoder));
 		writeChar('\0');
 		return this;
 	}
 
 	public LittleEndianWriter writePaddedAsciiString(String str, int n) {
-		int length = Math.min(str.length(), n);
 		byte[] space = new byte[n];
-		byte[] ascii = str.getBytes(asciiEncoder);
-		System.arraycopy(ascii, 0, space, 0, length);
+		if (str != null) {
+			byte[] ascii = str.getBytes(asciiEncoder);
+			System.arraycopy(ascii, 0, space, 0, Math.min(str.length(), n));
+		}
 		write(space);
 		return this;
 	}

@@ -277,7 +277,7 @@ public class MiniroomHandler {
 			item.setQuantity((short) (item.getQuantity() - quantity));
 			itemToPut = item.clone();
 			itemToPut.setQuantity(quantity);
-			p.getClient().getSession().send(GamePackets.writeInventorySlotUpdate(type, slot, item));
+			p.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, slot, item));
 		} else {
 			itemToPut = inv.remove(slot);
 			p.getClient().getSession().send(GamePackets.writeInventoryClearSlot(type, slot));

@@ -64,7 +64,7 @@ public class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
-		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p)), p);
+		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE)), p);
 		applyAttack(attack, p);
 	}
 
@@ -102,7 +102,7 @@ public class DealDamageHandler {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
 					gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
 				} else {
-					gc.getSession().send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, attack.ammoSlot, slot));
+					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, attack.ammoSlot, slot));
 				}
 			}
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
@@ -123,7 +123,7 @@ public class DealDamageHandler {
 		} else { //soul arrow sends no visible projectile either.
 			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p)), p);
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED)), p);
 		applyAttack(attack, p);
 	}
 
@@ -137,7 +137,7 @@ public class DealDamageHandler {
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
-		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p)), p);
+		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE)), p);
 		applyAttack(attack, p);
 	}
 
@@ -489,7 +489,7 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static byte getMasteryLevel(GameCharacter p) {
+	private static byte getMasteryLevel(GameCharacter p, AttackType type) {
 		switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
 			case SWORD1H:
 			case SWORD2H:
@@ -497,41 +497,67 @@ public class DealDamageHandler {
 					case PlayerJob.JOB_FIGHTER:
 					case PlayerJob.JOB_CRUSADER:
 					case PlayerJob.JOB_HERO:
-						return p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY);
+						if (type == AttackType.MELEE)
+							return p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY);
+						break;
 					case PlayerJob.JOB_PAGE:
 					case PlayerJob.JOB_WHITE_KNIGHT:
 					case PlayerJob.JOB_PALADIN:
-						return p.getSkillLevel(Skills.PAGE_SWORD_MASTERY);
+						if (type == AttackType.MELEE)
+							return p.getSkillLevel(Skills.PAGE_SWORD_MASTERY);
+						break;
 					default:
-						return (byte) Math.max(p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY), p.getSkillLevel(Skills.PAGE_SWORD_MASTERY));
+						if (type == AttackType.MELEE)
+							return (byte) Math.max(p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY), p.getSkillLevel(Skills.PAGE_SWORD_MASTERY));
+						break;
 				}
 			case AXE1H:
 			case AXE2H:
-				return p.getSkillLevel(Skills.AXE_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.AXE_MASTERY);
+				break;
 			case BLUNT1H:
 			case BLUNT2H:
-				return p.getSkillLevel(Skills.BW_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.BW_MASTERY);
+				break;
 			case DAGGER:
-				return p.getSkillLevel(Skills.DAGGER_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.DAGGER_MASTERY);
+				break;
 			case SPEAR:
-				return p.getSkillLevel(Skills.SPEAR_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.SPEAR_MASTERY);
+				break;
 			case POLE_ARM:
-				return p.getSkillLevel(Skills.POLE_ARM_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.POLE_ARM_MASTERY);
+				break;
 			case BOW:
-				return p.getSkillLevel(Skills.BOW_MASTERY);
+				if (type == AttackType.RANGED)
+					return p.getSkillLevel(Skills.BOW_MASTERY);
+				break;
 			case CROSSBOW:
-				return p.getSkillLevel(Skills.XBOW_MASTERY);
+				if (type == AttackType.RANGED)
+					return p.getSkillLevel(Skills.XBOW_MASTERY);
+				break;
 			case CLAW:
-				return p.getSkillLevel(Skills.CLAW_MASTERY);
+				if (type == AttackType.RANGED)
+					return p.getSkillLevel(Skills.CLAW_MASTERY);
+				break;
 			case KNUCKLE:
-				return p.getSkillLevel(Skills.KNUCKLER_MASTERY);
+				if (type == AttackType.MELEE)
+					return p.getSkillLevel(Skills.KNUCKLER_MASTERY);
+				break;
 			case GUN:
-				return p.getSkillLevel(Skills.GUN_MASTERY);
+				if (type == AttackType.RANGED)
+					return p.getSkillLevel(Skills.GUN_MASTERY);
+				break;
 			case WAND:
 			case STAFF:
-			default:
 				return 0;
 		}
+		return 0;
 	}
 
 	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, byte mastery) {

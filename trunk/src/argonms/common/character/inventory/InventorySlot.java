@@ -35,7 +35,7 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 	private long expire;
 	private long uid;
 	private String owner;
-	private byte flag;
+	private short flag;
 
 	protected InventorySlot(int itemid) {
 		this.id = itemid;
@@ -74,11 +74,11 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 		this.owner = owner;
 	}
 
-	public byte getFlag() {
+	public short getFlag() {
 		return flag;
 	}
 
-	public void setFlag(byte flag) {
+	public void setFlag(short flag) {
 		this.flag = flag;
 	}
 

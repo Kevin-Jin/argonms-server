@@ -1245,6 +1245,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return buddies;
 	}
 
+	@Override
 	public byte getBuddyListCapacity() {
 		return (byte) buddies.getCapacity();
 	}

@@ -75,4 +75,8 @@ public class BuddyList {
 	public short getCapacity() {
 		return capacity;
 	}
+
+	public void increaseCapacity(short delta) {
+		capacity += delta;
+	}
 }

@@ -162,6 +162,10 @@ public class Inventory implements IInventory {
 		return maxSlots;
 	}
 
+	public void increaseCapacity(short delta) {
+		maxSlots += delta;
+	}
+
 	public short freeSlots() {
 		return (short) (maxSlots - slots.size());
 	}

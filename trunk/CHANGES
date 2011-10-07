@@ -1354,6 +1354,21 @@
 	some other methods in MapleAesOfb and ByteTool.
 	* MapleAesOfb.getPacketHeader() renamed to makePacketHeader.
 
+2011-10-07  GoldenKevin  (revision 65)
+
+	* Cash weapons now showing properly in character avatars (character select
+	page, 3rd person views from map, smegas, messenger, etc.)
+	* Slightly rewrote visible/masked equips logic in CommonPackets.writeAvatar
+	to use less conditionals.
+	* Fixed map crash when a player set a mastery level for a ranged weapon and
+	they knock-backed a mob.
+	* Fixed self crash when a player has a cash equip. Rings no longer crash,
+	but ring effects still aren't implemented yet.
+	* Added !maxequips, !maxskills, and !maxall commands.
+	* !spawn command updated to support specifying an amount of mobs to spawn.
+	* LittleEndianWriter.writePaddedAsciiString and writeNullTerminatedString
+	will no longer throw NullPointerException.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
