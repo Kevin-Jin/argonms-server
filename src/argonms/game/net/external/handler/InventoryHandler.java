@@ -58,7 +58,7 @@ public class InventoryHandler {
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true);
 				p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 			} else {
-				gc.getSession().send(GamePackets.writeInventoryFull());
+				gc.getSession().send(GamePackets.writeInventoryNoChange());
 			}
 		} else if (dst == 0) { //drop
 			Inventory inv = p.getInventory(src >= 0 ? type : InventoryType.EQUIPPED);
@@ -127,7 +127,7 @@ public class InventoryHandler {
 		//not thread safe if two players try picking it up at the exact same time).
 		ItemDrop d = (ItemDrop) p.getMap().getEntityById(EntityType.DROP, eid);
 		if (d == null || !d.isAlive()) {
-			gc.getSession().send(GamePackets.writeInventoryFull());
+			gc.getSession().send(GamePackets.writeInventoryNoChange());
 			gc.getSession().send(GamePackets.writeShowInventoryFull());
 			return;
 		}

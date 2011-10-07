@@ -118,18 +118,23 @@ public class CommonPackets {
 
 		Map<Byte, Integer> visEquip = new LinkedHashMap<Byte, Integer>();
 		Map<Byte, Integer> maskedEquip = new LinkedHashMap<Byte, Integer>();
+		int cashWeapon = 0;
 		for (Entry<Short, Integer> ent : equips.entrySet()) {
 			byte pos = (byte) (ent.getKey().shortValue() * -1);
-			Byte oPos = Byte.valueOf(pos);
-			if (pos < 100 && visEquip.get(oPos) == null) {
-				visEquip.put(oPos, ent.getValue());
-			} else if (pos > 100 && pos != 111) {
-				pos -= 100;
-				if (visEquip.get(oPos) != null)
-					maskedEquip.put(pos, visEquip.get(oPos));
-				visEquip.put(oPos, ent.getValue());
-			} else if (visEquip.get(oPos) != null) {
-				maskedEquip.put(oPos, ent.getValue());
+			Byte oPos = Byte.valueOf((byte) (pos % 100));
+			if (pos > 100) { //cash equips
+				if (pos != 111) { //accessories/armor
+					if (visEquip.containsKey(oPos)) //existing normal equip needs to be moved to masked
+						maskedEquip.put(oPos, visEquip.get(oPos));
+					visEquip.put(oPos, ent.getValue());
+				} else { //cash weapon
+					cashWeapon = ent.getValue().intValue();
+				}
+			} else { //normal equips
+				if (visEquip.containsKey(oPos)) //cash equip already masked this
+					maskedEquip.put(oPos, ent.getValue());
+				else
+					visEquip.put(oPos, ent.getValue());
 			}
 		}
 
@@ -137,16 +142,15 @@ public class CommonPackets {
 			lew.writeByte(entry.getKey().byteValue());
 			lew.writeInt(entry.getValue().intValue());
 		}
-		lew.writeByte((byte) 0xFF);
+		lew.writeByte((byte) 0xFF); //end of visible equipped
 
 		for (Entry<Byte, Integer> entry : maskedEquip.entrySet()) {
 			lew.writeByte(entry.getKey().byteValue());
 			lew.writeInt(entry.getValue().intValue());
 		}
-		lew.writeByte((byte) 0xFF);
+		lew.writeByte((byte) 0xFF); //end of masked equipped
 
-		Integer cWeapon = equips.get(Short.valueOf((short) 111));
-		lew.writeInt(cWeapon != null ? cWeapon.intValue() : 0);
+		lew.writeInt(cashWeapon);
 
 		for (int i = 0; i < 3; i++)
 			lew.writeInt(pets[i] == null ? 0 : pets[i].getDataId());
@@ -157,8 +161,8 @@ public class CommonPackets {
 				p.getHair(), p.getInventory(InventoryType.EQUIPPED).getItemIds(), p.getPets());
 	}
 
-	private static void writeItemInfo(LittleEndianWriter lew, InventorySlot item,
-			boolean showExpire, boolean shopTransfer, boolean masking) {
+	public static void writeItemInfo(LittleEndianWriter lew, InventorySlot item,
+			boolean showExpire, boolean shopTransfer) {
 		boolean cashItem = item.getUniqueId() > 0;
 		lew.writeByte(item.getTypeByte());
 		lew.writeInt(item.getDataId());
@@ -174,9 +178,9 @@ public class CommonPackets {
 				lew.writeByte(pet.getLevel());
 				lew.writeShort(pet.getCloseness());
 				lew.writeByte(pet.getFullness());
-				writeItemExpire(lew, item.getExpiration(), showExpire); //again?
-				lew.writeLengthPrefixedString(item.getOwner());
-				lew.writeShort(item.getFlag());
+				writeItemExpire(lew, pet.getExpiration(), showExpire); //again?
+				lew.writeLengthPrefixedString(pet.getOwner());
+				lew.writeShort(pet.getFlag());
 				break;
 			}
 			case EQUIP:
@@ -199,19 +203,15 @@ public class CommonPackets {
 				lew.writeShort(equip.getHands());
 				lew.writeShort(equip.getSpeed());
 				lew.writeShort(equip.getJump());
-				lew.writeLengthPrefixedString(item.getOwner());
+				lew.writeLengthPrefixedString(equip.getOwner());
 
-				if (item.getType() == ItemType.RING) {
-					lew.writeByte(item.getFlag());
+				if (!shopTransfer) {
+					lew.writeShort(equip.getFlag());
+					if (!cashItem) //Vicious' Hammer was introduced in v0.59...
+						lew.writeLong(0); //one of these values has to be for it
 				} else {
-					if (!shopTransfer) {
-						lew.writeShort(equip.getFlag());
-						if (!masking)
-							lew.writeLong(0);
-					} else {
-						lew.writeBytes(new byte[] { 0x40, (byte) 0xE0, (byte) 0xFD, 0x3B, 0x37, 0x4F, 0x01 });
-						lew.writeInt(-1);
-					}
+					lew.writeBytes(new byte[] { 0x40, (byte) 0xE0, (byte) 0xFD, 0x3B, 0x37, 0x4F, 0x01 });
+					lew.writeInt(-1);
 				}
 				break;
 			}
@@ -231,26 +231,19 @@ public class CommonPackets {
 
 	public static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item) {
-		boolean cashItem = item.getUniqueId() > 0;
-		boolean masking = false;
-		if (pos < (byte) 0) {
+		/*boolean cashItem = item.getUniqueId() > 0;
+		if (pos < 0) {
 			pos *= -1;
 			if (cashItem && pos > 100) {
-				lew.writeBool(false);
 				lew.writeByte((byte) (pos - 100));
-				masking = true;
 			} else {
 				lew.writeByte((byte) pos);
 			}
 		} else {
 			lew.writeByte((byte) pos);
-		}
-		writeItemInfo(lew, item, true, false, masking);
-	}
-
-	public static void writeItemInfo(LittleEndianWriter lew, InventorySlot item,
-			boolean showExpire, boolean shopTransfer) {
-		writeItemInfo(lew, item, showExpire, shopTransfer, false);
+		}*/
+		lew.writeByte((byte) (Math.abs(pos) % 100));
+		writeItemInfo(lew, item, true, false);
 	}
 
 	public static void writeCharData(LittleEndianWriter lew, LoggedInPlayer p) {
@@ -266,16 +259,26 @@ public class CommonPackets {
 		lew.writeByte((byte) p.getInventory(InventoryType.CASH).getMaxSlots()); // cash slots
 
 		Inventory iv = p.getInventory(InventoryType.EQUIPPED);
+		Map<Short, InventorySlot> visible = new TreeMap<Short, InventorySlot>();
+		Map<Short, InventorySlot> masked = new TreeMap<Short, InventorySlot>();
 		Map<Short, Ring> rings = new TreeMap<Short, Ring>();
 		synchronized (iv) {
 			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet()) {
 				InventorySlot item = entry.getValue();
-				writeItemInfo(lew, entry.getKey().shortValue(), item);
+				if (entry.getKey().shortValue() < -100)
+					masked.put(entry.getKey(), item);
+				else
+					visible.put(entry.getKey(), item);
 				if (item.getType() == ItemType.RING)
 					rings.put(entry.getKey(), (Ring) item);
 			}
 		}
+
+		for (Entry<Short, InventorySlot> item : visible.entrySet())
+			writeItemInfo(lew, item.getKey().shortValue(), item.getValue());
 		lew.writeByte((byte) 0); //end of visible equipped
+		for (Entry<Short, InventorySlot> item : masked.entrySet())
+			writeItemInfo(lew, item.getKey().shortValue(), item.getValue());
 		lew.writeByte((byte) 0); //end of masked equipped
 
 		iv = p.getInventory(InventoryType.EQUIP);

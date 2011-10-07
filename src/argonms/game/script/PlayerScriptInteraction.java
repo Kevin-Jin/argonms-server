@@ -66,7 +66,7 @@ public abstract class PlayerScriptInteraction {
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				ses.send(GamePackets.writeInventorySlotUpdate(type, pos, slot));
+				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
@@ -91,7 +91,7 @@ public abstract class PlayerScriptInteraction {
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
 				slot = inv.get(pos);
-				ses.send(GamePackets.writeInventorySlotUpdate(type, pos, slot));
+				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();

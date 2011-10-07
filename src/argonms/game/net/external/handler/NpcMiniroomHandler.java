@@ -122,7 +122,7 @@ public class NpcMiniroomHandler {
 					p.gainMesos(-totalPrice, false);
 					for (Short s : changedSlots.modifiedSlots) {
 						short pos = s.shortValue();
-						gc.getSession().send(GamePackets.writeInventorySlotUpdate(invType, pos, p.getInventory(invType).get(pos)));
+						gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						short pos = s.shortValue();
@@ -160,7 +160,7 @@ public class NpcMiniroomHandler {
 					gc.getSession().send(GamePackets.writeInventoryClearSlot(invType, slot));
 				} else {
 					item.setQuantity((short) (item.getQuantity() - quantity));
-					gc.getSession().send(GamePackets.writeInventorySlotUpdate(invType, slot, item));
+					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
 				}
 				p.itemCountChanged(itemId);
 				p.gainMesos(price, false);
@@ -183,7 +183,7 @@ public class NpcMiniroomHandler {
 				}
 				item.setQuantity(slotMax);
 				p.gainMesos(-rechargeCost, false);
-				gc.getSession().send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, slot, item));
+				gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, item));
 				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
 				break;
 			} case ACT_EXIT_SHOP: {
@@ -224,7 +224,7 @@ public class NpcMiniroomHandler {
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(destInv, item, item.getQuantity(), false);
 				for (Short s : changedSlots.modifiedSlots) {
 					short pos = s.shortValue();
-					gc.getSession().send(GamePackets.writeInventorySlotUpdate(invType, pos, p.getInventory(invType).get(pos)));
+					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					short pos = s.shortValue();
@@ -269,7 +269,7 @@ public class NpcMiniroomHandler {
 						}
 					}
 					storageInv.put(split);
-					gc.getSession().send(GamePackets.writeInventorySlotUpdate(invType, slot, item));
+					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
 				}
 				p.itemCountChanged(item.getDataId());
 				gc.getSession().send(writeStorageDeposit(storageInv, invType));

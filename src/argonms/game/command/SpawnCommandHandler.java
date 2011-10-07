@@ -42,7 +42,47 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private String getUsage() {
-		return "Usage: !SPAWN {MOB | NPC} {wz id} [mobtime]";
+		return "Usage: !SPAWN {MOB {wz id} [-M {mobtime}] [-C {count}] | NPC {wz id} [-M {mobtime}]}";
+	}
+
+	private int getMobTime(String[] array, ClientNoticeStream resp) {
+		for (int i = 0; i < array.length; i++) {
+			if (array[i].equalsIgnoreCase("-M")) {
+				if (i + 1 < array.length) {
+					try {
+						return Integer.parseInt(array[i + 1]);
+					} catch (NumberFormatException e) {
+						resp.printErr(array[i + 1] + " is not a valid mobtime.");
+						resp.printErr(getUsage());
+						throw new IllegalArgumentException(e);
+					}
+				}
+				resp.printErr("No mobtime specified after -M flag.");
+				resp.printErr(getUsage());
+				throw new IllegalArgumentException();
+			}
+		}
+		return -1;
+	}
+
+	private int getCount(String[] array, ClientNoticeStream resp) {
+		for (int i = 0; i < array.length; i++) {
+			if (array[i].equalsIgnoreCase("-C")) {
+				if (i + 1 < array.length) {
+					try {
+						return Integer.parseInt(array[i + 1]);
+					} catch (NumberFormatException e) {
+						resp.printErr(array[i + 1] + " is not a valid count.");
+						resp.printErr(getUsage());
+						throw new IllegalArgumentException(e);
+					}
+				}
+				resp.printErr("No count specified after -C flag.");
+				resp.printErr(getUsage());
+				throw new IllegalArgumentException();
+			}
+		}
+		return 1;
 	}
 
 	@Override
@@ -65,7 +105,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		try {
 			dataId = Integer.parseInt(args[2]);
 		} catch (NumberFormatException e) {
-			resp.printErr(args[1] + " is not a valid " + args[1] + " id.");
+			resp.printErr(args[2] + " is not a valid " + args[1] + " id.");
 			resp.printErr(getUsage());
 			return;
 		}
@@ -73,22 +113,17 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		if (mob) {
 			MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
 			if (stats == null) {
-				resp.printErr(args[1] + " is not a valid " + args[1] + " id.");
+				resp.printErr(args[2] + " is not a valid " + args[1] + " id.");
 				resp.printErr(getUsage());
 				return;
 			}
 			Point pos = p.getPosition();
-			int mobtime = -1;
-			if (args.length > 3) {
-				try {
-					mobtime = Integer.parseInt(args[3]);
-				} catch (NumberFormatException e) {
-					resp.printErr(args[3] + " is not a valid mobtime.");
-					resp.printErr(getUsage());
-					return;
-				}
-			}
-			map.addMonsterSpawn(stats, map.calcPointBelow(pos), map.getStaticData().getFootholds().findBelow(pos).getId(), mobtime);
+			int mobtime = getMobTime(args, resp);
+			int count = getCount(args, resp);
+			Point spawnLoc = map.calcPointBelow(pos);
+			short foothold = map.getStaticData().getFootholds().findBelow(pos).getId();
+			for (int i = 0; i < count; i++)
+				map.addMonsterSpawn(stats, new Point(spawnLoc), foothold, mobtime);
 		} else {
 			//TODO: check if npcid is valid.
 			Point pos = p.getPosition();

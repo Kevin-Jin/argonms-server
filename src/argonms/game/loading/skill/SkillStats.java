@@ -19,22 +19,22 @@
 package argonms.game.loading.skill;
 
 import argonms.game.field.Element;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  *
  * @author GoldenKevin
  */
 public class SkillStats {
-	private final Map<Byte, PlayerSkillEffectsData> levels;
+	private final SortedMap<Byte, PlayerSkillEffectsData> levels;
 	private Element elemAttr;
 	private byte summon;
 	private boolean prepared, keydown, keydownend;
 	private int animationTime;
 
 	protected SkillStats() {
-		levels = new HashMap<Byte, PlayerSkillEffectsData>();
+		levels = new TreeMap<Byte, PlayerSkillEffectsData>();
 		summon = -1;
 	}
 
@@ -71,11 +71,7 @@ public class SkillStats {
 	}
 
 	public byte maxLevel() {
-		byte highest = 0;
-		for (Byte level : levels.keySet())
-			if (level.byteValue() > highest)
-				highest = level.byteValue();
-		return highest;
+		return levels.lastKey().byteValue();
 	}
 
 	public Element getElement() {

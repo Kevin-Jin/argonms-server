@@ -116,7 +116,7 @@ public class GameBuffHandler {
 		}
 		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
 		if (changed != null)
-			gc.getSession().send(GamePackets.writeInventorySlotUpdate(InventoryType.USE, slot, changed));
+			gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
 		else
 			gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		ItemTools.useItem(p, itemId);

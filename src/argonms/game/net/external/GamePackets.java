@@ -590,12 +590,12 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeInventoryFull() {
+	public static byte[] writeInventoryNoChange() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_FULL);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 0); //amount of items to change
 
 		return lew.getBytes();
 	}
@@ -604,9 +604,10 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
-		lew.writeByte((byte) 0);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
 		lew.writeByte(type.byteValue());
 		lew.writeByte((byte) pos);
 		CommonPackets.writeItemInfo(lew, (short) 0, item);
@@ -614,16 +615,16 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeInventorySlotUpdate(InventoryType type, short pos, InventorySlot item) {
+	public static byte[] writeInventoryUpdateSlotQuantity(InventoryType type, short pos, InventorySlot item) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
-		lew.writeByte((byte) 1);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
 		lew.writeByte(type.byteValue());
-		lew.writeByte((byte) pos);
-		lew.writeBool(false);
+		lew.writeShort(pos);
 		lew.writeShort(item.getQuantity());
 
 		return lew.getBytes();
@@ -633,9 +634,10 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
-		lew.writeByte((byte) 1);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(quantity);
@@ -647,9 +649,10 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(equipIndicator == -1 ? 10 : 11);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
-		lew.writeByte((byte) 2);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_POSITION);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(dst);
@@ -663,9 +666,10 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(slot >= 0 ? 8 : 9);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_SLOT);
-		lew.writeByte((byte) 3);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(slot);
 		if (slot < 0)
@@ -678,13 +682,15 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
-		lew.writeByte((byte) 1);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 2); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
 		lew.writeShort(srcQty);
-		lew.writeBool(true);
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(dst);
 		lew.writeShort(dstQty);
@@ -696,15 +702,86 @@ public class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
 
 		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
-		lew.writeBool(true);
-		lew.writeByte(PacketSubHeaders.INVENTORY_SHIFT_QTY);
-		lew.writeByte((byte) 3);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 2); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(src);
-		lew.writeBool(true);
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
 		lew.writeByte(type.byteValue());
 		lew.writeShort(dst);
 		lew.writeShort(total);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryDestroyEquipFromScroll(short scrollPos, short scrolledPos, short scrollQuantity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 2); //amount of items to change
+
+		if (scrollQuantity == 0) {
+			lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+		} else {
+			lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+			lew.writeShort(scrollQuantity);
+		}
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+		lew.writeByte(InventoryType.EQUIP.byteValue());
+		lew.writeShort(scrolledPos);
+
+		//no idea why we need this, but we error 38 without it, so...
+		lew.writeByte((byte) 1);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdateEquipFromScroll(short scrollPos, short scrolledPos, short scrollQuantity, InventorySlot scrolled) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 2); //amount of items to change
+
+		if (scrollQuantity == 0) {
+			lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+		} else {
+			lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+			lew.writeShort(scrollQuantity);
+		}
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+		lew.writeByte(InventoryType.EQUIP.byteValue());
+		lew.writeShort(scrolledPos);
+		CommonPackets.writeItemInfo(lew, scrolled, true, false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdateEquipStats(short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true); //from drop?
+		lew.writeByte((byte) 1); //amount of items to change
+
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+		lew.writeByte(InventoryType.EQUIP.byteValue());
+		lew.writeShort(pos);
+		CommonPackets.writeItemInfo(lew, item, true, false);
 
 		return lew.getBytes();
 	}
@@ -821,6 +898,16 @@ public class GamePackets {
 		lew.writeInt(entry.getId());
 		lew.writeByte((byte) 0);
 		lew.writeInt(entry.getChannel() - 1);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuddyCapacityUpdate(short capacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.BUDDY_LIST);
+		lew.writeByte(BuddyListHandler.CAPACITY_CHANGE);
+		lew.writeByte((byte) capacity);
 
 		return lew.getBytes();
 	}

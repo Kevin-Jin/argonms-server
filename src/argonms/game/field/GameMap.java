@@ -494,7 +494,7 @@ public class GameMap {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 			} else {
-				p.getClient().getSession().send(GamePackets.writeInventoryFull());
+				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 			}
 		} else {
@@ -513,7 +513,7 @@ public class GameMap {
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
 						slot = inv.get(pos);
-						p.getClient().getSession().send(GamePackets.writeInventorySlotUpdate(type, pos, slot));
+						p.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
@@ -526,7 +526,7 @@ public class GameMap {
 				}
 				p.getClient().getSession().send(GamePackets.writeShowItemGain(itemid, qty));
 			} else {
-				p.getClient().getSession().send(GamePackets.writeInventoryFull());
+				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 			}
 		}
