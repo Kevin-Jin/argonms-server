@@ -187,7 +187,8 @@ public class GameChatHandler {
 	}
 
 	private static byte[] writeFindResultCashShop(String name) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10
+				+ name.length());
 
 		lew.writeShort(ClientSendOps.WHISPER);
 		lew.writeByte((byte) 9);

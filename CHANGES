@@ -1369,6 +1369,21 @@
 	* LittleEndianWriter.writePaddedAsciiString and writeNullTerminatedString
 	will no longer throw NullPointerException.
 
+2011-10-08  GoldenKevin  (revision 66)
+
+	* Fixed logged off buddy not appearing as offline in a player's buddy list
+	if the buddy changed channels at least once since he/she logged on.
+	* Increasing inventory capacity in !maxall command is now made optional
+	since that particular operation is still a work in progress and can result
+	in client crashes if the user overruns his/her inventory.
+	* Improved several scattered database queries/updates by moving
+	prepareStatement calls to outside of a loop if there is one and fixing some
+	resource leaking possibilities. Fixed TelnetClient not loading ban
+	expirations correctly.
+	* Implemented the Personal Info feature (i.e. double click on a character,
+	or right-click a character->Personal Info in game server) and incrementing/
+	decrementing a player's fame. SQL needs to be updated.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

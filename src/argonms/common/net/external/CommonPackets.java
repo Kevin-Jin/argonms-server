@@ -231,17 +231,6 @@ public class CommonPackets {
 
 	public static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item) {
-		/*boolean cashItem = item.getUniqueId() > 0;
-		if (pos < 0) {
-			pos *= -1;
-			if (cashItem && pos > 100) {
-				lew.writeByte((byte) (pos - 100));
-			} else {
-				lew.writeByte((byte) pos);
-			}
-		} else {
-			lew.writeByte((byte) pos);
-		}*/
 		lew.writeByte((byte) (Math.abs(pos) % 100));
 		writeItemInfo(lew, item, true, false);
 	}

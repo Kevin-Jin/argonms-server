@@ -75,15 +75,15 @@ public class GameEnterHandler {
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
 
-		//TODO: although shop server is not interchannel, we need to fetch
-		//online buddies in the shop server to display on the buddy list
+		//TODO: although shop server is not interchannel, we need to display our
+		//buddies that are online in the shop server
 		BuddyList bList = player.getBuddyList();
 		if (firstLogIn) {
 			gc.getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
 			for (Entry<Integer, String> invite : bList.getInvites())
 				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
 		}
-		cserv.getInterChannelInterface().sendBuddyOnline(player, firstLogIn);
+		cserv.getInterChannelInterface().sendBuddyOnline(player);
 		/*if (player.getParty() != null)
 			cserv.getInterChannelInterface().updateParty(player, PartyOperation.LOG_ONOFF);
 		if (player.getGuildId() > 0) {

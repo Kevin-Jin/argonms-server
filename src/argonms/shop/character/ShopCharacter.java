@@ -175,27 +175,29 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			PreparedStatement mps = null;
-			ResultSet mrs = null;
-			while (rs.next()) {
-				int questEntryId = rs.getInt(1);
-				short questId = rs.getShort(2);
-				Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
-				try {
-					mps = con.prepareStatement("SELECT "
-							+ "`mobid`,`count` FROM `questmobprogress` WHERE "
-							+ "`queststatusid` = ?");
+			ResultSet mrs;
+			try {
+				mps = con.prepareStatement("SELECT `mobid`,`count` FROM "
+						+ "`questmobprogress` WHERE `queststatusid` = ?");
+				while (rs.next()) {
+					int questEntryId = rs.getInt(1);
+					short questId = rs.getShort(2);
+					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
 					mps.setInt(1, questEntryId);
-					mrs = mps.executeQuery();
-					while (mrs.next())
-						mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
-					mrs.close();
-					mps.close();
+					mrs = null;
+					try {
+						mrs = mps.executeQuery();
+						while (mrs.next())
+							mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+					} finally {
+						DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
+					}
 					QuestEntry status = new QuestEntry(rs.getByte(3), mobProgress);
 					status.setCompletionTime(rs.getLong(4));
 					p.questStatuses.put(Short.valueOf(questId), status);
-				} finally {
-					DatabaseManager.cleanup(DatabaseType.STATE, mrs, mps, null);
 				}
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
 			}
 			return p;
 		} catch (SQLException ex) {

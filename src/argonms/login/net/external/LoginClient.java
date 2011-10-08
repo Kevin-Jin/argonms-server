@@ -97,52 +97,58 @@ public class LoginClient extends RemoteClient {
 		int highestPoints = 0;
 		CheatTracker.Infraction mainBanReason = null;
 
-		//there could be multiple bans (account bans, some mac, and others IP)
-		//if that's the case, load all of them and calculate the longest lasting
-		//infraction and the most outstanding infraction reason from a union
-		//of the infractions of all bans.
-		while (rs.next()) {
-			PreparedStatement ips = null;
-			ResultSet irs = null;
-			boolean release = true;
-			try {
+		PreparedStatement ips = null, rbps = null;
+		ResultSet irs;
+
+		try {
+			ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
+			rbps = con.prepareStatement("DELETE FROM `bans` WHERE `banid` = ?");
+			//there could be multiple bans (account bans, some mac, and others IP)
+			//if that's the case, load all of them and calculate the longest lasting
+			//infraction and the most outstanding infraction reason from a union
+			//of the infractions of all bans.
+			while (rs.next()) {
+				boolean release = true;
 				//load only non-expired infractions - even though the ban
 				//may have been given with infractions that have already
 				//expired, the longest lasting infraction will still remain
 				//the same, and we could just choose the most outstanding
 				//points from the active infractions to send to the client
-				ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
 				ips.setInt(1, rs.getInt(2));
-				irs = ips.executeQuery();
-				while (irs.next()) {
-					release = false;
-					long infractionExpire = irs.getLong(1);
-					CheatTracker.Infraction infractionReason = CheatTracker.Infraction.valueOf(irs.getByte(2));
-					//ban expire time is based on the longest lasting
-					//infraction instead of stacking infraction durations
-					if (infractionExpire > banExpire)
-						banExpire = infractionExpire;
-					//meanwhile, the ban reason sent the client doesn't have
-					//to be paired up to the longest lasting ban. instead,
-					//send the reason that is most responsible for the ban
-					//(i.e. the reason that has the highest sum of points)
-					Integer runningPoints = infractionPoints.get(infractionReason);
-					int updatedPoints = ((runningPoints != null ? runningPoints.intValue() : 0) + irs.getShort(3));
-					infractionPoints.put(infractionReason, Integer.valueOf(updatedPoints));
-					if (updatedPoints > highestPoints) {
-						highestPoints = updatedPoints;
-						mainBanReason = infractionReason;
+				irs = null;
+				try {
+					irs = ips.executeQuery();
+					while (irs.next()) {
+						release = false;
+						long infractionExpire = irs.getLong(1);
+						CheatTracker.Infraction infractionReason = CheatTracker.Infraction.valueOf(irs.getByte(2));
+						//ban expire time is based on the longest lasting
+						//infraction instead of stacking infraction durations
+						if (infractionExpire > banExpire)
+							banExpire = infractionExpire;
+						//meanwhile, the ban reason sent the client doesn't have
+						//to be paired up to the longest lasting ban. instead,
+						//send the reason that is most responsible for the ban
+						//(i.e. the reason that has the highest sum of points)
+						Integer runningPoints = infractionPoints.get(infractionReason);
+						int updatedPoints = ((runningPoints != null ? runningPoints.intValue() : 0) + irs.getShort(3));
+						infractionPoints.put(infractionReason, Integer.valueOf(updatedPoints));
+						if (updatedPoints > highestPoints) {
+							highestPoints = updatedPoints;
+							mainBanReason = infractionReason;
+						}
 					}
+				} finally {
+					DatabaseManager.cleanup(DatabaseType.STATE, irs, null, null);
 				}
 				if (release) {
-					ips.close();
-					ips = con.prepareStatement("DELETE FROM `bans` WHERE `banid` = ?");
-					ips.setInt(1, rs.getInt(1));
-					ips.executeUpdate();
+					rbps.setInt(1, rs.getInt(1));
+					rbps.executeUpdate();
 				}
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 			}
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, rbps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
 		}
 		return mainBanReason;
 	}

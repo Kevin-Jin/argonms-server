@@ -296,7 +296,7 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		private static byte[] writeRedoDecline() {
-			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);
 			lew.writeByte(ACT_ANSWER_REDO);
 			lew.writeBool(false);
@@ -304,7 +304,7 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		private static byte[] writeRedoAccept(byte amountToRemove, byte pos) {
-			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);
 			lew.writeByte(ACT_ANSWER_REDO);
 			lew.writeBool(true);
@@ -416,7 +416,7 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		private static byte[] writeFirstSelect(byte select) {
-			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);
 			lew.writeByte(ACT_SELECT_CARD);
 			lew.writeByte((byte) 1);
@@ -425,7 +425,7 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		private static byte[] writeSecondSelect(byte firstSelect, byte secondSelect, byte result) {
-			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 			lew.writeShort(ClientSendOps.MINIROOM_ACT);
 			lew.writeByte(ACT_SELECT_CARD);
 			lew.writeByte((byte) 0);

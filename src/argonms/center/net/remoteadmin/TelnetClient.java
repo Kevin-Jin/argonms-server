@@ -183,8 +183,11 @@ public class TelnetClient implements SessionDataModel {
 					ips = con.prepareStatement("SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
 					ips.setInt(1, rs.getInt(1));
 					irs = ips.executeQuery();
-					if (irs.next())
-						banExpire = rs.getLong(1);
+					if (irs.next()) {
+						long thisBanExpire = irs.getLong(1);
+						if (thisBanExpire > banExpire)
+							banExpire = thisBanExpire;
+					}
 				} finally {
 					DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 				}

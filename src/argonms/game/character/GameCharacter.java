@@ -141,6 +141,11 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, Integer>> minigameStats;
 
+	private long lastFameGiven;
+	private final Map<Integer, Long> famesThisMonth;
+
+	private final List<Integer> wishList;
+
 	private GameCharacter () {
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		equippedPets = new Pet[3];
@@ -157,6 +162,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		questStatuses = new HashMap<Short, QuestEntry>();
 		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
 		minigameStats = new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class);
+		famesThisMonth = new HashMap<Integer, Long>();
+		wishList = new ArrayList<Integer>(10);
 	}
 
 	@Override
@@ -183,6 +190,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			updateDbBuddies(con);
 			updateDbQuests(con);
 			updateDbMinigameStats(con);
+			updateDbFameLog(con);
+			//wishlists can't change in game server, so don't bother with them
 			con.commit();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not save character " + getDataId()
@@ -441,7 +450,6 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		try {
 			ps = con.prepareStatement("DELETE FROM "
 					+ "`queststatuses` WHERE `characterid` = ?");
-			ResultSet rs;
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
@@ -451,17 +459,23 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					+ "(?,?,?, ?)",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1, getDataId());
+			mps = con.prepareStatement("INSERT INTO `questmobprogress` "
+					+ "(`queststatusid`,`mobid`,`count`) VALUES (?,?,?)");
+			ResultSet rs;
 			for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
 				QuestEntry status = entry.getValue();
 				ps.setShort(2, entry.getKey().shortValue());
 				ps.setByte(3, status.getState());
 				ps.setLong(4, status.getCompletionTime());
 				ps.executeUpdate();
-				rs = ps.getGeneratedKeys();
-				int questEntryId = rs.next() ? rs.getInt(1) : -1;
-				rs.close();
-				mps = con.prepareStatement("INSERT INTO `questmobprogress` "
-						+ "(`queststatusid`,`mobid`,`count`) VALUES (?,?,?)");
+				int questEntryId;
+				rs = null;
+				try {
+					rs = ps.getGeneratedKeys();
+					questEntryId = rs.next() ? rs.getInt(1) : -1;
+				} finally {
+					DatabaseManager.cleanup(DatabaseType.STATE, rs, null, null);
+				}
 				mps.setInt(1, questEntryId);
 				for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
 					mps.setInt(2, mobProgress.getKey().intValue());
@@ -469,7 +483,6 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					mps.addBatch();
 				}
 				mps.executeBatch();
-				mps.close();
 			}
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save quest states of character " + name, e);
@@ -502,6 +515,30 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save minigame stats of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
+	private void updateDbFameLog(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `famelog` WHERE `from` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `famelog` (`from`,`to`,"
+					+ "`millis`) VALUES (?,?,?)");
+			ps.setInt(1, getDataId());
+			for (Entry<Integer, Long> fameEntry : famesThisMonth.entrySet()) {
+				ps.setInt(2, fameEntry.getKey().intValue());
+				ps.setLong(3, fameEntry.getValue().longValue());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save fame log of character " + name, e);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
@@ -668,21 +705,23 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			PreparedStatement mps = null;
-			ResultSet mrs = null;
-			while (rs.next()) {
-				int questEntryId = rs.getInt(1);
-				short questId = rs.getShort(2);
-				Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
-				try {
-					mps = con.prepareStatement("SELECT "
-							+ "`mobid`,`count` FROM `questmobprogress` WHERE "
-							+ "`queststatusid` = ?");
+			ResultSet mrs;
+			try {
+				mps = con.prepareStatement("SELECT `mobid`,`count` FROM "
+						+ "`questmobprogress` WHERE `queststatusid` = ?");
+				while (rs.next()) {
+					int questEntryId = rs.getInt(1);
+					short questId = rs.getShort(2);
+					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
 					mps.setInt(1, questEntryId);
-					mrs = mps.executeQuery();
-					while (mrs.next())
-						mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
-					mrs.close();
-					mps.close();
+					mrs = null;
+					try {
+						mrs = mps.executeQuery();
+						while (mrs.next())
+							mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+					} finally {
+						DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
+					}
 					QuestEntry status = new QuestEntry(rs.getByte(3), mobProgress);
 					status.setCompletionTime(rs.getLong(4));
 					p.questStatuses.put(Short.valueOf(questId), status);
@@ -702,9 +741,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 								p.addToWatchedList(questId, QuestRequirementType.MESOS);
 						}
 					}
-				} finally {
-					DatabaseManager.cleanup(DatabaseType.STATE, mrs, mps, null);
 				}
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
 			}
 			rs.close();
 			ps.close();
@@ -720,6 +759,42 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 				stats.put(MinigameResult.LOSS, rs.getInt(6));
 				p.minigameStats.put(MiniroomType.valueOf(rs.getByte(3)), stats);
 			}
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT * FROM `famelog` WHERE `from` = "
+					+ "?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			PreparedStatement rfps = null;
+			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
+			try {
+				rfps = con.prepareStatement("DELETE FROM `famelog` WHERE "
+						+ "`id` = ?");
+				while (rs.next()) {
+					long time = rs.getLong(4);
+					//given time >= now - 30 days
+					if (time >= threshold) {
+						p.famesThisMonth.put(Integer.valueOf(rs.getInt(3)), Long.valueOf(time));
+						if (time > p.lastFameGiven)
+							p.lastFameGiven = time;
+					} else {
+						rfps.setInt(1, rs.getInt(1));
+						rfps.executeUpdate();
+					}
+				}
+			} finally {
+				DatabaseManager.cleanup(DatabaseType.STATE, null, rfps, null);
+			}
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `sn` FROM `wishlists` WHERE "
+					+ "`characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			while (rs.next())
+				p.wishList.add(Integer.valueOf(rs.getInt(1)));
 			return p;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load character " + id + " from database", ex);
@@ -1995,6 +2070,30 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			minigameStats.put(game, stats);
 		}
 		stats.put(stat, Integer.valueOf(newValue));
+	}
+
+	public long getLastFameGivenTime() {
+		return lastFameGiven;
+	}
+
+	public boolean canGiveFameToPlayer(int receiver) {
+		Long lastTime = famesThisMonth.get(Integer.valueOf(receiver));
+		if (lastTime == null)
+			return true;
+		if (lastTime.longValue() >= System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 30)
+			return true;
+		famesThisMonth.remove(Integer.valueOf(receiver));
+		return false;
+	}
+
+	public void gaveFame(int receiver) {
+		long now = System.currentTimeMillis();
+		famesThisMonth.put(Integer.valueOf(receiver), Long.valueOf(now));
+		lastFameGiven = now;
+	}
+
+	public List<Integer> getWishListSerialNumbers() {
+		return Collections.unmodifiableList(wishList);
 	}
 
 	public EntityType getEntityType() {
