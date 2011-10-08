@@ -114,6 +114,17 @@ CREATE TABLE `cooldowns` (
   CONSTRAINT `cooldowns_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `famelog`;
+CREATE TABLE `famelog` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `from` INT(11) NOT NULL,
+  `to` INT(11) NOT NULL,
+  `millis` BIGINT(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `characterid` (`from`),
+  CONSTRAINT `famelog_ibfk_1` FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `infractions`;
 CREATE TABLE `infractions` (
   `entryid` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -299,6 +310,16 @@ DROP TABLE IF EXISTS `uniqueid`;
 CREATE TABLE `uniqueid` (
   `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
   PRIMARY KEY (`nextuid`)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `wishlists`;
+CREATE TABLE `wishlists` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `characterid` INT(11) NOT NULL,
+  `sn` INT(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `characterid` (`characterid`),
+  CONSTRAINT `wishlists_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP PROCEDURE IF EXISTS `updateranks`;

@@ -88,6 +88,13 @@ public class MaxStatCommandHandlers {
 		9101004, 9101005, 9101006, 9101007, 9101008
 	};
 
+	private static boolean contains(String[] array, String search) {
+		for (int i = 0; i < array.length; i++)
+			if (array[i].equalsIgnoreCase(search))
+				return true;
+		return false;
+	}
+
 	private static void maxEquips(GameCharacter p) {
 		for (Entry<Short, InventorySlot> item : p.getInventory(InventoryType.EQUIPPED).getAll().entrySet()) {
 			Equip e = (Equip) item.getValue();
@@ -116,7 +123,7 @@ public class MaxStatCommandHandlers {
 		}
 	}
 
-	private static void maxStats(GameCharacter p) {
+	private static void maxStats(GameCharacter p, String[] args) {
 		p.setStr(Short.MAX_VALUE);
 		p.setDex(Short.MAX_VALUE);
 		p.setInt(Short.MAX_VALUE);
@@ -130,14 +137,16 @@ public class MaxStatCommandHandlers {
 		p.setJob(PlayerJob.JOB_SUPER_GM);
 		p.setFame(Short.MAX_VALUE);
 
-		p.setMesos(Integer.MAX_VALUE);
-		//TODO: find some packets to notify client of new slot limits
-		for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
-			Inventory inv = p.getInventory(type);
+		if (contains(args, "-I")) {
+			p.setMesos(Integer.MAX_VALUE);
+			//TODO: find some packets to notify client of new slot limits
+			for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
+				Inventory inv = p.getInventory(type);
+				inv.increaseCapacity((short) (0xFF - inv.getMaxSlots()));
+			}
+			StorageInventory inv = p.getStorageInventory();
 			inv.increaseCapacity((short) (0xFF - inv.getMaxSlots()));
 		}
-		StorageInventory inv = p.getStorageInventory();
-		inv.increaseCapacity((short) (0xFF - inv.getMaxSlots()));
 
 		BuddyList bList = p.getBuddyList();
 		bList.increaseCapacity((short) (0xFF - bList.getCapacity()));
@@ -190,7 +199,7 @@ public class MaxStatCommandHandlers {
 		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
 			maxSkills(p);
 			maxEquips(p);
-			maxStats(p);
+			maxStats(p, args);
 		}
 
 		@Override

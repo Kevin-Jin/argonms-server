@@ -130,6 +130,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.MESO_DROP:
 				InventoryHandler.handleMesoDrop(reader, gc);
 				break;
+			case ClientRecvOps.GIVE_FAME:
+				PersonalInfoHandler.handleFameUp(reader, gc);
+				break;
+			case ClientRecvOps.OPEN_PERSONAL_INFO:
+				PersonalInfoHandler.handleOpenInfo(reader, gc);
+				break;
 			case ClientRecvOps.CHANGE_MAP_SPECIAL:
 				GameGoToHandler.handleEnteredSpecialPortal(reader, gc);
 				break;

@@ -446,7 +446,7 @@ public class InterChannelCommunication {
 		return result;
 	}
 
-	public void sendBuddyOnline(GameCharacter p, boolean respond) {
+	public void sendBuddyOnline(GameCharacter p) {
 		Collection<BuddyListEntry> buddies = p.getBuddyList().getBuddies();
 		if (buddies.isEmpty())
 			return;
@@ -461,11 +461,11 @@ public class InterChannelCommunication {
 			System.arraycopy(recipients, 0, temp, 0, i);
 			recipients = temp;
 		}
-		remaining -= receivedBuddyOnline(self.getChannelId(), p.getId(), recipients, respond);
+		remaining -= receivedBuddyOnline(self.getChannelId(), p.getId(), recipients);
 		for (i = 0; i < localChannels.length && remaining > 0; i++)
-			remaining -= GameServer.getChannel(localChannels[i]).getInterChannelInterface().receivedBuddyOnline(self.getChannelId(), p.getId(), recipients, respond);
+			remaining -= GameServer.getChannel(localChannels[i]).getInterChannelInterface().receivedBuddyOnline(self.getChannelId(), p.getId(), recipients);
 		if (remaining > 0)
-			getCenterComm().getSession().send(writeBuddyOnlineNotification(self.getChannelId(), p.getId(), recipients, respond));
+			getCenterComm().getSession().send(writeBuddyOnlineNotification(self.getChannelId(), p.getId(), recipients));
 	}
 
 	public void sendBuddyAccepted(GameCharacter p, int recipient) {
@@ -598,7 +598,7 @@ public class InterChannelCommunication {
 		return -1;
 	}
 
-	private int receivedBuddyOnline(byte fromCh, int sender, int[] receivers, boolean respond) {
+	private int receivedBuddyOnline(byte fromCh, int sender, int[] receivers) {
 		int received = 0;
 		for (int receiver : receivers) {
 			GameCharacter p = self.getPlayerById(receiver);
@@ -610,21 +610,19 @@ public class InterChannelCommunication {
 					entry.setChannel(fromCh);
 					p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
 					p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
-					if (respond) {
-						boolean local = false;
-						if (fromCh == self.getChannelId()) {
-							local = true;
-							receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
-						}
-						for (int i = 0; i < localChannels.length && !local; i++) {
-							if (fromCh == localChannels[i]) {
-								local = true;
-								GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
-							}
-						}
-						if (!local)
-							getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, false));
+					boolean local = false;
+					if (fromCh == self.getChannelId()) {
+						local = true;
+						receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
 					}
+					for (int i = 0; i < localChannels.length && !local; i++) {
+						if (fromCh == localChannels[i]) {
+							local = true;
+							GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
+						}
+					}
+					if (!local)
+						getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, false));
 				}
 				received++;
 			}
@@ -849,7 +847,7 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeBuddyOnlineNotification(byte src, int sender, int[] receivers, boolean respond) {
+	private static byte[] writeBuddyOnlineNotification(byte src, int sender, int[] receivers) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + 4 * receivers.length);
 		lew.writeByte(RemoteCenterOps.INTER_CHANNEL_ALL);
 		lew.writeByte(BUDDY_ONLINE);
@@ -858,7 +856,6 @@ public class InterChannelCommunication {
 		lew.writeByte((byte) receivers.length);
 		for (int receiver : receivers)
 			lew.writeInt(receiver);
-		lew.writeBool(respond);
 		return lew.getBytes();
 	}
 
@@ -1002,8 +999,7 @@ public class InterChannelCommunication {
 				int[] receivers = new int[receiversCount];
 				for (int i = 0; i < receiversCount; i++)
 					receivers[i] = packet.readInt();
-				boolean respond = packet.readBool();
-				receivedBuddyOnline(channel, sender, receivers, respond);
+				receivedBuddyOnline(channel, sender, receivers);
 				break;
 			} case BUDDY_ACCEPTED: {
 				byte channel = packet.readByte();

@@ -384,7 +384,7 @@ public interface Player {
 		}
 
 		public static void commitInventory(Connection con, int characterId, int accountId, Pet[] pets, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
-			PreparedStatement ps = null, ips = null;
+			PreparedStatement ps = null, rps = null, pps = null, mps = null;
 			ResultSet rs = null;
 			try {
 				ps = con.prepareStatement("INSERT INTO `inventoryitems` "
@@ -392,6 +392,16 @@ public interface Player {
 					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
+				rps = con.prepareStatement("INSERT INTO `inventoryrings` ("
+						+ "`inventoryitemid`,`partnerchrid`,`partnerringid`) "
+						+ "VALUES(?,?,?)");
+				pps = con.prepareStatement("INSERT INTO `inventorypets` ("
+						+ "`inventoryitemid`,`position`,`name`,`level`,"
+						+ "`closeness`,`fullness`,`expired`) "
+						+ "VALUES (?,?,?,?,?,?,?)");
+				mps = con.prepareStatement("INSERT INTO `inventorymounts` ("
+						+ "`inventoryitemid`,`level`,`exp`,`tiredness`) "
+						+ "VALUES (?,?,?,?)");
 				ps.setInt(1, characterId);
 				ps.setInt(2, accountId);
 				for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
@@ -426,55 +436,42 @@ public interface Player {
 						switch (item.getType()) {
 							case RING:
 								Ring ring = (Ring) item;
-								ips = con.prepareStatement(
-										"INSERT INTO `inventoryrings` ("
-										+ "`inventoryitemid`,`partnerchrid`,"
-										+ "`partnerringid`) VALUES(?,?,?)");
-								ips.setInt(1, inventoryKey);
-								ips.setInt(2, ring.getPartnerCharId());
-								ips.setLong(3, ring.getPartnerRingId());
-								ips.executeUpdate();
-								ips.close();
 								insertEquipIntoDb(ring, inventoryKey, con);
+								rps.setInt(1, inventoryKey);
+								rps.setInt(2, ring.getPartnerCharId());
+								rps.setLong(3, ring.getPartnerRingId());
+								rps.executeUpdate();
 								break;
 							case EQUIP:
 								insertEquipIntoDb((Equip) item, inventoryKey, con);
 								break;
 							case PET:
 								Pet pet = (Pet) item;
-								ips = con.prepareStatement(
-										"INSERT INTO `inventorypets` ("
-										+ "`inventoryitemid`,`position`,`name`,"
-										+ "`level`,`closeness`,`fullness`,`expired`) "
-										+ "VALUES (?,?,?,?,?,?,?)");
-								ips.setInt(1, inventoryKey);
-								ips.setByte(2, indexOf(pets, pet));
-								ips.setString(3, pet.getName());
-								ips.setByte(4, pet.getLevel());
-								ips.setShort(5, pet.getCloseness());
-								ips.setByte(6, pet.getFullness());
-								ips.setBoolean(7, pet.isExpired());
-								ips.executeUpdate();
+								pps.setInt(1, inventoryKey);
+								pps.setByte(2, indexOf(pets, pet));
+								pps.setString(3, pet.getName());
+								pps.setByte(4, pet.getLevel());
+								pps.setShort(5, pet.getCloseness());
+								pps.setByte(6, pet.getFullness());
+								pps.setBoolean(7, pet.isExpired());
+								pps.executeUpdate();
 								break;
 							case MOUNT:
 								TamingMob mount = (TamingMob) item;
-								ips = con.prepareStatement(
-										"INSERT INTO `inventorymounts` ("
-										+ "`inventoryitemid`,`level`,`exp`,"
-										+ "`tiredness`) VALUES (?,?,?,?)");
-								ips.setInt(1, inventoryKey);
-								ips.setByte(2, mount.getMountLevel());
-								ips.setShort(3, mount.getExp());
-								ips.setByte(4, mount.getTiredness());
-								ips.executeUpdate();
-								ips.close();
 								insertEquipIntoDb(mount, inventoryKey, con);
+								mps.setInt(1, inventoryKey);
+								mps.setByte(2, mount.getMountLevel());
+								mps.setShort(3, mount.getExp());
+								mps.setByte(4, mount.getTiredness());
+								mps.executeUpdate();
 								break;
 						}
 					}
 				}
 			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
+				DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
+				DatabaseManager.cleanup(DatabaseType.STATE, null, pps, null);
+				DatabaseManager.cleanup(DatabaseType.STATE, null, rps, null);
 				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 			}
 		}
