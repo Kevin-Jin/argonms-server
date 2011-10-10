@@ -1384,6 +1384,11 @@
 	or right-click a character->Personal Info in game server) and incrementing/
 	decrementing a player's fame. SQL needs to be updated.
 
+2011-10-10  GoldenKevin  (revision 67)
+
+	* Fixed some logic errors on faming.
+	* Fixed shop loading when using default tables without preloading.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

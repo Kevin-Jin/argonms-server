@@ -61,7 +61,7 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 					ips.setInt(1, shopId);
 					irs = ips.executeQuery();
 					while (irs.next())
-						items.add(new NpcShop.ShopSlot(rs.getInt(1), (short) 1, rs.getInt(2)));
+						items.add(new NpcShop.ShopSlot(irs.getInt(1), (short) 1, irs.getInt(2)));
 				} finally {
 					DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 				}
