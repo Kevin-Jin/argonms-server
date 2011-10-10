@@ -531,10 +531,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps = con.prepareStatement("INSERT INTO `famelog` (`from`,`to`,"
 					+ "`millis`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
+			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
 			for (Entry<Integer, Long> fameEntry : famesThisMonth.entrySet()) {
-				ps.setInt(2, fameEntry.getKey().intValue());
-				ps.setLong(3, fameEntry.getValue().longValue());
-				ps.addBatch();
+				long time = fameEntry.getValue().longValue();
+				if (time >= threshold) {
+					ps.setInt(2, fameEntry.getKey().intValue());
+					ps.setLong(3, fameEntry.getValue().longValue());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -2080,10 +2084,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		Long lastTime = famesThisMonth.get(Integer.valueOf(receiver));
 		if (lastTime == null)
 			return true;
-		if (lastTime.longValue() >= System.currentTimeMillis() - 1000 * 60 * 60 * 24 * 30)
-			return true;
+		if (lastTime.longValue() >= System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30)
+			return false;
 		famesThisMonth.remove(Integer.valueOf(receiver));
-		return false;
+		return true;
 	}
 
 	public void gaveFame(int receiver) {
