@@ -65,8 +65,8 @@ public class LoginServer implements LocalServer {
 	private String address;
 	private int port;
 	private boolean usePin;
-	private List<Message> messages;
-	private Map<Byte, LoginWorld> onlineWorlds;
+	private final List<Message> messages;
+	private final Map<Byte, LoginWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
@@ -104,6 +104,14 @@ public class LoginServer implements LocalServer {
 			System.exit(2);
 			return;
 		}
+
+		handler = new ClientListener<LoginClient>(new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
+			@Override
+			public LoginClient newInstance() {
+				return new LoginClient();
+			}
+		});
+
 		boolean mcdb = (wzType == DataFileType.MCDB);
 		prop = new Properties();
 		try {
@@ -192,12 +200,6 @@ public class LoginServer implements LocalServer {
 			@Override
 			public void run() {
 				initializeData(preloadAll, wzType, wzPath);
-				handler = new ClientListener<LoginClient>(ServerType.LOGIN, (byte) -1, new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
-					@Override
-					public LoginClient newInstance(byte world, byte channel) {
-						return new LoginClient();
-					}
-				});
 				if (handler.bind(port)) {
 					LOG.log(Level.INFO, "Login Server is online.");
 					lci.serverReady();

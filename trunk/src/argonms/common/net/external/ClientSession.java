@@ -169,7 +169,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	}
 
 	@Override
-	public void close(String reason, Throwable reasonExc) {
+	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -185,7 +185,9 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				LOG.log(Level.FINE, "Client " + getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
 			client.disconnected();
 			onClose.closed(this);
+			return true;
 		}
+		return false;
 	}
 
 	/**

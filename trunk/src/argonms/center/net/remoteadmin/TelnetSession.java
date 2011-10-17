@@ -133,7 +133,7 @@ public class TelnetSession implements Session {
 	}
 
 	@Override
-	public void close(String reason, Throwable reasonExc) {
+	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -147,7 +147,9 @@ public class TelnetSession implements Session {
 				LOG.log(Level.FINE, "Telnet client " + getClient().getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
 			client.disconnected();
 			onClose.closed(this);
+			return true;
 		}
+		return false;
 	}
 
 	/**

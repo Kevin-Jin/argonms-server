@@ -143,7 +143,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	}
 
 	@Override
-	public void close(String reason, Throwable reasonExc) {
+	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -159,7 +159,9 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 				LOG.log(Level.FINE, "Disconnected from center server (" + getAddress() + "): " + reason, reasonExc);
 			server.disconnected();
 			onClose.closed(this);
+			return true;
 		}
+		return false;
 	}
 
 	/**

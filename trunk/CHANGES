@@ -1389,6 +1389,24 @@
 	* Fixed some logic errors on faming.
 	* Fixed shop loading when using default tables without preloading.
 
+2011-10-17  GoldenKevin  (revision 68)
+
+	* Session.close now returns boolean whether the Session was successfully
+	closed or not (usually indicates that it hadn't already been closed before).
+	This isn't so much a new feature since most times we don't care if the
+	Session was closed or not, but makes subclassing easier for a feature that I
+	want to implement in the future.
+	* Eliminated the world, channel instance variables from ClientListener, and
+	the world, channel parameters in ClientFactory. I realized that the only
+	time those values were needed was for constructing GameClient, but we could
+	send those values from the instance variables of WorldChannel to the
+	anonymous class when constructing GameClient, so it became redundant.
+	* ClientListener instantiation moved to init() in LoginServer and ShopServer
+	and the constructor of WorldChannel. WorldChannel instantiations moved out
+	of file IO try-catch block.
+	* Some cleanup in TelnetListener.
+	* Failed channel changes are removed from the queue in WorldChannel.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
