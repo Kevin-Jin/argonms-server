@@ -30,5 +30,12 @@ public interface Session {
 
 	public SocketAddress getAddress();
 	public void send(byte[] b);
-	public void close(String reason, Throwable reasonExc);
+	/**
+	 * 
+	 * @param reason
+	 * @param reasonExc
+	 * @return true if successful. False return indicates that the Session may
+	 * have already been closed before.
+	 */
+	public boolean close(String reason, Throwable reasonExc);
 }

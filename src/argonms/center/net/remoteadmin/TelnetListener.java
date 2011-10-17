@@ -18,7 +18,6 @@
 
 package argonms.center.net.remoteadmin;
 
-import argonms.center.net.internal.RemoteServerListener;
 import argonms.center.net.remoteadmin.TelnetSession.CloseListener;
 import argonms.common.net.SessionCreator;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.logging.Logger;
  * @author GoldenKevin
  */
 public class TelnetListener implements SessionCreator {
-	private static final Logger LOG = Logger.getLogger(RemoteServerListener.class.getName());
+	private static final Logger LOG = Logger.getLogger(TelnetListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
 	private final TelnetCommandProcessor packetProc;
 	private final TelnetSession.CommandReceivedDelegate packetDelegate;
@@ -59,7 +58,7 @@ public class TelnetListener implements SessionCreator {
 
 			@Override
 			public Thread newThread(Runnable r) {
-				Thread t = new Thread(group, r, "internal-boss-thread", 0);
+				Thread t = new Thread(group, r, "telnet-boss-thread", 0);
 				if (t.isDaemon())
 					t.setDaemon(false);
 				if (t.getPriority() != Thread.NORM_PRIORITY)
@@ -79,7 +78,7 @@ public class TelnetListener implements SessionCreator {
 
 			@Override
 			public Thread newThread(Runnable r) {
-				Thread t = new Thread(group, r, "internal-worker-pool-thread-" + threadNumber.getAndIncrement(), 0);
+				Thread t = new Thread(group, r, "telnet-worker-pool-thread-" + threadNumber.getAndIncrement(), 0);
 				if (t.isDaemon())
 					t.setDaemon(false);
 				if (t.getPriority() != Thread.NORM_PRIORITY)

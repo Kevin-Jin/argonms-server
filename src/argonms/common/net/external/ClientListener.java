@@ -44,17 +44,16 @@ import java.util.logging.Logger;
  */
 public class ClientListener<T extends RemoteClient> implements SessionCreator {
 	public interface ClientFactory<T extends RemoteClient> {
-		public T newInstance(byte world, byte channel);
+		public T newInstance();
 	}
 
 	private static final Logger LOG = Logger.getLogger(ClientListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
-	private final byte world, channel;
 	private final ClientPacketProcessor<T> pp;
 	private final ClientFactory<T> clientCtor;
 	private ServerSocketChannel listener;
 
-	public ClientListener(byte world, byte channel, ClientPacketProcessor<T> packetProcessor, ClientFactory<T> clientFactory) {
+	public ClientListener(ClientPacketProcessor<T> packetProcessor, ClientFactory<T> clientFactory) {
 		bossThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			private final ThreadGroup group;
 
@@ -95,8 +94,6 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 			}
 		});
 
-		this.world = world;
-		this.channel = channel;
 		pp = packetProcessor;
 		clientCtor = clientFactory;
 	}
@@ -130,7 +127,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 											client.configureBlocking(false);
 											LOG.log(Level.FINE, "Client connected from {0}", client.socket().getRemoteSocketAddress());
 											final SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
-											final T clientState = clientCtor.newInstance(world, channel);
+											final T clientState = clientCtor.newInstance();
 											ClientSession<T> session = new ClientSession<T>(client, acceptedKey, clientState, new CloseListener<T>() {
 												@Override
 												public void closed(ClientSession<T> session) {

@@ -54,30 +54,30 @@ public class WorldChannel {
 	private final Map<Integer, PlayerContinuation> channelChangeData;
 	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
 	private long startTime;
-	private ClientListener<GameClient> handler;
-	private byte world, channel;
+	private final ClientListener<GameClient> handler;
+	private final byte world, channel;
 	private int port;
-	private MapFactory mapFactory;
-	private PlayerLog<GameCharacter> storage;
+	private final MapFactory mapFactory;
+	private final PlayerLog<GameCharacter> storage;
 	private InterChannelCommunication worldComm;
 
-	public WorldChannel(byte world, byte channel, int port) {
-		this.channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
-		this.queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
+	public WorldChannel(final byte world, final byte channel, int port) {
+		channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
+		queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
-		this.mapFactory = new MapFactory();
-		this.storage = new PlayerLog<GameCharacter>();
-	}
-
-	public void listen(boolean useNio) {
-		handler = new ClientListener<GameClient>(world, channel, new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
+		mapFactory = new MapFactory();
+		storage = new PlayerLog<GameCharacter>();
+		handler = new ClientListener<GameClient>(new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
 			@Override
-			public GameClient newInstance(byte world, byte channel) {
+			public GameClient newInstance() {
 				return new GameClient(world, channel);
 			}
 		});
+	}
+
+	public void listen(boolean useNio) {
 		if (handler.bind(port)) {
 			LOG.log(Level.INFO, "World {0} Channel {1} is online.", new Object[] { world, channel });
 		} else {
@@ -130,6 +130,7 @@ public class WorldChannel {
 
 	private void channelChangeError(GameCharacter p) {
 		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
+		queuedChannelChanges.remove(Integer.valueOf(p.getId()));
 		p.getClient().getSession().send(GamePackets.writeEnableActions());
 	}
 

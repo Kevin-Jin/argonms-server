@@ -64,16 +64,17 @@ public class ShopServer implements LocalServer {
 	private ShopCenterInterface sci;
 	private String address;
 	private int port;
-	private Map<Byte, ShopWorld> onlineWorlds;
+	private final Map<Byte, ShopWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
 	private boolean useNio;
 	private boolean centerConnected;
-	private PlayerLog<ShopCharacter> storage;
+	private final PlayerLog<ShopCharacter> storage;
 
 	private ShopServer() {
 		onlineWorlds = new HashMap<Byte, ShopWorld>();
+		storage = new PlayerLog<ShopCharacter>();
 	}
 
 	public void init() {
@@ -99,6 +100,14 @@ public class ShopServer implements LocalServer {
 			System.exit(2);
 			return;
 		}
+
+		handler = new ClientListener<ShopClient>(new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
+			@Override
+			public ShopClient newInstance() {
+				return new ShopClient();
+			}
+		});
+
 		boolean mcdb = (wzType == DataFileType.MCDB);
 		prop = new Properties();
 		try {
@@ -191,12 +200,6 @@ public class ShopServer implements LocalServer {
 			@Override
 			public void run() {
 				initializeData(preloadAll, wzType, wzPath);
-				handler = new ClientListener<ShopClient>(ServerType.SHOP, (byte) -1, new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
-					@Override
-					public ShopClient newInstance(byte world, byte channel) {
-						return new ShopClient();
-					}
-				});
 				if (handler.bind(port)) {
 					LOG.log(Level.INFO, "Shop Server is online.");
 					sci.serverReady();

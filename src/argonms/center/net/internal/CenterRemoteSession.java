@@ -149,7 +149,7 @@ public class CenterRemoteSession implements Session {
 	}
 
 	@Override
-	public void close(String reason, Throwable reasonExc) {
+	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -166,7 +166,9 @@ public class CenterRemoteSession implements Session {
 			if (cri != null)
 				cri.disconnected();
 			onClose.closed(this);
+			return true;
 		}
+		return false;
 	}
 
 	/**

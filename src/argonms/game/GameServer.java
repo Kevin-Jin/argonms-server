@@ -101,6 +101,7 @@ public class GameServer implements LocalServer {
 		String centerIp;
 		int centerPort;
 		String authKey;
+		String[] chList;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.game.config.file", "game" + serverId + ".properties"));
 			prop.load(fr);
@@ -110,23 +111,8 @@ public class GameServer implements LocalServer {
 			//wzPath = prop.getProperty("argonms.game." + serverId + ".data.dir");
 			preloadAll = Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".data.preload"));
 			world = Byte.parseByte(prop.getProperty("argonms.game." + serverId + ".world"));
-			String[] chList = prop.getProperty("argonms.game." + serverId + ".channels").replaceAll("\\s", "").split(",");
-			channels = new HashMap<Byte, WorldChannel>(chList.length);
-			List<Byte> localChannels = new ArrayList<Byte>(channels.size());
-			for (int i = 0; i < chList.length; i++) {
-				byte chNum = Byte.parseByte(chList[i]);
-				WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")));
-				channels.put(Byte.valueOf(chNum), ch);
-				localChannels.add(Byte.valueOf(chNum));
-			}
-			for (Entry<Byte, WorldChannel> entry : channels.entrySet()) {
-				byte[] selfExcluded = new byte[localChannels.size() - 1];
-				byte index = 0;
-				for (Byte b : localChannels)
-					if (!entry.getKey().equals(b))
-						selfExcluded[index++] = b.byteValue();
-				entry.getValue().createWorldComm(selfExcluded);
-			}
+			chList = prop.getProperty("argonms.game." + serverId + ".channels").replaceAll("\\s", "").split(",");
+
 			centerIp = prop.getProperty("argonms.game." + serverId + ".center.ip");
 			centerPort = Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".center.port"));
 			authKey = prop.getProperty("argonms.game." + serverId + ".auth.key");
@@ -143,6 +129,24 @@ public class GameServer implements LocalServer {
 			System.exit(2);
 			return;
 		}
+
+		channels = new HashMap<Byte, WorldChannel>(chList.length);
+		List<Byte> localChannels = new ArrayList<Byte>(channels.size());
+		for (int i = 0; i < chList.length; i++) {
+			byte chNum = Byte.parseByte(chList[i]);
+			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")));
+			channels.put(Byte.valueOf(chNum), ch);
+			localChannels.add(Byte.valueOf(chNum));
+		}
+		for (Entry<Byte, WorldChannel> entry : channels.entrySet()) {
+			byte[] selfExcluded = new byte[localChannels.size() - 1];
+			byte index = 0;
+			for (Byte b : localChannels)
+				if (!entry.getKey().equals(b))
+					selfExcluded[index++] = b.byteValue();
+			entry.getValue().createWorldComm(selfExcluded);
+		}
+
 		boolean mcdb = (wzType == DataFileType.MCDB);
 		prop = new Properties();
 		try {
