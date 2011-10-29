@@ -1407,6 +1407,14 @@
 	* Some cleanup in TelnetListener.
 	* Failed channel changes are removed from the queue in WorldChannel.
 
+2011-10-29  GoldenKevin  (revision 69)
+
+	* Simplified and rewrote life movement packet parsing to be more accurate.
+	* Fixed loading character before it is committed when changing channels.
+	This will make changing channels feel slightly slower, but it ensures that
+	the receiving channel loads the correct state. Fixed some functions getting
+	called twice from changing channels.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

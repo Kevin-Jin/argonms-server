@@ -30,11 +30,14 @@ import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.field.movement.AbsoluteLifeMovement;
 import argonms.game.field.movement.ChairMovement;
-import argonms.game.field.movement.ChangeEquipSpecialAwesome;
+import argonms.game.field.movement.ChangeEquipMovement;
+import argonms.game.field.movement.FootholdChangedMovementFragment;
 import argonms.game.field.movement.JumpDownMovement;
-import argonms.game.field.movement.LifeMovement;
 import argonms.game.field.movement.LifeMovementFragment;
+import argonms.game.field.movement.LifeMovementFragment.UpdatedEntityInfo;
+import argonms.game.field.movement.PositionChangedMovementFragment;
 import argonms.game.field.movement.RelativeLifeMovement;
+import argonms.game.field.movement.StanceChangedMovementFragment;
 import argonms.game.field.movement.TeleportMovement;
 import argonms.game.loading.mob.Skill;
 import argonms.game.loading.skill.MobSkillEffectsData;
@@ -44,27 +47,62 @@ import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameMovementHandler {
-	private static final Logger LOG = Logger.getLogger(GameMovementHandler.class.getName());
+	public static final byte
+		NORMAL_MOVE = 0,
+		JUMP = 1,
+		JUMP_AND_KNOCKBACK = 2,
+		UNK_SKILL = 3,
+		TELEPORT = 4,
+		NORMAL_MOVE_2 = 5,
+		FLASH_JUMP = 6,
+		ASSAULTER = 7,
+		ASSASSINATE = 8,
+		RUSH = 9,
+		EQUIP = 10,
+		CHAIR = 11,
+		HORNTAIL_KNOCKBACK = 12,
+		RECOIL_SHOT = 13,
+		UNK = 14,
+		JUMP_DOWN = 15,
+		WINGS = 16,
+		WINGS_FALL = 17
+	;
+
+	/**
+	 * Finds the ceiling of (x / y)
+	 * @param x must be non-negative
+	 * @param y must be positive
+	 * @return
+	 */
+	private static int ceil(int x, int y) {
+		if (x == 0)
+			return 0;
+		return ((x - 1) / y) + 1;
+	}
 
 	public static void handleMovePlayer(LittleEndianReader packet, GameClient gc) {
-		packet.readByte();
+		/*byte portalCount = */packet.readByte();
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
-		if (packet.available() != 18) {
-			//TODO: this is received when a player moves after being revived.
-			//decode and handle?
-			LOG.log(Level.WARNING, "Received unusual player movement packet w/ {0} bytes remaining: {1}",
-					new Object[] { packet.available(), packet });
-			return;
-		}
+		//looks like there are exactly ceil(n / 2) bytes after the first byte,
+		//where n is the value of the first byte. Probably the amount of hex
+		//digits (2 hex digits per byte)
+		int count = ceil(packet.readByte(), 2);
+		//Lot of 1's when holding down, 2's when holding up, 4's when holding
+		//right, 8 when holding left, and adding any two of them on diagonals
+		//(5 on down right, 6 on up right, 9 on down left, A on up left). Looks
+		//like some kind of bitmask. Client is probably telling us which keys
+		//were being pressed during the movement.
+		packet.skip(count);
+		/*Point initialPos = */packet.readPos();
+		/*Point finalPos = */packet.readPos();
+
 		GameCharacter player = gc.getPlayer();
 		updatePosition(res, player, 0);
 		player.getMap().playerMoved(player, res, startPos);
@@ -85,6 +123,10 @@ public class GameMovementHandler {
 
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);
+		int count = ceil(packet.readByte(), 2);
+		packet.skip(count);
+		/*Point initialPos = */packet.readPos();
+		/*Point finalPos = */packet.readPos();
 		updatePosition(res, summon, 0);
 		player.getMap().summonMoved(player, summon, res, startPos);
 	}
@@ -131,9 +173,6 @@ public class GameMovementHandler {
 
 		packet.readByte();
 		packet.readInt();
-		Point startPos = packet.readPos();
-
-		res = parseMovement(packet);
 
 		GameCharacter controller = monster.getController();
 		if (controller != player) {
@@ -164,11 +203,12 @@ public class GameMovementHandler {
 		if (aggro)
 			monster.setControllerKnowsAboutAggro(true);
 
-		if (packet.available() != 9) {
-			LOG.log(Level.WARNING, "Received unusual life movement packet w/ {0} bytes remaining: {1}",
-					new Object[] { packet.available(), packet });
-			return;
-		}
+		Point startPos = packet.readPos();
+		res = parseMovement(packet);
+		int count = ceil(packet.readByte(), 2);
+		packet.skip(count);
+		/*Point initialPos = */packet.readPos();
+		/*Point finalPos = */packet.readPos();
 		updatePosition(res, monster, -1);
 		player.getMap().monsterMoved(player, monster, res, useSkill, skill, skillId, skillLevel, skill3, skill4, startPos);
 	}
@@ -198,68 +238,57 @@ public class GameMovementHandler {
 		for (int i = 0; i < numCommands; i++) {
 			byte command = packet.readByte();
 			switch (command) {
-				case 0: // normal move
-				case 5:
-				case 17: { //float
+				case NORMAL_MOVE:
+				case NORMAL_MOVE_2:
+				case WINGS_FALL: {
+					Point pos = packet.readPos();
+					Point wobble = packet.readPos();
+					short foothold = packet.readShort();
+					byte stance = packet.readByte();
+					short duration = packet.readShort();
+					res.add(new AbsoluteLifeMovement(command, pos, wobble, foothold, stance, duration));
+					break;
+				} case JUMP:
+				case JUMP_AND_KNOCKBACK:
+				case FLASH_JUMP:
+				case HORNTAIL_KNOCKBACK:
+				case RECOIL_SHOT:
+				case WINGS: {
+					Point pos = packet.readPos();
+					byte stance = packet.readByte();
+					short foothold = packet.readShort();
+					res.add(new RelativeLifeMovement(command, pos, stance, foothold));
+					break;
+				} case UNK_SKILL:
+				case TELEPORT:
+				case ASSAULTER:
+				case ASSASSINATE:
+				case RUSH:
+				case UNK: {
+					Point pos = packet.readPos();
+					Point wobble = packet.readPos();
+					byte stance = packet.readByte();
+					res.add(new TeleportMovement(command, pos, wobble, stance));
+					break;
+				} case EQUIP: {
+					byte count = packet.readByte();
+					res.add(new ChangeEquipMovement(count));
+					break;
+				} case CHAIR: {
+					Point pos = packet.readPos();
+					short foothold = packet.readShort();
+					byte stance = packet.readByte();
+					short duration = packet.readShort();
+					res.add(new ChairMovement(pos, foothold, stance, duration));
+					break;
+				} case JUMP_DOWN: {
 					Point pos = packet.readPos();
 					Point wobble = packet.readPos();
 					short unk = packet.readShort();
-					byte newstate = packet.readByte();
+					short foothold = packet.readShort();
+					byte stance = packet.readByte();
 					short duration = packet.readShort();
-					AbsoluteLifeMovement alm = new AbsoluteLifeMovement(command, pos, duration, newstate);
-					alm.setUnk(unk);
-					alm.setPixelsPerSecond(wobble);
-					res.add(alm);
-					break;
-				} case 1:
-				case 2:
-				case 6: // fj
-				case 12:
-				case 13: // Shot-jump-back thing
-				case 16: { //float
-					Point mod = packet.readPos();
-					byte newstate = packet.readByte();
-					short duration = packet.readShort();
-					RelativeLifeMovement rlm = new RelativeLifeMovement(command, mod, duration, newstate);
-					res.add(rlm);
-					break;
-				} case 3:
-				case 4: // tele... -.-
-				case 7: // assaulter
-				case 8: // assassinate
-				case 9: // rush
-				case 14: {
-					Point pos = packet.readPos();
-					Point wobble = packet.readPos();
-					byte newstate = packet.readByte();
-					TeleportMovement tm = new TeleportMovement(command, pos, newstate);
-					tm.setPixelsPerSecond(wobble);
-					res.add(tm);
-					break;
-				} case 10: { //change equip???
-					res.add(new ChangeEquipSpecialAwesome(packet.readByte()));
-					break;
-				} case 11: { //chair
-					Point pos = packet.readPos();
-					short unk = packet.readShort();
-					byte newstate = packet.readByte();
-					short duration = packet.readShort();
-					ChairMovement cm = new ChairMovement(command, pos, duration, newstate);
-					cm.setUnk(unk);
-					res.add(cm);
-					break;
-				} case 15: {
-					Point pos = packet.readPos();
-					Point wobble = packet.readPos();
-					short unk = packet.readShort();
-					short fh = packet.readShort();
-					byte newstate = packet.readByte();
-					short duration = packet.readShort();
-					JumpDownMovement jdm = new JumpDownMovement(command, pos, duration, newstate);
-					jdm.setUnk(unk);
-					jdm.setPixelsPerSecond(wobble);
-					jdm.setFH(fh);
-					res.add(jdm);
+					res.add(new JumpDownMovement(pos, wobble, unk, foothold, stance, duration));
 					break;
 				} default: {
 					return null;
@@ -269,17 +298,21 @@ public class GameMovementHandler {
 		return res;
 	}
 
-	//TODO: I don't like instanceof...
 	private static void updatePosition(List<LifeMovementFragment> movement, MapEntity target, int yoffset) {
 		for (LifeMovementFragment move : movement) {
-			if (move instanceof LifeMovement) {
-				LifeMovement lm = (LifeMovement) move;
-				if (lm instanceof AbsoluteLifeMovement) {
-					Point position = lm.getPosition();
-					position.y += yoffset;
-					target.setPosition(position);
+			for (UpdatedEntityInfo stat : move.updatedStats()) {
+				switch (stat) {
+					case POSITION:
+						Point pos = ((PositionChangedMovementFragment) move).getPosition();
+						target.setPosition(new Point(pos.x, pos.y + yoffset));
+						break;
+					case FOOTHOLD:
+						target.setFoothold(((FootholdChangedMovementFragment) move).getFoothold());
+						break;
+					case STANCE:
+						target.setStance(((StanceChangedMovementFragment) move).getStance());
+						break;
 				}
-				target.setStance(lm.getNewstate());
 			}
 		}
 	}

@@ -20,21 +20,46 @@ package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
 import java.awt.Point;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public class TeleportMovement extends AbsoluteLifeMovement {
-	public TeleportMovement(byte type, Point position, byte newstate) {
-		super(type, position, (short) 0, newstate);
+public class TeleportMovement implements PositionChangedMovementFragment, StanceChangedMovementFragment {
+	private final byte type;
+	private final Point position;
+	private final Point pixelsPerSecond;
+	private final byte stance;
+
+	public TeleportMovement(byte type, Point position, Point wobble, byte stance) {
+		this.type = type;
+		this.position = position;
+		this.pixelsPerSecond = wobble;
+		this.stance = stance;
 	}
 
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
-		lew.writePos(getPixelsPerSecond());
-		lew.writeByte(getNewstate());
+		lew.writeByte(type);
+		lew.writePos(position);
+		lew.writePos(pixelsPerSecond);
+		lew.writeByte(stance);
+	}
+
+	@Override
+	public Set<UpdatedEntityInfo> updatedStats() {
+		return EnumSet.of(UpdatedEntityInfo.POSITION, UpdatedEntityInfo.STANCE);
+	}
+
+	@Override
+	public Point getPosition() {
+		return position;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
 	}
 }

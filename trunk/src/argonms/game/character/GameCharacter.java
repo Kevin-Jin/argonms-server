@@ -65,6 +65,7 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -1649,6 +1650,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			map.removePlayer(this);
 			map = goTo;
 			setPosition(map.getPortalPosition(initialPortal));
+			setFoothold((short) 0);
 			client.getSession().send(GamePackets.writeChangeMap(mapid, initialPortal, this));
 			if (!isVisible())
 				getClient().getSession().send(GamePackets.writeShowHide());
@@ -1660,9 +1662,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void prepareChannelChange() {
 		leaveMapRoutines();
-		GameServer.getChannel(client.getChannel()).removePlayer(this);
 		if (map != null)
 			map.removePlayer(this);
+		saveCharacter();
 		client.migrateHost();
 	}
 
@@ -1696,7 +1698,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		leaveMapRoutines();
 		if (map != null)
 			map.removePlayer(this);
-		saveCharacter();
+		if (!changingChannels)
+			saveCharacter();
 		for (Cooldown cooling : cooldowns.values())
 			cooling.cancel();
 		client = null;

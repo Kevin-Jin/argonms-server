@@ -18,15 +18,34 @@
 
 package argonms.game.field.movement;
 
-import java.awt.Point;
+import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.net.external.handler.GameMovementHandler;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public interface LifeMovement extends LifeMovementFragment {
-	Point getPosition();
-	byte getNewstate();
-	short getDuration();
-	byte getType();
+public class ChangeEquipMovement implements LifeMovementFragment {
+	/**
+	 * 1 indicates something was equipped, 2 indicates something was unequipped
+	 * and then something else was equipped.
+	 */
+	private byte count;
+
+	public ChangeEquipMovement(byte numChanges) {
+		this.count = numChanges;
+	}
+
+	@Override
+	public void serialize(LittleEndianWriter lew) {
+		lew.writeByte(GameMovementHandler.EQUIP);
+		lew.writeByte(count);
+	}
+
+	@Override
+	public Set<UpdatedEntityInfo> updatedStats() {
+		return EnumSet.noneOf(UpdatedEntityInfo.class);
+	}
 }

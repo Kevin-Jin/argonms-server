@@ -19,34 +19,55 @@
 package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.net.external.handler.GameMovementHandler;
 import java.awt.Point;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ChairMovement extends AbstractLifeMovement {
-	private short unk;
+public class ChairMovement implements PositionChangedMovementFragment, FootholdChangedMovementFragment, StanceChangedMovementFragment {
+	private final Point position;
+	private final short foothold;
+	private final byte stance;
+	private final short duration;
 
-	public ChairMovement(byte type, Point position, short duration, byte newstate) {
-		super(type, position, duration, newstate);
-	}
-
-	public short getUnk() {
-		return unk;
-	}
-
-	public void setUnk(short unk) {
-		this.unk = unk;
+	public ChairMovement(Point position, short foothold, byte stance, short duration) {
+		this.position = position;
+		this.foothold = foothold;
+		this.stance = stance;
+		this.duration = duration;
 	}
 
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
-		lew.writeShort(unk);
-		lew.writeByte(getNewstate());
-		lew.writeShort(getDuration());
+		lew.writeByte(GameMovementHandler.CHAIR);
+		lew.writePos(position);
+		lew.writeShort(foothold);
+		lew.writeByte(stance);
+		lew.writeShort(duration);
+	}
+
+	@Override
+	public Set<UpdatedEntityInfo> updatedStats() {
+		return EnumSet.of(UpdatedEntityInfo.POSITION, UpdatedEntityInfo.FOOTHOLD, UpdatedEntityInfo.STANCE);
+	}
+
+	@Override
+	public Point getPosition() {
+		return position;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
 	}
 }
 
