@@ -20,21 +20,51 @@ package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
 import java.awt.Point;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public class RelativeLifeMovement extends AbstractLifeMovement {
-	public RelativeLifeMovement(byte type, Point position, short duration, byte newstate) {
-		super(type, position, duration, newstate);
+public class RelativeLifeMovement implements PositionChangedMovementFragment, FootholdChangedMovementFragment, StanceChangedMovementFragment {
+	private final byte type;
+	private final Point position;
+	private final byte stance;
+	private final short foothold;
+
+	public RelativeLifeMovement(byte type, Point position, byte stance, short foothold) {
+		this.type = type;
+		this.position = position;
+		this.stance = stance;
+		this.foothold = foothold;
 	}
 
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
-		lew.writeByte(getNewstate());
-		lew.writeShort(getDuration());
+		lew.writeByte(type);
+		lew.writePos(position);
+		lew.writeByte(stance);
+		lew.writeShort(foothold);
+	}
+
+	@Override
+	public Set<UpdatedEntityInfo> updatedStats() {
+		return EnumSet.of(UpdatedEntityInfo.POSITION, UpdatedEntityInfo.FOOTHOLD, UpdatedEntityInfo.STANCE);
+	}
+
+	@Override
+	public Point getPosition() {
+		return position;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
 	}
 }

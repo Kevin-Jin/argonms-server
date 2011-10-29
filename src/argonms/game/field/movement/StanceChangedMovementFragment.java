@@ -18,42 +18,10 @@
 
 package argonms.game.field.movement;
 
-import java.awt.Point;
-
 /**
  *
  * @author GoldenKevin
  */
-public abstract class AbstractLifeMovement implements LifeMovement {
-	private Point position;
-	private short duration;
-	private byte newstate;
-	private byte type;
-
-	public AbstractLifeMovement(byte type, Point position, short duration, byte newstate) {
-		this.type = type;
-		this.position = position;
-		this.duration = duration;
-		this.newstate = newstate;
-	}
-
-	@Override
-	public byte getType() {
-		return type;
-	}
-
-	@Override
-	public short getDuration() {
-		return duration;
-	}
-
-	@Override
-	public byte getNewstate() {
-		return newstate;
-	}
-
-	@Override
-	public Point getPosition() {
-		return position;
-	}
+public interface StanceChangedMovementFragment extends LifeMovementFragment {
+	public byte getStance();
 }

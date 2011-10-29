@@ -18,22 +18,10 @@
 
 package argonms.game.field.movement;
 
-import argonms.common.util.output.LittleEndianWriter;
-
 /**
  *
  * @author GoldenKevin
  */
-public class ChangeEquipSpecialAwesome implements LifeMovementFragment {
-	private byte wui;
-
-	public ChangeEquipSpecialAwesome(byte wui) {
-		this.wui = wui;
-	}
-
-	@Override
-	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte((byte) 10);
-		lew.writeByte(wui);
-	}
+public interface FootholdChangedMovementFragment extends LifeMovementFragment {
+	public short getFoothold();
 }

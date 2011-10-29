@@ -19,53 +19,60 @@
 package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.net.external.handler.GameMovementHandler;
 import java.awt.Point;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
  * @author GoldenKevin
  */
-public class JumpDownMovement extends AbstractLifeMovement {
-	private Point pixelsPerSecond;
-	private short unk;
-	private short fh;
+public class JumpDownMovement implements PositionChangedMovementFragment, FootholdChangedMovementFragment, StanceChangedMovementFragment {
+	private final Point position;
+	private final Point pixelsPerSecond;
+	private final short unk;
+	private final short foothold;
+	private final byte stance;
+	private final short duration;
 
-	public JumpDownMovement(byte type, Point position, short duration, byte newstate) {
-		super(type, position, duration, newstate);
-	}
-
-	public Point getPixelsPerSecond() {
-		return pixelsPerSecond;
-	}
-
-	public void setPixelsPerSecond(Point wobble) {
+	public JumpDownMovement(Point position, Point wobble, short unk, short foothold, byte stance, short duration) {
+		this.position = position;
 		this.pixelsPerSecond = wobble;
-	}
-
-	public short getUnk() {
-		return unk;
-	}
-
-	public void setUnk(short unk) {
 		this.unk = unk;
+		this.foothold = foothold;
+		this.stance = stance;
+		this.duration = duration;
 	}
 
-	public int getFH() {
-		return fh;
-	}
-	
-	public void setFH(short fh) {
-		this.fh = fh;
-	}
-	
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(getType());
-		lew.writePos(getPosition());
+		lew.writeByte(GameMovementHandler.JUMP_DOWN);
+		lew.writePos(position);
 		lew.writePos(pixelsPerSecond);
 		lew.writeShort(unk);
-		lew.writeShort(fh);
-		lew.writeByte(getNewstate());
-		lew.writeShort(getDuration());
+		lew.writeShort(foothold);
+		lew.writeByte(stance);
+		lew.writeShort(duration);
+	}
+
+	@Override
+	public Set<UpdatedEntityInfo> updatedStats() {
+		return EnumSet.of(UpdatedEntityInfo.POSITION, UpdatedEntityInfo.FOOTHOLD, UpdatedEntityInfo.STANCE);
+	}
+
+	@Override
+	public Point getPosition() {
+		return position;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
 	}
 }
