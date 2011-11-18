@@ -244,7 +244,7 @@ public class DealDamageHandler {
 		final GameMap tdmap = p.getMap();
 
 		for (int eachd : oned.getValue()) {
-			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(4211003)).shouldPerform()) {
+			if (SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getSkillLevel(Skills.PICK_POCKET)).makeChanceResult()) {
 				double perc = eachd / reqdamage;
 
 				int dropAmt = Math.min(Math.max((int) (perc * maxmeso), 1), maxmeso);
@@ -267,21 +267,22 @@ public class DealDamageHandler {
 		PlayerStatusEffectValues v;
 		PlayerSkillEffectsData e;
 		if ((v = player.getEffectValue(PlayerStatusEffect.BLIND)) != null) {
-			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(player.getSkillLevel(v.getLevelWhenCast()));
-			if (e.shouldPerform())
+			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
+			if (e.makeChanceResult())
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
 		if ((v = player.getEffectValue(PlayerStatusEffect.HAMSTRING)) != null) {
-			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(player.getSkillLevel(v.getLevelWhenCast()));
-			if (e.shouldPerform())
+			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
+			if (e.makeChanceResult())
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
 		if ((v = player.getEffectValue(PlayerStatusEffect.CHARGE)) != null) {
 			switch (v.getSource()) {
 				case Skills.SWORD_ICE_CHARGE:
 				case Skills.BW_BLIZZARD_CHARGE:
-					e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(player.getSkillLevel(v.getLevelWhenCast()));
+					e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
 					if (monster.getElementalResistance(Element.ICE) <= Element.EFFECTIVENESS_NORMAL)
+						//no need for e.makeChanceResult() since ice charge freezes non ice-immune monsters 100% of the time
 						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 					break;
 			}
@@ -297,18 +298,20 @@ public class DealDamageHandler {
 		if (weaponClass == WeaponClass.CLAW && (level = player.getSkillLevel(Skills.VENOMOUS_STAR)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAR).getLevel(level);
 			for (int i = 0; i < attackCount; i++) {
-				if (monster.getVenomCount() < 3 && e.shouldPerform()) {
+				if (monster.getVenomCount() < 3 && e.makeChanceResult()) {
 					monster.addToVenomCount();
-					MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
+					if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
+						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 				}
 			}
 		}
 		if (weaponClass == WeaponClass.ONE_HANDED_MELEE && (level = player.getSkillLevel(Skills.VENOMOUS_STAB)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAB).getLevel(level);
 			for (int i = 0; i < attackCount; i++) {
-				if (monster.getVenomCount() < 3 && e.shouldPerform()) {
+				if (monster.getVenomCount() < 3 && e.makeChanceResult()) {
 					monster.addToVenomCount();
-					MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
+					if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
+						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 				}
 			}
 		}
@@ -316,7 +319,7 @@ public class DealDamageHandler {
 		//MP Eater - just stack them until the monster has no MP if we leveled more than one of them!
 		if ((level = player.getSkillLevel(Skills.FP_MP_EATER)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.FP_MP_EATER).getLevel(level);
-			if (e.shouldPerform()) {
+			if (e.makeChanceResult()) {
 				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
@@ -328,7 +331,7 @@ public class DealDamageHandler {
 		}
 		if ((level = player.getSkillLevel(Skills.IL_MP_EATER)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.IL_MP_EATER).getLevel(level);
-			if (e.shouldPerform()) {
+			if (e.makeChanceResult()) {
 				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
@@ -340,7 +343,7 @@ public class DealDamageHandler {
 		}
 		if ((level = player.getSkillLevel(Skills.CLERIC_MP_EATER)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.CLERIC_MP_EATER).getLevel(level);
-			if (e.shouldPerform()) {
+			if (e.makeChanceResult()) {
 				int absorbMp = Math.min(monster.getMaxMp() * e.getX() / 100, monster.getMp());
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
@@ -438,11 +441,26 @@ public class DealDamageHandler {
 						//totDamageToOneMonster = (int) (player.calculateMaxBaseDamage(player.getTotalWatk()) * (SkillDataLoader.getInstance().getSkill(Skills.HEAVENS_HAMMER).getLevel(player.getSkillLevel(Skills.HEAVENS_HAMMER)).getDamage() / 100));
 						//totDamageToOneMonster = (int) (Math.floor(Rng.getGenerator().nextDouble() * (totDamageToOneMonster * .2) + totDamageToOneMonster * .8));
 						break;
+					case Skills.FP_ELEMENT_COMPOSITION:
+						//see if the attack skill can give the monster a disease
+						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
+							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+								if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
+									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
+						break;
+					case Skills.IL_ELEMENT_COMPOSITION:
+						//see if the attack skill can give the monster a disease
+						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
+							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+								if (monster.getElementalResistance(Element.ICE) <= Element.EFFECTIVENESS_NORMAL)
+									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
+						break;
 					default:
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (attackEffect.getMonsterEffect() != null && attackEffect.shouldPerform())
-								MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
+							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+								if (monster.getElementalResistance(SkillDataLoader.getInstance().getSkill(attack.skill).getElement()) <= Element.EFFECTIVENESS_NORMAL)
+									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;
 				}
 				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {

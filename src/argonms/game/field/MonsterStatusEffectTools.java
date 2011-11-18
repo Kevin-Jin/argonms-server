@@ -152,12 +152,12 @@ public class MonsterStatusEffectTools {
 				switch (e.getDataId()) {
 					case Skills.BLIND:
 					case Skills.HAMSTRING:
-						duration = e.getY();
+						duration = e.getY() * 1000;
 						break;
 					case Skills.SWORD_ICE_CHARGE:
 					case Skills.BW_BLIZZARD_CHARGE:
 						//freeze skills have weird times...
-						duration = e.getY() * 2;
+						duration = e.getY() * 1000 * 2;
 						break;
 					default:
 						duration = e.getDuration();
@@ -229,12 +229,16 @@ public class MonsterStatusEffectTools {
 				mod = (short) e.getX();
 				break;
 			case STUN:
+				mod = 1;
 				break;
 			case FREEZE:
+				mod = 1;
 				break;
 			case POISON:
+				mod = 1;
 				break;
 			case SEAL:
+				mod = 1;
 				break;
 			case TAUNT:
 				mod = (short) e.getX();
@@ -252,8 +256,10 @@ public class MonsterStatusEffectTools {
 				mod = (short) e.getX();
 				break;
 			case DOOM:
+				mod = 1;
 				break;
 			case SHADOW_WEB:
+				mod = 1;
 				break;
 			case WEAPON_IMMUNITY:
 				mod = (short) e.getX();
@@ -262,8 +268,10 @@ public class MonsterStatusEffectTools {
 				mod = (short) e.getX();
 				break;
 			case NINJA_AMBUSH:
+				mod = 1;
 				break;
 			case INERTMOB:
+				mod = 1;
 				break;
 		}
 		return new MonsterStatusEffectValues(e, mod);

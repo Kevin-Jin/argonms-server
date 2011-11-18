@@ -153,21 +153,23 @@ public class GameMovementHandler {
 		Skill skillToUse = null;
 		MobSkillEffectsData skillToUseEffect = null;
 
+		//TODO: I don't think we should apply a debuff again if it is already active to the player
+		//this useSkill and skillId/skillLevel part is probably all wrong...
+		//probably will "borrow" a working algorithm from Vana
 		List<Skill> skills = monster.getSkills();
 		int skillsCount = skills.size();
 		if (useSkill && skillsCount > 0) {
 			skillToUse = skills.get(Rng.getGenerator().nextInt(skillsCount));
 			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillToUse.getSkill()).getLevel(skillToUse.getLevel());
-			if (!monster.canUseSkill(skillToUseEffect)) {
+			if (skillToUseEffect.makeChanceResult() && monster.canUseSkill(skillToUseEffect))
+				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
+			else
 				skillToUse = null;
-				skillToUseEffect = null;
-			}
-			//TODO: apply mob skill
 		}
 
 		if ((skillId >= 100 && skillId <= 200) && monster.hasSkill(skillId, skillLevel)) {
-			MobSkillEffectsData playerSkillEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
-			if (playerSkillEffect != null && playerSkillEffect.shouldPerform() && monster.canUseSkill(playerSkillEffect))
+			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
+			if (skillToUseEffect.makeChanceResult() && monster.canUseSkill(skillToUseEffect))
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
 		}
 

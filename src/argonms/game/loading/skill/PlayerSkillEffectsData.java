@@ -409,6 +409,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 
 	@Override
 	public int getDuration() {
+		//freeze skills have weird times...
 		if (isFreeze)
 			return super.getDuration() * 2;
 		return super.getDuration();
@@ -456,7 +457,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return prop;
 	}
 
-	public boolean shouldPerform() {
+	public boolean makeChanceResult() {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}
 

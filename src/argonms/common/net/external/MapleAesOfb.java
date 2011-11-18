@@ -219,15 +219,13 @@ public class MapleAesOfb {
 			temp1 += ivKeys[temp2 & 0xFF];
 			newIv[3] = temp1;
 
-			//treat newIv as a 32-bit little endian integer
-			int newIvInt = (newIv[0] & 0xFF) | ((newIv[1] & 0xFF) << 8) | ((newIv[2] & 0xFF) << 16) | ((newIv[3] & 0xFF) << 24);
-			//rotate newIv right 29 bits (or left 3 bits)
-			newIvInt = (newIvInt >>> 0x1D) | (newIvInt << 3);
-			//put newIvInt back into a byte array representing a 32-bit little endian integer
-			newIv[0] = (byte) (newIvInt & 0xFF);
-			newIv[1] = (byte) ((newIvInt >>> 8) & 0xFF);
-			newIv[2] = (byte) ((newIvInt >>> 16) & 0xFF);
-			newIv[3] = (byte) ((newIvInt >>> 24) & 0xFF);
+			//essentially reverses the byte order of newIv, rotates all bits
+			//3 to the left, then reverses the byte order again
+			temp1 = (byte) ((newIv[3] & 0xFF) >>> 5); //the "carry"
+			newIv[3] = (byte) (newIv[3] << 3 | (newIv[2] & 0xFF) >>> 5);
+			newIv[2] = (byte) (newIv[2] << 3 | (newIv[1] & 0xFF) >>> 5);
+			newIv[1] = (byte) (newIv[1] << 3 | (newIv[0] & 0xFF) >>> 5);
+			newIv[0] = (byte) (newIv[0] << 3 | temp1);
 		}
 		return newIv;
 	}

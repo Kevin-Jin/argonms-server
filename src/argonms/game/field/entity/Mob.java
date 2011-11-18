@@ -62,6 +62,11 @@ public class Mob extends MapEntity {
 		DESTROY_ANIMATION_EXPLODE = 2
 	;
 
+	public static final byte
+		CONTROL_STATUS_NORMAL = 1,
+		CONTROL_STATUS_NONE = 5
+	;
+
 	private final MobStats stats;
 	private final GameMap map;
 	private int remHp;
@@ -225,6 +230,10 @@ public class Mob extends MapEntity {
 	public void executeDeathHooksNoRewards() {
 		for (MobDeathHook hook : hooks)
 			hook.monsterKilled(null, null);
+	}
+
+	public byte getControlStatus() {
+		return getController() != null ? CONTROL_STATUS_NORMAL : CONTROL_STATUS_NONE;
 	}
 
 	public GameCharacter getController() {
