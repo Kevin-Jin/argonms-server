@@ -1415,6 +1415,26 @@
 	the receiving channel loads the correct state. Fixed some functions getting
 	called twice from changing channels.
 
+2011-11-18  GoldenKevin  (revision 70)
+
+	* Further streamlined encryption by simplifying MapleAesOfb.nextIv. No more
+	intermediate step of converting the 4-byte array into a 32-bit integer.
+	* Fixed NullPointerException when a mob is attacked while Blind, Hamstring,
+	or Charge is cast.
+	* Fixed mob debuffs (by player attack, passive, and buff skills) expiring
+	immediately. Fixed skills that freeze the mob. Currently Hamstring and I/L
+	Element Composition work correctly. Implementations for poison, Doom, and
+	the rest of mob debuffs coming soon.
+	* Fixed KvjSkillDataLoader.loadMobSkill.
+	* PlayerSkillEffectsData and MobSkillEffectsData renamed shouldPerform to
+	makeChanceResult (which is what the predecessor from OdinMS was named). Its
+	previous name did not describe its purpose well enough.
+	* GamePackets.writeMonsterData is more accurate.
+	* Skills are now aware of mob's elemental immunity.
+	* Mob's random skills are now applied (GameMovementHandler). Have to test
+	this one though since I have a feeling that my analysis and interpretation
+	is utterly wrong.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

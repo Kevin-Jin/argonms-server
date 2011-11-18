@@ -68,7 +68,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		try {
 			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 			if (f.exists())
-				doWork(new LittleEndianByteArrayReader(f));
+				doMobWork(new LittleEndianByteArrayReader(f));
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for mob skill " + skillid, e);
 		}

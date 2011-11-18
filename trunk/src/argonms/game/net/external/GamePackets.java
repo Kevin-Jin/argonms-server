@@ -31,6 +31,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.Ring;
 import argonms.common.field.MonsterStatusEffect;
+import argonms.common.loading.StatusEffectsData.EffectSource;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
@@ -45,6 +46,7 @@ import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.field.MobSkills;
+import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
@@ -1145,14 +1147,27 @@ public class GamePackets {
 
 	private static void writeMonsterData(LittleEndianWriter lew, Mob monster, boolean newSpawn, byte effect) {
 		lew.writeInt(monster.getId());
-		lew.writeByte((byte) 5);
+		lew.writeByte(monster.getControlStatus());
 		lew.writeInt(monster.getDataId());
 
-		//mob status
-		lew.writeByte((byte) 0);
-		lew.writeShort((short) 0);
-		lew.writeByte((byte) 8);
-		lew.writeInt(0);
+		Map<MonsterStatusEffect, MonsterStatusEffectValues> stats = monster.getAllEffects();
+		int updateMask = 0;
+		for (MonsterStatusEffect key : stats.keySet())
+			updateMask |= key.intValue();
+		lew.writeInt(updateMask);
+		for (MonsterStatusEffectValues statupdate : stats.values()) {
+			lew.writeShort(statupdate.getModifier());
+			switch (statupdate.getSourceType()) {
+				case MOB_SKILL:
+					lew.writeShort((short) statupdate.getSource());
+					lew.writeShort(statupdate.getLevelWhenCast());
+					break;
+				case PLAYER_SKILL:
+					lew.writeInt(statupdate.getSource());
+					break;
+			}
+			lew.writeShort((short) 0);
+		}
 
 		lew.writePos(monster.getPosition());
 		lew.writeByte(monster.getStance());

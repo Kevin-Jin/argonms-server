@@ -185,7 +185,7 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return prop;
 	}
 
-	public boolean shouldPerform() {
+	public boolean makeChanceResult() {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
