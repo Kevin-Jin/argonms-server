@@ -461,16 +461,18 @@ public class GameMap {
 	}
 
 	public void killMonster(Mob monster, GameCharacter killer) {
-		if (monster.getController() != null)
-			monster.getController().uncontrolMonster(monster);
+		GameCharacter controller = monster.getController();
+		if (controller != null)
+			controller.uncontrolMonster(monster);
 		monster.died(killer);
 		destroyEntity(monster);
 		monsters.decrementAndGet();
 	}
 
 	public void removeMonster(Mob monster) {
-		if (monster.getController() != null)
-			monster.getController().uncontrolMonster(monster);
+		GameCharacter controller = monster.getController();
+		if (controller != null)
+			controller.uncontrolMonster(monster);
 		monster.executeDeathHooksNoRewards();
 		destroyEntity(monster);
 		monsters.decrementAndGet();

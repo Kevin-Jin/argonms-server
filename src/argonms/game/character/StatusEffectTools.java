@@ -186,7 +186,7 @@ public class StatusEffectTools {
 				break;
 			case MAPLE_WARRIOR:
 				break;
-			case STANCE:
+			case POWER_STANCE:
 				break;
 			case SHARP_EYES:
 				break;
@@ -340,7 +340,7 @@ public class StatusEffectTools {
 				break;
 			case MAPLE_WARRIOR:
 				break;
-			case STANCE:
+			case POWER_STANCE:
 				break;
 			case SHARP_EYES:
 				break;

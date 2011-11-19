@@ -65,7 +65,6 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
-import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -835,14 +834,17 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return skin;
 	}
 
+	@Override
 	public short getEyes() {
 		return eyes;
 	}
 
+	@Override
 	public short getHair() {
 		return hair;
 	}
 
+	@Override
 	public int getExp() {
 		return exp;
 	}
@@ -942,6 +944,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
 	}
 
+	@Override
 	public short getLevel() {
 		return level;
 	}
@@ -951,6 +954,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 	}
 
+	@Override
 	public short getJob() {
 		return job;
 	}
@@ -961,6 +965,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 	}
 
+	@Override
 	public short getStr() {
 		return baseStr;
 	}
@@ -978,6 +983,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
 	}
 
+	@Override
 	public short getDex() {
 		return baseDex;
 	}
@@ -995,6 +1001,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
 	}
 
+	@Override
 	public short getInt() {
 		return baseInt;
 	}
@@ -1012,6 +1019,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
 	}
 
+	@Override
 	public short getLuk() {
 		return baseLuk;
 	}
@@ -1029,6 +1037,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
 	}
 
+	@Override
 	public short getHp() {
 		return remHp;
 	}
@@ -1053,6 +1062,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		setHp((short) Math.min(remHp + gain, Short.MAX_VALUE));
 	}
 
+	@Override
 	public short getMaxHp() {
 		return baseMaxHp;
 	}
@@ -1110,6 +1120,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	@Override
 	public short getMp() {
 		return remMp;
 	}
@@ -1131,6 +1142,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		setMp((short) Math.min(remMp + gain, Short.MAX_VALUE));
 	}
 
+	@Override
 	public short getMaxMp() {
 		return baseMaxMp;
 	}
@@ -1175,6 +1187,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		recalculateMaxMp(mod);
 	}
 
+	@Override
 	public short getAp() {
 		return remAp;
 	}
@@ -1188,6 +1201,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp)), false));
 	}
 
+	@Override
 	public short getSp() {
 		return remSp;
 	}
@@ -1197,6 +1211,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp)), false));
 	}
 
+	@Override
 	public short getFame() {
 		return fame;
 	}
@@ -1212,6 +1227,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			GamePackets.writeShowPointsGainFromQuest(gain, PacketSubHeaders.STATUS_INFO_FAME);
 	}
 
+	@Override
 	public Inventory getInventory(InventoryType type) {
 		return inventories.get(type);
 	}
@@ -1220,6 +1236,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return storage;
 	}
 
+	@Override
 	public int getMesos() {
 		return mesos;
 	}
@@ -1309,14 +1326,17 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 				.getMapFactory().getMap(map.getForcedReturnMap());
 	}
 
+	@Override
 	public int getMapId() {
 		return (map != null ? map.getDataId() : savedMapId);
 	}
 
+	@Override
 	public byte getSpawnPoint() {
 		return savedSpawnPoint;
 	}
 
+	@Override
 	public int getSpouseId() {
 		return partner;
 	}
@@ -1390,6 +1410,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	@Override
 	public Pet[] getPets() {
 		return equippedPets;
 	}
@@ -1416,6 +1437,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return skillMacros;
 	}
 
+	@Override
 	public Map<Integer, SkillEntry> getSkillEntries() {
 		return Collections.unmodifiableMap(skillEntries);
 	}
@@ -1458,6 +1480,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public void addCooldown(final int skill, short time) {
 		cooldowns.put(Integer.valueOf(skill), new Cooldown(time * 1000, new Runnable() {
+			@Override
 			public void run() {
 				removeCooldown(skill);
 				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
@@ -1469,6 +1492,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		cooldowns.remove(Integer.valueOf(skill)).cancel();
 	}
 
+	@Override
 	public Map<Integer, Cooldown> getCooldowns() {
 		return cooldowns;
 	}
@@ -1705,6 +1729,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		client = null;
 	}
 
+	public boolean isClosed() {
+		return client == null;
+	}
+
 	public LockableList<Mob> getControlledMobs() {
 		return controllingMobs;
 	}
@@ -1787,6 +1815,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
+	@Override
 	public Map<Short, QuestEntry> getAllQuests() {
 		return questStatuses;
 	}
@@ -2033,9 +2062,11 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					hooks.add(new MobDeathHook() {
 						//TODO: special cases when we have party and we distribute
 						//mob kill to all users.
+						@Override
 						public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
 							GameCharacter ourself = futureSelf.get();
-							if (ourself != null && highestDamager == ourself
+							if (ourself != null && !ourself.isClosed()
+									&& highestDamager == ourself
 									//I think we had to be the highest damager and
 									//we had to kill it to be recognized for the kill
 									&& last == highestDamager
@@ -2103,30 +2134,37 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return Collections.unmodifiableList(wishList);
 	}
 
+	@Override
 	public EntityType getEntityType() {
 		return EntityType.PLAYER;
 	}
 
+	@Override
 	public boolean isAlive() {
 		return remHp > 0;
 	}
 
+	@Override
 	public boolean isVisible() {
 		return !isEffectActive(PlayerStatusEffect.HIDE);
 	}
 
+	@Override
 	public byte[] getShowNewSpawnMessage() {
 		return GamePackets.writeShowPlayer(this);
 	}
 
+	@Override
 	public byte[] getShowExistingSpawnMessage() {
 		return getShowNewSpawnMessage();
 	}
 
+	@Override
 	public byte[] getDestructionMessage() {
 		return GamePackets.writeRemovePlayer(this);
 	}
 
+	@Override
 	public String toString() {
 		return "[Player: " + getName() + ']';
 	}

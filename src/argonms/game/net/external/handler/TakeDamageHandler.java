@@ -95,11 +95,25 @@ public class TakeDamageHandler {
 					int hurtDmg = (damage * reduction / 100);
 					if (pgmr.isPhysical())
 						damage = (damage - hurtDmg);
+					switch (pgmr.getSkill()) {
+						case 0:
+							if (!p.isEffectActive(PlayerStatusEffect.MANA_REFLECTION)) {
+								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having mana reflection cast");
+								return;
+							}
+							break;
+						case 6:
+							if (!p.isEffectActive(PlayerStatusEffect.POWER_GUARD)) {
+								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having power guard cast");
+								return;
+							}
+							break;
+					}
 					m.hurt(p, hurtDmg);
 				}
 				stance = packet.readByte();
-				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.STANCE)) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power stance without being buff being cast");
+				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.POWER_STANCE) && !p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power stance without having buff cast");
 					return;
 				}
 			}

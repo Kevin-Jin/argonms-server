@@ -819,7 +819,7 @@ public class GamePackets {
 			case MORPH:
 			case RECOVERY:
 			case MAPLE_WARRIOR:
-			case STANCE:
+			case POWER_STANCE:
 			case SHARP_EYES:
 			case MANA_REFLECTION:
 			case DRAGON_ROAR:
