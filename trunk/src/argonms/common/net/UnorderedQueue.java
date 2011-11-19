@@ -20,8 +20,8 @@ package argonms.common.net;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author GoldenKevin
  */
 public class UnorderedQueue {
-	private final ConcurrentLinkedQueue<ByteBuffer> queued;
+	private final Queue<ByteBuffer> queued;
 	private final AtomicBoolean writeInProgress;
 
 	public UnorderedQueue() {
@@ -44,7 +44,7 @@ public class UnorderedQueue {
 	 * @param element the ByteBuffer to queue
 	 */
 	public void insert(ByteBuffer element) {
-		queued.add(element);
+		queued.offer(element);
 	}
 
 	public boolean shouldWrite() {
@@ -65,10 +65,9 @@ public class UnorderedQueue {
 	 */
 	public List<ByteBuffer> pop() {
 		List<ByteBuffer> consecutive = new ArrayList<ByteBuffer>();
-		for (Iterator<ByteBuffer> iter = queued.iterator(); iter.hasNext(); ) {
-			consecutive.add(iter.next());
-			iter.remove();
-		}
+		ByteBuffer last;
+		while ((last = queued.poll()) != null)
+			consecutive.add(last);
 		return consecutive;
 	}
 }

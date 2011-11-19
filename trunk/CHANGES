@@ -1435,6 +1435,31 @@
 	this one though since I have a feeling that my analysis and interpretation
 	is utterly wrong.
 
+2011-11-19  GoldenKevin  (revision 71)
+
+	* Renamed PlayerStatusEffect.STANCE to PlayerStatusEffect.POWER_STANCE.
+	* Fixed anti-cheat false positive when using Energy Charge and it stops you
+	from being knocked-back by a mob (basically the effect of power stance).
+	* Added some more anti-cheat consistency checks for Power Guard, Energy
+	Charge, and Mana Reflection.
+	* Fixed NullPointerException when a mob dies and one of its attackers had
+	already disconnected. I assumed that GameCharacters would be garbage
+	collected immediately after log off, and hence would not linger in weak
+	references once disconnected (in this case, the damages WeakHashMap). Fixed
+	other potential problem with a similar scenario in
+	GameCharacter.getMobDeathHooks().
+	* Fixed potential race conditions/NullPointerExceptions in
+	GameMap.killMonster, GameMap.removeMonster, Mob.wasAttackedBy, and
+	Mob.giveExp. Mob.hurt, Mob.addDeathHook, Mob.died, and
+	Mob.executeDeathHooksNoRewards should now be immune to very rare
+	ConcurrentModificationExceptions.
+	* Added some @Override annotations in GameCharacter to methods that Eclipse
+	strangely missed in r52.
+	* Apparently using Iterator.remove on ConcurrentLinkedQueue.iterator()
+	results in memory leaks. Fixed UnorderedQueue.pop() to exclusively use the
+	safe poll() method and ScheduledHashedWheelExecutor's worker to instead use
+	a Set backed by a ConcurrentHashMap.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -178,7 +178,7 @@ public class GameMovementHandler {
 
 		GameCharacter controller = monster.getController();
 		if (controller != player) {
-			if (monster.wasAttackedBy(player)) { // aggro and controller change
+			if (monster.wasAttackedBy(player)) { //aggro and controller change
 				if (controller != null) {
 					controller.uncontrolMonster(monster);
 					controller.getClient().getSession().send(GamePackets.writeStopControlMonster(monster));
@@ -189,6 +189,7 @@ public class GameMovementHandler {
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			} else {
+				//TODO: is this a hacking/packet-editing attempt?
 				return;
 			}
 		} else if (skill == -1 && monster.controllerKnowsAboutAggro() && !monster.isMobile() && !monster.isFirstAttack()) {

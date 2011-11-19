@@ -287,7 +287,7 @@ public class DatabaseManager {
 
 		@Override
 		public void returnConnection(Connection con) {
-			available.add(con);
+			available.offer(con);
 			taken.decrementAndGet();
 		}
 

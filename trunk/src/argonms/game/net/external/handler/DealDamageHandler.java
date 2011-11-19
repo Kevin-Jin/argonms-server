@@ -136,6 +136,10 @@ public class DealDamageHandler {
 
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
+		if (!p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having energy charge cast");
+			return;
+		}
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE)), p);
 		applyAttack(attack, p);

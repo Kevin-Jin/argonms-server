@@ -48,7 +48,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -71,7 +73,7 @@ public class Mob extends MapEntity {
 	private final GameMap map;
 	private int remHp;
 	private int remMp;
-	private final List<MobDeathHook> hooks;
+	private final Queue<MobDeathHook> hooks;
 	private final LockableMap<GameCharacter, PlayerDamage> damages;
 	private WeakReference<GameCharacter> controller;
 	private boolean aggroAware, hasAggro;
@@ -87,7 +89,7 @@ public class Mob extends MapEntity {
 		this.map = map;
 		this.remHp = stats.getMaxHp();
 		this.remMp = stats.getMaxMp();
-		this.hooks = new ArrayList<MobDeathHook>();
+		this.hooks = new ConcurrentLinkedQueue<MobDeathHook>();
 		this.damages = new LockableMap<GameCharacter, PlayerDamage>(new WeakHashMap<GameCharacter, PlayerDamage>());
 		this.controller = new WeakReference<GameCharacter>(null);
 		this.activeEffects = new EnumMap<MonsterStatusEffect, MonsterStatusEffectValues>(MonsterStatusEffect.class);
@@ -137,36 +139,44 @@ public class Mob extends MapEntity {
 		short attackerLevel;
 		Party attackerParty;
 		PartyExp partyExp;
-		for (Entry<GameCharacter, PlayerDamage> pd : damages.entrySet()) {
-			attacker = pd.getKey();
-			damage = pd.getValue().getDamage();
-			if (damage > highestDamage) {
-				highestDamageAttacker = attacker;
-				highestDamage = damage;
-			}
-			if (attacker == null || attacker.getMapId() != map.getDataId() || !attacker.isAlive())
-				continue;
-
-			attackerLevel = attacker.getLevel();
-			attackerParty = attacker.getParty();
-
-			long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
-			if (attackerParty != null) {
-				partyExp = parties.get(attackerParty);
-				if (partyExp == null) {
-					partyExp = new PartyExp();
-					parties.put(attackerParty, partyExp);
+		//damages shouldn't be accessed from here on out anyway since the mob is
+		//already dead and cannot be attacked any more, but some lagger might
+		//screw up our assertion...
+		damages.lockRead();
+		try {
+			for (Entry<GameCharacter, PlayerDamage> pd : damages.entrySet()) {
+				attacker = pd.getKey();
+				damage = pd.getValue().getDamage();
+				if (damage > highestDamage) {
+					highestDamageAttacker = attacker;
+					highestDamage = damage;
 				}
-				partyExp.compareAndSetMinAttackerLevel(attackerLevel);
-				partyExp.compareAndSetMaxDamage(damage, attacker);
-			} else {
-				int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-						attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
-				//exp = exp * getTauntEffect() / 100;
-				exp *= GameServer.getVariables().getExpRate();
-				exp += ((exp * hsRate) / 100);
-				attacker.gainExp((int) Math.min(exp, Integer.MAX_VALUE), attacker == killer, false);
+				if (attacker == null || attacker.isClosed() || attacker.getMapId() != map.getDataId() || !attacker.isAlive())
+					continue;
+
+				attackerLevel = attacker.getLevel();
+				attackerParty = attacker.getParty();
+
+				long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
+				if (attackerParty != null) {
+					partyExp = parties.get(attackerParty);
+					if (partyExp == null) {
+						partyExp = new PartyExp();
+						parties.put(attackerParty, partyExp);
+					}
+					partyExp.compareAndSetMinAttackerLevel(attackerLevel);
+					partyExp.compareAndSetMaxDamage(damage, attacker);
+				} else {
+					int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+							attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
+					//exp = exp * getTauntEffect() / 100;
+					exp *= GameServer.getVariables().getExpRate();
+					exp += ((exp * hsRate) / 100);
+					attacker.gainExp((int) Math.min(exp, Integer.MAX_VALUE), attacker == killer, false);
+				}
 			}
+		} finally {
+			damages.unlockRead();
 		}
 		if (!parties.isEmpty()) {
 			List<GameCharacter> members;
@@ -224,7 +234,7 @@ public class Mob extends MapEntity {
 	}
 
 	public void addDeathHook(MobDeathHook hook) {
-		hooks.add(hook);
+		hooks.offer(hook);
 	}
 
 	public void executeDeathHooksNoRewards() {
@@ -237,6 +247,10 @@ public class Mob extends MapEntity {
 	}
 
 	public GameCharacter getController() {
+		//for this WeakReference, there is no need to check for
+		//GameCharacter.isClosed() since setController(null) is always called
+		//when GameCharacter is closing (before GameCharacter.isClosed() can
+		//become true).
 		return controller.get();
 	}
 
@@ -268,13 +282,18 @@ public class Mob extends MapEntity {
 		if (damage > remHp)
 			damage = remHp;
 		this.remHp -= damage;
-		PlayerDamage pd = damages.getWhenSafe(p);
-		if (pd != null) {
-			pd.addDamage(damage);
-		} else {
-			damages.putWhenSafe(p, new PlayerDamage(damage));
-			for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
-				hooks.add(hook);
+		damages.lockWrite();
+		try {
+			PlayerDamage pd = damages.get(p);
+			if (pd != null) {
+				pd.addDamage(damage);
+			} else {
+				damages.put(p, new PlayerDamage(damage));
+				for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
+					hooks.offer(hook);
+			}
+		} finally {
+			damages.unlockWrite();
 		}
 
 		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
@@ -403,7 +422,7 @@ public class Mob extends MapEntity {
 	}
 
 	public boolean wasAttackedBy(GameCharacter player) {
-		return damages.containsKey(player);
+		return damages.getWhenSafe(player) != null;
 	}
 
 	public boolean controllerHasAggro() {

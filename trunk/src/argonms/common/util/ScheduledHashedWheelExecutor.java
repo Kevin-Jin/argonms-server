@@ -20,11 +20,13 @@ package argonms.common.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -57,14 +59,9 @@ import java.util.logging.Logger;
 public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	private static final Logger LOG = Logger.getLogger(ScheduledHashedWheelExecutor.class.getName());
 
-	//pretty much just a type-safe way of having an array of generic classes.
-	//could just settle with @SuppressWarnings("unchecked") and ConcurrentLinkedQueue[]
-	@SuppressWarnings("serial")
-	private static class Bucket extends ConcurrentLinkedQueue<HashedWheelFuture<?>> { }
-
 	private final int millisPerTick, millisPerRev;
 	private final Thread workerThread;
-	private final Bucket[] buckets;
+	private final Set<HashedWheelFuture<?>>[] buckets;
 	private final AtomicInteger queuedTaskCount;
 	private volatile boolean shuttingDown;
 	private volatile boolean shutdownImmediately;
@@ -409,6 +406,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	 * efficiency.
 	 * @param unit the time unit that tickDuration is in.
 	 */
+	@SuppressWarnings("unchecked")
 	public ScheduledHashedWheelExecutor(int buckets, long tickDuration, TimeUnit unit) {
 		if (buckets <= 0)
 			throw new IllegalArgumentException("buckets must be positive");
@@ -417,9 +415,9 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		millisPerTick = (int) unit.toMillis(tickDuration);
 		millisPerRev = millisPerTick * buckets;
 		workerThread = new Thread(new Worker());
-		this.buckets = new Bucket[buckets];
+		this.buckets = new Set[buckets];
 		for (int i = 0; i < buckets; i++)
-			this.buckets[i] = new Bucket();
+			this.buckets[i] = Collections.newSetFromMap(new ConcurrentHashMap<HashedWheelFuture<?>, Boolean>());
 		queuedTaskCount = new AtomicInteger(0);
 
 		ReadWriteLock rwLock = new ReentrantReadWriteLock();

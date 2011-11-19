@@ -213,7 +213,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.HERO_POWER_STANCE:
 				case Skills.PAGE_POWER_STANCE:
 				case Skills.DARK_KNIGHT_POWER_STANCE:
-					effects.add(PlayerStatusEffect.STANCE);
+					effects.add(PlayerStatusEffect.POWER_STANCE);
 					break;
 				case Skills.ECHO_OF_HERO:
 					effects.add(PlayerStatusEffect.ECHO_OF_HERO);
