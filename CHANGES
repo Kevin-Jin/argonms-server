@@ -1460,6 +1460,32 @@
 	safe poll() method and ScheduledHashedWheelExecutor's worker to instead use
 	a Set backed by a ConcurrentHashMap.
 
+2012-01-02  GoldenKevin  (revision 72)
+
+	* Fixed ConcurrentModificationException in !cleardrops and !clearmobs
+	commands.
+	* Reverted a change (r65) that caused undefined behavior when equips
+	inventory has more than 100 slots.
+	* Calling Future.cancel(true), usually through a ScheduledFuture instance,
+	results in the occasional java.nio.channels.ClosedByInterruptExceptions. All
+	calls to cancel now do not attempt to interrupt an executing task to avoid
+	this crashing of communications (which may result in seemingly random
+	disconnections of remote servers).
+	* All threads started by the server now have descriptive names. Added a new
+	ThreadFactory for the scheduled thread pool in Scheduler, used Thread ctor
+	that allows specifying name in the data preloading threads in GameServer,
+	LoginServer, and ShopServer, and ScheduledHashedWheelExecutor's worker.
+	* Command usage syntax revised a bit from MySQL documentation style to POSIX
+	shell style. Any non-literal options ("names of parameters that require
+	substitution by actual values") are in angled brackets. Literals are no
+	longer in all caps, and everything is in lower case. Required options lose
+	the curly brackets. Optional arguments still retain the square brackets.
+	Parentheses should not be treated as literals and are used to disambiguate
+	mutual exclusion situations.
+	* All commands must have a usage string in addition to its help string.
+	Typing --help anywhere in an existing command will print out its usage and
+	help messages rather than execute the command.
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -38,7 +38,6 @@ import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -69,8 +68,9 @@ public class CommandProcessor {
 		definitions.put("!id", new SearchCommandHandler());
 		definitions.put("!stat", new StatCommandHandler());
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !TP {name of player to warp} {name of player to warp to}";
+			@Override
+			public String getUsage() {
+				return "Usage: !tp <name of player to warp> <name of player to warp to>";
 			}
 
 			@Override
@@ -97,8 +97,9 @@ public class CommandProcessor {
 		}, "Teleport a player on this channel to another on this channel", UserPrivileges.GM));
 		definitions.put("!town", new TownCommandHandler());
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !SKILL {skillid} {level} [master level]";
+			@Override
+			public String getUsage() {
+				return "Usage: !skill <skillid> <level> [<master level>]";
 			}
 
 			@Override
@@ -147,8 +148,9 @@ public class CommandProcessor {
 		definitions.put("!maxskills", new MaxStatCommandHandlers.MaxSkillsHandler());
 		definitions.put("!maxall", new MaxStatCommandHandlers.MaxAllHandler());
 		definitions.put("!give", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !GIVE {itemid} [quantity]";
+			@Override
+			public String getUsage() {
+				return "Usage: !give <itemid> [<quantity>]";
 			}
 
 			@Override
@@ -196,8 +198,9 @@ public class CommandProcessor {
 		}, "Give yourself an item", UserPrivileges.GM));
 		definitions.put("!spawn", new SpawnCommandHandler());
 		definitions.put("!playernpc", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !PLAYERNPC [scriptid]";
+			@Override
+			public String getUsage() {
+				return "Usage: !playernpc [<scriptid>]";
 			}
 
 			@Override
@@ -221,6 +224,11 @@ public class CommandProcessor {
 			}
 		}, "Spawn a temporary player NPC of yourself.", UserPrivileges.GM));
 		definitions.put("!cleardrops", new CommandDefinition(new CommandAction() {
+			@Override
+			public String getUsage() {
+				return "Usage: !cleardrops";
+			}
+
 			private void clearDrop(ItemDrop drop, GameCharacter p) {
 				synchronized (drop) {
 					drop.expire();
@@ -230,21 +238,19 @@ public class CommandProcessor {
 
 			@Override
 			public void doAction(final GameCharacter p, String[] args, ClientNoticeStream resp) {
-				Collection<MapEntity> drops = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.DROP));
+				Collection<MapEntity> drops = p.getMap().getAllEntities(EntityType.DROP);
 				for (MapEntity ent : drops)
 					clearDrop((ItemDrop) ent, p);
 			}
 		}, "Expires all dropped items on the map.", UserPrivileges.GM));
 		definitions.put("!clearmobs", new CommandDefinition(new CommandAction() {
-			private boolean contains(String[] array, String search) {
-				for (int i = 0; i < array.length; i++)
-					if (array[i].equalsIgnoreCase(search))
-						return true;
-				return false;
+			@Override
+			public String getUsage() {
+				return "Usage: !clearmobs [-k]";
 			}
 
 			private void clearMob(String[] args, GameCharacter p, Mob mob) {
-				if (contains(args, "-K")) {
+				if (ParseHelper.hasOpt(args, "-k")) {
 					synchronized (mob) {
 						mob.hurt(p, mob.getHp());
 						p.getMap().killMonster(mob, p);
@@ -259,14 +265,15 @@ public class CommandProcessor {
 
 			@Override
 			public void doAction(final GameCharacter p, final String[] args, ClientNoticeStream resp) {
-				Collection<MapEntity> monsters = new ArrayList<MapEntity>(p.getMap().getAllEntities(EntityType.MONSTER));
+				Collection<MapEntity> monsters = p.getMap().getAllEntities(EntityType.MONSTER);
 				for (MapEntity ent : monsters)
 					clearMob(args, p, (Mob) ent);
 			}
 		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !INFO [player's name]";
+			@Override
+			public String getUsage() {
+				return "Usage: !info [<player's name>]";
 			}
 
 			@Override
@@ -284,8 +291,9 @@ public class CommandProcessor {
 			}
 		}, "Show location info of yourself or another player", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !RATE {EXP | MESO | DROP} {new rate}";
+			@Override
+			public String getUsage() {
+				return "Usage: !rate exp|meso|drop <new rate>";
 			}
 
 			@Override
@@ -315,8 +323,9 @@ public class CommandProcessor {
 		}, "Change the exp, meso, or drop rate of this game server.",
 				UserPrivileges.SUPER_GM));
 		definitions.put("!who", new CommandDefinition(new CommandAction() {
-			private String getUsage() {
-				return "Usage: !WHO [minimum privilege level]";
+			@Override
+			public String getUsage() {
+				return "Usage: !who [<minimum privilege level>]";
 			}
 
 			@Override
@@ -342,7 +351,15 @@ public class CommandProcessor {
 				UserPrivileges.GM));
 		definitions.put("!uptime", new CommandDefinition(new CommandAction() {
 			@Override
+			public String getUsage() {
+				return "Usage: !uptime [-gc]";
+			}
+
+			@Override
 			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+				if (ParseHelper.hasOpt(args, "-gc"))
+					System.gc();
+
 				long startMillis = GameServer.getChannel(p.getClient().getChannel()).getTimeStarted();
 				long upTimeMillis = System.currentTimeMillis() - startMillis;
 				Calendar startDate = Calendar.getInstance();
@@ -371,9 +388,9 @@ public class CommandProcessor {
 				resp.printOut("Current heap usage: " + (heapNow - heapFree) + "MB/" + heapNow + "MB. "
 						+ "Can add a max of " + (heapMax - (heapNow - heapFree)) + "MB to heap without OutOfMemoryError.");
 			}
-		}, "Print general info about the server's resource usage", UserPrivileges.ADMIN));
+		}, "Print general info about the server's resource usage. Pass -gc flag to attempt to run the garbage collector before collecting heap info.", UserPrivileges.ADMIN));
 		definitions.put("!help", new CommandDefinition(new HelpCommandHandler(),
-				"Displays this message", UserPrivileges.USER));
+				"Lists available commands and their descriptions. Specify a command to read only its description.", UserPrivileges.USER));
 	}
 
 	public void process(GameCharacter p, String line) {
@@ -381,7 +398,12 @@ public class CommandProcessor {
 		AbstractCommandDefinition def = definitions.get(args[0].toLowerCase());
 		ClientNoticeStream resp = new ClientNoticeStream(p.getClient());
 		if (def != null && p.getPrivilegeLevel() >= def.minPrivilegeLevel()) {
-			def.execute(p, args, resp);
+			if (!ParseHelper.hasOpt(args, "--help")) {
+				def.execute(p, args, resp);
+			} else {
+				resp.printOut(def.getUsage());
+				resp.printOut(def.getHelpMessage());
+			}
 		} else {
 			resp.printErr(args[0] + " is not a valid command. Type !help to get a list of valid commands.");
 		}
@@ -393,10 +415,25 @@ public class CommandProcessor {
 
 	private class HelpCommandHandler implements CommandAction {
 		@Override
+		public String getUsage() {
+			return "Usage: !help [<command>]";
+		}
+
+		@Override
 		public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-			for (Entry<String, AbstractCommandDefinition> entry : definitions.entrySet())
-				if (p.getPrivilegeLevel() >= entry.getValue().minPrivilegeLevel())
-					resp.printOut(entry.getKey() + " - " + entry.getValue().getHelpMessage());
+			if (args.length == 1) {
+				for (Entry<String, AbstractCommandDefinition> entry : definitions.entrySet())
+					if (p.getPrivilegeLevel() >= entry.getValue().minPrivilegeLevel())
+						resp.printOut(entry.getKey() + " - " + entry.getValue().getHelpMessage());
+			} else {
+				AbstractCommandDefinition def = definitions.get(args[1].toLowerCase());
+				if (def == null || p.getPrivilegeLevel() < def.minPrivilegeLevel()) {
+					resp.printErr(args[1] + " is not a valid command.");
+					resp.printErr(getUsage());
+					return;
+				}
+				resp.printOut(args[1] + " - " + def.getHelpMessage());
+			}
 		}
 	}
 }

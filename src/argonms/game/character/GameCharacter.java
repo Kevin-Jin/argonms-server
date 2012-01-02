@@ -1712,11 +1712,11 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		//TODO: need to save debuffs in database so players cannot exploit
 		//logging off and then on to get rid of debuffs...
 		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
-			cancelTask.right.cancel(true);
+			cancelTask.right.cancel(false);
 		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
-			cancelTask.right.cancel(true);
+			cancelTask.right.cancel(false);
 		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
-			cancelTask.right.cancel(true);
+			cancelTask.right.cancel(false);
 		if (!changingChannels)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		leaveMapRoutines();

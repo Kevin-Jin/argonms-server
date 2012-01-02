@@ -207,7 +207,7 @@ public class ShopServer implements LocalServer {
 					System.exit(5);
 				}
 			}
-		}).start();
+		}, "data-preloader-thread").start();
 	}
 
 	@Override

@@ -26,6 +26,7 @@ import argonms.game.character.GameCharacter;
  */
 public abstract class AbstractCommandDefinition {
 	public abstract String getHelpMessage();
+	public abstract String getUsage();
 	public abstract void execute(GameCharacter p, String[] args, ClientNoticeStream resp);
 	public abstract byte minPrivilegeLevel();
 

@@ -332,6 +332,10 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 					}
 				}
 			});
+			//we need this for awaitClose - by shutting down, the thread pool
+			//will be terminated when the worker thread finishes execution and
+			//thus we can just use a simple workerThreadPool.awaitTermination in
+			//awaitClose in order to wait for the worker thread to finish
 			workerThreadPool.shutdown();
 			return session;
 		} catch (IOException ex) {

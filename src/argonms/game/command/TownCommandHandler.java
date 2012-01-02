@@ -60,7 +60,12 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 
 	@Override
 	public String getHelpMessage() {
-		return "Warp to a town or place of interest. Use !town list for a list of locations.";
+		return "Warp to a town or place of interest. Use \"!town list\" for a list of locations.";
+	}
+
+	@Override
+	public String getUsage() {
+		return "Usage: !town <name>|list";
 	}
 
 	@Override
@@ -68,22 +73,11 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 		return UserPrivileges.GM;
 	}
 
-	private String getUsage() {
-		return "Usage: !TOWN {LIST | name}";
-	}
-
 	private String getList() {
 		StringBuilder sb = new StringBuilder();
 		for (String name : lookup.keySet())
 			sb.append(name).append(", ");
 		return sb.substring(0, sb.length() - 2);
-	}
-
-	private String restOfString(String[] splitted, int start) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = start; i < splitted.length; i++)
-			sb.append(splitted[i]).append(' ');
-		return sb.substring(0, sb.length() - 1); //assume we have at least one arg
 	}
 
 	@Override
@@ -95,7 +89,7 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 		if (args[1].equalsIgnoreCase("list")) {
 			resp.printOut("Valid locations: " + getList());
 		} else {
-			String name = restOfString(args, 1);
+			String name = ParseHelper.restOfString(args, 1);
 			Integer mapId = lookup.get(name.toLowerCase());
 			if (mapId != null)
 				p.changeMap(mapId.intValue());

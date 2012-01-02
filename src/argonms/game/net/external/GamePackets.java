@@ -31,7 +31,6 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.Ring;
 import argonms.common.field.MonsterStatusEffect;
-import argonms.common.loading.StatusEffectsData.EffectSource;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;

@@ -21,7 +21,9 @@ package argonms.common.util;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -51,7 +53,26 @@ public class Scheduler {
 
 	public static void enable(boolean enableGeneral, boolean enableHashedWheel) {
 		if (enableGeneral)
-			instance = new Scheduler(Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors()));
+			instance = new Scheduler(Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+				private final ThreadGroup group;
+				private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+				{
+					SecurityManager s = System.getSecurityManager();
+					group = (s != null)? s.getThreadGroup() :
+										 Thread.currentThread().getThreadGroup();
+				}
+
+				@Override
+				public Thread newThread(Runnable r) {
+					Thread t = new Thread(group, r, "scheduler-pool-thread-" + threadNumber.getAndIncrement(), 0);
+					if (t.isDaemon())
+						t.setDaemon(false);
+					if (t.getPriority() != Thread.NORM_PRIORITY)
+						t.setPriority(Thread.NORM_PRIORITY);
+					return t;
+				}
+			}));
 		if (enableHashedWheel)
 			hashedWheel = new Scheduler(new ScheduledHashedWheelExecutor());
 	}

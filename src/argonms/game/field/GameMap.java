@@ -56,6 +56,7 @@ import argonms.game.net.external.GamePackets;
 import argonms.game.script.PortalScriptManager;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -173,8 +174,23 @@ public class GameMap {
 		return entPools.get(type).getByIdSafely(eId);
 	}
 
+	/**
+	 * Returns a copy of all the entities in the specified pool type on this
+	 * map at the time of the method call. Future changes to this map's entity
+	 * pool will not alter the Collection that is returned from this method, and
+	 * changes made to the returned Collection will not be reflected in this
+	 * map's entity pool. Thus, the returned Collection is also thread-safe.
+	 * @param type
+	 * @return 
+	 */
 	public Collection<MapEntity> getAllEntities(EntityType type) {
-		return entPools.get(type).allEnts();
+		EntityPool pool = entPools.get(type);
+		pool.lockRead();
+		try {
+			return new ArrayList<MapEntity>(entPools.get(type).allEnts());
+		} finally {
+			pool.unlockRead();
+		}
 	}
 
 	public int getPlayerCount() {

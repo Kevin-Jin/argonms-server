@@ -37,52 +37,53 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
+	public String getUsage() {
+		return "Usage: !spawn ((mob <wz id> [-c <count>])|(npc <wz id>)) [-m <mobtime>]";
+	}
+
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
 	}
 
-	private String getUsage() {
-		return "Usage: !SPAWN {MOB {wz id} [-M {mobtime}] [-C {count}] | NPC {wz id} [-M {mobtime}]}";
-	}
-
 	private int getMobTime(String[] array, ClientNoticeStream resp) {
-		for (int i = 0; i < array.length; i++) {
-			if (array[i].equalsIgnoreCase("-M")) {
-				if (i + 1 < array.length) {
-					try {
-						return Integer.parseInt(array[i + 1]);
-					} catch (NumberFormatException e) {
-						resp.printErr(array[i + 1] + " is not a valid mobtime.");
-						resp.printErr(getUsage());
-						throw new IllegalArgumentException(e);
-					}
-				}
-				resp.printErr("No mobtime specified after -M flag.");
-				resp.printErr(getUsage());
-				throw new IllegalArgumentException();
-			}
+		String s;
+		try {
+			s = ParseHelper.getOptValue(array, "-m");
+		} catch (Exception e) {
+			resp.printErr("No mobtime specified after -m flag.");
+			resp.printErr(getUsage());
+			throw new IllegalArgumentException();
 		}
-		return -1;
+		if (s == null)
+			return -1;
+		try {
+			return Integer.parseInt(s);
+		} catch (NumberFormatException e) {
+			resp.printErr(s + " is not a valid mobtime.");
+			resp.printErr(getUsage());
+			throw new IllegalArgumentException();
+		}
 	}
 
 	private int getCount(String[] array, ClientNoticeStream resp) {
-		for (int i = 0; i < array.length; i++) {
-			if (array[i].equalsIgnoreCase("-C")) {
-				if (i + 1 < array.length) {
-					try {
-						return Integer.parseInt(array[i + 1]);
-					} catch (NumberFormatException e) {
-						resp.printErr(array[i + 1] + " is not a valid count.");
-						resp.printErr(getUsage());
-						throw new IllegalArgumentException(e);
-					}
-				}
-				resp.printErr("No count specified after -C flag.");
-				resp.printErr(getUsage());
-				throw new IllegalArgumentException();
-			}
+		String s;
+		try {
+			s = ParseHelper.getOptValue(array, "-c");
+		} catch (Exception e) {
+			resp.printErr("No count specified after -c flag.");
+			resp.printErr(getUsage());
+			throw new IllegalArgumentException();
 		}
-		return 1;
+		if (s == null)
+			return 1;
+		try {
+			return Integer.parseInt(s);
+		} catch (NumberFormatException e) {
+			resp.printErr(s + " is not a valid count.");
+			resp.printErr(getUsage());
+			throw new IllegalArgumentException();
+		}
 	}
 
 	@Override

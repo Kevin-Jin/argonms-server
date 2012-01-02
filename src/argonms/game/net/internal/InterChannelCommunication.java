@@ -97,6 +97,7 @@ public class InterChannelCommunication {
 			canceled = new AtomicBoolean(false);
 		}
 
+		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
 			if (canceled.compareAndSet(false, true)) {
 				for (long i = waitHandle.getCount() - 1; i >= 0; i--)
@@ -106,14 +107,17 @@ public class InterChannelCommunication {
 			return false;
 		}
 
+		@Override
 		public boolean isCancelled() {
 			return canceled.get();
 		}
 
+		@Override
 		public boolean isDone() {
 			return isCancelled() || waitHandle.getCount() == 0;
 		}
 
+		@Override
 		public Object[] get() throws InterruptedException, ExecutionException {
 			waitHandle.await();
 			if (canceled.get())
@@ -121,6 +125,7 @@ public class InterChannelCommunication {
 			return responses;
 		}
 
+		@Override
 		public Object[] get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
 			if (!waitHandle.await(timeout, unit))
 				throw new TimeoutException("Response for inter channel intercourse timed out after " + timeout + " " + unit.toString().toLowerCase() + ". Needed " + waitHandle.getCount() + " more responses.");

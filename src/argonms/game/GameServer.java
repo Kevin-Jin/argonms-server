@@ -282,7 +282,7 @@ public class GameServer implements LocalServer {
 				else
 					System.exit(5);
 			}
-		}).start();
+		}, "data-preloader-thread").start();
 	}
 
 	@Override
