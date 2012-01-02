@@ -414,7 +414,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			throw new IllegalArgumentException("tickDuration must be positive");
 		millisPerTick = (int) unit.toMillis(tickDuration);
 		millisPerRev = millisPerTick * buckets;
-		workerThread = new Thread(new Worker());
+		workerThread = new Thread(new Worker(), "hashed-wheel-timer-worker-thread");
 		this.buckets = new Set[buckets];
 		for (int i = 0; i < buckets; i++)
 			this.buckets[i] = Collections.newSetFromMap(new ConcurrentHashMap<HashedWheelFuture<?>, Boolean>());

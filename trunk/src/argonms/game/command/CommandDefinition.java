@@ -25,9 +25,9 @@ import argonms.game.character.GameCharacter;
  * @author GoldenKevin
  */
 public class CommandDefinition extends AbstractCommandDefinition {
-	private CommandAction r;
-	private String help;
-	private byte minGm;
+	private final CommandAction r;
+	private final String help;
+	private final byte minGm;
 
 	public CommandDefinition(CommandAction toExec, String helpMessage, byte minPriv) {
 		r = toExec;
@@ -41,6 +41,11 @@ public class CommandDefinition extends AbstractCommandDefinition {
 	}
 
 	@Override
+	public String getUsage() {
+		return r.getUsage();
+	}
+
+	@Override
 	public byte minPrivilegeLevel() {
 		return minGm;
 	}
@@ -51,6 +56,7 @@ public class CommandDefinition extends AbstractCommandDefinition {
 	}
 
 	public interface CommandAction {
+		public String getUsage();
 		public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp);
 	}
 }

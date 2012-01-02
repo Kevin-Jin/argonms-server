@@ -209,9 +209,9 @@ public class Mob extends MapEntity {
 
 	public void died(GameCharacter killer) {
 		for (ScheduledFuture<?> cancelTask : skillCancels.values())
-			cancelTask.cancel(true);
+			cancelTask.cancel(false);
 		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
-			cancelTask.cancel(true);
+			cancelTask.cancel(false);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);

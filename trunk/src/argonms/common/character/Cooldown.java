@@ -43,6 +43,6 @@ public class Cooldown {
 	}
 
 	public void cancel() {
-		expiration.cancel(true);
+		expiration.cancel(false);
 	}
 }

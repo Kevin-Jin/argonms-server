@@ -35,19 +35,13 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
+	public String getUsage() {
+		return "Usage: !id item|mob|map|skill|npc|quest <name>";
+	}
+
+	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.GM;
-	}
-
-	private String getUsage() {
-		return "Usage: !ID {ITEM | MOB | MAP | SKILL | NPC | QUEST} {name}";
-	}
-
-	private String restOfString(String[] splitted, int start) {
-		StringBuilder sb = new StringBuilder();
-		for (int i = start; i < splitted.length; i++)
-			sb.append(splitted[i]).append(' ');
-		return sb.substring(0, sb.length() - 1); //assume we have at least one arg
 	}
 
 	@Override
@@ -57,27 +51,26 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 			return;
 		}
 		String type = args[1];
-		String query = restOfString(args, 2);
+		String query = ParseHelper.restOfString(args, 2);
 
 		List<String> matches;
 		String typeName;
-		if (type.equalsIgnoreCase("ITEM") || type.equalsIgnoreCase("ITEMS")) {
+		if (type.equalsIgnoreCase("item")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedItems(query);
 			typeName = "items";
-		} else if (type.equalsIgnoreCase("MOB") || type.equalsIgnoreCase("MOBS")
-				|| type.equalsIgnoreCase("MONSTER") || type.equalsIgnoreCase("MONSTERS")) {
+		} else if (type.equalsIgnoreCase("mob")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedMobs(query);
 			typeName = "mobs";
-		} else if (type.equalsIgnoreCase("MAP") || type.equalsIgnoreCase("MAPS")) {
+		} else if (type.equalsIgnoreCase("map")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedMaps(query);
 			typeName = "maps";
-		} else if (type.equalsIgnoreCase("SKILL") || type.equalsIgnoreCase("SKILLS")) {
+		} else if (type.equalsIgnoreCase("skill")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedSkills(query);
 			typeName = "skills";
-		} else if (type.equalsIgnoreCase("NPC") || type.equalsIgnoreCase("NPCS")) {
+		} else if (type.equalsIgnoreCase("npc")) {
 			matches = StringDataLoader.getInstance().getSimilarNamedNpcs(query);
 			typeName = "NPCs";
-		} else if (type.equalsIgnoreCase("QUEST") || type.equalsIgnoreCase("QUESTS")) {
+		} else if (type.equalsIgnoreCase("quest")) {
 			matches = QuestDataLoader.getInstance().getSimilarNamedQuests(query);
 			typeName = "quests";
 		} else {

@@ -208,7 +208,7 @@ public class LoginServer implements LocalServer {
 				}
 				Scheduler.getInstance().runRepeatedly(new RankingWorker(), rankingPeriod, rankingPeriod);
 			}
-		}).start();
+		}, "data-preloader-thread").start();
 	}
 
 	@Override

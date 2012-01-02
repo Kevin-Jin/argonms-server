@@ -34,12 +34,13 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public byte minPrivilegeLevel() {
-		return UserPrivileges.GM;
+	public String getUsage() {
+		return "Usage: !stat set|add str|dex|int|luk|ap|sp|level|exp|job|maxhp|maxmp|hp|mp|fame|meso <amount>";
 	}
 
-	private String getUsage() {
-		return "Usage: !STAT {SET | ADD} {STR | DEX | INT | LUK | AP | SP | LEVEL | EXP | JOB | MAXHP | MAXMP | HP | MP | FAME | MESO} {amount}";
+	@Override
+	public byte minPrivilegeLevel() {
+		return UserPrivileges.GM;
 	}
 
 	@Override

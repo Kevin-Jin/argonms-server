@@ -120,9 +120,10 @@ public class CommonPackets {
 		Map<Byte, Integer> maskedEquip = new LinkedHashMap<Byte, Integer>();
 		int cashWeapon = 0;
 		for (Entry<Short, Integer> ent : equips.entrySet()) {
+			//assume that all items in equipped have negative positions
 			byte pos = (byte) (ent.getKey().shortValue() * -1);
-			Byte oPos = Byte.valueOf((byte) (pos % 100));
 			if (pos > 100) { //cash equips
+				Byte oPos = Byte.valueOf((byte) (pos - 100));
 				if (pos != 111) { //accessories/armor
 					if (visEquip.containsKey(oPos)) //existing normal equip needs to be moved to masked
 						maskedEquip.put(oPos, visEquip.get(oPos));
@@ -131,6 +132,7 @@ public class CommonPackets {
 					cashWeapon = ent.getValue().intValue();
 				}
 			} else { //normal equips
+				Byte oPos = Byte.valueOf(pos);
 				if (visEquip.containsKey(oPos)) //cash equip already masked this
 					maskedEquip.put(oPos, ent.getValue());
 				else
@@ -231,7 +233,12 @@ public class CommonPackets {
 
 	public static void writeItemInfo(LittleEndianWriter lew, short pos,
 			InventorySlot item) {
-		lew.writeByte((byte) (Math.abs(pos) % 100));
+		if (pos < 0) { //equipped inventory has negative positions
+			pos *= -1;
+			if (pos > 100) //masking equips (cash equips) have positions < -100
+				pos -= 100;
+		}
+		lew.writeByte((byte) pos);
 		writeItemInfo(lew, item, true, false);
 	}
 

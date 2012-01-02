@@ -88,13 +88,6 @@ public class MaxStatCommandHandlers {
 		9101004, 9101005, 9101006, 9101007, 9101008
 	};
 
-	private static boolean contains(String[] array, String search) {
-		for (int i = 0; i < array.length; i++)
-			if (array[i].equalsIgnoreCase(search))
-				return true;
-		return false;
-	}
-
 	private static void maxEquips(GameCharacter p) {
 		for (Entry<Short, InventorySlot> item : p.getInventory(InventoryType.EQUIPPED).getAll().entrySet()) {
 			Equip e = (Equip) item.getValue();
@@ -137,7 +130,7 @@ public class MaxStatCommandHandlers {
 		p.setJob(PlayerJob.JOB_SUPER_GM);
 		p.setFame(Short.MAX_VALUE);
 
-		if (contains(args, "-I")) {
+		if (ParseHelper.hasOpt(args, "-i")) {
 			p.setMesos(Integer.MAX_VALUE);
 			//TODO: find some packets to notify client of new slot limits
 			for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
@@ -162,13 +155,18 @@ public class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-			maxEquips(p);
+		public String getUsage() {
+			return "Usage: !maxequips";
 		}
 
 		@Override
 		public byte minPrivilegeLevel() {
 			return UserPrivileges.GM;
+		}
+
+		@Override
+		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+			maxEquips(p);
 		}
 	}
 
@@ -179,20 +177,35 @@ public class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-			maxSkills(p);
+		public String getUsage() {
+			return "Usage: !maxskills";
 		}
 
 		@Override
 		public byte minPrivilegeLevel() {
 			return UserPrivileges.GM;
 		}
+
+		@Override
+		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+			maxSkills(p);
+		}
 	}
 
 	public static class MaxAllHandler extends AbstractCommandDefinition {
 		@Override
 		public String getHelpMessage() {
-			return "Maxes out your base stats, your equipment bonus stats, and your skill levels.";
+			return "Maxes out your base stats (including amount of inventory/storage slots and mesos by specifying -i), your equipment bonus stats, and your skill levels.";
+		}
+
+		@Override
+		public String getUsage() {
+			return "Usage: !maxall [-i]";
+		}
+
+		@Override
+		public byte minPrivilegeLevel() {
+			return UserPrivileges.GM;
 		}
 
 		@Override
@@ -200,11 +213,6 @@ public class MaxStatCommandHandlers {
 			maxSkills(p);
 			maxEquips(p);
 			maxStats(p, args);
-		}
-
-		@Override
-		public byte minPrivilegeLevel() {
-			return UserPrivileges.GM;
 		}
 	}
 }
