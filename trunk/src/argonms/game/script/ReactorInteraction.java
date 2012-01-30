@@ -56,12 +56,12 @@ public class ReactorInteraction extends PlayerScriptInteraction {
 			drops = new ArrayList<ItemDrop>(itemsAndChances.length / 2);
 		} else {
 			drops = new ArrayList<ItemDrop>(1 + itemsAndChances.length / 2);
-			int mesos = (generator.nextInt(mesosMin - mesosMax + 1) + mesosMax);
-			drops.add(new ItemDrop(mesos * multiplier));
+			int mesos = (generator.nextInt(mesosMax - mesosMin + 1) + mesosMin);
+			drops.add(new ItemDrop((int) Math.min((long) mesos * multiplier, Integer.MAX_VALUE)));
 		}
 		multiplier = GameServer.getVariables().getDropRate();
 		for (int i = 0; i + 1 < itemsAndChances.length; i+= 2) {
-			if (generator.nextInt(1000000) < (itemsAndChances[i + 1] * multiplier)) {
+			if (generator.nextInt(1000000) < ((long) itemsAndChances[i + 1] * multiplier)) {
 				InventorySlot item = InventoryTools.makeItemWithId(itemsAndChances[i]);
 				if (item.getType() == ItemType.EQUIP)
 					InventoryTools.randomizeStats((Equip) item);

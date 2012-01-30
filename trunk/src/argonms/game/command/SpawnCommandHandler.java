@@ -38,7 +38,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 
 	@Override
 	public String getUsage() {
-		return "Usage: !spawn ((mob <wz id> [-c <count>])|(npc <wz id>)) [-m <mobtime>]";
+		return "Usage: !spawn (mob <wz id> [-c <count>])|(npc <wz id>) [-m <mobtime>]";
 	}
 
 	@Override
