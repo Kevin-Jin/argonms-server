@@ -1491,6 +1491,10 @@
 	* Fixed the most common mob and reactor drops not dropping when drop rates
 	were too high (integer overflow).
 
-Copyright 2011 GoldenKevin
+2012-01-29  GoldenKevin  (revision 74)
+
+	* Updated copyright years.
+
+Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
