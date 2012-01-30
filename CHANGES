@@ -1486,6 +1486,11 @@
 	Typing --help anywhere in an existing command will print out its usage and
 	help messages rather than execute the command.
 
+2012-01-29  GoldenKevin  (revision 73)
+
+	* Fixed the most common mob and reactor drops not dropping when drop rates
+	were too high (integer overflow).
+
 Copyright 2011 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
