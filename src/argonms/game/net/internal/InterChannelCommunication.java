@@ -20,6 +20,7 @@ package argonms.game.net.internal;
 
 import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
+import argonms.common.character.InterServerPartyOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -30,11 +31,13 @@ import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.net.external.handler.PartyListHandler;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -82,6 +85,12 @@ public class InterChannelCommunication {
 		BUDDY_ONLINE_RESPONSE = 13,
 		BUDDY_OFFLINE = 14,
 		BUDDY_DELETE = 15
+	;
+
+	private static final byte //private chat types
+		CHAT_TYPE_BUDDY = 0,
+		CHAT_TYPE_PARTY = 1,
+		CHAT_TYPE_GUILD = 2
 	;
 
 	private static class ResponseFuture implements Future<Object[]> {
@@ -263,7 +272,7 @@ public class InterChannelCommunication {
 		Map<Byte, List<Integer>> peerChannels = null;
 
 		switch (type) {
-			case 0: {
+			case CHAT_TYPE_BUDDY: {
 				peerChannels = new HashMap<Byte, List<Integer>>();
 				BuddyList bList = p.getBuddyList();
 				for (int buddy : recipients) {
@@ -277,7 +286,7 @@ public class InterChannelCommunication {
 					peersOnChannel.add(Integer.valueOf(buddy));
 				}
 				break;
-			} case 1: {
+			} case CHAT_TYPE_PARTY: {
 				if (p.getParty() != null) {
 					peerChannels = new HashMap<Byte, List<Integer>>();
 					for (int member : recipients) {
@@ -291,7 +300,7 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case 2: {
+			} case CHAT_TYPE_GUILD: {
 				if (p.getGuildId() != 0) {
 					peerChannels = new HashMap<Byte, List<Integer>>();
 					for (int member : recipients) {
@@ -532,6 +541,30 @@ public class InterChannelCommunication {
 			}
 		}
 		getCenterComm().getSession().send(writeBuddyDelete(channel, p.getId(), recipient));
+	}
+
+	public void makeParty(GameCharacter p) {
+		getCenterComm().getSession().send(writeMakeParty(self.getChannelId(), p));
+	}
+
+	public void disbandParty(int partyId) {
+		getCenterComm().getSession().send(writeDisbandParty(partyId));
+	}
+
+	public void leaveParty(GameCharacter p, int partyId) {
+		getCenterComm().getSession().send(writeLeaveParty(p, partyId));
+	}
+
+	public void joinParty(GameCharacter p, int partyId) {
+		getCenterComm().getSession().send(writeJoinParty(p, partyId));
+	}
+
+	public void expelPartyMember(PartyList.Member member, int partyId) {
+		getCenterComm().getSession().send(writeExpelPartyMember(member.getPlayerId(), member.getName(), partyId, member.getChannel()));
+	}
+
+	public void changePartyLeader(int partyId, int newLeader) {
+		getCenterComm().getSession().send(writeNewPartyLeader(partyId, newLeader));
 	}
 
 	public void receivedInboundPlayer(byte fromCh, int playerId, PlayerContinuation context) {
@@ -905,6 +938,72 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
+	private static byte[] writeMakeParty(byte srcCh, GameCharacter creator) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + creator.getName().length());
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.CREATE);
+		lew.writeByte(srcCh);
+		lew.writeInt(creator.getId());
+		lew.writeLengthPrefixedString(creator.getName());
+		lew.writeShort(creator.getJob());
+		lew.writeShort(creator.getLevel());
+		return lew.getBytes();
+	}
+
+	private static byte[] writeDisbandParty(int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.DISBAND);
+		lew.writeInt(partyId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeLeaveParty(GameCharacter p, int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + p.getName().length());
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
+		lew.writeInt(partyId);
+		lew.writeInt(p.getId());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeByte(p.getClient().getChannel());
+		lew.writeBool(false);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeJoinParty(GameCharacter p, int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + p.getName().length());
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.ADD_PLAYER);
+		lew.writeByte(p.getClient().getChannel());
+		lew.writeInt(partyId);
+		lew.writeInt(p.getId());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeShort(p.getJob());
+		lew.writeShort(p.getLevel());
+		return lew.getBytes();
+	}
+
+	private static byte[] writeExpelPartyMember(int playerId, String playerName, int partyId, byte playerChannel) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + playerName.length());
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
+		lew.writeInt(partyId);
+		lew.writeInt(playerId);
+		lew.writeLengthPrefixedString(playerName);
+		lew.writeByte(playerChannel);
+		lew.writeBool(true);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeNewPartyLeader(int partyId, int newLeader) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.CHANGE_LEADER);
+		lew.writeInt(partyId);
+		lew.writeInt(newLeader);
+		return lew.getBytes();
+	}
+
 	public void receivedPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case INBOUND_PLAYER: {
@@ -1031,6 +1130,149 @@ public class InterChannelCommunication {
 				int sender = packet.readInt();
 				int receiver = packet.readInt();
 				receivedBuddyDelete(sender, receiver);
+				break;
+			}
+		}
+	}
+
+	public void receivedPartyPacket(LittleEndianReader packet) {
+		switch (packet.readByte()) {
+			case InterServerPartyOps.CREATE: {
+				GameCharacter p = self.getPlayerById(packet.readInt());
+				int partyId = packet.readInt();
+				PartyList party = new PartyList(partyId, p.getId(), p);
+				if (p != null) { //if there was lag, player may have changed channels or logged off while waiting for party to be created
+					p.setParty(party);
+					p.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
+				}
+				break;
+			} case InterServerPartyOps.DISBAND: {
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) { //if there was lag, members may have changed channels or logged off before party was disbanded
+						PartyList party = p.getParty();
+						p.setParty(null);
+						p.getClient().getSession().send(GamePackets.writePartyDisbanded(party.getId(), party.getLeader()));
+					}
+				}
+				break;
+			} case InterServerPartyOps.REMOVE_PLAYER: {
+				int leaverId = packet.readInt();
+				String leaverName = packet.readLengthPrefixedString();
+				byte leaverChannel = packet.readByte();
+				boolean leaverExpelled = packet.readBool();
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) {
+						PartyList party = p.getParty();
+						if (self.getChannelId() == leaverChannel)
+							party.removePlayer(self.getPlayerById(leaverId));
+						else
+							party.removePlayer(leaverChannel, leaverId);
+						p.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+					}
+				}
+				break;
+			} case InterServerPartyOps.ADD_PLAYER: {
+				byte joinerCh = packet.readByte();
+				int joinerId = packet.readInt();
+				if (joinerCh == self.getChannelId()) {
+					GameCharacter joiner = self.getPlayerById(joinerId);
+					for (int i = packet.readByte() - 1; i >= 0; --i) {
+						int playerId = packet.readInt();
+						GameCharacter p = self.getPlayerById(playerId);
+						if (p != null) {
+							PartyList party = p.getParty();
+							party.lockWrite();
+							try {
+								party.addPlayer(new PartyList.LocalMember(joiner));
+							} finally {
+								party.unlockWrite();
+							}
+							p.getClient().getSession().send(GamePackets.writePartyMemberJoined(party, joiner.getName()));
+							p.pullPartyHp();
+							p.pushHpToParty();
+						}
+					}
+				} else {
+					String joinerName = packet.readLengthPrefixedString();
+					short joinerJob = packet.readShort();
+					short joinerLevel = packet.readShort();
+					for (int i = packet.readByte() - 1; i >= 0; --i) {
+						int playerId = packet.readInt();
+						GameCharacter p = self.getPlayerById(playerId);
+						if (p != null) {
+							PartyList party = p.getParty();
+							party.lockWrite();
+							try {
+								party.addPlayer(new PartyList.RemoteMember(joinerId, joinerName, joinerJob, joinerLevel, joinerCh));
+							} finally {
+								party.unlockWrite();
+							}
+							p.getClient().getSession().send(GamePackets.writePartyMemberJoined(party, joinerName));
+							p.pullPartyHp();
+							p.pushHpToParty();
+						}
+					}
+				}
+				break;
+			} case InterServerPartyOps.JOIN: {
+				GameCharacter p = self.getPlayerById(packet.readInt());
+				boolean success = packet.readBool();
+				if (success) {
+					int partyId = packet.readInt();
+					int leader = packet.readInt();
+					PartyList party = new PartyList(partyId, leader, p);
+					party.lockWrite();
+					try {
+						for (int i = packet.readByte() - 1; i >= 0; --i) {
+							byte ch = packet.readByte();
+							int playerId = packet.readInt();
+							if (ch == self.getChannelId()) {
+								party.addPlayer(new PartyList.LocalMember(self.getPlayerById(playerId)));
+							} else {
+								String name = packet.readLengthPrefixedString();
+								short job = packet.readShort();
+								short level = packet.readShort();
+								party.addPlayer(new PartyList.RemoteMember(playerId, name, job, level, ch));
+							}
+						}
+					} finally {
+						party.unlockWrite();
+					}
+					if (p != null) {
+						p.setParty(party);
+						p.getClient().getSession().send(GamePackets.writePartyMemberJoined(party, p.getName()));
+						p.pullPartyHp();
+						p.pushHpToParty();
+					}
+				} else {
+					p.getClient().getSession().send(GamePackets.writeSimplePartyListMessage(PartyListHandler.PARTY_FULL));
+				}
+			} case InterServerPartyOps.LEAVE: {
+				int leaverId = packet.readInt();
+				boolean leaverExpelled = packet.readBool();
+				GameCharacter p = self.getPlayerById(leaverId);
+				if (p != null) {
+					PartyList party = p.getParty();
+					party.removePlayer(p);
+					p.setParty(null);
+					p.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, p.getName(), leaverExpelled));
+				}
+				break;
+			} case InterServerPartyOps.CHANGE_LEADER: {
+				int newLeader = packet.readInt();
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) {
+						PartyList party = p.getParty();
+						party.setLeader(newLeader);
+						p.getClient().getSession().send(GamePackets.writePartyChangeLeader(party));
+					}
+				}
 				break;
 			}
 		}

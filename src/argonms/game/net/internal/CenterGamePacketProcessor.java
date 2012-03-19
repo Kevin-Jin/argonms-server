@@ -70,6 +70,9 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.INTER_CHANNEL_RELAY:
 				processInterChannelMessage(packet);
 				break;
+			case CenterRemoteOps.PARTY_SYNCHRONIZATION:
+				processPartySynchronization(packet);
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
 				break;
@@ -112,5 +115,10 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 		} else {
 			GameServer.getChannel(channel).getInterChannelInterface().receivedPacket(packet);
 		}
+	}
+
+	private void processPartySynchronization(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		GameServer.getChannel(channel).getInterChannelInterface().receivedPartyPacket(packet);
 	}
 }

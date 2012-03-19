@@ -29,7 +29,7 @@ import argonms.common.util.collections.LockableMap;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.Party;
+import argonms.game.character.PartyList;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.Element;
@@ -133,11 +133,11 @@ public class Mob extends MapEntity {
 		GameCharacter highestDamageAttacker = null;
 		long highestDamage = 0;
 
-		Map<Party, PartyExp> parties = new HashMap<Party, PartyExp>();
+		Map<PartyList, PartyExp> parties = new HashMap<PartyList, PartyExp>();
 		GameCharacter attacker;
 		long damage;
 		short attackerLevel;
-		Party attackerParty;
+		PartyList attackerParty;
 		PartyExp partyExp;
 		//damages shouldn't be accessed from here on out anyway since the mob is
 		//already dead and cannot be attacked any more, but some lagger might
@@ -180,10 +180,10 @@ public class Mob extends MapEntity {
 		}
 		if (!parties.isEmpty()) {
 			List<GameCharacter> members;
-			for (Entry<Party, PartyExp> entry : parties.entrySet()) {
+			for (Entry<PartyList, PartyExp> entry : parties.entrySet()) {
 				attackerParty = entry.getKey();
 				partyExp = entry.getValue();
-				members = attackerParty.getMembersInMap(map.getDataId());
+				members = attackerParty.getLocalMembersInMap(map.getDataId());
 				short totalLevel = 0;
 				for (GameCharacter member : members) {
 					attackerLevel = member.getLevel();

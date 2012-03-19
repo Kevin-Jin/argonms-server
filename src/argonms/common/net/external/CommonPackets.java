@@ -54,15 +54,12 @@ public class CommonPackets {
 		GlobalConstants.NULL_MAP
 	};
 
-	private static final int[] VIP_MAPS = { //there has to be exactly 15!
+	private static final int[] VIP_MAPS = { //there has to be exactly 10!
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
-		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
-		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
-		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
-		GlobalConstants.NULL_MAP
+		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP
 	};
 
 	/**

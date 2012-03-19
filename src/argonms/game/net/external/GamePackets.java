@@ -40,6 +40,7 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
@@ -60,6 +61,7 @@ import argonms.game.field.movement.LifeMovementFragment;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShop.ShopSlot;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.net.external.handler.PartyListHandler;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -919,6 +921,134 @@ public class GamePackets {
 		lew.writeShort(ClientSendOps.BUDDY_LIST);
 		lew.writeByte(opCode);
 		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
+	private static void writePartyList(PartyList party, LittleEndianWriter lew, boolean leaving) {
+		party.lockRead();
+		try {
+			List<PartyList.Member> partyMembers = party.getAllMembers();
+
+			for (PartyList.Member member : partyMembers)
+				lew.writeInt(member.getPlayerId());
+
+			for (PartyList.Member member : partyMembers)
+				lew.writePaddedAsciiString(member.getName(), 13);
+
+			for (PartyList.Member member : partyMembers)
+				lew.writeInt(member.getJob());
+
+			for (PartyList.Member member : partyMembers)
+				lew.writeInt(member.getLevel());
+
+			for (PartyList.Member member : partyMembers)
+				lew.writeInt(member.getChannel() - 1);
+
+			lew.writeInt(party.getLeader());
+
+			for (PartyList.Member member : partyMembers)
+				lew.writeInt(member.getMapId());
+
+			//if (leaving) {
+				lew.writeBytes(new byte[4 * 4 * 6]);
+			/*} else {
+				for (Party.Member member : partyMembers) {
+					lew.writeInt(member.getDoorTown());
+					lew.writeInt(member.getDoorTarget());
+					lew.writeInt(member.getDoorPosition().x);
+					lew.writeInt(member.getDoorPosition().y);
+				}
+			}*/
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public static byte[] writePartyCreated(int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(PartyListHandler.PARTY_CREATED);
+		lew.writeInt(partyId);
+		lew.writeInt(GlobalConstants.NULL_MAP);
+		lew.writeInt(GlobalConstants.NULL_MAP);
+		lew.writeInt(0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyDisbanded(int partyId, int leader) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(PartyListHandler.LEFT_PARTY);
+		lew.writeInt(40546);
+		lew.writeInt(leader);
+		lew.writeBool(false);
+		lew.writeInt(partyId);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyMemberLeft(PartyList party, int playerId, String playerName, boolean expelled) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(PartyListHandler.LEFT_PARTY);
+		lew.writeInt(40546);
+		lew.writeInt(playerId);
+		lew.writeBool(true);
+		lew.writeBool(expelled);
+		lew.writeLengthPrefixedString(playerName);
+		writePartyList(party, lew, false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyMemberJoined(PartyList party, String playerName) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(PartyListHandler.JOINED_PARTY);
+		lew.writeInt(40546);
+		lew.writeLengthPrefixedString(playerName);
+		writePartyList(party, lew, false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyChangeLeader(PartyList party) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		//TODO: this gets the job done of passing the star, but is there a way
+		//we can get something about becoming the party leader rather than
+		//'' has joined the party?
+		lew.writeByte(PartyListHandler.JOINED_PARTY);
+		lew.writeInt(40546);
+		lew.writeLengthPrefixedString("");
+		writePartyList(party, lew, false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeSimplePartyListMessage(byte opCode) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(opCode);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyMemberHpUpdate(int playerId, int hp, int maxHp) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
+
+		lew.writeShort(ClientSendOps.UPDATE_PARTY_MEMBER_HP);
+		lew.writeInt(playerId);
+		lew.writeInt(hp);
+		lew.writeInt(maxHp);
 
 		return lew.getBytes();
 	}
