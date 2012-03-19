@@ -35,7 +35,8 @@ public class CenterRemoteOps {
 		CHANGE_POPULATION = 0x07,
 		CHANNEL_PORT_CHANGE = 0x08,
 		REMOTE_CHANNEL_PORT = 0x09,
-		INTER_CHANNEL_RELAY = 0x0A
+		INTER_CHANNEL_RELAY = 0x0A,
+		PARTY_SYNCHRONIZATION = 0x0B
 	;
 
 	private CenterRemoteOps() {

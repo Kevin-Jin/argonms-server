@@ -157,6 +157,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.MINIROOM_ACT:
 				MiniroomHandler.handleAction(reader, gc);
 				break;
+			case ClientRecvOps.PARTYLIST_MODIFY:
+				PartyListHandler.handleListModification(reader, gc);
+				break;
+			case ClientRecvOps.DENY_PARTY_REQUEST:
+				PartyListHandler.handleDenyRequest(reader, gc);
+				break;
 			case ClientRecvOps.BUDDYLIST_MODIFY:
 				BuddyListHandler.handleListModification(reader, gc);
 				break;

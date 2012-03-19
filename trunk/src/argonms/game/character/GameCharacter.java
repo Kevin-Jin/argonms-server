@@ -18,8 +18,8 @@
 
 package argonms.game.character;
 
-import argonms.common.character.BuddyList;
 import argonms.common.GlobalConstants;
+import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
@@ -117,7 +117,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private int partner;
 	private BuddyList buddies;
 	private int guild;
-	private Party party;
+	private PartyList party;
 
 	private int mesos;
 	private final Map<InventoryType, Inventory> inventories;
@@ -1696,8 +1696,24 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return guild;
 	}
 
-	public Party getParty() {
+	public PartyList getParty() {
 		return party;
+	}
+
+	public void setParty(PartyList party) {
+		this.party = party;
+	}
+
+	public void pushHpToParty() {
+		if (party != null)
+			for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
+				member.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(getId(), getHp(), getMaxHp()));
+	}
+
+	public void pullPartyHp() {
+		if (party != null)
+			for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
+				client.getSession().send(GamePackets.writePartyMemberHpUpdate(member.getId(), member.getHp(), member.getMaxHp()));
 	}
 
 	public Miniroom getMiniRoom() {

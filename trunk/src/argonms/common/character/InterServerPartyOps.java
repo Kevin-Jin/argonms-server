@@ -16,27 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.net.internal;
+package argonms.common.character;
 
 /**
- * Opcodes for packets sent from a remote server and received on the center
- * server.
+ *
  * @author GoldenKevin
  */
-public class RemoteCenterOps {
+public class InterServerPartyOps {
 	public static final byte
-		AUTH = 0x00,
-		PING = 0x01,
-		PONG = 0x02,
-		ONLINE = 0x03,
-		POPULATION_CHANGED = 0x04,
-		MODIFY_CHANNEL_PORT = 0x05,
-		INTER_CHANNEL = 0x06,
-		INTER_CHANNEL_ALL = 0x07,
-		PARTY_SYNCHRONIZATION = 0x08
+		CREATE = 0,
+		DISBAND = 1,
+		ADD_PLAYER = 2,
+		REMOVE_PLAYER = 3,
+		CHANGE_LEADER = 4,
+		JOIN = 5,
+		LEAVE = 6
 	;
-
-	private RemoteCenterOps() {
-		//uninstantiable...
-	}
 }

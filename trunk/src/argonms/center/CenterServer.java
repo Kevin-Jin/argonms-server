@@ -60,11 +60,13 @@ public class CenterServer {
 	private CenterLoginInterface loginServer;
 	private CenterShopInterface shopServer;
 	private final Map<Byte, CenterGameInterface> gameServers;
+	private final Map<Byte, Parties> worldParties;
 	private final Lock readLock;
 	private final Lock writeLock;
 
 	private CenterServer() {
 		gameServers = new HashMap<Byte, CenterGameInterface>();
+		worldParties = new HashMap<Byte, Parties>();
 		ReentrantReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
@@ -175,6 +177,8 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
+			if (!worldParties.containsKey(Byte.valueOf(remote.getWorld())))
+				worldParties.put(Byte.valueOf(remote.getWorld()), new Parties());
 			remote.serverOnline();
 			notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
 			sendConnectedShop(remote);
@@ -213,6 +217,23 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			notifyGameDisconnected(remote.getWorld(), serverId);
+			boolean deleteWorldParty = true;
+			for (CenterGameInterface cgi : getAllServersOfWorld(remote.getWorld(), serverId)) {
+				if (!cgi.isStartingUp()) {
+					//don't delete the parties if another game server in this
+					//world is online or is shutting down. if it's shutting
+					//down, that means it's queued to unregisterGame after us,
+					//and we should delete the party on the last remaining game
+					//server of this world.
+					//if the game server is starting up, then it'll just
+					//recreate parties in registerGame anyway, so allow us to
+					//delete it if no other servers are online or shutting down
+					deleteWorldParty = false;
+					break;
+				}
+			}
+			if (deleteWorldParty)
+				worldParties.remove(Byte.valueOf(remote.getWorld()));
 			gameServers.remove(Byte.valueOf(serverId));
 		} finally {
 			writeLock.unlock();
@@ -387,6 +408,10 @@ public class CenterServer {
 		} finally {
 			readLock.unlock();
 		}
+	}
+
+	public Parties getPartyDb(byte world) {
+		return worldParties.get(Byte.valueOf(world));
 	}
 
 	private static byte[] writeGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
