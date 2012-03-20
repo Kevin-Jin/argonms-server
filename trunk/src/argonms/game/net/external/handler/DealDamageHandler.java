@@ -409,10 +409,8 @@ public class DealDamageHandler {
 						Scheduler.getInstance().runAfterDelay(new Runnable() {
 							@Override
 							public void run() {
-								synchronized (drop) {
-									if (drop.isAlive())
-										map.mesoExplosion(drop, player);
-								}
+								if (drop.isAlive())
+									map.mesoExplosion(drop, player);
 							}
 						}, delay);
 						delay += 100;

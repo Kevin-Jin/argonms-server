@@ -122,19 +122,21 @@ public class SkillTools {
 			Map<Integer, Short> canUse = new HashMap<Integer, Short>();
 			int removeItemId = 0;
 			Inventory inv = p.getInventory(InventoryType.USE);
-			for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
-				slot = entry.getValue();
-				itemId = slot.getDataId();
-				if ((itemId / 1000) == ammoPrefix) {
-					Short amount = canUse.get(Integer.valueOf(itemId));
-					if (amount == null)
-						amount = Short.valueOf(slot.getQuantity());
-					else
-						amount = Short.valueOf((short) (amount.shortValue() + slot.getQuantity()));
-					canUse.put(Integer.valueOf(itemId), amount);
-					if (amount.shortValue() >= quantity) {
-						removeItemId = itemId;
-						break;
+			synchronized(inv.getAll()) {
+				for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
+					slot = entry.getValue();
+					itemId = slot.getDataId();
+					if ((itemId / 1000) == ammoPrefix) {
+						Short amount = canUse.get(Integer.valueOf(itemId));
+						if (amount == null)
+							amount = Short.valueOf(slot.getQuantity());
+						else
+							amount = Short.valueOf((short) (amount.shortValue() + slot.getQuantity()));
+						canUse.put(Integer.valueOf(itemId), amount);
+						if (amount.shortValue() >= quantity) {
+							removeItemId = itemId;
+							break;
+						}
 					}
 				}
 			}

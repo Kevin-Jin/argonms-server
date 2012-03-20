@@ -242,12 +242,13 @@ public class GamePackets {
 		lew.writeInt(p.getId());
 		lew.writeBool(true);
 		CommonPackets.writeAvatar(lew, p, false);
-		Inventory inv = p.getInventory(InventoryType.EQUIPPED);
-		Collection<InventorySlot> equippedC = inv.getAll().values();
+		Map<Short, InventorySlot> equippedC = p.getInventory(InventoryType.EQUIPPED).getAll();
 		List<Ring> rings = new ArrayList<Ring>();
-		for (InventorySlot item : equippedC)
-			if (item.getType() == ItemType.RING)
-				rings.add((Ring) item);
+		synchronized(equippedC) {
+			for (InventorySlot item : equippedC.values())
+				if (item.getType() == ItemType.RING)
+					rings.add((Ring) item);
+		}
 		Collections.sort(rings);
 		lew.writeByte((byte) 0);
 		if (rings.size() > 0) {
@@ -1097,7 +1098,10 @@ public class GamePackets {
 				return diff;
 			}
 		});
-		statusEffects.putAll(p.getAllEffects());
+		Map<PlayerStatusEffect, PlayerStatusEffectValues> playerStatusEffects = p.getAllEffects();
+		synchronized(playerStatusEffects) {
+			statusEffects.putAll(playerStatusEffects);
+		}
 		for (PlayerStatusEffect key : statusEffects.keySet())
 			updateMask |= key.longValue();
 		//no idea why we have to do it, but make the 4th byte (in a 64-bit little endian integer) = 0xF8

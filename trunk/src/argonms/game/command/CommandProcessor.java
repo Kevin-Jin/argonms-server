@@ -230,10 +230,8 @@ public class CommandProcessor {
 			}
 
 			private void clearDrop(ItemDrop drop, GameCharacter p) {
-				synchronized (drop) {
-					drop.expire();
-					p.getMap().destroyEntity(drop);
-				}
+				drop.expire();
+				p.getMap().destroyEntity(drop);
 			}
 
 			@Override
@@ -251,15 +249,11 @@ public class CommandProcessor {
 
 			private void clearMob(String[] args, GameCharacter p, Mob mob) {
 				if (ParseHelper.hasOpt(args, "-k")) {
-					synchronized (mob) {
-						mob.hurt(p, mob.getHp());
-						p.getMap().killMonster(mob, p);
-					}
+					mob.hurt(p, mob.getHp());
+					p.getMap().killMonster(mob, p);
 				} else {
-					synchronized (mob) {
-						mob.hurt(p, mob.getHp());
-						p.getMap().removeMonster(mob);
-					}
+					mob.hurt(p, mob.getHp());
+					p.getMap().removeMonster(mob);
 				}
 			}
 

@@ -196,11 +196,11 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		return false;
 	}
 
-	private void endChatHook() {
+	private void fireEndChatEvent() {
 		if (!endingChat) {
 			endingChat = true;
 			clearBackButton(); //we probably don't want a back button in the end chat hook...
-			Object f = globalScope.get("endChat", globalScope);
+			Object f = globalScope.get("chatEnded", globalScope);
 			if (f != Scriptable.NOT_FOUND) {
 				try {
 					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
@@ -234,7 +234,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case SAY:
 				switch (action) {
 					case -1: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 0: //prev
 						getClient().getSession().send(writeNpcSay(npcId, prevs.goBackAndGet(), prevs.hasPrev(), true));
@@ -251,7 +251,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_YES_NO:
 				switch (action) {
 					case -1: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 0: //no
 					case 1: //yes
@@ -262,7 +262,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_TEXT:
 				switch (action) {
 					case 0: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 1: //ok
 						resume(packet.readLengthPrefixedString());
@@ -272,7 +272,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_NUMBER:
 				switch (action) {
 					case 0: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 1: //ok
 						resume(Integer.valueOf(packet.readInt()));
@@ -282,7 +282,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_MENU:
 				switch (action) {
 					case 0: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 1: //selected a link
 						resume(Integer.valueOf(packet.readInt()));
@@ -292,7 +292,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_AVATAR:
 				switch (action) {
 					case 0: //leave store (or esc key) or cancel
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 1: //ok
 						resume(Byte.valueOf(packet.readByte()));
@@ -302,7 +302,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			case ASK_ACCEPT:
 				switch (action) {
 					case -1: //end chat (or esc key)
-						endChatHook();
+						fireEndChatEvent();
 						break;
 					case 0: //decline
 					case 1: //accept

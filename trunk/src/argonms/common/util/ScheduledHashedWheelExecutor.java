@@ -120,7 +120,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			} else {
 				success = false;
 			}
-			synchronized (this) {
+			synchronized(this) {
 				notifyAll();
 			}
 			return success;
@@ -177,7 +177,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		protected abstract V getResult() throws ExecutionException;
 
 		private void waitForResult() throws InterruptedException {
-			synchronized (this) {
+			synchronized(this) {
 				while (!isDone())
 					wait();
 			}
@@ -186,7 +186,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		private boolean waitForResult(long deadline) throws InterruptedException {
 			long now;
 			boolean timedOut = false;
-			synchronized (this) {
+			synchronized(this) {
 				while (!isDone() && !(timedOut = ((now = System.currentTimeMillis()) >= deadline)))
 					wait(deadline - now);
 			}
@@ -217,7 +217,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 					schedule(this, delay);
 				}
 			}
-			synchronized (this) {
+			synchronized(this) {
 				notifyAll();
 			}
 		}

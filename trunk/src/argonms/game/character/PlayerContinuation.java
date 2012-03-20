@@ -73,6 +73,10 @@ public class PlayerContinuation {
 		return activeDebuffs;
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	public Map<Integer, PlayerSkillSummon> getActiveSummons() {
 		return activeSummons;
 	}

@@ -192,10 +192,12 @@ public class InventoryTools {
 			//a fully exhausted rechargeable ammo item will have quantity 0, but
 			//we can still add it to our inventory.
 			item.setQuantity((short) quantity);
-			List<Short> freeSlots = inv.getFreeSlots(1);
-			for (Short s : freeSlots) {
-				inv.put(s.shortValue(), item);
-				insertedSlots.add(s);
+			synchronized(inv.getAll()) {
+				List<Short> freeSlots = inv.getFreeSlots(1);
+				for (Short s : freeSlots) {
+					inv.put(s.shortValue(), item);
+					insertedSlots.add(s);
+				}
 			}
 		} else if (quantity > 0) {
 			boolean equip = isEquip(itemid);
@@ -286,15 +288,17 @@ public class InventoryTools {
 					InventorySlot bottom = equipped.get((short) -6);
 					if (bottom != null) {
 						short slot;
-						if (existing == null) { //no top/overall equipped before
-							slot = src; //overwrite our overall with the pants
-							removeOld = false;
-						} else { //we have top and pants equipped already
-							if (!canFitEntirely(equips, bottom.getDataId(), bottom.getQuantity(), true))
-								return null;
-							slot = equips.getFreeSlots(1).get(0);
+						synchronized(equips.getAll()) {
+							if (existing == null) { //no top/overall equipped before
+								slot = src; //overwrite our overall with the pants
+								removeOld = false;
+							} else { //we have top and pants equipped already
+								if (!canFitEntirely(equips, bottom.getDataId(), bottom.getQuantity(), true))
+									return null;
+								slot = equips.getFreeSlots(1).get(0);
+							}
+							unequip(equipped, equips, (short) -6, slot);
 						}
-						unequip(equipped, equips, (short) -6, slot);
 						otherChange = new short[] { -6, slot };
 					}
 				}
@@ -303,15 +307,17 @@ public class InventoryTools {
 				InventorySlot top = equipped.get((short) -5);
 				if (top != null && isOverall(top.getDataId())) {
 					short slot;
-					if (existing == null) { //no pants equipped before
-						slot = src; //overwrite our pants with the overall
-						removeOld = false;
-					} else { //we have overall and pants equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, top.getDataId(), top.getQuantity(), true))
-							return null;
-						slot = equips.getFreeSlots(1).get(0);
+					synchronized(equips.getAll()) {
+						if (existing == null) { //no pants equipped before
+							slot = src; //overwrite our pants with the overall
+							removeOld = false;
+						} else { //we have overall and pants equipped already (impossible! O.O)
+							if (!canFitEntirely(equips, top.getDataId(), top.getQuantity(), true))
+								return null;
+							slot = equips.getFreeSlots(1).get(0);
+						}
+						unequip(equipped, equips, (short) -5, slot);
 					}
-					unequip(equipped, equips, (short) -5, slot);
 					otherChange = new short[] { -5, slot };
 				}
 				break;
@@ -319,15 +325,17 @@ public class InventoryTools {
 				InventorySlot weapon = equipped.get((short) -11);
 				if (weapon != null && isTwoHanded(weapon.getDataId())) {
 					short slot;
-					if (existing == null) { //no shield equipped before
-						slot = src; //overwrite our shield with two handed weapon
-						removeOld = false;
-					} else { //we have shield and two handed weapon equipped already (impossible! O.O)
-						if (!canFitEntirely(equips, weapon.getDataId(), weapon.getQuantity(), true))
-							return null;
-						slot = equips.getFreeSlots(1).get(0);
+					synchronized(equips.getAll()) {
+						if (existing == null) { //no shield equipped before
+							slot = src; //overwrite our shield with two handed weapon
+							removeOld = false;
+						} else { //we have shield and two handed weapon equipped already (impossible! O.O)
+							if (!canFitEntirely(equips, weapon.getDataId(), weapon.getQuantity(), true))
+								return null;
+							slot = equips.getFreeSlots(1).get(0);
+						}
+						unequip(equipped, equips, (short) -11, slot);
 					}
-					unequip(equipped, equips, (short) -11, slot);
 					otherChange = new short[] { -11, slot };
 				}
 				break;
@@ -336,15 +344,17 @@ public class InventoryTools {
 					InventorySlot shield = equipped.get((short) -10);
 					if (shield != null) {
 						short slot;
-						if (existing == null) { //no weapon equipped before
-							slot = src; //overwrite our weapon with the shield
-							removeOld = false;
-						} else { //we have weapon and shield equipped already
-							if (!canFitEntirely(equips, shield.getDataId(), shield.getQuantity(), true))
-								return null;
-							slot = equips.getFreeSlots(1).get(0);
+						synchronized(equips.getAll()) {
+							if (existing == null) { //no weapon equipped before
+								slot = src; //overwrite our weapon with the shield
+								removeOld = false;
+							} else { //we have weapon and shield equipped already
+								if (!canFitEntirely(equips, shield.getDataId(), shield.getQuantity(), true))
+									return null;
+								slot = equips.getFreeSlots(1).get(0);
+							}
+							unequip(equipped, equips, (short) -10, slot);
 						}
-						unequip(equipped, equips, (short) -10, slot);
 						otherChange = new short[] { -10, slot };
 					}
 				}
@@ -409,10 +419,12 @@ public class InventoryTools {
 	}
 
 	public static boolean unequip(Inventory equipped, Inventory equips, short src) {
-		List<Short> freeSlots = equips.getFreeSlots(1);
-		if (freeSlots.isEmpty())
-			return false;
-		unequip(equipped, equips, src, freeSlots.get(0));
+		synchronized(equips.getAll()) {
+			List<Short> freeSlots = equips.getFreeSlots(1);
+			if (freeSlots.isEmpty())
+				return false;
+			unequip(equipped, equips, src, freeSlots.get(0));
+		}
 		return true;
 	}
 

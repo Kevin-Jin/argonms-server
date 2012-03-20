@@ -144,13 +144,15 @@ public class GameEnterHandler {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.SKILL_MACRO);
-		lew.writeByte((byte) macros.size()); // number of macros
-		for (SkillMacro macro : macros) {
-			lew.writeLengthPrefixedString(macro.getName());
-			lew.writeBool(macro.shout());
-			lew.writeInt(macro.getFirstSkill());
-			lew.writeInt(macro.getSecondSkill());
-			lew.writeInt(macro.getThirdSkill());
+		synchronized(macros) {
+			lew.writeByte((byte) macros.size()); // number of macros
+			for (SkillMacro macro : macros) {
+				lew.writeLengthPrefixedString(macro.getName());
+				lew.writeBool(macro.shout());
+				lew.writeInt(macro.getFirstSkill());
+				lew.writeInt(macro.getSecondSkill());
+				lew.writeInt(macro.getThirdSkill());
+			}
 		}
 
 		return lew.getBytes();
