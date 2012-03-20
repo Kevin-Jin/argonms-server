@@ -52,6 +52,7 @@ import java.util.Queue;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -71,31 +72,33 @@ public class Mob extends MapEntity {
 
 	private final MobStats stats;
 	private final GameMap map;
-	private int remHp;
-	private int remMp;
-	private final Queue<MobDeathHook> hooks;
+	private final AtomicInteger remHp;
+	private final AtomicInteger remMp;
+	private final Queue<MobDeathListener> subscribers;
 	private final LockableMap<GameCharacter, PlayerDamage> damages;
 	private WeakReference<GameCharacter> controller;
-	private boolean aggroAware, hasAggro;
+	private volatile boolean aggroAware, hasAggro;
 	private final Map<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
 	private final Map<Short, ScheduledFuture<?>> skillCancels;
 	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
-	private int spawnedSummons;
-	private byte spawnEffect, deathEffect;
-	private byte venomUseCount;
+	private final AtomicInteger spawnedSummons;
+	private volatile byte spawnEffect, deathEffect;
+	private final AtomicInteger venomUseCount;
 
 	public Mob(MobStats stats, GameMap map) {
 		this.stats = stats;
 		this.map = map;
-		this.remHp = stats.getMaxHp();
-		this.remMp = stats.getMaxMp();
-		this.hooks = new ConcurrentLinkedQueue<MobDeathHook>();
+		this.remHp = new AtomicInteger(stats.getMaxHp());
+		this.remMp = new AtomicInteger(stats.getMaxMp());
+		this.subscribers = new ConcurrentLinkedQueue<MobDeathListener>();
 		this.damages = new LockableMap<GameCharacter, PlayerDamage>(new WeakHashMap<GameCharacter, PlayerDamage>());
 		this.controller = new WeakReference<GameCharacter>(null);
-		this.activeEffects = new EnumMap<MonsterStatusEffect, MonsterStatusEffectValues>(MonsterStatusEffect.class);
-		this.skillCancels = new HashMap<Short, ScheduledFuture<?>>();
-		this.diseaseCancels = new HashMap<Integer, ScheduledFuture<?>>();
+		this.activeEffects = Collections.synchronizedMap(new EnumMap<MonsterStatusEffect, MonsterStatusEffectValues>(MonsterStatusEffect.class));
+		this.skillCancels = Collections.synchronizedMap(new HashMap<Short, ScheduledFuture<?>>());
+		this.diseaseCancels = Collections.synchronizedMap(new HashMap<Integer, ScheduledFuture<?>>());
+		this.spawnedSummons = new AtomicInteger(0);
 		this.deathEffect = DESTROY_ANIMATION_NORMAL;
+		this.venomUseCount = new AtomicInteger(0);
 		setStance((byte) 5);
 	}
 
@@ -208,10 +211,14 @@ public class Mob extends MapEntity {
 	}
 
 	public void died(GameCharacter killer) {
-		for (ScheduledFuture<?> cancelTask : skillCancels.values())
-			cancelTask.cancel(false);
-		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
-			cancelTask.cancel(false);
+		synchronized(skillCancels) {
+			for (ScheduledFuture<?> cancelTask : skillCancels.values())
+				cancelTask.cancel(false);
+		}
+		synchronized(diseaseCancels) {
+			for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+				cancelTask.cancel(false);
+		}
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
@@ -219,7 +226,7 @@ public class Mob extends MapEntity {
 			map.sendToAll(GamePackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
 		}
 		GameCharacter highestDamage = giveExp(killer);
-		for (MobDeathHook hook : hooks)
+		for (MobDeathListener hook : subscribers)
 			hook.monsterKilled(highestDamage, killer);
 		int id;
 		byte pickupAllow;
@@ -233,13 +240,13 @@ public class Mob extends MapEntity {
 		makeDrops(id, pickupAllow);
 	}
 
-	public void addDeathHook(MobDeathHook hook) {
-		hooks.offer(hook);
+	public void addListener(MobDeathListener subscriber) {
+		subscribers.offer(subscriber);
 	}
 
-	public void executeDeathHooksNoRewards() {
-		for (MobDeathHook hook : hooks)
-			hook.monsterKilled(null, null);
+	public void fireDeathEventNoRewards() {
+		for (MobDeathListener subscriber : subscribers)
+			subscriber.monsterKilled(null, null);
 	}
 
 	public byte getControlStatus() {
@@ -263,7 +270,7 @@ public class Mob extends MapEntity {
 	}
 
 	public int getHp() {
-		return remHp;
+		return remHp.get();
 	}
 
 	public int getMaxHp() {
@@ -271,7 +278,7 @@ public class Mob extends MapEntity {
 	}
 
 	public int getMp() {
-		return remMp;
+		return remMp.get();
 	}
 
 	public int getMaxMp() {
@@ -279,9 +286,10 @@ public class Mob extends MapEntity {
 	}
 
 	public void hurt(GameCharacter p, int damage) {
-		if (damage > remHp)
-			damage = remHp;
-		this.remHp -= damage;
+		//this isn't very atomic, but whatever...
+		if (remHp.addAndGet(-damage) < 0)
+			remHp.set(0);
+
 		damages.lockWrite();
 		try {
 			PlayerDamage pd = damages.get(p);
@@ -289,8 +297,8 @@ public class Mob extends MapEntity {
 				pd.addDamage(damage);
 			} else {
 				damages.put(p, new PlayerDamage(damage));
-				for (MobDeathHook hook : p.getMobDeathHooks(getDataId()))
-					hooks.offer(hook);
+				for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
+					subscribers.offer(hook);
 			}
 		} finally {
 			damages.unlockWrite();
@@ -298,20 +306,21 @@ public class Mob extends MapEntity {
 
 		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
 		if (stats.getHpTagColor() > 0) //boss
-			map.sendToAll(writeShowBossHp(stats, remHp));
+			map.sendToAll(writeShowBossHp(stats, remHp.get()));
 		else if (stats.isBoss()) //minibosses
-			map.sendToAll(writeShowMobHp(getId(), (byte) (remHp * 100 / stats.getMaxHp())));
+			map.sendToAll(writeShowMobHp(getId(), (byte) (remHp.get() * 100 / stats.getMaxHp())));
 		else
-			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp * 100 / stats.getMaxHp())));
+			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp.get() * 100 / stats.getMaxHp())));
 
-		if (remHp > 0 && remHp <= stats.getSelfDestructHp()) {
-			remHp = 0;
+		//this isn't very atomic, but whatever...
+		if (remHp.get() > 0 && remHp.get() <= stats.getSelfDestructHp()) {
+			remHp.set(0);
 			deathEffect = DESTROY_ANIMATION_EXPLODE;
 		}
 	}
 
 	public void loseMp(int loss) {
-		this.remMp -= loss;
+		this.remMp.addAndGet(-loss);
 	}
 
 	public List<Skill> getSkills() {
@@ -319,7 +328,7 @@ public class Mob extends MapEntity {
 	}
 
 	public boolean canUseSkill(MobSkillEffectsData effect) {
-		return ((remHp / stats.getMaxHp() * 100) <= effect.getMaxPercentHp());
+		return ((remHp.get() / stats.getMaxHp() * 100) <= effect.getMaxPercentHp());
 	}
 
 	public boolean hasSkill(short skillId, byte skillLevel) {
@@ -333,35 +342,33 @@ public class Mob extends MapEntity {
 		return stats.getElementalResistance(elem);
 	}
 
-	public byte getVenomCount() {
-		return venomUseCount;
+	public int getVenomCount() {
+		return venomUseCount.get();
 	}
 
 	public void addToVenomCount() {
-		venomUseCount++;
+		venomUseCount.incrementAndGet();
 	}
 
 	public void addToActiveEffects(MonsterStatusEffect buff, MonsterStatusEffectValues value) {
-		synchronized (activeEffects) {
-			activeEffects.put(buff, value);
-		}
+		activeEffects.put(buff, value);
 	}
 
 	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask) {
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
-				synchronized (skillCancels) {
-					skillCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
-				}
+				skillCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
 				break;
 			case PLAYER_SKILL:
-				synchronized (diseaseCancels) {
-					diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
-				}
+				diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
 				break;
 		}
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	public Map<MonsterStatusEffect, MonsterStatusEffectValues> getAllEffects() {
 		return activeEffects;
 	}
@@ -371,23 +378,17 @@ public class Mob extends MapEntity {
 	}
 
 	public MonsterStatusEffectValues removeFromActiveEffects(MonsterStatusEffect e) {
-		synchronized (activeEffects) {
-			return activeEffects.remove(e);
-		}
+		return activeEffects.remove(e);
 	}
 
 	public void removeCancelEffectTask(StatusEffectsData e) {
 		ScheduledFuture<?> cancelTask;
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
-				synchronized (skillCancels) {
-					cancelTask = skillCancels.remove(Short.valueOf((short) e.getDataId()));
-				}
+				cancelTask = skillCancels.remove(Short.valueOf((short) e.getDataId()));
 				break;
 			case PLAYER_SKILL:
-				synchronized (diseaseCancels) {
-					cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
-				}
+				cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
 				break;
 			default:
 				cancelTask = null;
@@ -410,11 +411,11 @@ public class Mob extends MapEntity {
 	}
 
 	public int getSpawnedSummons() {
-		return spawnedSummons;
+		return spawnedSummons.get();
 	}
 
 	public void addToSpawnedSummons() {
-		spawnedSummons++;
+		spawnedSummons.incrementAndGet();
 	}
 
 	public void setSpawnEffect(byte effect) {
@@ -453,7 +454,7 @@ public class Mob extends MapEntity {
 
 	@Override
 	public boolean isAlive() {
-		return remHp > 0;
+		return remHp.get() > 0;
 	}
 
 	@Override
@@ -476,7 +477,7 @@ public class Mob extends MapEntity {
 		return GamePackets.writeRemoveMonster(this, deathEffect);
 	}
 
-	public interface MobDeathHook {
+	public interface MobDeathListener {
 		public void monsterKilled(GameCharacter highestDamage, GameCharacter last);
 	}
 

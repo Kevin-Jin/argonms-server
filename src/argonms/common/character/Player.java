@@ -415,56 +415,59 @@ public interface Player {
 							break;
 					}
 					ps.setInt(3, ent.getKey().byteValue());
-					for (Entry<Short, InventorySlot> e : ent.getValue().getAll().entrySet()) {
-						InventorySlot item = e.getValue();
+					Map<Short, InventorySlot> iv = ent.getValue().getAll();
+					synchronized(iv) {
+						for (Entry<Short, InventorySlot> e : iv.entrySet()) {
+							InventorySlot item = e.getValue();
 
-						ps.setShort(4, e.getKey().shortValue());
-						ps.setInt(5, item.getDataId());
-						ps.setLong(6, item.getExpiration());
-						ps.setLong(7, item.getUniqueId());
-						ps.setString(8, item.getOwner());
-						ps.setShort(9, item.getQuantity());
-						//TODO: refactor so we can use addBatch here for inventories
-						//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
-						//after executeBatch to get generated keys for each item
-						//in iteration order...
-						ps.executeUpdate(); //need the generated keys, so no batch
-						rs = ps.getGeneratedKeys();
-						int inventoryKey = rs.next() ? rs.getInt(1) : -1;
-						rs.close();
+							ps.setShort(4, e.getKey().shortValue());
+							ps.setInt(5, item.getDataId());
+							ps.setLong(6, item.getExpiration());
+							ps.setLong(7, item.getUniqueId());
+							ps.setString(8, item.getOwner());
+							ps.setShort(9, item.getQuantity());
+							//TODO: refactor so we can use addBatch here for inventories
+							//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
+							//after executeBatch to get generated keys for each item
+							//in iteration order...
+							ps.executeUpdate(); //need the generated keys, so no batch
+							rs = ps.getGeneratedKeys();
+							int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+							rs.close();
 
-						switch (item.getType()) {
-							case RING:
-								Ring ring = (Ring) item;
-								insertEquipIntoDb(ring, inventoryKey, con);
-								rps.setInt(1, inventoryKey);
-								rps.setInt(2, ring.getPartnerCharId());
-								rps.setLong(3, ring.getPartnerRingId());
-								rps.executeUpdate();
-								break;
-							case EQUIP:
-								insertEquipIntoDb((Equip) item, inventoryKey, con);
-								break;
-							case PET:
-								Pet pet = (Pet) item;
-								pps.setInt(1, inventoryKey);
-								pps.setByte(2, indexOf(pets, pet));
-								pps.setString(3, pet.getName());
-								pps.setByte(4, pet.getLevel());
-								pps.setShort(5, pet.getCloseness());
-								pps.setByte(6, pet.getFullness());
-								pps.setBoolean(7, pet.isExpired());
-								pps.executeUpdate();
-								break;
-							case MOUNT:
-								TamingMob mount = (TamingMob) item;
-								insertEquipIntoDb(mount, inventoryKey, con);
-								mps.setInt(1, inventoryKey);
-								mps.setByte(2, mount.getMountLevel());
-								mps.setShort(3, mount.getExp());
-								mps.setByte(4, mount.getTiredness());
-								mps.executeUpdate();
-								break;
+							switch (item.getType()) {
+								case RING:
+									Ring ring = (Ring) item;
+									insertEquipIntoDb(ring, inventoryKey, con);
+									rps.setInt(1, inventoryKey);
+									rps.setInt(2, ring.getPartnerCharId());
+									rps.setLong(3, ring.getPartnerRingId());
+									rps.executeUpdate();
+									break;
+								case EQUIP:
+									insertEquipIntoDb((Equip) item, inventoryKey, con);
+									break;
+								case PET:
+									Pet pet = (Pet) item;
+									pps.setInt(1, inventoryKey);
+									pps.setByte(2, indexOf(pets, pet));
+									pps.setString(3, pet.getName());
+									pps.setByte(4, pet.getLevel());
+									pps.setShort(5, pet.getCloseness());
+									pps.setByte(6, pet.getFullness());
+									pps.setBoolean(7, pet.isExpired());
+									pps.executeUpdate();
+									break;
+								case MOUNT:
+									TamingMob mount = (TamingMob) item;
+									insertEquipIntoDb(mount, inventoryKey, con);
+									mps.setInt(1, inventoryKey);
+									mps.setByte(2, mount.getMountLevel());
+									mps.setShort(3, mount.getExp());
+									mps.setByte(4, mount.getTiredness());
+									mps.executeUpdate();
+									break;
+							}
 						}
 					}
 				}

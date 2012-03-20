@@ -56,7 +56,7 @@ import argonms.game.field.entity.Minigame.MinigameResult;
 import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
 import argonms.game.field.entity.Mob;
-import argonms.game.field.entity.Mob.MobDeathHook;
+import argonms.game.field.entity.Mob.MobDeathListener;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.quest.QuestChecks;
 import argonms.game.loading.quest.QuestChecks.QuestRequirementType;
@@ -65,6 +65,7 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.script.PartyMemberListener;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -72,7 +73,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -118,6 +118,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private BuddyList buddies;
 	private int guild;
 	private PartyList party;
+	private final List<PartyMemberListener> subscribers;
 
 	private int mesos;
 	private final Map<InventoryType, Inventory> inventories;
@@ -136,7 +137,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private short energyCharge;
 
 	private final Map<Short, QuestEntry> questStatuses;
-	private final Map<QuestRequirementType, Map<Number, List<Short>>> questReqWatching;
+	private final Map<QuestRequirementType, Map<Number, List<Short>>> questSubscriptions;
 
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, Integer>> minigameStats;
@@ -147,22 +148,27 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	private final List<Integer> wishList;
 
 	private GameCharacter () {
+		subscribers = Collections.synchronizedList(new ArrayList<PartyMemberListener>());
+		//doesn't need to be synchronized because we only add/remove entries
+		//before we can possibly get them
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		equippedPets = new Pet[3];
-		bindings = new TreeMap<Byte, KeyBinding>();
-		skillMacros = new ArrayList<SkillMacro>(5);
-		skillEntries = new HashMap<Integer, SkillEntry>();
-		cooldowns = new HashMap<Integer, Cooldown>();
-		activeEffects = new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class);
-		skillFutures = new HashMap<Integer, Pair<SkillState, ScheduledFuture<?>>>();
-		itemEffectFutures = new HashMap<Integer, Pair<ItemState, ScheduledFuture<?>>>();
-		diseaseFutures = new HashMap<Short, Pair<MobSkillState, ScheduledFuture<?>>>();
-		summons = new HashMap<Integer, PlayerSkillSummon>();
+		bindings = Collections.synchronizedMap(new TreeMap<Byte, KeyBinding>());
+		skillMacros = Collections.synchronizedList(new ArrayList<SkillMacro>(5));
+		skillEntries = Collections.synchronizedMap(new HashMap<Integer, SkillEntry>());
+		cooldowns = Collections.synchronizedMap(new HashMap<Integer, Cooldown>());
+		activeEffects = Collections.synchronizedMap(new EnumMap<PlayerStatusEffect, PlayerStatusEffectValues>(PlayerStatusEffect.class));
+		skillFutures = Collections.synchronizedMap(new HashMap<Integer, Pair<SkillState, ScheduledFuture<?>>>());
+		itemEffectFutures = Collections.synchronizedMap(new HashMap<Integer, Pair<ItemState, ScheduledFuture<?>>>());
+		diseaseFutures = Collections.synchronizedMap(new HashMap<Short, Pair<MobSkillState, ScheduledFuture<?>>>());
+		summons = Collections.synchronizedMap(new HashMap<Integer, PlayerSkillSummon>());
 		controllingMobs = new LockableList<Mob>(new ArrayList<Mob>());
-		questStatuses = new HashMap<Short, QuestEntry>();
-		questReqWatching = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
-		minigameStats = new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class);
-		famesThisMonth = new HashMap<Integer, Long>();
+		questStatuses = Collections.synchronizedMap(new HashMap<Short, QuestEntry>());
+		questSubscriptions = Collections.synchronizedMap(new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class));
+		minigameStats = Collections.synchronizedMap(new EnumMap<MiniroomType, Map<MinigameResult, Integer>>(MiniroomType.class));
+		famesThisMonth = Collections.synchronizedMap(new HashMap<Integer, Long>());
+		//doesn't need to be synchronized because we only add/remove entries
+		//before we can possibly get them
 		wishList = new ArrayList<Integer>(10);
 	}
 
@@ -325,12 +331,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps = con.prepareStatement("INSERT INTO `skills` (`characterid`," +
 					"`skillid`,`level`,`mastery`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
-			for (Entry<Integer, SkillEntry> skill : skillEntries.entrySet()) {
-				SkillEntry skillLevel = skill.getValue();
-				ps.setInt(2, skill.getKey().intValue());
-				ps.setByte(3, skillLevel.getLevel());
-				ps.setByte(4, skillLevel.getMasterLevel());
-				ps.addBatch();
+			synchronized(skillEntries) {
+				for (Entry<Integer, SkillEntry> skill : skillEntries.entrySet()) {
+					SkillEntry skillLevel = skill.getValue();
+					ps.setInt(2, skill.getKey().intValue());
+					ps.setByte(3, skillLevel.getLevel());
+					ps.setByte(4, skillLevel.getMasterLevel());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -352,10 +360,12 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps = con.prepareStatement("INSERT INTO `cooldowns`" +
 					"(`characterid`,`skillid`,`remaining`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
-			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
-				ps.setInt(2, cooling.getKey().intValue());
-				ps.setShort(3, cooling.getValue().getSecondsRemaining());
-				ps.addBatch();
+			synchronized(cooldowns) {
+				for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
+					ps.setInt(2, cooling.getKey().intValue());
+					ps.setShort(3, cooling.getValue().getSecondsRemaining());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -377,12 +387,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
 					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
-			for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
-				KeyBinding binding = entry.getValue();
-				ps.setByte(2, entry.getKey().byteValue());
-				ps.setByte(3, binding.getType());
-				ps.setInt(4, binding.getAction());
-				ps.addBatch();
+			synchronized(bindings) {
+				for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
+					KeyBinding binding = entry.getValue();
+					ps.setByte(2, entry.getKey().byteValue());
+					ps.setByte(3, binding.getType());
+					ps.setInt(4, binding.getAction());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 			ps.close();
@@ -398,14 +410,16 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,"
 					+ "`skill2`,`skill3`) VALUES (?,?,?,?,?,?,?)");
 			ps.setInt(1, getDataId());
-			for (SkillMacro macro : skillMacros) {
-				ps.setByte(2, pos++);
-				ps.setString(3, macro.getName());
-				ps.setBoolean(4, macro.shout());
-				ps.setInt(5, macro.getFirstSkill());
-				ps.setInt(6, macro.getSecondSkill());
-				ps.setInt(7, macro.getThirdSkill());
-				ps.addBatch();
+			synchronized(skillMacros) {
+				for (SkillMacro macro : skillMacros) {
+					ps.setByte(2, pos++);
+					ps.setString(3, macro.getName());
+					ps.setBoolean(4, macro.shout());
+					ps.setInt(5, macro.getFirstSkill());
+					ps.setInt(6, macro.getSecondSkill());
+					ps.setInt(7, macro.getThirdSkill());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -462,27 +476,29 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			mps = con.prepareStatement("INSERT INTO `questmobprogress` "
 					+ "(`queststatusid`,`mobid`,`count`) VALUES (?,?,?)");
 			ResultSet rs;
-			for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
-				QuestEntry status = entry.getValue();
-				ps.setShort(2, entry.getKey().shortValue());
-				ps.setByte(3, status.getState());
-				ps.setLong(4, status.getCompletionTime());
-				ps.executeUpdate();
-				int questEntryId;
-				rs = null;
-				try {
-					rs = ps.getGeneratedKeys();
-					questEntryId = rs.next() ? rs.getInt(1) : -1;
-				} finally {
-					DatabaseManager.cleanup(DatabaseType.STATE, rs, null, null);
+			synchronized(questStatuses) {
+				for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
+					QuestEntry status = entry.getValue();
+					ps.setShort(2, entry.getKey().shortValue());
+					ps.setByte(3, status.getState());
+					ps.setLong(4, status.getCompletionTime());
+					ps.executeUpdate();
+					int questEntryId;
+					rs = null;
+					try {
+						rs = ps.getGeneratedKeys();
+						questEntryId = rs.next() ? rs.getInt(1) : -1;
+					} finally {
+						DatabaseManager.cleanup(DatabaseType.STATE, rs, null, null);
+					}
+					mps.setInt(1, questEntryId);
+					for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
+						mps.setInt(2, mobProgress.getKey().intValue());
+						mps.setShort(3, mobProgress.getValue().shortValue());
+						mps.addBatch();
+					}
+					mps.executeBatch();
 				}
-				mps.setInt(1, questEntryId);
-				for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
-					mps.setInt(2, mobProgress.getKey().intValue());
-					mps.setShort(3, mobProgress.getValue().shortValue());
-					mps.addBatch();
-				}
-				mps.executeBatch();
 			}
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save quest states of character " + name, e);
@@ -505,12 +521,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					+ "(`characterid`,`gametype`,`wins`,`ties`,`losses`) "
 					+ "VALUES (?, ?, ?, ?, ?)");
 			ps.setInt(1, getDataId());
-			for (Entry<MiniroomType, Map<MinigameResult, Integer>> stats : minigameStats.entrySet()) {
-				ps.setByte(2, stats.getKey().byteValue());
-				ps.setInt(3, stats.getValue().get(MinigameResult.WIN).intValue());
-				ps.setInt(4, stats.getValue().get(MinigameResult.TIE).intValue());
-				ps.setInt(5, stats.getValue().get(MinigameResult.LOSS).intValue());
-				ps.addBatch();
+			synchronized(minigameStats) {
+				for (Entry<MiniroomType, Map<MinigameResult, Integer>> stats : minigameStats.entrySet()) {
+					ps.setByte(2, stats.getKey().byteValue());
+					ps.setInt(3, stats.getValue().get(MinigameResult.WIN).intValue());
+					ps.setInt(4, stats.getValue().get(MinigameResult.TIE).intValue());
+					ps.setInt(5, stats.getValue().get(MinigameResult.LOSS).intValue());
+					ps.addBatch();
+				}
 			}
 			ps.executeBatch();
 		} catch (SQLException e) {
@@ -532,12 +550,14 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 					+ "`millis`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
-			for (Entry<Integer, Long> fameEntry : famesThisMonth.entrySet()) {
-				long time = fameEntry.getValue().longValue();
-				if (time >= threshold) {
-					ps.setInt(2, fameEntry.getKey().intValue());
-					ps.setLong(3, fameEntry.getValue().longValue());
-					ps.addBatch();
+			synchronized(famesThisMonth) {
+				for (Entry<Integer, Long> fameEntry : famesThisMonth.entrySet()) {
+					long time = fameEntry.getValue().longValue();
+					if (time >= threshold) {
+						ps.setInt(2, fameEntry.getKey().intValue());
+						ps.setLong(3, fameEntry.getValue().longValue());
+						ps.addBatch();
+					}
 				}
 			}
 			ps.executeBatch();
@@ -637,6 +657,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			CharacterTools.loadInventory(con, rs, p.equippedPets, invUnion);
 			rs.close();
 			ps.close();
+			//inventories should still be safe right now, so no need for synchronization...
 			for (InventorySlot equip : p.inventories.get(InventoryType.EQUIPPED).getAll().values())
 				p.equipChanged((Equip) equip, true);
 
@@ -1421,8 +1442,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public KeyBinding[] getKeyMap() {
 		KeyBinding[] ret = new KeyBinding[90];
-		for (Entry<Byte, KeyBinding> entry : bindings.entrySet())
-			ret[entry.getKey().byteValue()] = entry.getValue();
+		synchronized(bindings) {
+			for (Entry<Byte, KeyBinding> entry : bindings.entrySet())
+				ret[entry.getKey().byteValue()] = entry.getValue();
+		}
 		return ret;
 	}
 
@@ -1433,13 +1456,21 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	public List<SkillMacro> getMacros() {
 		return skillMacros;
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	@Override
 	public Map<Integer, SkillEntry> getSkillEntries() {
-		return Collections.unmodifiableMap(skillEntries);
+		return skillEntries;
 	}
 
 	public byte getSkillLevel(int skill) {
@@ -1461,18 +1492,23 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 * @param masterLevel set to -1 if you do not wish to change the max level
 	 */
 	public void setSkillLevel(int skill, byte level, byte masterLevel) {
-		if (level == 0)
-			skillEntries.remove(Integer.valueOf(skill));
-		SkillEntry skillLevel = skillEntries.get(Integer.valueOf(skill));
-		if (skillLevel == null) {
-			if (masterLevel == -1)
-				masterLevel = 0;
-			skillLevel = new SkillEntry(level, masterLevel);
-			skillEntries.put(Integer.valueOf(skill), skillLevel);
-		} else {
-			skillLevel.changeCurrentLevel(level);
-			if (masterLevel != -1)
-				skillLevel.changeMasterLevel(masterLevel);
+		SkillEntry skillLevel;
+		synchronized(skillEntries) {
+			if (level == 0)
+				skillLevel = skillEntries.remove(Integer.valueOf(skill));
+			else
+				skillLevel = skillEntries.get(Integer.valueOf(skill));
+			if (skillLevel == null) {
+				if (masterLevel == -1)
+					masterLevel = 0;
+				skillLevel = new SkillEntry(level, masterLevel);
+				if (level != 0)
+					skillEntries.put(Integer.valueOf(skill), skillLevel);
+			} else {
+				skillLevel.changeCurrentLevel(level);
+				if (masterLevel != -1)
+					skillLevel.changeMasterLevel(masterLevel);
+			}
 		}
 		getClient().getSession().send(GamePackets.writeUpdateSkillLevel(
 				skill, skillLevel.getLevel(), skillLevel.getMasterLevel()));
@@ -1492,37 +1528,37 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		cooldowns.remove(Integer.valueOf(skill)).cancel();
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	@Override
 	public Map<Integer, Cooldown> getCooldowns() {
 		return cooldowns;
 	}
 
 	public void addToActiveEffects(PlayerStatusEffect buff, PlayerStatusEffectValues value) {
-		synchronized (activeEffects) {
-			activeEffects.put(buff, value);
-		}
+		activeEffects.put(buff, value);
 	}
 
 	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask, byte level, long endTime) {
 		switch (e.getSourceType()) {
 			case ITEM:
-				synchronized (itemEffectFutures) {
-					itemEffectFutures.put(Integer.valueOf(e.getDataId()), new Pair<ItemState, ScheduledFuture<?>>(new ItemState(endTime), cancelTask));
-				}
+				itemEffectFutures.put(Integer.valueOf(e.getDataId()), new Pair<ItemState, ScheduledFuture<?>>(new ItemState(endTime), cancelTask));
 				break;
 			case PLAYER_SKILL:
-				synchronized (skillFutures) {
-					skillFutures.put(Integer.valueOf(e.getDataId()), new Pair<SkillState, ScheduledFuture<?>>(new SkillState(level, endTime), cancelTask));
-				}
+				skillFutures.put(Integer.valueOf(e.getDataId()), new Pair<SkillState, ScheduledFuture<?>>(new SkillState(level, endTime), cancelTask));
 				break;
 			case MOB_SKILL:
-				synchronized (diseaseFutures) {
-					diseaseFutures.put(Short.valueOf((short) e.getDataId()), new Pair<MobSkillState, ScheduledFuture<?>>(new MobSkillState(level, endTime), cancelTask));
-				}
+				diseaseFutures.put(Short.valueOf((short) e.getDataId()), new Pair<MobSkillState, ScheduledFuture<?>>(new MobSkillState(level, endTime), cancelTask));
 				break;
 		}
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	public Map<PlayerStatusEffect, PlayerStatusEffectValues> getAllEffects() {
 		return activeEffects;
 	}
@@ -1532,28 +1568,20 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public PlayerStatusEffectValues removeFromActiveEffects(PlayerStatusEffect e) {
-		synchronized (activeEffects) {
-			return activeEffects.remove(e);
-		}
+		return activeEffects.remove(e);
 	}
 
 	public void removeCancelEffectTask(StatusEffectsData e) {
 		Pair<? extends BuffState, ScheduledFuture<?>> cancelTask;
 		switch (e.getSourceType()) {
 			case ITEM:
-				synchronized (itemEffectFutures) {
-					cancelTask = itemEffectFutures.remove(Integer.valueOf(e.getDataId()));
-				}
+				cancelTask = itemEffectFutures.remove(Integer.valueOf(e.getDataId()));
 				break;
 			case PLAYER_SKILL:
-				synchronized (skillFutures) {
-					cancelTask = skillFutures.remove(Integer.valueOf(e.getDataId()));
-				}
+				cancelTask = skillFutures.remove(Integer.valueOf(e.getDataId()));
 				break;
 			case MOB_SKILL:
-				synchronized (diseaseFutures) {
-					cancelTask = diseaseFutures.remove(Short.valueOf((short) e.getDataId()));
-				}
+				cancelTask = diseaseFutures.remove(Short.valueOf((short) e.getDataId()));
 				break;
 			default:
 				cancelTask = null;
@@ -1594,22 +1622,28 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 
 	public Map<Integer, SkillState> activeSkillsList() {
 		Map<Integer, SkillState> list = new HashMap<Integer, SkillState>();
-		for (Entry<Integer, Pair<SkillState, ScheduledFuture<?>>> activeSkill : skillFutures.entrySet())
-			list.put(activeSkill.getKey(), activeSkill.getValue().left);
+		synchronized(skillFutures) {
+			for (Entry<Integer, Pair<SkillState, ScheduledFuture<?>>> activeSkill : skillFutures.entrySet())
+				list.put(activeSkill.getKey(), activeSkill.getValue().left);
+		}
 		return list;
 	}
 
 	public Map<Integer, ItemState> activeItemsList() {
 		Map<Integer, ItemState> list = new HashMap<Integer, ItemState>();
-		for (Entry<Integer, Pair<ItemState, ScheduledFuture<?>>> activeItem : itemEffectFutures.entrySet())
-			list.put(activeItem.getKey(), activeItem.getValue().left);
+		synchronized(itemEffectFutures) {
+			for (Entry<Integer, Pair<ItemState, ScheduledFuture<?>>> activeItem : itemEffectFutures.entrySet())
+				list.put(activeItem.getKey(), activeItem.getValue().left);
+		}
 		return list;
 	}
 
 	public Map<Short, MobSkillState> activeMobSkillsList() {
 		Map<Short, MobSkillState> list = new HashMap<Short, MobSkillState>();
-		for (Entry<Short, Pair<MobSkillState, ScheduledFuture<?>>> activeMobSkill : diseaseFutures.entrySet())
-			list.put(activeMobSkill.getKey(), activeMobSkill.getValue().left);
+		synchronized(diseaseFutures) {
+			for (Entry<Short, Pair<MobSkillState, ScheduledFuture<?>>> activeMobSkill : diseaseFutures.entrySet())
+				list.put(activeMobSkill.getKey(), activeMobSkill.getValue().left);
+		}
 		return list;
 	}
 
@@ -1625,10 +1659,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return energyCharge;
 	}
 
-	public Collection<PlayerSkillSummon> summonsList() {
-		return summons.values();
-	}
-
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	public Map<Integer, PlayerSkillSummon> getAllSummons() {
 		return summons;
 	}
@@ -1727,12 +1761,18 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	public void close(boolean changingChannels) {
 		//TODO: need to save debuffs in database so players cannot exploit
 		//logging off and then on to get rid of debuffs...
-		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
-			cancelTask.right.cancel(false);
-		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
-			cancelTask.right.cancel(false);
-		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
-			cancelTask.right.cancel(false);
+		synchronized(skillFutures) {
+			for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
+				cancelTask.right.cancel(false);
+		}
+		synchronized(itemEffectFutures) {
+			for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
+				cancelTask.right.cancel(false);
+		}
+		synchronized(diseaseFutures) {
+			for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
+				cancelTask.right.cancel(false);
+		}
 		if (!changingChannels)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		leaveMapRoutines();
@@ -1740,8 +1780,10 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			map.removePlayer(this);
 		if (!changingChannels)
 			saveCharacter();
-		for (Cooldown cooling : cooldowns.values())
-			cooling.cancel();
+		synchronized(cooldowns) {
+			for (Cooldown cooling : cooldowns.values())
+				cooling.cancel();
+		}
 		client = null;
 	}
 
@@ -1781,56 +1823,69 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	private void addToWatchedList(short questId, QuestRequirementType type, Number id) {
-		Map<Number, List<Short>> watched = questReqWatching.get(type);
-		if (watched == null) {
-			watched = new HashMap<Number, List<Short>>();
-			questReqWatching.put(type, watched);
+		Map<Number, List<Short>> watched;
+		synchronized(questSubscriptions) {
+			watched = questSubscriptions.get(type);
+			if (watched == null) {
+				watched = Collections.synchronizedMap(new HashMap<Number, List<Short>>());
+				questSubscriptions.put(type, watched);
+			}
 		}
 		List<Short> questList = watched.get(id);
 		if (questList == null) {
-			questList = new ArrayList<Short>();
+			questList = Collections.synchronizedList(new ArrayList<Short>());
 			watched.put(id, questList);
 		}
 		questList.add(Short.valueOf(questId));
 	}
 
 	private void addToWatchedList(short questId, QuestRequirementType type) {
-		Map<Number, List<Short>> watched = questReqWatching.get(type);
 		List<Short> questList;
-		if (watched == null) {
-			questList = new ArrayList<Short>();
-			watched = Collections.singletonMap(null, questList);
-			questReqWatching.put(type, watched);
-		} else {
-			questList = watched.get(null);
+		synchronized(questSubscriptions) {
+			Map<Number, List<Short>> watched = questSubscriptions.get(type);
+			if (watched == null) {
+				questList = Collections.synchronizedList(new ArrayList<Short>());
+				watched = Collections.singletonMap(null, questList);
+				questSubscriptions.put(type, watched);
+			} else {
+				questList = watched.get(null);
+			}
 		}
 		questList.add(Short.valueOf(questId));
 	}
 
 	private void removeFromWatchedList(short questId, QuestRequirementType type, Number id) {
-		Map<Number, List<Short>> watched = questReqWatching.get(type);
-		if (watched != null) {
-			List<Short> questList = watched.get(id);
-			if (questList != null) {
-				questList.remove(Short.valueOf(questId));
-				if (questList.isEmpty())
-					watched.remove(id);
+		synchronized(questSubscriptions) {
+			Map<Number, List<Short>> watched = questSubscriptions.get(type);
+			if (watched != null) {
+				List<Short> questList = watched.get(id);
+				if (questList != null) {
+					questList.remove(Short.valueOf(questId));
+					if (questList.isEmpty())
+						watched.remove(id);
+				}
+				if (watched.isEmpty())
+					questSubscriptions.remove(type);
 			}
-			if (watched.isEmpty())
-				questReqWatching.remove(type);
 		}
 	}
 
 	private void removeFromWatchedList(short questId, QuestRequirementType type) {
-		Map<Number, List<Short>> watched = questReqWatching.get(type);
-		if (watched != null) {
-			List<Short> questList = watched.get(null);
-			questList.remove(Short.valueOf(questId));
-			if (questList.isEmpty())
-				questReqWatching.remove(type);
+		synchronized(questSubscriptions) {
+			Map<Number, List<Short>> watched = questSubscriptions.get(type);
+			if (watched != null) {
+				List<Short> questList = watched.get(null);
+				questList.remove(Short.valueOf(questId));
+				if (questList.isEmpty())
+					questSubscriptions.remove(type);
+			}
 		}
 	}
 
+	/**
+	 * Must be synchronized around iterations.
+	 * @return 
+	 */
 	@Override
 	public Map<Short, QuestEntry> getAllQuests() {
 		return questStatuses;
@@ -1841,8 +1896,6 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 * @param questId
 	 */
 	public void localStartQuest(short questId) {
-		Short oId = Short.valueOf(questId);
-		QuestEntry status = questStatuses.get(oId);
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		Set<Integer> reqMobs;
 		if (qc != null) {
@@ -1862,11 +1915,15 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		} else {
 			reqMobs = Collections.emptySet();
 		}
-		if (status == null) { //first time touching this quest
-			status = new QuestEntry(QuestEntry.STATE_STARTED, reqMobs);
-			questStatuses.put(oId, status);
-		} else { //if we previously forfeited this quest
-			status.updateState(QuestEntry.STATE_STARTED);
+		Short oId = Short.valueOf(questId);
+		synchronized(questStatuses) {
+			QuestEntry status = questStatuses.get(oId);
+			if (status == null) { //first time touching this quest
+				status = new QuestEntry(QuestEntry.STATE_STARTED, reqMobs);
+				questStatuses.put(oId, status);
+			} else { //if we previously forfeited this quest
+				status.updateState(QuestEntry.STATE_STARTED);
+			}
 		}
 		QuestDataLoader.getInstance().startedQuest(this, questId);
 
@@ -1893,8 +1950,6 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 * @param selection
 	 */
 	public short localCompleteQuest(short questId, int selection) {
-		Short oId = Short.valueOf(questId);
-		QuestEntry status = questStatuses.get(oId);
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		Set<Integer> reqMobs;
 		if (qc != null) {
@@ -1914,13 +1969,17 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		} else {
 			reqMobs = Collections.emptySet();
 		}
-		if (status != null) {
-			status.updateState(QuestEntry.STATE_COMPLETED);
-		} else { //shouldn't ever happen...
-			status = new QuestEntry(QuestEntry.STATE_COMPLETED, reqMobs);
-			questStatuses.put(oId, status);
+		Short oId = Short.valueOf(questId);
+		synchronized(questStatuses) {
+			QuestEntry status = questStatuses.get(oId);
+			if (status != null) {
+				status.updateState(QuestEntry.STATE_COMPLETED);
+			} else { //shouldn't ever happen...
+				status = new QuestEntry(QuestEntry.STATE_COMPLETED, reqMobs);
+				questStatuses.put(oId, status);
+			}
+			status.setCompletionTime(System.currentTimeMillis());
 		}
-		status.setCompletionTime(System.currentTimeMillis());
 		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
 
 		//see if one req of another quest was completing this one...
@@ -1951,98 +2010,115 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	 */
 	public void forfeitQuest(short questId) {
 		Short oId = Short.valueOf(questId);
-		QuestEntry status = questStatuses.get(oId);
-		if (status != null) {
-			status.updateState(QuestEntry.STATE_NOT_STARTED);
-		} else { //shouldn't ever happen
-			QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
-			Set<Integer> reqMobs;
-			if (qc != null) {
-				Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
-				Map<Integer, Short> reqItems = qc.getReqMobCounts();
-				reqMobs = reqMobCounts.keySet();
-				for (Integer itemId : reqItems.keySet())
-					removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
-				for (Integer mobId : reqMobCounts.keySet())
-					removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
-				for (Integer petId : qc.getReqPets())
-					removeFromWatchedList(questId, QuestRequirementType.PET, petId);
-				for (Short reqQuestId : qc.getReqQuests().keySet())
-					removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
-				if (qc.requiresMesos())
-					removeFromWatchedList(questId, QuestRequirementType.MESOS);
-			} else {
-				reqMobs = Collections.emptySet();
+		synchronized(questStatuses) {
+			QuestEntry status = questStatuses.get(oId);
+			if (status != null) {
+				status.updateState(QuestEntry.STATE_NOT_STARTED);
+			} else { //shouldn't ever happen
+				QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
+				Set<Integer> reqMobs;
+				if (qc != null) {
+					Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
+					Map<Integer, Short> reqItems = qc.getReqMobCounts();
+					reqMobs = reqMobCounts.keySet();
+					for (Integer itemId : reqItems.keySet())
+						removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
+					for (Integer mobId : reqMobCounts.keySet())
+						removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+					for (Integer petId : qc.getReqPets())
+						removeFromWatchedList(questId, QuestRequirementType.PET, petId);
+					for (Short reqQuestId : qc.getReqQuests().keySet())
+						removeFromWatchedList(questId, QuestRequirementType.QUEST, reqQuestId);
+					if (qc.requiresMesos())
+						removeFromWatchedList(questId, QuestRequirementType.MESOS);
+				} else {
+					reqMobs = Collections.emptySet();
+				}
+				status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
+				questStatuses.put(oId, status);
 			}
-			status = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
-			questStatuses.put(oId, status);
 		}
 		getClient().getSession().send(GamePackets.writeQuestForfeit(questId));
 	}
 
 	private void questStatusChanged(short questId, byte newStatus) {
 		Short oId = Short.valueOf(questId);
-		Map<Number, List<Short>> watchedQuests = questReqWatching.get(QuestRequirementType.QUEST);
+		Map<Number, List<Short>> watchedQuests = questSubscriptions.get(QuestRequirementType.QUEST);
 		if (watchedQuests != null) {
 			List<Short> watchingQuests = watchedQuests.get(Short.valueOf(questId));
 			if (watchingQuests != null) {
-				for (Short quest : watchingQuests) {
-					questId = quest.shortValue();
-					//completeReqs can never be null because in order for us to
-					//add something to questReqWatching, it had to be not null
-					Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
-					if (questReq.get(oId).byteValue() == newStatus)
-						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+				synchronized(watchingQuests) {
+					for (Short quest : watchingQuests) {
+						questId = quest.shortValue();
+						//completeReqs can never be null because in order for us to
+						//add something to questReqWatching, it had to be not null
+						Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
+						if (questReq.get(oId).byteValue() == newStatus)
+							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+					}
 				}
 			}
 		}
 	}
 
 	public void itemCountChanged(int itemId) {
-		Map<Number, List<Short>> watchedItems = questReqWatching.get(QuestRequirementType.ITEM);
+		Map<Number, List<Short>> watchedItems = questSubscriptions.get(QuestRequirementType.ITEM);
 		if (watchedItems != null) {
 			Integer oId = Integer.valueOf(itemId);
 			List<Short> watchingQuests = watchedItems.get(oId);
 			if (watchingQuests != null) {
-				for (Short quest : watchingQuests) {
-					short questId = quest.shortValue();
-					//completeReqs can never be null because in order for us to
-					//add something to questReqWatching, it had to be not null
-					Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
-					if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue()))
-						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+				synchronized(watchingQuests) {
+					for (Short quest : watchingQuests) {
+						short questId = quest.shortValue();
+						//completeReqs can never be null because in order for us to
+						//add something to questReqWatching, it had to be not null
+						Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
+						if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue()))
+							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+					}
 				}
 			}
 		}
 	}
 
 	public void equippedPet(int petItemId) {
-		Map<Number, List<Short>> watchedPets = questReqWatching.get(QuestRequirementType.PET);
+		Map<Number, List<Short>> watchedPets = questSubscriptions.get(QuestRequirementType.PET);
 		if (watchedPets != null) {
 			List<Short> watchingQuests = watchedPets.get(Integer.valueOf(petItemId));
-			if (watchingQuests != null)
-				for (Short questId : watchingQuests)
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+			if (watchingQuests != null) {
+				synchronized(watchingQuests) {
+					for (Short questId : watchingQuests)
+						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
+							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+				}
+			}
 		}
 	}
 
 	public void petGainedCloseness(int petItemId) {
-		Map<Number, List<Short>> watchedPetTameness = questReqWatching.get(QuestRequirementType.PET_TAMENESS);
-		if (watchedPetTameness != null)
-			for (Short questId : watchedPetTameness.get(null))
-				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+		Map<Number, List<Short>> watchedPetTameness = questSubscriptions.get(QuestRequirementType.PET_TAMENESS);
+		if (watchedPetTameness != null) {
+			List<Short> watchingQuests = watchedPetTameness.get(null);
+			synchronized(watchingQuests) {
+				for (Short questId : watchingQuests)
+					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
+						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+			}
+		}
 	}
 
 	private void mesosChanged() {
-		Map<Number, List<Short>> watchingMesos = questReqWatching.get(QuestRequirementType.MESOS);
-		if (watchingMesos != null)
-			for (Short questId : watchingMesos.get(null))
-				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+		Map<Number, List<Short>> watchingMesos = questSubscriptions.get(QuestRequirementType.MESOS);
+		if (watchingMesos != null) {
+			List<Short> watchingQuests = watchingMesos.get(null);
+			synchronized(watchingQuests) {
+				for (Short questId : watchingQuests)
+					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
+						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+			}
+		}
 	}
 
 	public void killedMob(short questId, int mobId) {
@@ -2064,36 +2140,38 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		}
 	}
 
-	public List<MobDeathHook> getMobDeathHooks(final int mobId) {
-		List<MobDeathHook> hooks = new ArrayList<MobDeathHook>();
-		Map<Number, List<Short>> watchedMobs = questReqWatching.get(QuestRequirementType.MOB);
+	public List<MobDeathListener> getMobDeathListeners(final int mobId) {
+		List<MobDeathListener> mobSubscribers = new ArrayList<MobDeathListener>();
+		Map<Number, List<Short>> watchedMobs = questSubscriptions.get(QuestRequirementType.MOB);
 		if (watchedMobs != null) {
 			List<Short> watchingQuests = watchedMobs.get(Integer.valueOf(mobId));
 			if (watchingQuests != null) {
-				for (Short quest : watchingQuests) {
-					final short questId = quest.shortValue();
-					final int mobMap = getMapId();
-					//hopefully, this will prevent any memory leaks.
-					final WeakReference<GameCharacter> futureSelf = new WeakReference<GameCharacter>(this);
-					hooks.add(new MobDeathHook() {
-						//TODO: special cases when we have party and we distribute
-						//mob kill to all users.
-						@Override
-						public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
-							GameCharacter ourself = futureSelf.get();
-							if (ourself != null && !ourself.isClosed()
-									&& highestDamager == ourself
-									//I think we had to be the highest damager and
-									//we had to kill it to be recognized for the kill
-									&& last == highestDamager
-									&& ourself.getMapId() == mobMap)
-								ourself.killedMob(questId, mobId);
-						}
-					});
+				synchronized(watchingQuests) {
+					for (Short quest : watchingQuests) {
+						final short questId = quest.shortValue();
+						final int mobMap = getMapId();
+						//hopefully, this will prevent any memory leaks.
+						final WeakReference<GameCharacter> futureSelf = new WeakReference<GameCharacter>(this);
+						mobSubscribers.add(new MobDeathListener() {
+							//TODO: special cases when we have party and we distribute
+							//mob kill to all users.
+							@Override
+							public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
+								GameCharacter ourself = futureSelf.get();
+								if (ourself != null && !ourself.isClosed()
+										&& highestDamager == ourself
+										//I think we had to be the highest damager and
+										//we had to kill it to be recognized for the kill
+										&& last == highestDamager
+										&& ourself.getMapId() == mobMap)
+									ourself.killedMob(questId, mobId);
+							}
+						});
+					}
 				}
 			}
 		}
-		return hooks;
+		return mobSubscribers;
 	}
 
 	/**
@@ -2115,13 +2193,16 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public void setMinigamePoints(MiniroomType game, MinigameResult stat, int newValue) {
-		Map<MinigameResult, Integer> stats = minigameStats.get(game);
-		if (stats == null) {
-			stats = new EnumMap<MinigameResult, Integer>(MinigameResult.class);
-			stats.put(MinigameResult.WIN, Integer.valueOf(0));
-			stats.put(MinigameResult.TIE, Integer.valueOf(0));
-			stats.put(MinigameResult.LOSS, Integer.valueOf(0));
-			minigameStats.put(game, stats);
+		Map<MinigameResult, Integer> stats;
+		synchronized(minigameStats) {
+			stats = minigameStats.get(game);
+			if (stats == null) {
+				stats = Collections.synchronizedMap(new EnumMap<MinigameResult, Integer>(MinigameResult.class));
+				stats.put(MinigameResult.WIN, Integer.valueOf(0));
+				stats.put(MinigameResult.TIE, Integer.valueOf(0));
+				stats.put(MinigameResult.LOSS, Integer.valueOf(0));
+				minigameStats.put(game, stats);
+			}
 		}
 		stats.put(stat, Integer.valueOf(newValue));
 	}
@@ -2131,13 +2212,15 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public boolean canGiveFameToPlayer(int receiver) {
-		Long lastTime = famesThisMonth.get(Integer.valueOf(receiver));
-		if (lastTime == null)
+		synchronized(famesThisMonth) {
+			Long lastTime = famesThisMonth.get(Integer.valueOf(receiver));
+			if (lastTime == null)
+				return true;
+			if (lastTime.longValue() >= System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30)
+				return false;
+			famesThisMonth.remove(Integer.valueOf(receiver));
 			return true;
-		if (lastTime.longValue() >= System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30)
-			return false;
-		famesThisMonth.remove(Integer.valueOf(receiver));
-		return true;
+		}
 	}
 
 	public void gaveFame(int receiver) {

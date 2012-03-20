@@ -778,12 +778,14 @@ public class InterChannelCommunication {
 			lew.writeLong(debuffState.endTime);
 		}
 		Map<Integer, PlayerSkillSummon> activeSummons = context.getActiveSummons();
-		lew.writeByte((byte) activeSummons.size());
-		for (Entry<Integer, PlayerSkillSummon> summon : activeSummons.entrySet()) {
-			PlayerSkillSummon summonState = summon.getValue();
-			lew.writeInt(summon.getKey().intValue());
-			lew.writePos(summonState.getPosition());
-			lew.writeByte(summonState.getStance());
+		synchronized(activeSummons) {
+			lew.writeByte((byte) activeSummons.size());
+			for (Entry<Integer, PlayerSkillSummon> summon : activeSummons.entrySet()) {
+				PlayerSkillSummon summonState = summon.getValue();
+				lew.writeInt(summon.getKey().intValue());
+				lew.writePos(summonState.getPosition());
+				lew.writeByte(summonState.getStance());
+			}
 		}
 		lew.writeShort(context.getEnergyCharge());
 		return lew.getBytes();

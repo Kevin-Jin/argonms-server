@@ -112,10 +112,12 @@ public class NpcMiniroomHandler {
 					//so he/she should have to recharge it himself/herself if
 					//he/she has claw/gun mastery and is buying stars/bullets,
 					//so that's why it's not getPersonalSlotMax
-					if (inv.getFreeSlots(totalQuantity).size() >= totalQuantity) {
-						changedSlots = InventoryTools.addToInventory(inv, InventoryTools.makeItemWithId(itemId), slotMax, false);
-						for (int i = 1; i < totalQuantity; i++)
-							changedSlots.union(InventoryTools.addToInventory(inv, InventoryTools.makeItemWithId(itemId), slotMax, false));
+					synchronized(inv.getAll()) {
+						if (inv.getFreeSlots(totalQuantity).size() >= totalQuantity) {
+							changedSlots = InventoryTools.addToInventory(inv, InventoryTools.makeItemWithId(itemId), slotMax, false);
+							for (int i = 1; i < totalQuantity; i++)
+								changedSlots.union(InventoryTools.addToInventory(inv, InventoryTools.makeItemWithId(itemId), slotMax, false));
+						}
 					}
 				}
 				if (changedSlots != null) {

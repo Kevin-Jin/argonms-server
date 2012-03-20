@@ -29,6 +29,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -89,23 +90,26 @@ public class MaxStatCommandHandlers {
 	};
 
 	private static void maxEquips(GameCharacter p) {
-		for (Entry<Short, InventorySlot> item : p.getInventory(InventoryType.EQUIPPED).getAll().entrySet()) {
-			Equip e = (Equip) item.getValue();
-			e.setStr(Short.MAX_VALUE);
-			e.setDex(Short.MAX_VALUE);
-			e.setInt(Short.MAX_VALUE);
-			e.setLuk(Short.MAX_VALUE);
-			e.setHp((short) 30000);
-			e.setMp((short) 30000);
-			e.setWatk(Short.MAX_VALUE);
-			e.setMatk(Short.MAX_VALUE);
-			e.setWdef(Short.MAX_VALUE);
-			e.setMdef(Short.MAX_VALUE);
-			e.setAcc(Short.MAX_VALUE);
-			e.setAvoid(Short.MAX_VALUE);
-			e.setSpeed((short) 40);
-			e.setJump((short) 23);
-			p.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
+		Map<Short, InventorySlot> iv = p.getInventory(InventoryType.EQUIPPED).getAll();
+		synchronized(iv) {
+			for (Entry<Short, InventorySlot> item : iv.entrySet()) {
+				Equip e = (Equip) item.getValue();
+				e.setStr(Short.MAX_VALUE);
+				e.setDex(Short.MAX_VALUE);
+				e.setInt(Short.MAX_VALUE);
+				e.setLuk(Short.MAX_VALUE);
+				e.setHp((short) 30000);
+				e.setMp((short) 30000);
+				e.setWatk(Short.MAX_VALUE);
+				e.setMatk(Short.MAX_VALUE);
+				e.setWdef(Short.MAX_VALUE);
+				e.setMdef(Short.MAX_VALUE);
+				e.setAcc(Short.MAX_VALUE);
+				e.setAvoid(Short.MAX_VALUE);
+				e.setSpeed((short) 40);
+				e.setJump((short) 23);
+				p.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
+			}
 		}
 	}
 

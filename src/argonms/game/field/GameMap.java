@@ -38,7 +38,7 @@ import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
-import argonms.game.field.entity.Mob.MobDeathHook;
+import argonms.game.field.entity.Mob.MobDeathListener;
 import argonms.game.field.entity.Npc;
 import argonms.game.field.entity.PlayerNpc;
 import argonms.game.field.entity.PlayerSkillSummon;
@@ -286,8 +286,11 @@ public class GameMap {
 		} finally {
 			players.unlockWrite();
 		}
-		for (PlayerSkillSummon summon : p.summonsList())
-			spawnExistingEntity(summon);
+		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
+		synchronized(summons) {
+			for (PlayerSkillSummon summon : summons.values())
+				spawnExistingEntity(summon);
+		}
 		if (timeLimitTasks != null) {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
 			//when canceled, so should we just use a WeakReference to player?
@@ -449,8 +452,11 @@ public class GameMap {
 
 	public void removePlayer(GameCharacter p) {
 		destroyEntity(p);
-		for (PlayerSkillSummon summon : p.summonsList())
-			destroyEntity(summon);
+		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
+		synchronized(summons) {
+			for (PlayerSkillSummon summon : summons.values())
+				destroyEntity(summon);
+		}
 		LockableList<Mob> controlledMobs = p.getControlledMobs();
 		controlledMobs.lockWrite();
 		try {
@@ -489,7 +495,7 @@ public class GameMap {
 		GameCharacter controller = monster.getController();
 		if (controller != null)
 			controller.uncontrolMonster(monster);
-		monster.executeDeathHooksNoRewards();
+		monster.fireDeathEventNoRewards();
 		destroyEntity(monster);
 		monsters.decrementAndGet();
 	}
@@ -619,8 +625,11 @@ public class GameMap {
 		} finally {
 			mobs.unlockRead();
 		}
-		for (PlayerSkillSummon summon : p.summonsList())
-			sendToAll(summon.getShowExistingSpawnMessage(), p);
+		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
+		synchronized(summons) {
+			for (PlayerSkillSummon summon : summons.values())
+				sendToAll(summon.getShowExistingSpawnMessage(), p);
+		}
 	}
 
 	public void hidePlayer(GameCharacter p) {
@@ -785,7 +794,7 @@ public class GameMap {
 			mob.setFoothold(foothold);
 			mob.setPosition(new Point(pos));
 			spawnedMonsters.incrementAndGet();
-			mob.addDeathHook(new MobDeathHook() {
+			mob.addListener(new MobDeathListener() {
 				@Override
 				public void monsterKilled(GameCharacter highestAttacker, GameCharacter finalAttacker) {
 					//this has to be atomic, so I had to do away with assigning

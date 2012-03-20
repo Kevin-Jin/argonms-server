@@ -251,12 +251,12 @@ public class CommonPackets {
 		lew.writeByte((byte) p.getInventory(InventoryType.ETC).getMaxSlots()); // etc slots
 		lew.writeByte((byte) p.getInventory(InventoryType.CASH).getMaxSlots()); // cash slots
 
-		Inventory iv = p.getInventory(InventoryType.EQUIPPED);
+		Map<Short, InventorySlot> iv = p.getInventory(InventoryType.EQUIPPED).getAll();
 		Map<Short, InventorySlot> visible = new TreeMap<Short, InventorySlot>();
 		Map<Short, InventorySlot> masked = new TreeMap<Short, InventorySlot>();
 		Map<Short, Ring> rings = new TreeMap<Short, Ring>();
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet()) {
+		synchronized(iv) {
+			for (Entry<Short, InventorySlot> entry : iv.entrySet()) {
 				InventorySlot item = entry.getValue();
 				if (entry.getKey().shortValue() < -100)
 					masked.put(entry.getKey(), item);
@@ -274,72 +274,52 @@ public class CommonPackets {
 			writeItemInfo(lew, item.getKey().shortValue(), item.getValue());
 		lew.writeByte((byte) 0); //end of masked equipped
 
-		iv = p.getInventory(InventoryType.EQUIP);
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+		for (InventoryType invType : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
+			iv = p.getInventory(invType).getAll();
+			synchronized(iv) {
+				for (Entry<Short, InventorySlot> entry : iv.entrySet())
+					writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+			}
+			lew.writeByte((byte) 0); //end of inventory
 		}
-		lew.writeByte((byte) 0); //end of equip inventory
-
-		iv = p.getInventory(InventoryType.USE);
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
-		}
-		lew.writeByte((byte) 0); //end of consume inventory
-
-		iv = p.getInventory(InventoryType.SETUP);
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
-		}
-		lew.writeByte((byte) 0); //end of install inventory
-
-		iv = p.getInventory(InventoryType.ETC);
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
-		}
-		lew.writeByte((byte) 0); //end of etc inventory
-
-		iv = p.getInventory(InventoryType.CASH);
-		synchronized (iv) {
-			for (Entry<Short, InventorySlot> entry : iv.getAll().entrySet())
-				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
-		}
-		lew.writeByte((byte) 0); //end of cash inventory
 
 		Map<Integer, SkillEntry> skills = p.getSkillEntries();
-		lew.writeShort((short) skills.size());
-		for (Entry<Integer, SkillEntry> entry : skills.entrySet()) {
-			int skillid = entry.getKey().intValue();
-			SkillEntry skill = entry.getValue();
-			lew.writeInt(skillid);
-			lew.writeInt(skill.getLevel());
-			if (Skills.isFourthJob(skillid))
-				lew.writeInt(skill.getMasterLevel());
+		synchronized(skills) {
+			lew.writeShort((short) skills.size());
+			for (Entry<Integer, SkillEntry> entry : skills.entrySet()) {
+				int skillid = entry.getKey().intValue();
+				SkillEntry skill = entry.getValue();
+				lew.writeInt(skillid);
+				lew.writeInt(skill.getLevel());
+				if (Skills.isFourthJob(skillid))
+					lew.writeInt(skill.getMasterLevel());
+			}
 		}
 		Map<Integer, Cooldown> cooldowns = p.getCooldowns();
-		lew.writeShort((short) cooldowns.size());
-		for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
-			lew.writeInt(cooling.getKey().intValue());
-			lew.writeShort(cooling.getValue().getSecondsRemaining());
+		synchronized(cooldowns) {
+			lew.writeShort((short) cooldowns.size());
+			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
+				lew.writeInt(cooling.getKey().intValue());
+				lew.writeShort(cooling.getValue().getSecondsRemaining());
+			}
 		}
 
 		Map<Short, QuestEntry> quests = p.getAllQuests();
 		Map<Short, QuestEntry> started = new HashMap<Short, QuestEntry>();
 		Map<Short, QuestEntry> completed = new HashMap<Short, QuestEntry>();
-		for (Entry<Short, QuestEntry> entry : quests.entrySet()) {
-			QuestEntry status = entry.getValue();
-			switch (status.getState()) {
-				case QuestEntry.STATE_NOT_STARTED:
-					break;
-				case QuestEntry.STATE_STARTED:
-					started.put(entry.getKey(), status);
-					break;
-				case QuestEntry.STATE_COMPLETED:
-					completed.put(entry.getKey(), status);
-					break;
+		synchronized(quests) {
+			for (Entry<Short, QuestEntry> entry : quests.entrySet()) {
+				QuestEntry status = entry.getValue();
+				switch (status.getState()) {
+					case QuestEntry.STATE_NOT_STARTED:
+						break;
+					case QuestEntry.STATE_STARTED:
+						started.put(entry.getKey(), status);
+						break;
+					case QuestEntry.STATE_COMPLETED:
+						completed.put(entry.getKey(), status);
+						break;
+				}
 			}
 		}
 		lew.writeShort((short) started.size());
