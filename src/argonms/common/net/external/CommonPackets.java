@@ -27,7 +27,6 @@ import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Equip;
-import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
@@ -284,42 +283,35 @@ public class CommonPackets {
 		}
 
 		Map<Integer, SkillEntry> skills = p.getSkillEntries();
-		synchronized(skills) {
-			lew.writeShort((short) skills.size());
-			for (Entry<Integer, SkillEntry> entry : skills.entrySet()) {
-				int skillid = entry.getKey().intValue();
-				SkillEntry skill = entry.getValue();
-				lew.writeInt(skillid);
-				lew.writeInt(skill.getLevel());
-				if (Skills.isFourthJob(skillid))
-					lew.writeInt(skill.getMasterLevel());
-			}
+		lew.writeShort((short) skills.size());
+		for (Entry<Integer, SkillEntry> entry : skills.entrySet()) {
+			int skillid = entry.getKey().intValue();
+			SkillEntry skill = entry.getValue();
+			lew.writeInt(skillid);
+			lew.writeInt(skill.getLevel());
+			if (Skills.isFourthJob(skillid))
+				lew.writeInt(skill.getMasterLevel());
 		}
 		Map<Integer, Cooldown> cooldowns = p.getCooldowns();
-		synchronized(cooldowns) {
-			lew.writeShort((short) cooldowns.size());
-			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
-				lew.writeInt(cooling.getKey().intValue());
-				lew.writeShort(cooling.getValue().getSecondsRemaining());
-			}
+		lew.writeShort((short) cooldowns.size());
+		for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
+			lew.writeInt(cooling.getKey().intValue());
+			lew.writeShort(cooling.getValue().getSecondsRemaining());
 		}
 
-		Map<Short, QuestEntry> quests = p.getAllQuests();
 		Map<Short, QuestEntry> started = new HashMap<Short, QuestEntry>();
 		Map<Short, QuestEntry> completed = new HashMap<Short, QuestEntry>();
-		synchronized(quests) {
-			for (Entry<Short, QuestEntry> entry : quests.entrySet()) {
-				QuestEntry status = entry.getValue();
-				switch (status.getState()) {
-					case QuestEntry.STATE_NOT_STARTED:
-						break;
-					case QuestEntry.STATE_STARTED:
-						started.put(entry.getKey(), status);
-						break;
-					case QuestEntry.STATE_COMPLETED:
-						completed.put(entry.getKey(), status);
-						break;
-				}
+		for (Entry<Short, QuestEntry> entry : p.getAllQuests().entrySet()) {
+			QuestEntry status = entry.getValue();
+			switch (status.getState()) {
+				case QuestEntry.STATE_NOT_STARTED:
+					break;
+				case QuestEntry.STATE_STARTED:
+					started.put(entry.getKey(), status);
+					break;
+				case QuestEntry.STATE_COMPLETED:
+					completed.put(entry.getKey(), status);
+					break;
 			}
 		}
 		lew.writeShort((short) started.size());

@@ -286,11 +286,8 @@ public class GameMap {
 		} finally {
 			players.unlockWrite();
 		}
-		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
-		synchronized(summons) {
-			for (PlayerSkillSummon summon : summons.values())
-				spawnExistingEntity(summon);
-		}
+		for (PlayerSkillSummon summon : p.getAllSummons().values())
+			spawnExistingEntity(summon);
 		if (timeLimitTasks != null) {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
 			//when canceled, so should we just use a WeakReference to player?
@@ -452,11 +449,8 @@ public class GameMap {
 
 	public void removePlayer(GameCharacter p) {
 		destroyEntity(p);
-		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
-		synchronized(summons) {
-			for (PlayerSkillSummon summon : summons.values())
-				destroyEntity(summon);
-		}
+		for (PlayerSkillSummon summon : p.getAllSummons().values())
+			destroyEntity(summon);
 		LockableList<Mob> controlledMobs = p.getControlledMobs();
 		controlledMobs.lockWrite();
 		try {
@@ -625,11 +619,8 @@ public class GameMap {
 		} finally {
 			mobs.unlockRead();
 		}
-		Map<Integer, PlayerSkillSummon> summons = p.getAllSummons();
-		synchronized(summons) {
-			for (PlayerSkillSummon summon : summons.values())
-				sendToAll(summon.getShowExistingSpawnMessage(), p);
-		}
+		for (PlayerSkillSummon summon : p.getAllSummons().values())
+			sendToAll(summon.getShowExistingSpawnMessage(), p);
 	}
 
 	public void hidePlayer(GameCharacter p) {

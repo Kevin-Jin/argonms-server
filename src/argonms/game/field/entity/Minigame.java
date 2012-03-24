@@ -91,15 +91,15 @@ public abstract class Minigame extends Miniroom {
 			case WIN:
 			case LOSS:
 				p = getPlayerByPosition(winnerPos);
-				p.setMinigamePoints(getMiniroomType(), MinigameResult.WIN, p.getMinigamePoints(getMiniroomType(), MinigameResult.WIN) + 1);
+				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.WIN);
 				p = getPlayerByPosition((byte) (winnerPos == 0 ? 1 : 0));
-				p.setMinigamePoints(getMiniroomType(), MinigameResult.LOSS, p.getMinigamePoints(getMiniroomType(), MinigameResult.LOSS) + 1);
+				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.LOSS);
 				break;
 			case TIE:
 				p = getPlayerByPosition((byte) 0);
-				p.setMinigamePoints(getMiniroomType(), MinigameResult.TIE, p.getMinigamePoints(getMiniroomType(), MinigameResult.TIE) + 1);
+				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.TIE);
 				p = getPlayerByPosition((byte) 1);
-				p.setMinigamePoints(getMiniroomType(), MinigameResult.TIE, p.getMinigamePoints(getMiniroomType(), MinigameResult.TIE) + 1);
+				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.TIE);
 				break;
 		}
 		sendToAll(getFinishMessage(result, winnerPos));

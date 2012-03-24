@@ -1495,6 +1495,64 @@
 
 	* Updated copyright years.
 
+2012-03-18  GoldenKevin  (revision 75)
+
+	* Made precedent for further party synchronization among center server and
+	game servers of the same world
+	* Renamed the game server's Party class to PartyList because of its
+	parallels with buddy lists
+	* Implemented basic party list creating, disbanding, inviting (and denying),
+	expelling, joining, leaving, and a temporary change leader. More to come
+	* Fixed CommandProcessor copyright year
+	* CommonPackets.VIP_MAPS trimmed to ten NULL_MAPs. I've been tracing code
+	and realized that at most, we only send ten VIP maps, so why do we have an
+	array of fifteen?
+	* Put names to some magic numbers in
+	InterChannelCommunication.sendPrivateChat
+
+2012-03-19  GoldenKevin  (revision 76)
+
+	* Defensive programming against concurrency errors. This revision introduces
+	fixes for GameCharacter, Inventory, and Mob, which all have methods that
+	could be accessed by more than one worker thread. Right now, they use simple
+	mutex monitors because concurrency is not really an issue for individual
+	players, inventories, and mobs as they don't scale upwards
+	* Renamed MobDeathHook to MobDeathListener and NPC script's endChat to
+	chatEnded to be more consistent with the observer (AKA publish/subscribe)
+	pattern
+	* Began work on PartyMemberListener class for when we need hooks for our
+	party events. Currently no events are fired because I haven't bothered with
+	looking through the source yet...
+
+2012-03-24  GoldenKevin  (revision 77)
+
+	* Use ConcurrentMaps in GameCharacter. This actually is less safe against
+	race conditions (e.g. we don't lock while an existing SkillEntry is getting
+	set to a new value and when we send packets with the size of the map
+	followed by an iteration over the map, we can error 38 the client) and has
+	worse performance because we have to instantiate more objects than we need
+	and calling size when writing packets is linear time, but for the
+	GameCharacter class, it's more about preventing complete failure from
+	ConcurrentModificationExceptions than anything else. All assignable
+	variables in GameCharacter are volatile (as opposed to Atomic wrappers),
+	even though we use non-atomic operations like compound assignments which
+	can cause race conditions. We don't mind if returned values are a few ticks
+	old because we don't have high concurrency requests from a single client, a
+	few timers, and the map, so there will probably be no visible problems
+	anyway. questSubscriptions has not been touched because several operations
+	that modify it cannot be done atomically. I found that it is better for
+	minigameStats to continue using an EnumMap rather than a ConcurrentHashMap
+	just for performance reasons. All of these are accessible only in the
+	GameCharacter class anyway, and the main point of this update was just to
+	get rid of synchronization outside of the GameCharacter class.
+	* GameCharacter.setMinigamePoints turned into incrementMinigamePoints. This
+	is actually a bit safer with regards to race conditions, plus it simplifies
+	Minigame.endGame. AtomicInteger is now used for the actual stat values
+	because they both allow us to get rid of all synchronization in the
+	individual stat map for every game, as we can use a mutable integer wrapper
+	and not have to deal with mutator methods in the game stat map.
+	* Fixed up weird mob EXP. Also fixed some race conditions while I was at it.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
