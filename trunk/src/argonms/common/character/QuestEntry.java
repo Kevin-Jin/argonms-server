@@ -18,10 +18,12 @@
 
 package argonms.common.character;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -45,9 +47,9 @@ public class QuestEntry {
 		QUEST_START_ERROR_EXPIRED = 0x0F
 	;
 
-	private byte state;
-	private final Map<Integer, Count> mobCount;
-	private long completionTime;
+	private volatile byte state;
+	private final Map<Integer, AtomicInteger> mobCount;
+	private volatile long completionTime;
 
 	/**
 	 * Start quest with no mob kill progress.
@@ -56,9 +58,10 @@ public class QuestEntry {
 	 */
 	public QuestEntry(byte state, Set<Integer> mobsToWatch) {
 		this.state = state;
-		mobCount = new LinkedHashMap<Integer, Count>(mobsToWatch.size());
+		Map<Integer, AtomicInteger> tempMobCount = new LinkedHashMap<Integer, AtomicInteger>(mobsToWatch.size());
 		for (Integer mobId : mobsToWatch)
-			mobCount.put(mobId, new Count());
+			tempMobCount.put(mobId, new AtomicInteger(0));
+		mobCount = Collections.unmodifiableMap(tempMobCount);
 	}
 
 	/**
@@ -68,9 +71,10 @@ public class QuestEntry {
 	 */
 	public QuestEntry(byte state, Map<Integer, Short> mobKillsProgress) {
 		this.state = state;
-		mobCount = new LinkedHashMap<Integer, Count>(mobKillsProgress.size());
+		Map<Integer, AtomicInteger> tempMobCount = new LinkedHashMap<Integer, AtomicInteger>(mobKillsProgress.size());
 		for (Entry<Integer, Short> mob : mobKillsProgress.entrySet())
-			mobCount.put(mob.getKey(), new Count(mob.getValue().shortValue()));
+			tempMobCount.put(mob.getKey(), new AtomicInteger(mob.getValue().shortValue()));
+		mobCount = Collections.unmodifiableMap(tempMobCount);
 	}
 
 	public void updateState(byte newState) {
@@ -79,8 +83,8 @@ public class QuestEntry {
 
 	public String getData() {
 		StringBuilder sb = new StringBuilder(mobCount.size() * 3);
-		for (Count c : mobCount.values())
-			sb.append(c.getEncodedString());
+		for (AtomicInteger c : mobCount.values())
+			sb.append(String.format("%03d", c.get()));
 		return sb.toString();
 	}
 
@@ -94,7 +98,7 @@ public class QuestEntry {
 
 	public void killedMob(int mobId) {
 		Integer oId = Integer.valueOf(mobId);
-		mobCount.get(oId).amount++;
+		mobCount.get(oId).incrementAndGet();
 	}
 
 	public byte getState() {
@@ -102,31 +106,14 @@ public class QuestEntry {
 	}
 
 	public short getMobCount(int mobId) {
-		Count count = mobCount.get(Integer.valueOf(mobId));
-		return count != null ? count.amount : (short) 0;
+		AtomicInteger count = mobCount.get(Integer.valueOf(mobId));
+		return (short) (count != null ? count.get() : 0);
 	}
 
 	public Map<Integer, Short> getAllMobCounts() {
 		Map<Integer, Short> counts = new LinkedHashMap<Integer, Short>(mobCount.size());
-		for (Entry<Integer, Count> entry : mobCount.entrySet())
-			counts.put(entry.getKey(), Short.valueOf(entry.getValue().amount));
+		for (Entry<Integer, AtomicInteger> entry : mobCount.entrySet())
+			counts.put(entry.getKey(), Short.valueOf((short) entry.getValue().get()));
 		return counts;
-	}
-
-	//A mutable short class basically.
-	private static class Count {
-		public short amount;
-
-		public Count() {
-			amount = 0;
-		}
-
-		public Count(short initial) {
-			amount = initial;
-		}
-
-		public String getEncodedString() {
-			return String.format("%03d", amount);
-		}
 	}
 }

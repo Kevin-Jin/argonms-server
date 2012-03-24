@@ -23,7 +23,6 @@ import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
-import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
@@ -64,7 +63,6 @@ import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -1098,10 +1096,7 @@ public class GamePackets {
 				return diff;
 			}
 		});
-		Map<PlayerStatusEffect, PlayerStatusEffectValues> playerStatusEffects = p.getAllEffects();
-		synchronized(playerStatusEffects) {
-			statusEffects.putAll(playerStatusEffects);
-		}
+		statusEffects.putAll(p.getAllEffects());
 		for (PlayerStatusEffect key : statusEffects.keySet())
 			updateMask |= key.longValue();
 		//no idea why we have to do it, but make the 4th byte (in a 64-bit little endian integer) = 0xF8

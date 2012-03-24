@@ -43,14 +43,16 @@ import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -78,9 +80,9 @@ public class Mob extends MapEntity {
 	private final LockableMap<GameCharacter, PlayerDamage> damages;
 	private WeakReference<GameCharacter> controller;
 	private volatile boolean aggroAware, hasAggro;
-	private final Map<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
-	private final Map<Short, ScheduledFuture<?>> skillCancels;
-	private final Map<Integer, ScheduledFuture<?>> diseaseCancels;
+	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
+	private final ConcurrentMap<Short, ScheduledFuture<?>> skillCancels;
+	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseCancels;
 	private final AtomicInteger spawnedSummons;
 	private volatile byte spawnEffect, deathEffect;
 	private final AtomicInteger venomUseCount;
@@ -93,9 +95,9 @@ public class Mob extends MapEntity {
 		this.subscribers = new ConcurrentLinkedQueue<MobDeathListener>();
 		this.damages = new LockableMap<GameCharacter, PlayerDamage>(new WeakHashMap<GameCharacter, PlayerDamage>());
 		this.controller = new WeakReference<GameCharacter>(null);
-		this.activeEffects = Collections.synchronizedMap(new EnumMap<MonsterStatusEffect, MonsterStatusEffectValues>(MonsterStatusEffect.class));
-		this.skillCancels = Collections.synchronizedMap(new HashMap<Short, ScheduledFuture<?>>());
-		this.diseaseCancels = Collections.synchronizedMap(new HashMap<Integer, ScheduledFuture<?>>());
+		this.activeEffects = new ConcurrentSkipListMap<MonsterStatusEffect, MonsterStatusEffectValues>();
+		this.skillCancels = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
+		this.diseaseCancels = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
 		this.spawnedSummons = new AtomicInteger(0);
 		this.deathEffect = DESTROY_ANIMATION_NORMAL;
 		this.venomUseCount = new AtomicInteger(0);
@@ -211,14 +213,10 @@ public class Mob extends MapEntity {
 	}
 
 	public void died(GameCharacter killer) {
-		synchronized(skillCancels) {
-			for (ScheduledFuture<?> cancelTask : skillCancels.values())
-				cancelTask.cancel(false);
-		}
-		synchronized(diseaseCancels) {
-			for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
-				cancelTask.cancel(false);
-		}
+		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+			cancelTask.cancel(false);
+		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+			cancelTask.cancel(false);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
@@ -285,10 +283,66 @@ public class Mob extends MapEntity {
 		return stats.getMaxMp();
 	}
 
+	/**
+	 * Atomically adds a value to an AtomicInteger and clip the resulting value
+	 * to within a certain range. This is equivalent to
+	 * <pre>
+	 *   int newValue = i.addAndGet(delta);
+	 *   if (i.get() &lt; min)
+	 *       i.set(min);
+	 *   if (i.get() &gt; max)
+	 *       i.set(max);
+	 *   return newValue;</pre>
+	 * except that the action is performed atomically.
+	 * @param i the AtomicInteger instance
+	 * @param delta the value to add
+	 * @param min inclusive
+	 * @param max inclusive
+	 * @return the value that <tt>i</tt> would've held if it was unclamped.
+	 */
+	private int clampedAdd(AtomicInteger i, int delta, int min, int max) {
+		//copied from AtomicInteger.addAndGet(int). only difference is that we
+		//set the value to the clamped next (we still return the unclamped next)
+		while (true) {
+            int current = i.get();
+			int next = current + delta;
+			if (i.compareAndSet(current, Math.min(Math.max(next, min), max)))
+				return next;
+        }
+	}
+
+	/**
+	 * Atomically sets a value if the AtomicInteger is within a range. This is
+	 * equivalent to
+	 * <pre>
+	 *   if (i.get() &gt;= min &amp;&amp; i.get() &lt;= max) {
+	 *       i.set(update);
+	 *       return true;
+	 *   }
+	 *   return false;</pre>
+	 * except that the action is performed atomically.
+	 * @param i the AtomicInteger instance
+	 * @param update the new value
+	 * @param min inclusive
+	 * @param max inclusive
+	 * @return <tt>true</tt> if <tt>i</tt> was in bounds, <tt>false</tt> otherwise
+	 */
+	private boolean setIfInBounds(AtomicInteger i, int update, int min, int max) {
+		while (true) {
+            int current = i.get();
+			if (current >= min && current <= max) {
+				if (i.compareAndSet(current, update))
+					return true;
+			} else {
+				return false;
+			}
+        }
+	}
+
 	public void hurt(GameCharacter p, int damage) {
-		//this isn't very atomic, but whatever...
-		if (remHp.addAndGet(-damage) < 0)
-			remHp.set(0);
+		int overkill = -clampedAdd(remHp, -damage, 0, Integer.MAX_VALUE);
+		if (overkill > 0)
+			damage -= overkill;
 
 		damages.lockWrite();
 		try {
@@ -312,11 +366,8 @@ public class Mob extends MapEntity {
 		else
 			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp.get() * 100 / stats.getMaxHp())));
 
-		//this isn't very atomic, but whatever...
-		if (remHp.get() > 0 && remHp.get() <= stats.getSelfDestructHp()) {
-			remHp.set(0);
+		if (setIfInBounds(remHp, 0, 1, stats.getSelfDestructHp()))
 			deathEffect = DESTROY_ANIMATION_EXPLODE;
-		}
 	}
 
 	public void loseMp(int loss) {
@@ -365,10 +416,6 @@ public class Mob extends MapEntity {
 		}
 	}
 
-	/**
-	 * Must be synchronized around iterations.
-	 * @return 
-	 */
 	public Map<MonsterStatusEffect, MonsterStatusEffectValues> getAllEffects() {
 		return activeEffects;
 	}
