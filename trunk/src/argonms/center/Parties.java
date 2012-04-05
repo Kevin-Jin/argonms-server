@@ -18,20 +18,49 @@
 
 package argonms.center;
 
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class Parties {
+	private static final Logger LOG = Logger.getLogger(Parties.class.getName());
+
+	private static int getStartingPartyId(int world) {
+		int partyId = -1;
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT MAX(`partyid`) FROM `parties` WHERE `world` = ?");
+			ps.setInt(1, world);
+			rs = ps.executeQuery();
+			partyId = rs.getInt(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not get starting party id for world " + world, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+		return partyId;
+	}
+
 	private final AtomicInteger nextPartyId;
 	private final Map<Integer, Party> parties;
 
-	public Parties() {
-		nextPartyId = new AtomicInteger(0);
+	public Parties(int world) {
+		nextPartyId = new AtomicInteger(getStartingPartyId(world));
 		parties = new ConcurrentHashMap<Integer, Party>();
 	}
 

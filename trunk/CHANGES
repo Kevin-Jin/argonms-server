@@ -1553,6 +1553,22 @@
 	and not have to deal with mutator methods in the game stat map.
 	* Fixed up weird mob EXP. Also fixed some race conditions while I was at it.
 
+2012-04-05  GoldenKevin  (revision 78)
+
+	* Database changes
+		* We don't actually reference the symbols for our InnoDB foreign keys
+		(constraints), so don't worry about them in our .sql file and just let
+		MySQL name them with its default conventions. Let MySQL use the default
+		generated names for keys too because they are sufficient for us (we can
+		assume the names of the keys because there will be no conflicts with
+		other same-named keys in a new table).
+		* Added a few more keys (indices) in strategic places to speed up some
+		lookups and removed a few unnecessary ones that would waste disk space
+		and processing time during row insertion and deletion.
+		* macbans table uses a surrogate primary key rather than a composite
+		natural key to be more consistent with other tables.
+		* Added a parties table.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
