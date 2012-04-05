@@ -178,7 +178,7 @@ public class CenterServer {
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
 			if (!worldParties.containsKey(Byte.valueOf(remote.getWorld())))
-				worldParties.put(Byte.valueOf(remote.getWorld()), new Parties());
+				worldParties.put(Byte.valueOf(remote.getWorld()), new Parties(remote.getWorld()));
 			remote.serverOnline();
 			notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
 			sendConnectedShop(remote);

@@ -32,7 +32,8 @@ CREATE TABLE `accounts` (
   `storageslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 4,
   `storagemesos` INT(11) NOT NULL DEFAULT 0,
   `gm` TINYINT(3) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY (`name`)
 ) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `bans`;
@@ -87,8 +88,9 @@ CREATE TABLE `characters` (
   `famerankcurrentpos` INT(11) NOT NULL DEFAULT 0,
   `famerankoldpos` INT(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
-  KEY `accountid` (`accountid`),
-  CONSTRAINT `characters_ibfk_1` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
+  KEY (`name`),
+  KEY (`accountid`),
+  CONSTRAINT FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 DROP TABLE IF EXISTS `buddyentries`;
@@ -99,8 +101,9 @@ CREATE TABLE `buddyentries` (
   `buddyname` VARCHAR(12) NOT NULL,
   `status` TINYINT(3) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `owner` (`owner`),
-  CONSTRAINT `buddyentries_ibfk_1` FOREIGN KEY (`owner`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`owner`),
+  KEY (`buddy`),
+  CONSTRAINT FOREIGN KEY (`owner`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `cooldowns`;
@@ -110,8 +113,8 @@ CREATE TABLE `cooldowns` (
   `skillid` INT(11) NOT NULL,
   `remaining` SMALLINT(5) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `cooldowns_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `famelog`;
@@ -121,8 +124,8 @@ CREATE TABLE `famelog` (
   `to` INT(11) NOT NULL,
   `millis` BIGINT(20) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `characterid` (`from`),
-  CONSTRAINT `famelog_ibfk_1` FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`from`),
+  CONSTRAINT FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `infractions`;
@@ -138,7 +141,8 @@ CREATE TABLE `infractions` (
   `reason` TINYINT(3),
   `severity` SMALLINT(5),
   `pardoned` TINYINT(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`entryid`)
+  PRIMARY KEY (`entryid`),
+  KEY (`accountid`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventoryitems`;
@@ -154,11 +158,10 @@ CREATE TABLE `inventoryitems` (
   `owner` TINYTEXT DEFAULT NULL,
   `quantity` SMALLINT(5) NOT NULL,
   PRIMARY KEY (`inventoryitemid`),
-  KEY `characterid` (`characterid`),
-  KEY `accountid` (`accountid`),
-  KEY `uniqueid` (`uniqueid`),
-  CONSTRAINT `inventoryitems_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `inventoryitems_ibfk_2` FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
+  KEY (`characterid`),
+  KEY (`accountid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventoryequipment`;
@@ -181,8 +184,8 @@ CREATE TABLE `inventoryequipment` (
   `jump` SMALLINT(5) NOT NULL,
   `upgradeslots` TINYINT(3) NOT NULL,
   PRIMARY KEY (`inventoryequipmentid`),
-  KEY `inventoryitemid` (`inventoryitemid`),
-  CONSTRAINT `inventoryequipment_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+  KEY (`inventoryitemid`),
+  CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventorymounts`;
@@ -193,8 +196,8 @@ CREATE TABLE `inventorymounts` (
   `exp` SMALLINT(4) UNSIGNED NOT NULL,
   `tiredness` TINYINT(3) UNSIGNED NOT NULL,
   PRIMARY KEY (`inventorymountid`),
-  KEY `inventoryitemid` (`inventoryitemid`),
-  CONSTRAINT `inventorymounts_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+  KEY (`inventoryitemid`),
+  CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventorypets`;
@@ -208,8 +211,8 @@ CREATE TABLE `inventorypets` (
   `fullness` TINYINT(3) NOT NULL,
   `expired` TINYINT(1) NOT NULL,
   PRIMARY KEY (`inventorypetid`),
-  KEY `inventoryitemid` (`inventoryitemid`),
-  CONSTRAINT `inventorypets_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+  KEY (`inventoryitemid`),
+  CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `inventoryrings`;
@@ -219,8 +222,8 @@ CREATE TABLE `inventoryrings` (
   `partnerchrid` INT(11) NOT NULL,
   `partnerringid` BIGINT(20) NOT NULL,
   PRIMARY KEY (`inventoryringid`),
-  KEY `inventoryitemid` (`inventoryitemid`),
-  CONSTRAINT `inventoryrings_ibfk_1` FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+  KEY (`inventoryitemid`),
+  CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `keymaps`;
@@ -231,16 +234,18 @@ CREATE TABLE `keymaps` (
   `type` TINYINT(1) NOT NULL,
   `action` INT(11) NOT NULL,
   PRIMARY KEY (`entryid`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `keymaps_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `macbans`;
 CREATE TABLE `macbans` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `banid` INT(11) NOT NULL,
   `mac` BINARY(6),
-  PRIMARY KEY (`banid`,`mac`),
-  CONSTRAINT `macbans_ibfk_1` FOREIGN KEY (`banid`) REFERENCES `bans` (`banid`) ON DELETE CASCADE
+  PRIMARY KEY (`id`),
+  KEY (`banid`),
+  CONSTRAINT FOREIGN KEY (`banid`) REFERENCES `bans` (`banid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `minigamescores`;
@@ -251,9 +256,20 @@ CREATE TABLE `minigamescores` (
   `wins` INT(11) NOT NULL DEFAULT 0,
   `ties` INT(11) NOT NULL DEFAULT 0,
   `losses` INT(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY(`entryid`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `minigamescores_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`entryid`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS `parties`;
+CREATE TABLE `parties` (
+  `entryid` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `world` INT(11) UNSIGNED NOT NULL,
+  `partyid` INT(11) UNSIGNED NOT NULL,
+  `characterid` INT(11) NOT NULL,
+  PRIMARY KEY (`entryid`),
+  KEY (`partyid`),
+  KEY (`characterid`)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `queststatuses`;
@@ -263,9 +279,9 @@ CREATE TABLE `queststatuses` (
   `questid` SMALLINT(5) NOT NULL,
   `state` TINYINT(1) NOT NULL,
   `completed` BIGINT(20),
-  PRIMARY KEY(`id`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `queststatuses_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `questmobprogress`;
@@ -274,9 +290,9 @@ CREATE TABLE `questmobprogress` (
   `queststatusid` INT(11) UNSIGNED NOT NULL,
   `mobid` INT(11) NOT NULL,
   `count` SMALLINT(3) NOT NULL,
-  PRIMARY KEY(`id`),
-  KEY `queststatusid` (`queststatusid`),
-  CONSTRAINT `questmobprogress_ibfk_1` FOREIGN KEY (`queststatusid`) REFERENCES `queststatuses` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`),
+  KEY (`queststatusid`),
+  CONSTRAINT FOREIGN KEY (`queststatusid`) REFERENCES `queststatuses` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
 DROP TABLE IF EXISTS `skillmacros`;
@@ -289,9 +305,9 @@ CREATE TABLE `skillmacros` (
   `skill1` INT(11) NOT NULL,
   `skill2` INT(11) NOT NULL,
   `skill3` INT(11) NOT NULL,
-  PRIMARY KEY(`entryid`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `skillmacros_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`entryid`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `skills`;
@@ -302,8 +318,8 @@ CREATE TABLE `skills` (
   `level` TINYINT(2) NOT NULL,
   `mastery` TINYINT(2) DEFAULT NULL,
   PRIMARY KEY (`entryid`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `skills_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS `uniqueid`;
@@ -318,8 +334,8 @@ CREATE TABLE `wishlists` (
   `characterid` INT(11) NOT NULL,
   `sn` INT(11) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `characterid` (`characterid`),
-  CONSTRAINT `wishlists_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 DROP PROCEDURE IF EXISTS `updateranks`;
