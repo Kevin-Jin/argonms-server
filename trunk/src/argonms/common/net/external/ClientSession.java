@@ -123,7 +123,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 	private void send(int queueInsertNo, ByteBuffer buf) {
 		sendQueue.insert(queueInsertNo, buf);
-		if (!sendQueue.willBlock() && tryFlushSendQueue() == 0) {
+		if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
 			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 			selectionKey.selector().wakeup();
 		}

@@ -267,6 +267,7 @@ CREATE TABLE `parties` (
   `world` INT(11) UNSIGNED NOT NULL,
   `partyid` INT(11) UNSIGNED NOT NULL,
   `characterid` INT(11) NOT NULL,
+  `leader` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`entryid`),
   KEY (`partyid`),
   KEY (`characterid`)

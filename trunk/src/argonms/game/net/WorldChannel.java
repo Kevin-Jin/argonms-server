@@ -160,6 +160,7 @@ public class WorldChannel {
 		GameCharacter p = storage.getPlayer(playerId);
 		if (destHost != null && destPort != -1) {
 			p.prepareChannelChange();
+			p.getClient().setMigratingHost();
 			p.getClient().getSession().send(writeNewGameHost(destHost, destPort));
 		} else {
 			channelChangeError(p);

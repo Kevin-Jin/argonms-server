@@ -420,8 +420,8 @@ public class InterChannelCommunication {
 		if ((result = receivedBuddyInvite(inviteeId, inviter.getId(), inviter.getName())) != -1) //invitee could be on same channel
 			return result;
 		for (byte ch : localChannels) //invitee could be on same channel
-				if ((result = GameServer.getChannel(ch).getInterChannelInterface().receivedBuddyInvite(inviteeId, inviter.getId(), inviter.getName())) != -1)
-					return result;
+			if ((result = GameServer.getChannel(ch).getInterChannelInterface().receivedBuddyInvite(inviteeId, inviter.getId(), inviter.getName())) != -1)
+				return result;
 		boolean readUnlocked = false;
 		readLock.lock();
 		try {
@@ -543,28 +543,75 @@ public class InterChannelCommunication {
 		getCenterComm().getSession().send(writeBuddyDelete(channel, p.getId(), recipient));
 	}
 
-	public void makeParty(GameCharacter p) {
+	//TODO: don't use center server for local channels
+	public void sendMakeParty(GameCharacter p) {
 		getCenterComm().getSession().send(writeMakeParty(self.getChannelId(), p));
 	}
 
-	public void disbandParty(int partyId) {
+	public void sendDisbandParty(int partyId) {
 		getCenterComm().getSession().send(writeDisbandParty(partyId));
 	}
 
-	public void leaveParty(GameCharacter p, int partyId) {
+	public void sendLeaveParty(GameCharacter p, int partyId) {
 		getCenterComm().getSession().send(writeLeaveParty(p, partyId));
 	}
 
-	public void joinParty(GameCharacter p, int partyId) {
+	public void sendJoinParty(GameCharacter p, int partyId) {
 		getCenterComm().getSession().send(writeJoinParty(p, partyId));
 	}
 
-	public void expelPartyMember(PartyList.Member member, int partyId) {
+	public void sendExpelPartyMember(PartyList.Member member, int partyId) {
 		getCenterComm().getSession().send(writeExpelPartyMember(member.getPlayerId(), member.getName(), partyId, member.getChannel()));
 	}
 
-	public void changePartyLeader(int partyId, int newLeader) {
+	public void sendChangePartyLeader(int partyId, int newLeader) {
 		getCenterComm().getSession().send(writeNewPartyLeader(partyId, newLeader));
+	}
+
+	public PartyList sendFetchPartyList(GameCharacter p, int partyId) {
+		PartyList party = new PartyList(partyId, p);
+		int responseId = nextResponseId.getAndIncrement();
+		ResponseFuture response = new ResponseFuture(2);
+		responseListeners.put(Integer.valueOf(responseId), response);
+		getCenterComm().getSession().send(writeFetchPartyList(self.getChannelId(), p.getId(), party.getId(), responseId));
+		try {
+			Object[] array = response.get(2, TimeUnit.SECONDS);
+			//party scope is still local, so no need to lock write
+			party.addPlayer(new PartyList.LocalMember(p));
+			party.setLeader(((Integer) array[0]).intValue());
+			for (Object mem : (PartyList.Member[]) array[1]) {
+				if (mem instanceof PartyList.LocalMember)
+					party.addPlayer((PartyList.LocalMember) mem);
+				else if (mem instanceof PartyList.RemoteMember)
+					party.addPlayer((PartyList.RemoteMember) mem);
+			}
+		} catch (InterruptedException ex) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException ex) {
+			LOG.log(Level.FINE, "Party fetch timeout", ex);
+		} catch (CancellationException ex) {
+
+		} finally {
+			responseListeners.remove(Integer.valueOf(responseId));
+		}
+		return party;
+	}
+
+	public void sendPartyMemberEnteredChannel(GameCharacter p, PartyList party) {
+		getCenterComm().getSession().send(writePartyMemberChangedChannel(self.getChannelId(), p.getId(), party.getId()));
+	}
+
+	public void sendPartyLogOff(GameCharacter p, boolean silent) {
+		getCenterComm().getSession().send(writePartyMemberLoggedOff(self.getChannelId(), p.getId(), p.getParty().getId(), silent));
+	}
+
+	public void sendPartyLevelOrJobUpdate(GameCharacter p, boolean level) {
+		if (level)
+			getCenterComm().getSession().send(writePartyMemberUpdatedStat(self.getChannelId(), p.getId(), p.getParty().getId(), true, p.getLevel()));
+		else
+			getCenterComm().getSession().send(writePartyMemberUpdatedStat(self.getChannelId(), p.getId(), p.getParty().getId(), false, p.getJob()));
 	}
 
 	public void receivedInboundPlayer(byte fromCh, int playerId, PlayerContinuation context) {
@@ -1004,6 +1051,50 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
+	private static byte[] writeFetchPartyList(byte channel, int playerId, int partyId, int responseId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.FETCH_LIST);
+		lew.writeByte(channel);
+		lew.writeInt(playerId);
+		lew.writeInt(partyId);
+		lew.writeInt(responseId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writePartyMemberChangedChannel(byte newCh, int playerId, int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.MEMBER_CHANGED_CHANNEL);
+		lew.writeByte(newCh);
+		lew.writeInt(playerId);
+		lew.writeInt(partyId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writePartyMemberLoggedOff(byte ch, int playerId, int partyId, boolean silent) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.MEMBER_LOGGED_OFF);
+		lew.writeByte(ch);
+		lew.writeInt(playerId);
+		lew.writeInt(partyId);
+		lew.writeBool(silent);
+		return lew.getBytes();
+	}
+
+	private static byte[] writePartyMemberUpdatedStat(byte ch, int playerId, int partyId, boolean updateLevel, short newValue) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
+		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(InterServerPartyOps.MEMBER_STAT_UPDATED);
+		lew.writeByte(ch);
+		lew.writeInt(playerId);
+		lew.writeInt(partyId);
+		lew.writeBool(updateLevel);
+		lew.writeShort(newValue);
+		return lew.getBytes();
+	}
+
 	public void receivedPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case INBOUND_PLAYER: {
@@ -1251,6 +1342,7 @@ public class InterChannelCommunication {
 				} else {
 					p.getClient().getSession().send(GamePackets.writeSimplePartyListMessage(PartyListHandler.PARTY_FULL));
 				}
+				break;
 			} case InterServerPartyOps.LEAVE: {
 				int leaverId = packet.readInt();
 				boolean leaverExpelled = packet.readBool();
@@ -1270,7 +1362,99 @@ public class InterChannelCommunication {
 					if (p != null) {
 						PartyList party = p.getParty();
 						party.setLeader(newLeader);
-						p.getClient().getSession().send(GamePackets.writePartyChangeLeader(party));
+						p.getClient().getSession().send(GamePackets.writePartyChangeLeader(newLeader, false));
+					}
+				}
+				break;
+			} case InterServerPartyOps.FETCH_LIST: {
+				int responseId = packet.readInt();
+				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
+				if (response != null) {
+					int leader = packet.readInt();
+					response.set(Integer.valueOf(leader));
+					byte count = packet.readByte();
+					PartyList.Member[] members = new PartyList.Member[count];
+					for (int i = 0; i < count; i++) {
+						byte ch = packet.readByte();
+						int playerId = packet.readInt();
+						if (ch == self.getChannelId()) {
+							members[i] = new PartyList.LocalMember(self.getPlayerById(playerId));
+						} else {
+							String name = packet.readLengthPrefixedString();
+							short job = packet.readShort();
+							short level = packet.readShort();
+							members[i] = new PartyList.RemoteMember(playerId, name, job, level, ch);
+						}
+					}
+					response.set(members);
+				} else {
+					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
+				}
+				break;
+			} case InterServerPartyOps.MEMBER_CHANGED_CHANNEL: {
+				byte channel = packet.readByte();
+				int switchingChannelPlayer = packet.readInt();
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) {
+						PartyList party = p.getParty();
+						party.lockWrite();
+						try {
+							if (channel == self.getChannelId())
+								party.memberConnected(self.getPlayerById(switchingChannelPlayer));
+							else
+								party.memberConnected(new PartyList.RemoteMember(party.getOfflineMember(switchingChannelPlayer), channel));
+						} finally {
+							party.unlockWrite();
+						}
+						p.getClient().getSession().send(GamePackets.writePartyList(party));
+						p.pullPartyHp();
+						p.pushHpToParty();
+					}
+				}
+				break;
+			} case InterServerPartyOps.MEMBER_LOGGED_OFF: {
+				byte channel = packet.readByte();
+				int loggingOffPlayer = packet.readInt();
+				boolean silent = packet.readBool();
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) {
+						PartyList party = p.getParty();
+						party.lockWrite();
+						try {
+							if (channel == self.getChannelId())
+								party.memberDisconnected(self.getPlayerById(loggingOffPlayer));
+							else
+								party.memberDisconnected(channel, loggingOffPlayer);
+						} finally {
+							party.unlockWrite();
+						}
+						if (!silent)
+							p.getClient().getSession().send(GamePackets.writePartyList(party));
+					}
+				}
+				break;
+			} case InterServerPartyOps.MEMBER_STAT_UPDATED: {
+				byte updatedPlayerChannel = packet.readByte();
+				int updatedPlayerId = packet.readInt();
+				boolean levelUpdated = updatedPlayerChannel != self.getChannelId() ? packet.readBool() : false;
+				short newValue = updatedPlayerChannel != self.getChannelId() ? packet.readShort() : 0;
+				for (int i = packet.readByte() - 1; i >= 0; --i) {
+					int playerId = packet.readInt();
+					GameCharacter p = self.getPlayerById(playerId);
+					if (p != null) {
+						PartyList party = p.getParty();
+						if (updatedPlayerChannel != self.getChannelId()) {
+							PartyList.RemoteMember member = party.getMember(updatedPlayerChannel, updatedPlayerId);
+							if (levelUpdated)
+								member.setLevel(newValue);
+							else
+								member.setJob(newValue);
+						}
+						p.getClient().getSession().send(GamePackets.writePartyList(party));
 					}
 				}
 				break;

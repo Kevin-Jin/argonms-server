@@ -47,8 +47,7 @@ import java.util.Random;
 public class GameEnterHandler {
 	public static void handlePlayerConnection(LittleEndianReader packet, GameClient gc) {
 		int cid = packet.readInt();
-		GameCharacter player = null;
-		player = GameCharacter.loadPlayer(gc, cid);
+		GameCharacter player = GameCharacter.loadPlayer(gc, cid);
 		if (player == null)
 			return;
 		gc.setPlayer(player);
@@ -84,14 +83,15 @@ public class GameEnterHandler {
 				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
 		}
 		cserv.getInterChannelInterface().sendBuddyOnline(player);
-		/*if (player.getParty() != null)
-			cserv.getInterChannelInterface().updateParty(player, PartyOperation.LOG_ONOFF);
-		if (player.getGuildId() > 0) {
+		if (player.getParty() != null) {
+			gc.getSession().send(GamePackets.writePartyList(player.getParty()));
+			cserv.getInterChannelInterface().sendPartyMemberEnteredChannel(player, player.getParty());
+		}
+		/*if (player.getGuildId() > 0) {
 			cserv.getInterChannelInterface().setGuildMemberOnline(
 					player.getMGC(), true, gc.getChannel());
 			gc.getSession().send(GamePackets.writeGuildInfo(player));
 		}
-		player.updatePartyMemberHP();
 
 		c.getPlayer().showNote();*/
 		gc.getSession().send(writeKeymap(player.getKeyMap()));

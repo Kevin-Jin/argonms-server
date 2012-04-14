@@ -47,7 +47,8 @@ public class Parties {
 			ps = con.prepareStatement("SELECT MAX(`partyid`) FROM `parties` WHERE `world` = ?");
 			ps.setInt(1, world);
 			rs = ps.executeQuery();
-			partyId = rs.getInt(1);
+			if (rs.next())
+				partyId = rs.getInt(1);
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not get starting party id for world " + world, ex);
 		} finally {
@@ -82,5 +83,9 @@ public class Parties {
 
 	public Party get(int partyId) {
 		return parties.get(Integer.valueOf(partyId));
+	}
+
+	public void set(int partyId, Party party) {
+		parties.put(Integer.valueOf(partyId), party);
 	}
 }

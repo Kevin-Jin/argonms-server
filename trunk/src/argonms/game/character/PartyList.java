@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public class PartyList {
+	public static final byte CASH_SHOP_CH = 0;
 	public static final byte OFFLINE_CH = -1;
 
 	public interface Member {
@@ -47,8 +48,8 @@ public class PartyList {
 	public static class RemoteMember implements Member {
 		private final int playerId;
 		private final String name;
-		private final short job;
-		private final short level;
+		private short job;
+		private short level;
 		private final byte channel;
 
 		public RemoteMember(int playerId, String name, short job, short level, byte channel) {
@@ -95,6 +96,14 @@ public class PartyList {
 		@Override
 		public int getMapId() {
 			return 0;
+		}
+
+		public void setLevel(short newValue) {
+			level = newValue;
+		}
+
+		public void setJob(short newValue) {
+			job = newValue;
 		}
 	}
 
@@ -190,17 +199,21 @@ public class PartyList {
 	private volatile int leader;
 	private final Lock readLock, writeLock;
 
-	public PartyList(int partyId, int leader, GameCharacter self) {
+	public PartyList(int partyId, GameCharacter self) {
 		this.id = partyId;
 		this.localMembers = new HashMap<Integer, LocalMember>();
 		this.remoteMembers = new HashMap<Byte, Map<Integer, RemoteMember>>();
-		this.leader = leader;
 
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
 
 		localMembers.put(Integer.valueOf(self.getId()), new LocalMember(self));
+	}
+
+	public PartyList(int partyId, int leader, GameCharacter self) {
+		this(partyId, self);
+		this.leader = leader;
 	}
 
 	public int getId() {
@@ -350,6 +363,10 @@ public class PartyList {
 		return localMembers.remove(Integer.valueOf(p.getId()));
 	}
 
+	public RemoteMember getOfflineMember(int playerId) {
+		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
+	}
+
 	/**
 	 * This PartyList must be at least read locked when this method is called.
 	 * @param playerId
@@ -364,6 +381,19 @@ public class PartyList {
 			if (member != null)
 				return member;
 		}
+		return null;
+	}
+
+	/**
+	 * Gets the RemoteMember in the specified channel.
+	 * This PartyList must be at least read locked when this method is called.
+	 * @param playerId
+	 * @return 
+	 */
+	public RemoteMember getMember(byte channel, int playerId) {
+		Map<Integer, RemoteMember> channelMembers = remoteMembers.get(Byte.valueOf(channel));
+		if (channelMembers != null)
+			return channelMembers.get(Integer.valueOf(playerId));
 		return null;
 	}
 

@@ -94,7 +94,7 @@ public abstract class RemoteClient implements SessionDataModel {
 				new Object[] { getSession().getAddress(), message });
 	}
 
-	public void migrateHost() {
+	public void setMigratingHost() {
 		serverTransition = true;
 		updateState(STATUS_MIGRATION);
 	}

@@ -1569,6 +1569,27 @@
 		natural key to be more consistent with other tables.
 		* Added a parties table.
 
+2012-04-14  GoldenKevin  (revision 79)
+
+	* Fixed potential CancelledKeyExceptions in *Session classes.
+	* Rewrote the channel change/log off triggers for GameCharacter. Fixed some
+	methods being called twice when changing channels.
+	* Added party bonus to monster EXP. Any member who is five levels below the
+	monster's level or five levels below the lowest leveled attacker will be
+	given a share of the EXP if he did at least one damage to the mob.
+	* Fixed bug when a party member leaves the party and was the only member in
+	his channel.
+	* Proper packet for party leader change. Made some fixes to the other party
+	packets as well.
+	* A party is unloaded when all its members become offline or when it is
+	disbanded. A party is loaded when the first member becomes online or when it
+	is created.
+	* Implemented cross-channel parties. Player's party data is now saved when
+	logging off, and is loaded when logging in.
+	* Party members are notified when a member changes maps, changes levels,
+	changes jobs, or changes HP.
+	* Renamed some InterChannelCommunications methods to be more consistent.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

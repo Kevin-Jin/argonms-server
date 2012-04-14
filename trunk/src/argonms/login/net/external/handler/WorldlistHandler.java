@@ -177,7 +177,7 @@ public class WorldlistHandler {
 		//state will always be STATUS_MIGRATION. There's got to be a way to
 		//find out if the client's connection timed out and then
 		//updateState(STATUS_NOTLOGGEDIN) if it is.
-		c.migrateHost();
+		c.setMigratingHost();
 		c.getSession().send(writeServerAddress(w.getHost(c.getChannel()),
 				w.getPort(c.getChannel()), charid));
 	}

@@ -107,7 +107,9 @@ public class GameClient extends RemoteClient {
 		if (npc != null)
 			npc.endConversation();
 		if (player != null) {
-			player.close(changingChannels);
+			if (!changingChannels)
+				player.prepareLogOff();
+			player.disconnect();
 			GameServer.getChannel(getChannel()).removePlayer(player);
 			player = null;
 		}
