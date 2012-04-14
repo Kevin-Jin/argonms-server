@@ -982,20 +982,20 @@ public class GamePackets {
 
 		lew.writeShort(ClientSendOps.PARTY_LIST);
 		lew.writeByte(PartyListHandler.LEFT_PARTY);
-		lew.writeInt(40546);
+		lew.writeInt(partyId);
 		lew.writeInt(leader);
 		lew.writeBool(false);
-		lew.writeInt(partyId);
+		lew.writeInt(0);
 
 		return lew.getBytes();
 	}
 
 	public static byte[] writePartyMemberLeft(PartyList party, int playerId, String playerName, boolean expelled) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.PARTY_LIST);
 		lew.writeByte(PartyListHandler.LEFT_PARTY);
-		lew.writeInt(40546);
+		lew.writeInt(party.getId());
 		lew.writeInt(playerId);
 		lew.writeBool(true);
 		lew.writeBool(expelled);
@@ -1006,28 +1006,35 @@ public class GamePackets {
 	}
 
 	public static byte[] writePartyMemberJoined(PartyList party, String playerName) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.PARTY_LIST);
 		lew.writeByte(PartyListHandler.JOINED_PARTY);
-		lew.writeInt(40546);
+		lew.writeInt(party.getId());
 		lew.writeLengthPrefixedString(playerName);
 		writePartyList(party, lew, false);
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writePartyChangeLeader(PartyList party) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+	public static byte[] writePartyList(PartyList party) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.PARTY_LIST);
-		//TODO: this gets the job done of passing the star, but is there a way
-		//we can get something about becoming the party leader rather than
-		//'' has joined the party?
-		lew.writeByte(PartyListHandler.JOINED_PARTY);
-		lew.writeInt(40546);
-		lew.writeLengthPrefixedString("");
+		lew.writeByte(PartyListHandler.SILENT_LIST_UPDATE);
+		lew.writeInt(party.getId());
 		writePartyList(party, lew, false);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyChangeLeader(int newLeader, boolean partyQuestForcedChange) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeByte(PartyListHandler.LEADER_CHANGED);
+		lew.writeInt(newLeader);
+		lew.writeBool(partyQuestForcedChange);
 
 		return lew.getBytes();
 	}

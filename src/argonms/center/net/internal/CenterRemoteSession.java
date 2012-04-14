@@ -120,7 +120,7 @@ public class CenterRemoteSession implements Session {
 		buf.put(b);
 		buf.flip();
 		sendQueue.insert(buf);
-		if (tryFlushSendQueue() == 0) {
+		if (selectionKey.isValid() && tryFlushSendQueue() == 0) {
 			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 			selectionKey.selector().wakeup();
 		}

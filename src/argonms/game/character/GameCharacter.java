@@ -198,6 +198,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			updateDbCooldowns(con);
 			updateDbBindings(con);
 			updateDbBuddies(con);
+			updateDbParty(con);
 			updateDbQuests(con);
 			updateDbMinigameStats(con);
 			updateDbFameLog(con);
@@ -450,6 +451,29 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 				ps.addBatch();
 			}
 			ps.executeBatch();
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
+	private void updateDbParty(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `parties` WHERE "
+					+ "`characterid` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+
+			if (party != null) {
+				ps.close();
+				ps = con.prepareStatement("INSERT INTO `parties` (`world`,"
+						+ "`partyid`,`characterid`,`leader`) VALUES (?,?,?,?)");
+				ps.setByte(1, getClient().getWorld());
+				ps.setInt(2, party.getId());
+				ps.setInt(3, getDataId());
+				ps.setBoolean(4, party.getLeader() == getDataId());
+				ps.executeUpdate();
+			}
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
@@ -718,6 +742,15 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			rs.close();
 			ps.close();
 
+			ps = con.prepareStatement("SELECT `partyid` FROM `parties` WHERE "
+					+ "`characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			if (rs.next())
+				p.party = GameServer.getChannel(c.getChannel()).getInterChannelInterface().sendFetchPartyList(p, rs.getInt(1));
+			rs.close();
+			ps.close();
+
 			ps = con.prepareStatement("SELECT `id`,`questid`,`state`,"
 					+ "`completed` FROM `queststatuses` WHERE "
 					+ "`characterid` = ?");
@@ -941,10 +974,16 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 				exp = ExpTables.getForLevel(level) - 1;
 		} while (level < GlobalConstants.MAX_LEVEL && exp >= ExpTables.getForLevel(level));
 
-		remHp = updateMaxHp((short) Math.min(baseMaxHp + hpInc, 30000));
-		remMp = updateMaxMp((short) Math.min(baseMaxMp + mpInc, 30000));
+		updateMaxHp((short) Math.min(baseMaxHp + hpInc, 30000));
+		updateMaxMp((short) Math.min(baseMaxMp + mpInc, 30000));
 		remAp = (short) Math.min(remAp + apInc, Short.MAX_VALUE);
 		remSp = (short) Math.min(remSp + spInc, Short.MAX_VALUE);
+
+		//don't revive a leech who leveled up
+		if (isAlive()) {
+			remHp = maxHp;
+			remMp = maxMp;
+		}
 
 		stats.put(ClientUpdateKey.LEVEL, Short.valueOf(level));
 		stats.put(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp));
@@ -955,6 +994,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		stats.put(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp));
 
 		getMap().sendToAll(GamePackets.writeShowLevelUp(this), this);
+		if (party != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, true);
+		pushHpToParty();
 
 		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
 	}
@@ -967,6 +1009,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	public void setLevel(short newLevel) {
 		this.level = newLevel;
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
+		if (party != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, true);
 	}
 
 	@Override
@@ -978,6 +1022,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		this.job = newJob;
 		getMap().sendToAll(GamePackets.writeShowJobChange(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
+		if (party != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, false);
 	}
 
 	@Override
@@ -1063,6 +1109,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		else if (newHp > maxHp)
 			newHp = maxHp;
 		this.remHp = newHp;
+		pushHpToParty();
 	}
 
 	public void setHp(short newHp) {
@@ -1091,17 +1138,19 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		//TODO: lose exp
 	}
 
-	private short updateMaxHp(short newMax) {
+	private void updateMaxHp(short newMax) {
 		this.baseMaxHp = newMax;
 		recalculateMaxHp();
-		return maxHp;
 	}
 
 	public void setMaxHp(short newMax) {
 		updateMaxHp(newMax);
-		if (remHp > maxHp)
+		if (remHp > maxHp) {
 			remHp = maxHp;
+			getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+		}
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MAXHP, Short.valueOf(baseMaxHp)), false));
+		pushHpToParty();
 	}
 
 	public short incrementMaxHp(int gain) {
@@ -1115,6 +1164,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		else
 			this.maxHp = (short) Math.min(30000, baseMaxHp + addMaxHp
 					+ Math.round((baseMaxHp + addMaxHp) * hhbPerc / 100.0));
+		pushHpToParty();
 	}
 
 	private void recalculateMaxHp() {
@@ -1166,10 +1216,9 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		return maxMp;
 	}
 
-	private short updateMaxMp(short newMax) {
+	private void updateMaxMp(short newMax) {
 		this.baseMaxMp = newMax;
 		recalculateMaxMp();
-		return maxMp;
 	}
 
 	public void setMaxMp(short newMax) {
@@ -1422,6 +1471,8 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			addHands -= e.getHands();
 			addSpeed -= e.getSpeed();
 			addJump -= e.getJump();
+
+			pushHpToParty();
 		}
 	}
 
@@ -1675,17 +1726,50 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			if (!isVisible())
 				getClient().getSession().send(GamePackets.writeShowHide());
 			map.spawnPlayer(this);
+			if (party != null) {
+				party.lockRead();
+				try {
+					for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+						member.getPlayer().getClient().getSession().send(GamePackets.writePartyList(member.getPlayer().getParty()));
+				} finally {
+					party.unlockRead();
+				}
+			}
 			return true;
 		}
 		return false;
 	}
 
-	public void prepareChannelChange() {
+	private void prepareExitChannel() {
+		//TODO: need to save debuffs in database so players cannot exploit
+		//logging off and then on to get rid of debuffs...
+		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
+			cancelTask.right.cancel(false);
+		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
+			cancelTask.right.cancel(false);
+		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
+			cancelTask.right.cancel(false);
+
+		for (Cooldown cooling : cooldowns.values())
+			cooling.cancel();
+
 		leaveMapRoutines();
 		if (map != null)
 			map.removePlayer(this);
 		saveCharacter();
-		client.migrateHost();
+	}
+
+	public void prepareChannelChange() {
+		if (party != null)
+			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyLogOff(this, true);
+		prepareExitChannel();
+	}
+
+	public void prepareLogOff() {
+		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
+		if (party != null)
+			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyLogOff(this, false);
+		prepareExitChannel();
 	}
 
 	public int getGuildId() {
@@ -1701,15 +1785,27 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 	}
 
 	public void pushHpToParty() {
-		if (party != null)
-			for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
-				member.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(getId(), getHp(), getMaxHp()));
+		if (party != null) {
+			party.lockRead();
+			try {
+				for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
+					member.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(getId(), getHp(), getCurrentMaxHp()));
+			} finally {
+				party.unlockRead();
+			}
+		}
 	}
 
 	public void pullPartyHp() {
-		if (party != null)
-			for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
-				client.getSession().send(GamePackets.writePartyMemberHpUpdate(member.getId(), member.getHp(), member.getMaxHp()));
+		if (party != null) {
+			party.lockRead();
+			try {
+				for (GameCharacter member : party.getLocalMembersInMap(getMapId()))
+					client.getSession().send(GamePackets.writePartyMemberHpUpdate(member.getId(), member.getHp(), member.getCurrentMaxHp()));
+			} finally {
+				party.unlockRead();
+			}
+		}
 	}
 
 	public Miniroom getMiniRoom() {
@@ -1720,24 +1816,7 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		this.miniroom = room;
 	}
 
-	public void close(boolean changingChannels) {
-		//TODO: need to save debuffs in database so players cannot exploit
-		//logging off and then on to get rid of debuffs...
-		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
-			cancelTask.right.cancel(false);
-		for (Pair<ItemState, ScheduledFuture<?>> cancelTask : itemEffectFutures.values())
-			cancelTask.right.cancel(false);
-		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
-			cancelTask.right.cancel(false);
-		if (!changingChannels)
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
-		leaveMapRoutines();
-		if (map != null)
-			map.removePlayer(this);
-		if (!changingChannels)
-			saveCharacter();
-		for (Cooldown cooling : cooldowns.values())
-			cooling.cancel();
+	public void disconnect() {
 		client = null;
 	}
 

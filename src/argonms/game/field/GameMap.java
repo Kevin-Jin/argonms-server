@@ -320,6 +320,8 @@ public class GameMap {
 				p.getClient().getSession().send(writeForceMapEquip());
 				break;
 		}
+		p.pullPartyHp();
+		p.pushHpToParty();
 	}
 
 	public final void spawnMonster(Mob monster) {
@@ -474,6 +476,7 @@ public class GameMap {
 			if (future != null)
 				future.cancel(false);
 		}
+		p.pushHpToParty();
 	}
 
 	public void killMonster(Mob monster, GameCharacter killer) {
@@ -621,6 +624,7 @@ public class GameMap {
 		}
 		for (PlayerSkillSummon summon : p.getAllSummons().values())
 			sendToAll(summon.getShowExistingSpawnMessage(), p);
+		p.pushHpToParty();
 	}
 
 	public void hidePlayer(GameCharacter p) {

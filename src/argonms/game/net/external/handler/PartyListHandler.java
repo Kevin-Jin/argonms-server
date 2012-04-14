@@ -43,6 +43,7 @@ public class PartyListHandler {
 
 	public static final byte //party send op codes
 		INVITE_SENT = 0x04,
+		SILENT_LIST_UPDATE = 0x07,
 		PARTY_CREATED = 0x08,
 		IS_BEGINNER = 0x0A,
 		LEFT_PARTY = 0x0C,
@@ -52,7 +53,12 @@ public class PartyListHandler {
 		PARTY_FULL = 0x11,
 		CANNOT_FIND = 0x13,
 		BUSY = 0x16,
-		INVITE_DENIED = 0x17
+		INVITE_DENIED = 0x17,
+		LEADER_CHANGED = 0x1A,
+		NOT_IN_VICINITY = 0x1B,
+		NO_MEMBERS_IN_VICINITY = 0x1C,
+		NOT_IN_CHANNEL = 0x1D,
+		IS_GM = 0x1F
 	;
 
 	public static void handleListModification(LittleEndianReader packet, GameClient gc) {
@@ -61,7 +67,7 @@ public class PartyListHandler {
 		switch (packet.readByte()) {
 			case CREATE: {
 				if (currentParty == null)
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().makeParty(p);
+					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendMakeParty(p);
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(ALREADY_IN_PARTY));
 				break;
@@ -69,9 +75,9 @@ public class PartyListHandler {
 			case LEAVE: {
 				if (currentParty != null)
 					if (currentParty.getLeader() == p.getId())
-						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().disbandParty(currentParty.getId());
+						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendDisbandParty(currentParty.getId());
 					else
-						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().leaveParty(p, currentParty.getId());
+						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendLeaveParty(p, currentParty.getId());
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
 				break;
@@ -79,7 +85,7 @@ public class PartyListHandler {
 			case JOIN: {
 				int partyId = packet.readInt();
 				if (currentParty == null)
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().joinParty(p, partyId);
+					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendJoinParty(p, partyId);
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(ALREADY_IN_PARTY));
 				break;
@@ -108,7 +114,7 @@ public class PartyListHandler {
 			case EXPEL: {
 				int expelled = packet.readInt();
 				if (currentParty != null && currentParty.getLeader() == p.getId())
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().expelPartyMember(currentParty.getMember(expelled), currentParty.getId());
+					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendExpelPartyMember(currentParty.getMember(expelled), currentParty.getId());
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
 				break;
@@ -116,7 +122,7 @@ public class PartyListHandler {
 			case CHANGE_LEADER: {
 				int newLeader = packet.readInt();
 				if (currentParty != null && currentParty.getLeader() == p.getId())
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().changePartyLeader(currentParty.getId(), newLeader);	
+					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendChangePartyLeader(currentParty.getId(), newLeader);	
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
 				break;

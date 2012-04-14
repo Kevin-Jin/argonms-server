@@ -30,6 +30,10 @@ public class InterServerPartyOps {
 		REMOVE_PLAYER = 3,
 		CHANGE_LEADER = 4,
 		JOIN = 5,
-		LEAVE = 6
+		LEAVE = 6,
+		FETCH_LIST = 7,
+		MEMBER_CHANGED_CHANNEL = 8,
+		MEMBER_LOGGED_OFF = 9,
+		MEMBER_STAT_UPDATED = 10
 	;
 }

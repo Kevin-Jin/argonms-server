@@ -18,8 +18,10 @@
 
 package argonms.center;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -34,9 +36,9 @@ public final class Party {
 	public static class Member {
 		private final int playerId;
 		private final String name;
-		private final short job;
-		private final short level;
-		private final byte channel;
+		private short job;
+		private short level;
+		private byte channel;
 
 		public Member(int playerId, String name, short job, short level, byte channel) {
 			this.playerId = playerId;
@@ -65,6 +67,18 @@ public final class Party {
 		public byte getChannel() {
 			return channel;
 		}
+
+		public void setJob(short newValue) {
+			job = newValue;
+		}
+
+		public void setLevel(short newValue) {
+			level = newValue;
+		}
+
+		public void setChannel(byte newCh) {
+			channel = newCh;
+		}
 	}
 
 	//we want to keep playerChannels and channelPlayers sync'd, so use a single
@@ -75,19 +89,19 @@ public final class Party {
 	private volatile int leader;
 
 	public Party(Member leader) {
+		this();
+
+		this.leader = leader.getPlayerId();
+		//no locking necessary as long as we don't leak this reference
+		addPlayer(leader);
+	}
+
+	public Party() {
 		playerMembers = new HashMap<Integer, Byte>();
 		channelMembers = new HashMap<Byte, Map<Integer, Member>>();
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
-
-		this.leader = leader.getPlayerId();
-		lockWrite();
-		try {
-			addPlayer(leader);
-		} finally {
-			unlockWrite();
-		}
 	}
 
 	/**
@@ -100,11 +114,14 @@ public final class Party {
 	}
 
 	/**
-	 * This Party must be at least read locked while the returned Set is in scope.
+	 * This Party must be at least read locked while the returned Collection is in scope.
 	 * @return 
 	 */
-	public Set<Map.Entry<Byte, Map<Integer, Member>>> getAllMembers() {
-		return channelMembers.entrySet();
+	public Collection<Member> getAllMembers() {
+		List<Member> all = new ArrayList<Member>(playerMembers.size());
+		for (Map<Integer, Member> channel : channelMembers.values())
+			all.addAll(channel.values());
+		return all;
 	}
 
 	/**
@@ -162,6 +179,27 @@ public final class Party {
 	}
 
 	/**
+	 * This Party must be write locked when this method is called.
+	 * @param playerId 
+	 * @param newCh
+	 * @return true if the player was moved, false otherwise
+	 */
+	public boolean setMemberChannel(int playerId, byte newCh) {
+		boolean success = false;
+		Byte oldCh = playerMembers.get(Integer.valueOf(playerId));
+		if (oldCh != null && channelMembers.containsKey(oldCh)) {
+			Member mem = channelMembers.get(oldCh).get(Integer.valueOf(playerId));
+			if (mem != null) {
+				removePlayer(playerId);
+				mem.setChannel(newCh);
+				addPlayer(mem);
+				success = true;
+			}
+		}
+		return success;
+	}
+
+	/**
 	 * This Party does NOT need to be locked when this method is called.
 	 * @param leader 
 	 */
@@ -174,6 +212,14 @@ public final class Party {
 	 */
 	public int getLeader() {
 		return leader;
+	}
+
+	/**
+	 * This Party must be at least read locked when this method is called.
+	 * @return 
+	 */
+	public Member getMember(byte channel, int playerId) {
+		return channelMembers.get(Byte.valueOf(channel)).get(Integer.valueOf(playerId));
 	}
 
 	public void lockRead() {

@@ -44,10 +44,12 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -162,7 +164,6 @@ public class Mob extends MapEntity {
 				attackerLevel = attacker.getLevel();
 				attackerParty = attacker.getParty();
 
-				long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
 				if (attackerParty != null) {
 					partyExp = parties.get(attackerParty);
 					if (partyExp == null) {
@@ -174,9 +175,10 @@ public class Mob extends MapEntity {
 				} else {
 					int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
 							attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
-					//exp = exp * getTauntEffect() / 100;
+					long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
 					exp *= GameServer.getVariables().getExpRate();
-					exp += ((exp * hsRate) / 100);
+					//exp = exp * getTauntEffect() / 100;
+					exp += exp * hsRate / 100;
 					attacker.gainExp((int) Math.min(exp, Integer.MAX_VALUE), attacker == killer, false);
 				}
 			}
@@ -184,28 +186,39 @@ public class Mob extends MapEntity {
 			damages.unlockRead();
 		}
 		if (!parties.isEmpty()) {
-			List<GameCharacter> members;
 			for (Entry<PartyList, PartyExp> entry : parties.entrySet()) {
 				attackerParty = entry.getKey();
 				partyExp = entry.getValue();
-				members = attackerParty.getLocalMembersInMap(map.getDataId());
 				short totalLevel = 0;
-				for (GameCharacter member : members) {
-					attackerLevel = member.getLevel();
-					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5))
-						totalLevel += attackerLevel;
-				}
-				for (GameCharacter member : members) {
-					attackerLevel = member.getLevel();
-					if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5)) {
-						long exp = (long) stats.getExp() * ((8 * attackerLevel / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10;
-						int hsRate = member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-								member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
-						//exp = exp * getTauntEffect() / 100;
-						exp *= GameServer.getVariables().getExpRate();
-						exp += ((exp * hsRate) / 100);
-						member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
+				int membersCount = 0;
+				List<GameCharacter> splitExpMembers = new ArrayList<GameCharacter>();
+				int hsRate = 0;
+				attackerParty.lockRead();
+				try {
+					for (GameCharacter member : attackerParty.getLocalMembersInMap(map.getDataId())) {
+						attackerLevel = member.getLevel();
+						if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5) || partyExp.playerAttackedMob(member)) {
+							totalLevel += attackerLevel;
+							splitExpMembers.add(member);
+							//TODO: if more than one priest, only use highest? or use latest cast?
+							hsRate = Math.max(member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+									member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0, hsRate);
+						}
+						membersCount++; //I'm pretty sure party bonus is based on every member, not just for those who are getting EXP
 					}
+				} finally {
+					attackerParty.unlockRead();
+				}
+				for (GameCharacter member : splitExpMembers) {
+					//TODO: party should only get part of the mob's
+					//exp if some player outside the party did damage
+					//to it
+					long exp = (long) stats.getExp() * ((8 * member.getLevel() / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10;
+					exp *= GameServer.getVariables().getExpRate();
+					//exp = exp * getTauntEffect() / 100;
+					exp += exp * 5 * membersCount / 100; //party bonus, 5% for each member
+					exp += exp * hsRate / 100;
+					member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
 				}
 			}
 		}
@@ -547,10 +560,12 @@ public class Mob extends MapEntity {
 	private static class PartyExp {
 		private short minAttackerLevel;
 		private GameCharacter highestDamagePlayer;
+		private final Set<GameCharacter> allAttackers;
 		private long highestDamage;
 
 		public PartyExp() {
 			minAttackerLevel = GlobalConstants.MAX_LEVEL;
+			allAttackers = new HashSet<GameCharacter>();
 		}
 
 		public void compareAndSetMinAttackerLevel(short damagerlevel) {
@@ -563,6 +578,8 @@ public class Mob extends MapEntity {
 				highestDamagePlayer = attacker;
 				highestDamage = damage;
 			}
+			if (damage > 0)
+				allAttackers.add(attacker);
 		}
 
 		public short getMinAttackerLevel() {
@@ -571,6 +588,10 @@ public class Mob extends MapEntity {
 
 		public GameCharacter getHighestDamagePlayer() {
 			return highestDamagePlayer;
+		}
+
+		public boolean playerAttackedMob(GameCharacter player) {
+			return allAttackers.contains(player);
 		}
 	}
 
