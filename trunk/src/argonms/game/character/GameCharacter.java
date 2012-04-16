@@ -66,6 +66,7 @@ import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.script.PartyMemberListener;
+import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -94,8 +95,17 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class GameCharacter extends MapEntity implements LoggedInPlayer {
+public class GameCharacter implements MapEntity, LoggedInPlayer {
 	private static final Logger LOG = Logger.getLogger(GameCharacter.class.getName());
+
+	private int entityid;
+	private Point pos;
+	/**
+	 * 1-byte bit field, with the flags (from most significant to least significant bits):
+	 * (?)(?)(?)(?)(has owner)(can fly)(?)(facing left)
+	 */
+	private byte stance;
+	private short foothold;
 
 	private GameClient client;
 	private byte gm;
@@ -174,6 +184,46 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
 		wishList = new ArrayList<Integer>(10);
+	}
+
+	@Override
+	public int getId() {
+		return entityid;
+	}
+
+	@Override
+	public void setId(int newEid) {
+		entityid = newEid;
+	}
+
+	@Override
+	public Point getPosition() {
+		return pos;
+	}
+
+	@Override
+	public void setPosition(Point newPos) {
+		pos = newPos;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
+	}
+
+	@Override
+	public void setStance(byte newStance) {
+		stance = newStance;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public void setFoothold(short newFh) {
+		foothold = newFh;
 	}
 
 	@Override
@@ -404,13 +454,13 @@ public class GameCharacter extends MapEntity implements LoggedInPlayer {
 			ps.executeUpdate();
 			ps.close();
 
-			byte pos = 0;
+			byte position = 0;
 			ps = con.prepareStatement("INSERT INTO `skillmacros` "
 					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,"
 					+ "`skill2`,`skill3`) VALUES (?,?,?,?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (SkillMacro macro : skillMacros) {
-				ps.setByte(2, pos++);
+				ps.setByte(2, position++);
 				ps.setString(3, macro.getName());
 				ps.setBoolean(4, macro.shout());
 				ps.setInt(5, macro.getFirstSkill());

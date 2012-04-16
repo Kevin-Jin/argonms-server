@@ -23,8 +23,8 @@ import argonms.common.net.external.CommonPackets;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.character.GameCharacter;
+import argonms.game.field.AbstractEntity;
 import argonms.game.field.GameMap;
-import argonms.game.field.MapEntity;
 import argonms.game.net.external.GamePackets;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * @author GoldenKevin
  */
-public abstract class Miniroom extends MapEntity {
+public abstract class Miniroom extends AbstractEntity {
 	public static final byte
 		ACT_CREATE = 0x00, //0
 		ACT_INVITE = 0x02, //2

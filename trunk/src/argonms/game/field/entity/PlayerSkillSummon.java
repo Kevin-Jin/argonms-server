@@ -19,7 +19,7 @@
 package argonms.game.field.entity;
 
 import argonms.game.character.GameCharacter;
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
@@ -30,7 +30,7 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class PlayerSkillSummon extends MapEntity {
+public class PlayerSkillSummon extends AbstractEntity {
 	private byte summonType; //0 = stationary, 1 = follow, 2/4 = only tele follow, 3 = bird follow
 	private int ownerEid;
 	private int skillId;

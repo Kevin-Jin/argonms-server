@@ -32,9 +32,9 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
+import argonms.game.field.AbstractEntity;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
-import argonms.game.field.MapEntity;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.loading.mob.MobStats;
 import argonms.game.loading.mob.Skill;
@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author GoldenKevin
  */
-public class Mob extends MapEntity {
+public class Mob extends AbstractEntity {
 	public static final byte
 		DESTROY_ANIMATION_NONE = 0,
 		DESTROY_ANIMATION_NORMAL = 1,

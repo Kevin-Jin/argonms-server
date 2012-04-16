@@ -20,7 +20,7 @@ package argonms.game.field.entity;
 
 import argonms.common.util.collections.Pair;
 import argonms.game.character.GameCharacter;
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.loading.reactor.ReactorStats;
 import argonms.game.loading.reactor.State;
 import argonms.game.net.external.GamePackets;
@@ -32,7 +32,7 @@ import java.awt.Rectangle;
  *
  * @author GoldenKevin
  */
-public class Reactor extends MapEntity {
+public class Reactor extends AbstractEntity {
 	public static final byte
 		TYPE_ITEM_TRIGGERED = 100
 	;

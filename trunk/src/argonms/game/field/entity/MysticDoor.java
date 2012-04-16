@@ -18,14 +18,14 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.net.external.GamePackets;
 
 /**
  *
  * @author GoldenKevin
  */
-public class MysticDoor extends MapEntity {
+public class MysticDoor extends AbstractEntity {
 	private boolean townDoor;
 
 	public MysticDoor(boolean town) {

@@ -19,7 +19,7 @@
 package argonms.game.field.entity;
 
 import argonms.common.character.inventory.InventorySlot;
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 
@@ -27,7 +27,7 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class ItemDrop extends MapEntity {
+public class ItemDrop extends AbstractEntity {
 	public static final byte
 		ITEM = 0,
 		MESOS = 1
