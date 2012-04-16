@@ -18,14 +18,14 @@
 
 package argonms.game.field.entity;
 
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.net.external.GamePackets;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Npc extends MapEntity {
+public class Npc extends AbstractEntity {
 	private int npcid;
 	private short rx0, rx1;
 	private short cy;

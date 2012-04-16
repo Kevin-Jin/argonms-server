@@ -1590,6 +1590,12 @@
 	changes jobs, or changes HP.
 	* Renamed some InterChannelCommunications methods to be more consistent.
 
+2012-04-16  GoldenKevin  (revision 80)
+
+	* Phase one of GameCharacter hierarchy realignment. MapEntity is now an
+	interface that GameCharacter implements so that GameCharacter is free to
+	inherit Player (or one of its subclasses).
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

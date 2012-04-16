@@ -24,25 +24,53 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public interface MapEntity {
-	public enum EntityType {
-		MONSTER, DROP, NPC, PLAYER, REACTOR, MINI_ROOM, DOOR, SUMMON, MIST
+public abstract class AbstractEntity implements MapEntity {
+	private int entityid;
+	private Point pos;
+	/**
+	 * 1-byte bit field, with the flags (from most significant to least significant bits):
+	 * (?)(?)(?)(?)(has owner)(can fly)(?)(facing left)
+	 */
+	private byte stance;
+	private short foothold;
+
+	@Override
+	public int getId() {
+		return entityid;
 	}
 
-	public EntityType getEntityType();
-	public int getId();
-	public void setId(int newEid);
-	public Point getPosition();
-	public void setPosition(Point newPos);
-	public byte getStance();
-	public void setStance(byte newStance);
-	public short getFoothold();
-	public void setFoothold(short newFh);
+	@Override
+	public void setId(int newEid) {
+		entityid = newEid;
+	}
 
-	public boolean isAlive();
-	public boolean isVisible();
+	@Override
+	public Point getPosition() {
+		return pos;
+	}
 
-	public byte[] getShowNewSpawnMessage();
-	public byte[] getShowExistingSpawnMessage();
-	public byte[] getDestructionMessage();
+	@Override
+	public void setPosition(Point newPos) {
+		pos = newPos;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
+	}
+
+	@Override
+	public void setStance(byte newStance) {
+		stance = newStance;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public void setFoothold(short newFh) {
+		foothold = newFh;
+	}
 }

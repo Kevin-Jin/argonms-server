@@ -21,7 +21,7 @@ package argonms.game.field.entity;
 import argonms.common.character.Skills;
 import argonms.common.util.Rng;
 import argonms.game.character.GameCharacter;
-import argonms.game.field.MapEntity;
+import argonms.game.field.AbstractEntity;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
@@ -31,7 +31,7 @@ import java.awt.Rectangle;
  *
  * @author GoldenKevin
  */
-public class Mist extends MapEntity {
+public class Mist extends AbstractEntity {
 	public static final int
 		MOB_MIST = 0,
 		POISON_MIST = 1,
