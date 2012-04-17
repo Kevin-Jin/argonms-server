@@ -21,8 +21,7 @@ package argonms.common.net.external;
 import argonms.common.GlobalConstants;
 import argonms.common.character.Cooldown;
 import argonms.common.character.Player;
-import argonms.common.character.Player.CharacterTools;
-import argonms.common.character.Player.LoggedInPlayer;
+import argonms.common.character.LoggedInPlayer;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
@@ -333,7 +332,7 @@ public class CommonPackets {
 			lew.writeShort((short) 0);
 			lew.writeShort((short) 1);
 			lew.writeInt(ring.getPartnerCharId());
-			lew.writePaddedAsciiString(CharacterTools.getNameFromId(ring.getPartnerCharId()), 13);
+			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
 			lew.writeLong(ring.getUniqueId());
 			lew.writeInt((int) ring.getPartnerRingId()); //this is definitely wrong, considering UIDs are 64-bit long
 			if (ring.getDataId() >= 1112800 && ring.getDataId() <= 1112803 || ring.getDataId() <= 1112806 || ring.getDataId() <= 1112807 || ring.getDataId() <= 1112809) {

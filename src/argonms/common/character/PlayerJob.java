@@ -35,6 +35,7 @@ public final class PlayerJob {
 	;
 
 	public static final short //adventurer jobs
+		JOB_BEGINNER = 0,
 		JOB_SWORDMAN = 100,
 		JOB_FIGHTER = 110,
 		JOB_CRUSADER = 111,

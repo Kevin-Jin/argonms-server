@@ -19,8 +19,7 @@
 package argonms.shop.character;
 
 import argonms.common.character.Cooldown;
-import argonms.common.character.Player.LimitedActionCharacter;
-import argonms.common.character.Player.LoggedInPlayer;
+import argonms.common.character.LoggedInPlayer;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.IInventory;
@@ -45,7 +44,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ShopCharacter extends LimitedActionCharacter implements LoggedInPlayer {
+public class ShopCharacter extends LoggedInPlayer {
 	private static final Logger LOG = Logger.getLogger(ShopCharacter.class.getName());
 
 	private ShopClient client;
@@ -131,7 +130,7 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 			c.setWorld(world); //we aren't aware of our world yet
 			ShopCharacter p = new ShopCharacter();
 			p.client = c;
-			loadPlayerStats(rs, id, p);
+			p.loadPlayerStats(rs, id);
 			p.mesos = rs.getInt(26);
 			p.maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
@@ -146,7 +145,7 @@ public class ShopCharacter extends LimitedActionCharacter implements LoggedInPla
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
-			CharacterTools.loadInventory(con, rs, p.getPets(), invUnion);
+			p.loadInventory(con, rs, invUnion);
 			rs.close();
 			ps.close();
 

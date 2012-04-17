@@ -23,7 +23,7 @@ import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
-import argonms.common.character.Player.LoggedInPlayer;
+import argonms.common.character.LoggedInPlayer;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
@@ -31,11 +31,9 @@ import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.IInventory;
-import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
-import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.TamingMob;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.CommonPackets;
@@ -95,10 +93,9 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class GameCharacter implements MapEntity, LoggedInPlayer {
+public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private static final Logger LOG = Logger.getLogger(GameCharacter.class.getName());
 
-	private int entityid;
 	private Point pos;
 	/**
 	 * 1-byte bit field, with the flags (from most significant to least significant bits):
@@ -108,36 +105,21 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 	private short foothold;
 
 	private GameClient client;
-	private byte gm;
 
-	private String name;
-	private short eyes, hair;
-	private byte skin;
-	private byte gender;
-	private volatile short level;
-	private volatile short job;
-	private volatile short baseStr, baseDex, baseInt, baseLuk, baseMaxHp, baseMaxMp;
-	private volatile short remHp, remMp, remAp, remSp, maxHp, maxMp;
+	private volatile short maxHp, maxMp;
 	private volatile int addStr, addDex, addInt, addLuk, addMaxHp, addMaxMp,
 			addWatk, addWdef, addMatk, addMdef, addAcc, addAvo, addHands, addSpeed, addJump;
-	private volatile int exp;
-	private volatile short fame;
 
 	private final LockableList<Mob> controllingMobs;
 	private GameMap map;
-	private int savedMapId;
-	private byte savedSpawnPoint;
 
-	private int partner;
 	private BuddyList buddies;
 	private int guild;
 	private PartyList party;
 	private final List<PartyMemberListener> subscribers;
 
 	private volatile int mesos;
-	private final Map<InventoryType, Inventory> inventories;
 	private StorageInventory storage;
-	private final Pet[] equippedPets;
 
 	private final ConcurrentMap<Byte, KeyBinding> bindings;
 	private final List<SkillMacro> skillMacros;
@@ -165,8 +147,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		subscribers = new CopyOnWriteArrayList<PartyMemberListener>();
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
-		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
-		equippedPets = new Pet[3];
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();
 		skillMacros = new CopyOnWriteArrayList<SkillMacro>();
 		skillEntries = new ConcurrentHashMap<Integer, SkillEntry>();
@@ -184,51 +164,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
 		wishList = new ArrayList<Integer>(10);
-	}
-
-	@Override
-	public int getId() {
-		return entityid;
-	}
-
-	@Override
-	public void setId(int newEid) {
-		entityid = newEid;
-	}
-
-	@Override
-	public Point getPosition() {
-		return pos;
-	}
-
-	@Override
-	public void setPosition(Point newPos) {
-		pos = newPos;
-	}
-
-	@Override
-	public byte getStance() {
-		return stance;
-	}
-
-	@Override
-	public void setStance(byte newStance) {
-		stance = newStance;
-	}
-
-	@Override
-	public short getFoothold() {
-		return foothold;
-	}
-
-	@Override
-	public void setFoothold(short newFh) {
-		foothold = newFh;
-	}
-
-	@Override
-	public int getDataId() {
-		return getId();
 	}
 
 	public void saveCharacter() {
@@ -329,13 +264,13 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 			ps.setInt(23, getMapId());
 			ps.setByte(24, map != null ? map.nearestSpawnPoint(getPosition()) : savedSpawnPoint);
 			ps.setInt(25, mesos);
-			ps.setShort(26, inventories.get(InventoryType.EQUIP).getMaxSlots());
-			ps.setShort(27, inventories.get(InventoryType.USE).getMaxSlots());
-			ps.setShort(28, inventories.get(InventoryType.SETUP).getMaxSlots());
-			ps.setShort(29, inventories.get(InventoryType.ETC).getMaxSlots());
-			ps.setShort(30, inventories.get(InventoryType.CASH).getMaxSlots());
+			ps.setShort(26, getInventory(InventoryType.EQUIP).getMaxSlots());
+			ps.setShort(27, getInventory(InventoryType.USE).getMaxSlots());
+			ps.setShort(28, getInventory(InventoryType.SETUP).getMaxSlots());
+			ps.setShort(29, getInventory(InventoryType.ETC).getMaxSlots());
+			ps.setShort(30, getInventory(InventoryType.CASH).getMaxSlots());
 			ps.setShort(31, buddies.getCapacity());
-			ps.setByte(32, gm);
+			ps.setByte(32, getPrivilegeLevel());
 			ps.setInt(33, getDataId());
 			int updateRows = ps.executeUpdate();
 			if (updateRows < 1)
@@ -363,9 +298,9 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 			ps.executeUpdate();
 			ps.close();
 
-			EnumMap<InventoryType, IInventory> union = new EnumMap<InventoryType, IInventory>(inventories);
+			EnumMap<InventoryType, IInventory> union = new EnumMap<InventoryType, IInventory>(getInventories());
 			union.put(InventoryType.STORAGE, storage);
-			CharacterTools.commitInventory(con, getDataId(), client.getAccountId(), equippedPets, union);
+			commitInventory(con, union);
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + name, e);
 		} finally {
@@ -665,27 +600,7 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 			}
 			GameCharacter p = new GameCharacter();
 			p.client = c;
-			p.setId(id);
-			p.name = rs.getString(4);
-			p.gender = rs.getByte(5);
-			p.skin = rs.getByte(6);
-			p.eyes = rs.getShort(7);
-			p.hair = rs.getShort(8);
-			p.level = rs.getShort(9);
-			p.job = rs.getShort(10);
-			p.baseStr = rs.getShort(11);
-			p.baseDex = rs.getShort(12);
-			p.baseInt = rs.getShort(13);
-			p.baseLuk = rs.getShort(14);
-			p.baseMaxHp = rs.getShort(16);
-			p.baseMaxMp = rs.getShort(18);
-			p.remAp = rs.getShort(19);
-			p.remSp = rs.getShort(20);
-			p.exp = rs.getInt(21);
-			p.fame = rs.getShort(22);
-			p.partner = rs.getInt(23);
-			p.savedMapId = rs.getInt(24);
-			p.savedSpawnPoint = rs.getByte(25);
+			p.loadPlayerStats(rs, id);
 			p.map = GameServer.getChannel(c.getChannel()).getMapFactory().getMap(p.savedMapId);
 			int forcedReturn = p.map.getForcedReturnMap();
 			if (forcedReturn != GlobalConstants.NULL_MAP) {
@@ -695,26 +610,18 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 			p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
 
 			p.maxHp = p.baseMaxHp;
-			p.remHp = (short) Math.min(rs.getShort(15), p.maxHp);
+			p.remHp = (short) Math.min(p.remHp, p.maxHp);
 			p.maxMp = p.baseMaxMp;
-			p.remMp = (short) Math.min(rs.getShort(17), p.maxMp);
+			p.remMp = (short) Math.min(p.remMp, p.maxMp);
 
 			p.mesos = rs.getInt(26);
-			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getShort(27)));
-			p.inventories.put(InventoryType.USE, new Inventory(rs.getShort(28)));
-			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getShort(29)));
-			p.inventories.put(InventoryType.ETC, new Inventory(rs.getShort(30)));
-			p.inventories.put(InventoryType.CASH, new Inventory(rs.getShort(31)));
-			//TODO: get real equipped inventory size?
-			p.inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
 			p.buddies = new BuddyList(rs.getShort(32));
-			p.gm = rs.getByte(33);
 			c.setAccountName(rs.getString(42));
 			p.storage = new StorageInventory(rs.getShort(43), rs.getInt(44));
 			rs.close();
 			ps.close();
 
-			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.inventories);
+			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.getInventories());
 			invUnion.put(InventoryType.STORAGE, p.storage);
 			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ?"
 					+ " AND `inventorytype` <= " + InventoryType.CASH.byteValue()
@@ -722,11 +629,11 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
-			CharacterTools.loadInventory(con, rs, p.equippedPets, invUnion);
+			p.loadInventory(con, rs, invUnion);
 			rs.close();
 			ps.close();
 			//inventories should still be safe right now, so no need for synchronization...
-			for (InventorySlot equip : p.inventories.get(InventoryType.EQUIPPED).getAll().values())
+			for (InventorySlot equip : p.getInventory(InventoryType.EQUIPPED).getAll().values())
 				p.equipChanged((Equip) equip, true);
 
 			ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
@@ -912,41 +819,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		return client;
 	}
 
-	@Override
-	public byte getPrivilegeLevel() {
-		return gm;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public byte getGender() {
-		return gender;
-	}
-
-	@Override
-	public byte getSkinColor() {
-		return skin;
-	}
-
-	@Override
-	public short getEyes() {
-		return eyes;
-	}
-
-	@Override
-	public short getHair() {
-		return hair;
-	}
-
-	@Override
-	public int getExp() {
-		return exp;
-	}
-
 	public void setExp(int newExp) {
 		this.exp = newExp;
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.EXP, Integer.valueOf(exp)), false));
@@ -1052,33 +924,20 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 	}
 
 	@Override
-	public short getLevel() {
-		return level;
-	}
-
 	public void setLevel(short newLevel) {
-		this.level = newLevel;
+		super.setLevel(newLevel);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, true);
 	}
 
 	@Override
-	public short getJob() {
-		return job;
-	}
-
 	public void setJob(short newJob) {
-		this.job = newJob;
+		super.setJob(newJob);
 		getMap().sendToAll(GamePackets.writeShowJobChange(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, false);
-	}
-
-	@Override
-	public short getStr() {
-		return baseStr;
 	}
 
 	public int getCurrentStr() {
@@ -1089,14 +948,10 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		return ++this.baseStr;
 	}
 
-	public void setStr(short newStr) {
-		this.baseStr = newStr;
-		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
-	}
-
 	@Override
-	public short getDex() {
-		return baseDex;
+	public void setStr(short newStr) {
+		super.setStr(newStr);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));
 	}
 
 	public int getCurrentDex() {
@@ -1107,14 +962,10 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		return ++this.baseDex;
 	}
 
-	public void setDex(short newDex) {
-		this.baseDex = newDex;
-		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
-	}
-
 	@Override
-	public short getInt() {
-		return baseInt;
+	public void setDex(short newDex) {
+		super.setDex(newDex);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.DEX, Short.valueOf(baseDex)), false));
 	}
 
 	public int getCurrentInt() {
@@ -1125,14 +976,10 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		return ++this.baseInt;
 	}
 
-	public void setInt(short newInt) {
-		this.baseInt = newInt;
-		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
-	}
-
 	@Override
-	public short getLuk() {
-		return baseLuk;
+	public void setInt(short newInt) {
+		super.setInt(newInt);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.INT, Short.valueOf(baseInt)), false));
 	}
 
 	public int getCurrentLuk() {
@@ -1143,14 +990,10 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		return ++this.baseLuk;
 	}
 
-	public void setLuk(short newLuk) {
-		this.baseLuk = newLuk;
-		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
-	}
-
 	@Override
-	public short getHp() {
-		return remHp;
+	public void setLuk(short newLuk) {
+		super.setLuk(newLuk);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LUK, Short.valueOf(baseLuk)), false));
 	}
 
 	public void setLocalHp(short newHp) {
@@ -1172,11 +1015,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 
 	public void gainHp(int gain) {
 		setHp((short) Math.min(remHp + gain, Short.MAX_VALUE));
-	}
-
-	@Override
-	public short getMaxHp() {
-		return baseMaxHp;
 	}
 
 	public short getCurrentMaxHp() {
@@ -1235,11 +1073,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		}
 	}
 
-	@Override
-	public short getMp() {
-		return remMp;
-	}
-
 	public void setLocalMp(short newMp) {
 		if (newMp < 0)
 			newMp = 0;
@@ -1255,11 +1088,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 
 	public void gainMp(int gain) {
 		setMp((short) Math.min(remMp + gain, Short.MAX_VALUE));
-	}
-
-	@Override
-	public short getMaxMp() {
-		return baseMaxMp;
 	}
 
 	public short getCurrentMaxMp() {
@@ -1301,11 +1129,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		recalculateMaxMp(mod);
 	}
 
-	@Override
-	public short getAp() {
-		return remAp;
-	}
-
 	public short decrementLocalAp() {
 		return --this.remAp;
 	}
@@ -1315,19 +1138,9 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLEAP, Short.valueOf(remAp)), false));
 	}
 
-	@Override
-	public short getSp() {
-		return remSp;
-	}
-
 	public void setSp(short newSp) {
 		this.remSp = newSp;
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.AVAILABLESP, Short.valueOf(remSp)), false));
-	}
-
-	@Override
-	public short getFame() {
-		return fame;
 	}
 
 	public void setFame(short newFame) {
@@ -1339,11 +1152,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 		setFame((short) Math.min(fame + gain, Short.MAX_VALUE));
 		if (fromQuest)
 			GamePackets.writeShowPointsGainFromQuest(gain, PacketSubHeaders.STATUS_INFO_FAME);
-	}
-
-	@Override
-	public Inventory getInventory(InventoryType type) {
-		return inventories.get(type);
 	}
 
 	public StorageInventory getStorageInventory() {
@@ -1442,17 +1250,7 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 
 	@Override
 	public int getMapId() {
-		return (map != null ? map.getDataId() : savedMapId);
-	}
-
-	@Override
-	public byte getSpawnPoint() {
-		return savedSpawnPoint;
-	}
-
-	@Override
-	public int getSpouseId() {
-		return partner;
+		return (map != null ? map.getDataId() : super.getMapId());
 	}
 
 	public BuddyList getBuddyList() {
@@ -1524,11 +1322,6 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 
 			pushHpToParty();
 		}
-	}
-
-	@Override
-	public Pet[] getPets() {
-		return equippedPets;
 	}
 
 	public TamingMob getEquippedMount() {
@@ -2306,6 +2099,36 @@ public class GameCharacter implements MapEntity, LoggedInPlayer {
 	@Override
 	public EntityType getEntityType() {
 		return EntityType.PLAYER;
+	}
+
+	@Override
+	public Point getPosition() {
+		return pos;
+	}
+
+	@Override
+	public void setPosition(Point newPos) {
+		pos = newPos;
+	}
+
+	@Override
+	public byte getStance() {
+		return stance;
+	}
+
+	@Override
+	public void setStance(byte newStance) {
+		stance = newStance;
+	}
+
+	@Override
+	public short getFoothold() {
+		return foothold;
+	}
+
+	@Override
+	public void setFoothold(short newFh) {
+		foothold = newFh;
 	}
 
 	@Override

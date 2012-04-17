@@ -47,561 +47,498 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public interface Player {
-	public RemoteClient getClient();
-	public String getName();
-	public int getDataId();
-	public int getId();
-	public byte getGender();
-	public byte getSkinColor();
-	public short getEyes();
-	public short getHair();
-	public Pet[] getPets();
-	public short getLevel();
-	public short getJob();
-	public short getStr();
-	public short getDex();
-	public short getInt();
-	public short getLuk();
-	public short getHp();
-	public short getMaxHp();
-	public short getMp();
-	public short getMaxMp();
-	public short getAp();
-	public short getSp();
-	public int getExp();
-	public short getFame();
-	public int getSpouseId();
-	public int getMapId();
-	public byte getSpawnPoint();
-	public Inventory getInventory(InventoryType type);
-	public byte getPrivilegeLevel();
+public abstract class Player {
+	private static final Logger LOG = Logger.getLogger(Player.class.getName());
 
-	public interface LoggedInPlayer extends Player {
-		public byte getBuddyListCapacity();
-		public int getMesos();
-		public Map<Integer, SkillEntry> getSkillEntries();
-		public Map<Integer, Cooldown> getCooldowns();
-		public Map<Short, QuestEntry> getAllQuests();
+	private int id;
+	private byte gm;
+
+	protected String name;
+	protected short eyes, hair;
+	protected byte skin;
+	protected byte gender;
+	protected volatile short level;
+	protected volatile short job;
+	protected volatile short baseStr, baseDex, baseInt, baseLuk, baseMaxHp, baseMaxMp;
+	protected volatile short remHp, remMp, remAp, remSp;
+	protected volatile int exp;
+	protected volatile short fame;
+
+	protected int savedMapId;
+	protected byte savedSpawnPoint;
+
+	protected int partner;
+
+	private final Map<InventoryType, Inventory> inventories;
+	private final Pet[] pets;
+
+	protected Player() {
+		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
+		pets = new Pet[3];
 	}
 
-	public static abstract class LimitedActionCharacter implements Player {
-		private int id;
-		private byte gm;
+	public abstract RemoteClient getClient();
 
-		private String name;
-		private short eyes, hair;
-		private byte skin;
-		private byte gender;
-		private short level;
-		private short job;
-		private short str, dex, _int, luk, maxHp, maxMp;
-		private short remHp, remMp, remAp, remSp;
-		private int exp;
-		private short fame;
+	public String getName() {
+		return name;
+	}
 
-		private int partner;
+	public int getDataId() {
+		return id;
+	}
 
-		private int map;
-		private byte spawnPoint;
+	public int getId() {
+		return id;
+	}
 
-		private final Map<InventoryType, Inventory> inventories;
-		private final Pet[] pets;
+	public byte getGender() {
+		return gender;
+	}
 
-		protected LimitedActionCharacter() {
-			inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
-			pets = new Pet[3];
-		}
+	public byte getSkinColor() {
+		return skin;
+	}
 
-		@Override
-		public String getName() {
-			return name;
-		}
+	public short getEyes() {
+		return eyes;
+	}
 
-		@Override
-		public int getDataId() {
-			return id;
-		}
+	public short getHair() {
+		return hair;
+	}
 
-		@Override
-		public int getId() {
-			return id;
-		}
+	public Pet[] getPets() {
+		return pets;
+	}
 
-		@Override
-		public byte getGender() {
-			return gender;
-		}
+	public short getLevel() {
+		return level;
+	}
 
-		@Override
-		public byte getSkinColor() {
-			return skin;
-		}
+	public short getJob() {
+		return job;
+	}
 
-		@Override
-		public short getEyes() {
-			return eyes;
-		}
+	public short getStr() {
+		return baseStr;
+	}
 
-		@Override
-		public short getHair() {
-			return hair;
-		}
+	public short getDex() {
+		return baseDex;
+	}
 
-		@Override
-		public Pet[] getPets() {
-			return pets;
-		}
+	public short getInt() {
+		return baseInt;
+	}
 
-		@Override
-		public short getLevel() {
-			return level;
-		}
+	public short getLuk() {
+		return baseLuk;
+	}
 
-		@Override
-		public short getJob() {
-			return job;
-		}
+	public short getHp() {
+		return remHp;
+	}
 
-		@Override
-		public short getStr() {
-			return str;
-		}
+	public short getMaxHp() {
+		return baseMaxHp;
+	}
 
-		@Override
-		public short getDex() {
-			return dex;
-		}
+	public short getMp() {
+		return remMp;
+	}
 
-		@Override
-		public short getInt() {
-			return _int;
-		}
+	public short getMaxMp() {
+		return baseMaxMp;
+	}
 
-		@Override
-		public short getLuk() {
-			return luk;
-		}
+	public short getAp() {
+		return remAp;
+	}
 
-		@Override
-		public short getHp() {
-			return remHp;
-		}
+	public short getSp() {
+		return remSp;
+	}
 
-		@Override
-		public short getMaxHp() {
-			return maxHp;
-		}
+	public int getExp() {
+		return exp;
+	}
 
-		@Override
-		public short getMp() {
-			return remMp;
-		}
+	public short getFame() {
+		return fame;
+	}
 
-		@Override
-		public short getMaxMp() {
-			return maxMp;
-		}
+	public int getSpouseId() {
+		return partner;
+	}
 
-		@Override
-		public short getAp() {
-			return remAp;
-		}
+	public int getMapId() {
+		return savedMapId;
+	}
 
-		@Override
-		public short getSp() {
-			return remSp;
-		}
+	public byte getSpawnPoint() {
+		return savedSpawnPoint;
+	}
 
-		@Override
-		public int getExp() {
-			return exp;
-		}
+	protected Map<InventoryType, Inventory> getInventories() {
+		return inventories;
+	}
 
-		@Override
-		public short getFame() {
-			return fame;
-		}
+	public Inventory getInventory(InventoryType type) {
+		return inventories.get(type);
+	}
 
-		@Override
-		public int getSpouseId() {
-			return partner;
-		}
+	public byte getPrivilegeLevel() {
+		return gm;
+	}
 
-		@Override
-		public int getMapId() {
-			return map;
-		}
+	protected void setName(String name) {
+		this.name = name;
+	}
 
-		@Override
-		public byte getSpawnPoint() {
-			return spawnPoint;
-		}
+	protected void setEyes(short eyes) {
+		this.eyes = eyes;
+	}
 
-		protected Map<InventoryType, Inventory> getInventories() {
-			return inventories;
-		}
+	protected void setHair(short hair) {
+		this.hair = hair;
+	}
 
-		@Override
-		public Inventory getInventory(InventoryType type) {
-			return inventories.get(type);
-		}
+	protected void setSkin(byte skin) {
+		this.skin = skin;
+	}
 
-		@Override
-		public byte getPrivilegeLevel() {
-			return gm;
-		}
+	protected void setGender(byte gender) {
+		this.gender = gender;
+	}
 
-		protected void setName(String name) {
-			this.name = name;
-		}
+	protected void setStr(short str) {
+		this.baseStr = str;
+	}
 
-		protected void setEyes(short eyes) {
-			this.eyes = eyes;
-		}
+	protected void setDex(short dex) {
+		this.baseDex = dex;
+	}
 
-		protected void setHair(short hair) {
-			this.hair = hair;
-		}
+	protected void setInt(short _int) {
+		this.baseInt = _int;
+	}
 
-		protected void setSkin(byte skin) {
-			this.skin = skin;
-		}
+	protected void setLuk(short luk) {
+		this.baseLuk = luk;
+	}
 
-		protected void setGender(byte gender) {
-			this.gender = gender;
-		}
+	protected void setLevel(short level) {
+		this.level = level;
+	}
 
-		protected void setStr(short str) {
-			this.str = str;
-		}
+	protected void setJob(short job) {
+		this.job = job;
+	}
 
-		protected void setDex(short dex) {
-			this.dex = dex;
-		}
+	protected void setGm(byte gm) {
+		this.gm = gm;
+	}
 
-		protected void setInt(short _int) {
-			this._int = _int;
-		}
+	public void setId(int id) {
+		this.id = id;
+	}
 
-		protected void setLuk(short luk) {
-			this.luk = luk;
-		}
+	protected void addInventories(Map<InventoryType, Inventory> inventories) {
+		this.inventories.putAll(inventories);
+	}
 
-		protected void setLevel(short level) {
-			this.level = level;
-		}
+	protected void loadPlayerStats(ResultSet rs, int id) throws SQLException {
+		this.id = id;
+		name = rs.getString(4);
+		gender = rs.getByte(5);
+		skin = rs.getByte(6);
+		eyes = rs.getShort(7);
+		hair = rs.getShort(8);
+		level = rs.getShort(9);
+		job = rs.getShort(10);
+		baseStr = rs.getShort(11);
+		baseDex = rs.getShort(12);
+		baseInt = rs.getShort(13);
+		baseLuk = rs.getShort(14);
+		remHp = rs.getShort(15);
+		baseMaxHp = rs.getShort(16);
+		remMp = rs.getShort(17);
+		baseMaxMp = rs.getShort(18);
+		remAp = rs.getShort(19);
+		remSp = rs.getShort(20);
+		exp = rs.getInt(21);
+		fame = rs.getShort(22);
+		partner = rs.getInt(23);
+		savedMapId = rs.getInt(24);
+		savedSpawnPoint = rs.getByte(25);
 
-		protected void setGm(byte gm) {
-			this.gm = gm;
-		}
+		inventories.put(InventoryType.EQUIP, new Inventory(rs.getShort(27)));
+		inventories.put(InventoryType.USE, new Inventory(rs.getShort(28)));
+		inventories.put(InventoryType.SETUP, new Inventory(rs.getShort(29)));
+		inventories.put(InventoryType.ETC, new Inventory(rs.getShort(30)));
+		inventories.put(InventoryType.CASH, new Inventory(rs.getShort(31)));
+		//TODO: get real equipped inventory size?
+		inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
+		gm = rs.getByte(33);
+	}
 
-		protected void setId(int id) {
-			this.id = id;
-		}
-
-		protected void addInventories(Map<InventoryType, Inventory> inventories) {
-			this.inventories.putAll(inventories);
-		}
-
-		protected static void loadPlayerStats(ResultSet rs, int id, LimitedActionCharacter p) throws SQLException {
-			p.id = id;
-			p.name = rs.getString(4);
-			p.gender = rs.getByte(5);
-			p.skin = rs.getByte(6);
-			p.eyes = rs.getShort(7);
-			p.hair = rs.getShort(8);
-			p.level = rs.getShort(9);
-			p.job = rs.getShort(10);
-			p.str = rs.getShort(11);
-			p.dex = rs.getShort(12);
-			p._int = rs.getShort(13);
-			p.luk = rs.getShort(14);
-			p.remHp = rs.getShort(15);
-			p.maxHp = rs.getShort(16);
-			p.remMp = rs.getShort(17);
-			p.maxMp = rs.getShort(18);
-			p.remAp = rs.getShort(19);
-			p.remSp = rs.getShort(20);
-			p.exp = rs.getInt(21);
-			p.fame = rs.getShort(22);
-			p.partner = rs.getInt(23);
-			p.map = rs.getInt(24);
-			p.spawnPoint = rs.getByte(25);
-
-			p.inventories.put(InventoryType.EQUIP, new Inventory(rs.getShort(27)));
-			p.inventories.put(InventoryType.USE, new Inventory(rs.getShort(28)));
-			p.inventories.put(InventoryType.SETUP, new Inventory(rs.getShort(29)));
-			p.inventories.put(InventoryType.ETC, new Inventory(rs.getShort(30)));
-			p.inventories.put(InventoryType.CASH, new Inventory(rs.getShort(31)));
-			//TODO: get real equipped inventory size?
-			p.inventories.put(InventoryType.EQUIPPED, new Inventory((short) 0));
-			p.gm = rs.getByte(33);
+	private void insertEquipIntoDb(Equip equip, int inventoryKey, Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement(
+					"INSERT INTO `inventoryequipment` ("
+					+ "`inventoryitemid`,`str`,`dex`,`int`,"
+					+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
+					+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
+					+ "`upgradeslots`) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+			ps.setInt(1, inventoryKey);
+			ps.setShort(2, equip.getStr());
+			ps.setShort(3, equip.getDex());
+			ps.setShort(4, equip.getInt());
+			ps.setShort(5, equip.getLuk());
+			ps.setShort(6, equip.getHp());
+			ps.setShort(7, equip.getMp());
+			ps.setShort(8, equip.getWatk());
+			ps.setShort(9, equip.getMatk());
+			ps.setShort(10, equip.getWdef());
+			ps.setShort(11, equip.getMdef());
+			ps.setShort(12, equip.getAcc());
+			ps.setShort(13, equip.getAvoid());
+			ps.setShort(14, equip.getSpeed());
+			ps.setShort(15, equip.getJump());
+			ps.setByte(16, equip.getUpgradeSlots());
+			ps.executeUpdate();
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
-	public static class CharacterTools {
-		private static final Logger LOG = Logger.getLogger(CharacterTools.class.getName());
+	private byte indexOf(Pet search) {
+		for (byte i = 0; i < 3; i++)
+			if (pets[i] != null && pets[i] == search)
+				return i;
+		return -1;
+	}
 
-		private static void insertEquipIntoDb(Equip equip, int inventoryKey,
-				Connection con) throws SQLException {
-			PreparedStatement ps = null;
-			try {
-				ps = con.prepareStatement(
-						"INSERT INTO `inventoryequipment` ("
-						+ "`inventoryitemid`,`str`,`dex`,`int`,"
-						+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
-						+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
-						+ "`upgradeslots`) "
-						+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-				ps.setInt(1, inventoryKey);
-				ps.setShort(2, equip.getStr());
-				ps.setShort(3, equip.getDex());
-				ps.setShort(4, equip.getInt());
-				ps.setShort(5, equip.getLuk());
-				ps.setShort(6, equip.getHp());
-				ps.setShort(7, equip.getMp());
-				ps.setShort(8, equip.getWatk());
-				ps.setShort(9, equip.getMatk());
-				ps.setShort(10, equip.getWdef());
-				ps.setShort(11, equip.getMdef());
-				ps.setShort(12, equip.getAcc());
-				ps.setShort(13, equip.getAvoid());
-				ps.setShort(14, equip.getSpeed());
-				ps.setShort(15, equip.getJump());
-				ps.setByte(16, equip.getUpgradeSlots());
-				ps.executeUpdate();
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
-			}
-		}
+	protected void commitInventory(Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+		PreparedStatement ps = null, rps = null, pps = null, mps = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement("INSERT INTO `inventoryitems` "
+				+ "(`characterid`,`accountid`,`inventorytype`,`position`,"
+				+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
+				+ "VALUES (?,?,?,?,?,?,?,?,?)",
+				Statement.RETURN_GENERATED_KEYS);
+			rps = con.prepareStatement("INSERT INTO `inventoryrings` ("
+					+ "`inventoryitemid`,`partnerchrid`,`partnerringid`) "
+					+ "VALUES(?,?,?)");
+			pps = con.prepareStatement("INSERT INTO `inventorypets` ("
+					+ "`inventoryitemid`,`position`,`name`,`level`,"
+					+ "`closeness`,`fullness`,`expired`) "
+					+ "VALUES (?,?,?,?,?,?,?)");
+			mps = con.prepareStatement("INSERT INTO `inventorymounts` ("
+					+ "`inventoryitemid`,`level`,`exp`,`tiredness`) "
+					+ "VALUES (?,?,?,?)");
+			ps.setInt(1, getDataId());
+			ps.setInt(2, getClient().getAccountId());
+			for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
+				switch (ent.getKey()) {
+					case STORAGE:
+					case CASH_SHOP:
+						ps.setNull(1, Types.INTEGER);
+						break;
+					default:
+						ps.setInt(1, getDataId());
+						break;
+				}
+				ps.setInt(3, ent.getKey().byteValue());
+				Map<Short, InventorySlot> iv = ent.getValue().getAll();
+				synchronized(iv) {
+					for (Entry<Short, InventorySlot> e : iv.entrySet()) {
+						InventorySlot item = e.getValue();
 
-		private static byte indexOf(Pet[] pets, Pet search) {
-			for (byte i = 0; i < 3; i++)
-				if (pets[i] != null && pets[i] == search)
-					return i;
-			return -1;
-		}
+						ps.setShort(4, e.getKey().shortValue());
+						ps.setInt(5, item.getDataId());
+						ps.setLong(6, item.getExpiration());
+						ps.setLong(7, item.getUniqueId());
+						ps.setString(8, item.getOwner());
+						ps.setShort(9, item.getQuantity());
+						//TODO: refactor so we can use addBatch here for inventories
+						//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
+						//after executeBatch to get generated keys for each item
+						//in iteration order...
+						ps.executeUpdate(); //need the generated keys, so no batch
+						rs = ps.getGeneratedKeys();
+						int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+						rs.close();
 
-		public static void commitInventory(Connection con, int characterId, int accountId, Pet[] pets, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
-			PreparedStatement ps = null, rps = null, pps = null, mps = null;
-			ResultSet rs = null;
-			try {
-				ps = con.prepareStatement("INSERT INTO `inventoryitems` "
-					+ "(`characterid`,`accountid`,`inventorytype`,`position`,"
-					+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
-					+ "VALUES (?,?,?,?,?,?,?,?,?)",
-					Statement.RETURN_GENERATED_KEYS);
-				rps = con.prepareStatement("INSERT INTO `inventoryrings` ("
-						+ "`inventoryitemid`,`partnerchrid`,`partnerringid`) "
-						+ "VALUES(?,?,?)");
-				pps = con.prepareStatement("INSERT INTO `inventorypets` ("
-						+ "`inventoryitemid`,`position`,`name`,`level`,"
-						+ "`closeness`,`fullness`,`expired`) "
-						+ "VALUES (?,?,?,?,?,?,?)");
-				mps = con.prepareStatement("INSERT INTO `inventorymounts` ("
-						+ "`inventoryitemid`,`level`,`exp`,`tiredness`) "
-						+ "VALUES (?,?,?,?)");
-				ps.setInt(1, characterId);
-				ps.setInt(2, accountId);
-				for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
-					switch (ent.getKey()) {
-						case STORAGE:
-						case CASH_SHOP:
-							ps.setNull(1, Types.INTEGER);
-							break;
-						default:
-							ps.setInt(1, characterId);
-							break;
-					}
-					ps.setInt(3, ent.getKey().byteValue());
-					Map<Short, InventorySlot> iv = ent.getValue().getAll();
-					synchronized(iv) {
-						for (Entry<Short, InventorySlot> e : iv.entrySet()) {
-							InventorySlot item = e.getValue();
-
-							ps.setShort(4, e.getKey().shortValue());
-							ps.setInt(5, item.getDataId());
-							ps.setLong(6, item.getExpiration());
-							ps.setLong(7, item.getUniqueId());
-							ps.setString(8, item.getOwner());
-							ps.setShort(9, item.getQuantity());
-							//TODO: refactor so we can use addBatch here for inventories
-							//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
-							//after executeBatch to get generated keys for each item
-							//in iteration order...
-							ps.executeUpdate(); //need the generated keys, so no batch
-							rs = ps.getGeneratedKeys();
-							int inventoryKey = rs.next() ? rs.getInt(1) : -1;
-							rs.close();
-
-							switch (item.getType()) {
-								case RING:
-									Ring ring = (Ring) item;
-									insertEquipIntoDb(ring, inventoryKey, con);
-									rps.setInt(1, inventoryKey);
-									rps.setInt(2, ring.getPartnerCharId());
-									rps.setLong(3, ring.getPartnerRingId());
-									rps.executeUpdate();
-									break;
-								case EQUIP:
-									insertEquipIntoDb((Equip) item, inventoryKey, con);
-									break;
-								case PET:
-									Pet pet = (Pet) item;
-									pps.setInt(1, inventoryKey);
-									pps.setByte(2, indexOf(pets, pet));
-									pps.setString(3, pet.getName());
-									pps.setByte(4, pet.getLevel());
-									pps.setShort(5, pet.getCloseness());
-									pps.setByte(6, pet.getFullness());
-									pps.setBoolean(7, pet.isExpired());
-									pps.executeUpdate();
-									break;
-								case MOUNT:
-									TamingMob mount = (TamingMob) item;
-									insertEquipIntoDb(mount, inventoryKey, con);
-									mps.setInt(1, inventoryKey);
-									mps.setByte(2, mount.getMountLevel());
-									mps.setShort(3, mount.getExp());
-									mps.setByte(4, mount.getTiredness());
-									mps.executeUpdate();
-									break;
-							}
+						switch (item.getType()) {
+							case RING:
+								Ring ring = (Ring) item;
+								insertEquipIntoDb(ring, inventoryKey, con);
+								rps.setInt(1, inventoryKey);
+								rps.setInt(2, ring.getPartnerCharId());
+								rps.setLong(3, ring.getPartnerRingId());
+								rps.executeUpdate();
+								break;
+							case EQUIP:
+								insertEquipIntoDb((Equip) item, inventoryKey, con);
+								break;
+							case PET:
+								Pet pet = (Pet) item;
+								pps.setInt(1, inventoryKey);
+								pps.setByte(2, indexOf(pet));
+								pps.setString(3, pet.getName());
+								pps.setByte(4, pet.getLevel());
+								pps.setShort(5, pet.getCloseness());
+								pps.setByte(6, pet.getFullness());
+								pps.setBoolean(7, pet.isExpired());
+								pps.executeUpdate();
+								break;
+							case MOUNT:
+								TamingMob mount = (TamingMob) item;
+								insertEquipIntoDb(mount, inventoryKey, con);
+								mps.setInt(1, inventoryKey);
+								mps.setByte(2, mount.getMountLevel());
+								mps.setShort(3, mount.getExp());
+								mps.setByte(4, mount.getTiredness());
+								mps.executeUpdate();
+								break;
 						}
 					}
 				}
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
-				DatabaseManager.cleanup(DatabaseType.STATE, null, pps, null);
-				DatabaseManager.cleanup(DatabaseType.STATE, null, rps, null);
-				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 			}
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, null, pps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, null, rps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 		}
+	}
 
-		public static void loadInventory(Connection con, ResultSet rs, Pet[] pets, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
-			PreparedStatement ips = null;
-			ResultSet irs = null;
-			try {
-				while (rs.next()) {
-					InventorySlot item;
-					InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
-					short position = rs.getShort(5);
-					int itemid = rs.getInt(6);
-					int inventoryKey = rs.getInt(1);
-					if (InventoryTools.isEquip(itemid)) {
-						Equip e;
-						if (InventoryTools.isRing(itemid)) {
-							e = new Ring(itemid);
-							ips = con.prepareStatement("SELECT * FROM "
-									+ "`inventoryrings` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								((Ring) e).setPartnerCharId(irs.getInt(3));
-								((Ring) e).setPartnerRingId(irs.getLong(4));
-							}
-							irs.close();
-							ips.close();
-						} else if (InventoryTools.isMount(itemid)) {
-							e = new TamingMob(itemid);
-							ips = con.prepareStatement("SELECT * FROM "
-									+ "`inventorymounts` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								((TamingMob) e).setLevel(irs.getByte(3));
-								((TamingMob) e).setExp(irs.getShort(4));
-								((TamingMob) e).setTiredness(irs.getByte(5));
-							}
-							irs.close();
-							ips.close();
-						} else {
-							e = new Equip(itemid);
-						}
+	protected void loadInventory(Connection con, ResultSet rs, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+		PreparedStatement ips = null;
+		ResultSet irs = null;
+		try {
+			while (rs.next()) {
+				InventorySlot item;
+				InventoryType inventoryType = InventoryType.valueOf(rs.getByte(4));
+				short position = rs.getShort(5);
+				int itemid = rs.getInt(6);
+				int inventoryKey = rs.getInt(1);
+				if (InventoryTools.isEquip(itemid)) {
+					Equip e;
+					if (InventoryTools.isRing(itemid)) {
+						e = new Ring(itemid);
 						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventoryequipment` WHERE "
+								+ "`inventoryrings` WHERE "
 								+ "`inventoryitemid` = ?");
 						ips.setInt(1, inventoryKey);
 						irs = ips.executeQuery();
 						if (irs.next()) {
-							e.setStr(irs.getShort(3));
-							e.setDex(irs.getShort(4));
-							e.setInt(irs.getShort(5));
-							e.setLuk(irs.getShort(6));
-							e.setHp(irs.getShort(7));
-							e.setMp(irs.getShort(8));
-							e.setWatk(irs.getShort(9));
-							e.setMatk(irs.getShort(10));
-							e.setWdef(irs.getShort(11));
-							e.setMdef(irs.getShort(12));
-							e.setAcc(irs.getShort(13));
-							e.setAvoid(irs.getShort(14));
-							e.setSpeed(irs.getShort(15));
-							e.setJump(irs.getShort(16));
-							e.setUpgradeSlots(irs.getByte(17));
+							((Ring) e).setPartnerCharId(irs.getInt(3));
+							((Ring) e).setPartnerRingId(irs.getLong(4));
 						}
 						irs.close();
 						ips.close();
-						item = e;
-					} else {
-						if (InventoryTools.isPet(itemid)) {
-							Pet pet = new Pet(itemid);
-							ips = con.prepareStatement("SELECT * "
-									+ "FROM `inventorypets` WHERE "
-									+ "`inventoryitemid` = ?");
-							ips.setInt(1, inventoryKey);
-							irs = ips.executeQuery();
-							if (irs.next()) {
-								pet.setName(irs.getString(4));
-								pet.setLevel(irs.getByte(5));
-								pet.setCloseness(irs.getShort(6));
-								pet.setFullness(irs.getByte(7));
-								pet.setExpired(irs.getBoolean(8));
-								byte pos = irs.getByte(3);
-								if (pos >= 0 && pos < 3)
-									pets[pos] = pet;
-							}
-							irs.close();
-							ips.close();
-							item = pet;
-						} else {
-							item = new Item(itemid);
-							item.setQuantity(rs.getShort(10));
+					} else if (InventoryTools.isMount(itemid)) {
+						e = new TamingMob(itemid);
+						ips = con.prepareStatement("SELECT * FROM "
+								+ "`inventorymounts` WHERE "
+								+ "`inventoryitemid` = ?");
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							((TamingMob) e).setLevel(irs.getByte(3));
+							((TamingMob) e).setExp(irs.getShort(4));
+							((TamingMob) e).setTiredness(irs.getByte(5));
 						}
+						irs.close();
+						ips.close();
+					} else {
+						e = new Equip(itemid);
 					}
-					item.setExpiration(rs.getLong(7));
-					item.setUniqueId(rs.getLong(8));
-					item.setOwner(rs.getString(9));
-					inventories.get(inventoryType).put(position, item);
+					ips = con.prepareStatement("SELECT * FROM "
+							+ "`inventoryequipment` WHERE "
+							+ "`inventoryitemid` = ?");
+					ips.setInt(1, inventoryKey);
+					irs = ips.executeQuery();
+					if (irs.next()) {
+						e.setStr(irs.getShort(3));
+						e.setDex(irs.getShort(4));
+						e.setInt(irs.getShort(5));
+						e.setLuk(irs.getShort(6));
+						e.setHp(irs.getShort(7));
+						e.setMp(irs.getShort(8));
+						e.setWatk(irs.getShort(9));
+						e.setMatk(irs.getShort(10));
+						e.setWdef(irs.getShort(11));
+						e.setMdef(irs.getShort(12));
+						e.setAcc(irs.getShort(13));
+						e.setAvoid(irs.getShort(14));
+						e.setSpeed(irs.getShort(15));
+						e.setJump(irs.getShort(16));
+						e.setUpgradeSlots(irs.getByte(17));
+					}
+					irs.close();
+					ips.close();
+					item = e;
+				} else {
+					if (InventoryTools.isPet(itemid)) {
+						Pet pet = new Pet(itemid);
+						ips = con.prepareStatement("SELECT * "
+								+ "FROM `inventorypets` WHERE "
+								+ "`inventoryitemid` = ?");
+						ips.setInt(1, inventoryKey);
+						irs = ips.executeQuery();
+						if (irs.next()) {
+							pet.setName(irs.getString(4));
+							pet.setLevel(irs.getByte(5));
+							pet.setCloseness(irs.getShort(6));
+							pet.setFullness(irs.getByte(7));
+							pet.setExpired(irs.getBoolean(8));
+							byte pos = irs.getByte(3);
+							if (pos >= 0 && pos < 3)
+								pets[pos] = pet;
+						}
+						irs.close();
+						ips.close();
+						item = pet;
+					} else {
+						item = new Item(itemid);
+						item.setQuantity(rs.getShort(10));
+					}
 				}
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
+				item.setExpiration(rs.getLong(7));
+				item.setUniqueId(rs.getLong(8));
+				item.setOwner(rs.getString(9));
+				inventories.get(inventoryType).put(position, item);
 			}
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
 		}
+	}
 
-		public static String getNameFromId(int characterid) {
-			String name = null;
-			Connection con = null;
-			PreparedStatement ps = null;
-			ResultSet rs = null;
-			try {
-				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("SELECT `name` FROM"
-						+ "`characters` WHERE id = ?");
-				ps.setInt(1, characterid);
-				rs = ps.executeQuery();
-				if (rs.next())
-					name = rs.getString(1);
-			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not find name of character "
-						+ characterid, ex);
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
-			}
-			return name;
+	public static String getNameFromId(int characterid) {
+		String name = null;
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `name` FROM"
+					+ "`characters` WHERE id = ?");
+			ps.setInt(1, characterid);
+			rs = ps.executeQuery();
+			if (rs.next())
+				name = rs.getString(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not find name of character "
+					+ characterid, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
+		return name;
 	}
 }
