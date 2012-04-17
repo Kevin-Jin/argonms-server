@@ -1596,6 +1596,20 @@
 	interface that GameCharacter implements so that GameCharacter is free to
 	inherit Player (or one of its subclasses).
 
+2012-04-16  GoldenKevin  (revision 81)
+
+	* Eliminated argonms.common.character.Player interface, replaced by
+	argonms.common.character.Player.LimitedActionCharacter and
+	argonms.common.character.Player.CharacterTools refactored into instance
+	methods. LoggedInPlayer is now in its own file and is now an abstract class
+	that inherits Player.
+	* GameCharacter and ShopCharacter inherit LoggedInPlayer instead of just
+	implementing it. LoginCharacter inherits the new Player class. Renamed
+	instance variables in Player to be consistent with duplicate variables from
+	GameCharacter and they now have protected access. Removed these duplicate
+	variables from GameCharacter, as well as duplicate accessor and mutator
+	methods.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

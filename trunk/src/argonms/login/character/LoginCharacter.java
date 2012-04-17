@@ -19,7 +19,8 @@
 package argonms.login.character;
 
 import argonms.common.character.KeyBinding;
-import argonms.common.character.Player.LimitedActionCharacter;
+import argonms.common.character.Player;
+import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventoryTools;
@@ -43,7 +44,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class LoginCharacter extends LimitedActionCharacter {
+public class LoginCharacter extends Player {
 	private static final Logger LOG = Logger.getLogger(LoginCharacter.class.getName());
 
 	private static final Map<Byte, KeyBinding> defaultBindings;
@@ -149,7 +150,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 			}
 			LoginCharacter p = new LoginCharacter();
 			p.client = c;
-			loadPlayerStats(rs, id, p);
+			p.loadPlayerStats(rs, id);
 			p.worldRanking = rs.getInt(36);
 			p.worldRankingChange = rs.getInt(37) - p.worldRanking;
 			p.jobRanking = rs.getInt(38);
@@ -161,7 +162,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 					+ "AND `inventorytype` <= " + InventoryType.CASH.byteValue());
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
-			CharacterTools.loadInventory(con, rs, p.getPets(), p.getInventories());
+			p.loadInventory(con, rs, p.getInventories());
 			return p;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load character " + id + " from database", ex);
@@ -183,7 +184,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 			ps.executeUpdate();
 			ps.close();
 
-			CharacterTools.commitInventory(con, getId(), client.getAccountId(), getPets(), getInventories());
+			commitInventory(con, getInventories());
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + getName(), e);
 		} finally {
@@ -233,6 +234,7 @@ public class LoginCharacter extends LimitedActionCharacter {
 		p.setInt(_int);
 		p.setLuk(luk);
 		p.setLevel((byte) 1);
+		p.setJob(PlayerJob.JOB_BEGINNER);
 		p.setGm(account.getGm());
 
 		Map<InventoryType, Inventory> inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
