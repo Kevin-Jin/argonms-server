@@ -85,7 +85,7 @@ public class GameEnterHandler {
 		cserv.getInterChannelInterface().sendBuddyOnline(player);
 		if (player.getParty() != null) {
 			gc.getSession().send(GamePackets.writePartyList(player.getParty()));
-			cserv.getInterChannelInterface().sendPartyMemberEnteredChannel(player, player.getParty());
+			cserv.getInterChannelInterface().sendPartyMemberOnline(player, player.getParty());
 		}
 		/*if (player.getGuildId() > 0) {
 			cserv.getInterChannelInterface().setGuildMemberOnline(

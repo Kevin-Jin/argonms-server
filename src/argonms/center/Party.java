@@ -83,7 +83,7 @@ public final class Party {
 
 	//we want to keep playerChannels and channelPlayers sync'd, so use a single
 	//lock for the entire Party instance rather than two ConcurrentHashMaps
-	private final Map<Integer, Byte> playerMembers;
+	private final Map<Integer, Byte> playerChannels;
 	private final Map<Byte, Map<Integer, Member>> channelMembers;
 	private final Lock readLock, writeLock;
 	private volatile int leader;
@@ -97,7 +97,7 @@ public final class Party {
 	}
 
 	public Party() {
-		playerMembers = new HashMap<Integer, Byte>();
+		playerChannels = new HashMap<Integer, Byte>();
 		channelMembers = new HashMap<Byte, Map<Integer, Member>>();
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
@@ -118,7 +118,7 @@ public final class Party {
 	 * @return 
 	 */
 	public Collection<Member> getAllMembers() {
-		List<Member> all = new ArrayList<Member>(playerMembers.size());
+		List<Member> all = new ArrayList<Member>(playerChannels.size());
 		for (Map<Integer, Member> channel : channelMembers.values())
 			all.addAll(channel.values());
 		return all;
@@ -137,7 +137,7 @@ public final class Party {
 	 * @return 
 	 */
 	public boolean isFull() {
-		return playerMembers.size() >= 6;
+		return playerChannels.size() >= 6;
 	}
 
 	/**
@@ -155,7 +155,7 @@ public final class Party {
 		}
 		othersOnChannel.put(Integer.valueOf(member.getPlayerId()), member);
 
-		playerMembers.put(oId, oCh);
+		playerChannels.put(oId, oCh);
 	}
 
 	/**
@@ -165,7 +165,7 @@ public final class Party {
 	 */
 	public boolean removePlayer(int playerId) {
 		boolean success;
-		Byte ch = playerMembers.remove(Integer.valueOf(playerId));
+		Byte ch = playerChannels.remove(Integer.valueOf(playerId));
 		if (ch != null) {
 			success = true;
 			Map<Integer, Member> others = channelMembers.get(ch);
@@ -186,7 +186,7 @@ public final class Party {
 	 */
 	public boolean setMemberChannel(int playerId, byte newCh) {
 		boolean success = false;
-		Byte oldCh = playerMembers.get(Integer.valueOf(playerId));
+		Byte oldCh = playerChannels.get(Integer.valueOf(playerId));
 		if (oldCh != null && channelMembers.containsKey(oldCh)) {
 			Member mem = channelMembers.get(oldCh).get(Integer.valueOf(playerId));
 			if (mem != null) {

@@ -1604,14 +1604,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void prepareChannelChange() {
 		if (party != null)
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyLogOff(this, true);
+			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
 		prepareExitChannel();
 	}
 
 	public void prepareLogOff() {
 		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		if (party != null)
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyLogOff(this, false);
+			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
 		prepareExitChannel();
 	}
 

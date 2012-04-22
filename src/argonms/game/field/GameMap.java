@@ -476,7 +476,6 @@ public class GameMap {
 			if (future != null)
 				future.cancel(false);
 		}
-		p.pushHpToParty();
 	}
 
 	public void killMonster(Mob monster, GameCharacter killer) {
