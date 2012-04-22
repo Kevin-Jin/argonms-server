@@ -199,7 +199,7 @@ public class PartyList {
 	private volatile int leader;
 	private final Lock readLock, writeLock;
 
-	public PartyList(int partyId, GameCharacter self) {
+	public PartyList(int partyId, GameCharacter init, boolean loggedOn, boolean leader) {
 		this.id = partyId;
 		this.localMembers = new HashMap<Integer, LocalMember>();
 		this.remoteMembers = new HashMap<Byte, Map<Integer, RemoteMember>>();
@@ -208,12 +208,13 @@ public class PartyList {
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
 
-		localMembers.put(Integer.valueOf(self.getId()), new LocalMember(self));
-	}
+		if (leader)
+			this.leader = init.getId();
 
-	public PartyList(int partyId, int leader, GameCharacter self) {
-		this(partyId, self);
-		this.leader = leader;
+		if (loggedOn)
+			addPlayer(new LocalMember(init));
+		else
+			addToOffline(new RemoteMember(new LocalMember(init), OFFLINE_CH));
 	}
 
 	public int getId() {

@@ -1610,6 +1610,15 @@
 	variables from GameCharacter, as well as duplicate accessor and mutator
 	methods.
 
+2012-04-22  GoldenKevin  (revision 82)
+
+	* Every party member in the same channel shares a single PartyList instance.
+	This should reduce RAM usage and bandwidth between the center server and the
+	game servers, but increases complexity somewhat and may raise a few gotchas
+	revolving around sharing an instance between more than one player.
+	* Rearranged some packets and renamed several party related things to be
+	more consistent and to make their meanings clearer.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

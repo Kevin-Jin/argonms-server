@@ -113,10 +113,16 @@ public class PartyListHandler {
 			}
 			case EXPEL: {
 				int expelled = packet.readInt();
-				if (currentParty != null && currentParty.getLeader() == p.getId())
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendExpelPartyMember(currentParty.getMember(expelled), currentParty.getId());
-				else
+				if (currentParty != null && currentParty.getLeader() == p.getId()) {
+					currentParty.lockRead();
+					try {
+						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendExpelPartyMember(currentParty.getMember(expelled), currentParty.getId());
+					} finally {
+						currentParty.unlockRead();
+					}
+				} else {
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
+				}
 				break;
 			}
 			case CHANGE_LEADER: {
