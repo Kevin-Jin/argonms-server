@@ -1619,6 +1619,15 @@
 	* Rearranged some packets and renamed several party related things to be
 	more consistent and to make their meanings clearer.
 
+2012-04-27  GoldenKevin  (revision 83)
+
+	* Removed reference to argonms.game in GameCenterPacketProcessor.
+	* Fixed disbandment of party when a member is offline.
+	* Fixed mastery sometimes causing error 5 to other players in map (and
+	giving wrong color based on skill level).
+	* Fixed mob item drops can be leeched by anyone. Still need a solution for
+	reactor drops.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

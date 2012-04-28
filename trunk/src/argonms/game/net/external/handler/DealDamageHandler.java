@@ -48,8 +48,10 @@ import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -64,7 +66,7 @@ public class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
-		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE)), p);
+		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE, attack.skill)), p);
 		applyAttack(attack, p);
 	}
 
@@ -123,14 +125,14 @@ public class DealDamageHandler {
 		} else { //soul arrow sends no visible projectile either.
 			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED)), p);
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
 		applyAttack(attack, p);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
-		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack), p);
+		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
 		applyAttack(attack, p);
 	}
 
@@ -141,7 +143,7 @@ public class DealDamageHandler {
 			return;
 		}
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
-		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE)), p);
+		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE, attack.skill)), p);
 		applyAttack(attack, p);
 	}
 
@@ -243,6 +245,7 @@ public class DealDamageHandler {
 		int delay = 0;
 		int maxmeso = SkillDataLoader.getInstance().getSkill(Skills.PICK_POCKET).getLevel(p.getEffectValue(PlayerStatusEffect.PICKPOCKET).getLevelWhenCast()).getX();
 		double reqdamage = 20000;
+		final int mobId = monster.getId();
 		final Point mobPos = monster.getPosition();
 		final int pEntId = p.getId();
 		final GameMap tdmap = p.getMap();
@@ -258,7 +261,7 @@ public class DealDamageHandler {
 				Scheduler.getInstance().runAfterDelay(new Runnable() {
 					@Override
 					public void run() {
-						tdmap.drop(d, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
+						tdmap.drop(d, mobId, mobPos, tdpos, ItemDrop.PICKUP_ALLOW_OWNER, pEntId);
 					}
 				}, delay);
 
@@ -509,7 +512,8 @@ public class DealDamageHandler {
 		}
 	}
 
-	private static byte getMasteryLevel(GameCharacter p, AttackType type) {
+	private static byte getMasteryLevel(GameCharacter p, AttackType type, int skill) {
+		List<Integer> skills = new ArrayList<Integer>();
 		switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
 			case SWORD1H:
 			case SWORD2H:
@@ -518,66 +522,85 @@ public class DealDamageHandler {
 					case PlayerJob.JOB_CRUSADER:
 					case PlayerJob.JOB_HERO:
 						if (type == AttackType.MELEE)
-							return p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY);
+							skills.add(Integer.valueOf(Skills.CRUSADER_SWORD_MASTERY));
 						break;
 					case PlayerJob.JOB_PAGE:
 					case PlayerJob.JOB_WHITE_KNIGHT:
 					case PlayerJob.JOB_PALADIN:
 						if (type == AttackType.MELEE)
-							return p.getSkillLevel(Skills.PAGE_SWORD_MASTERY);
+							skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
 						break;
 					default:
 						if (type == AttackType.MELEE)
-							return (byte) Math.max(p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY), p.getSkillLevel(Skills.PAGE_SWORD_MASTERY));
+							if (p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY) > p.getSkillLevel(Skills.PAGE_SWORD_MASTERY))
+								skills.add(Integer.valueOf(Skills.CRUSADER_SWORD_MASTERY));
+							else
+								skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
 						break;
 				}
 			case AXE1H:
 			case AXE2H:
 				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.AXE_MASTERY);
+					skills.add(Integer.valueOf(Skills.AXE_MASTERY));
 				break;
 			case BLUNT1H:
 			case BLUNT2H:
 				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.BW_MASTERY);
+					skills.add(Integer.valueOf(Skills.BW_MASTERY));
 				break;
 			case DAGGER:
 				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.DAGGER_MASTERY);
+					skills.add(Integer.valueOf(Skills.DAGGER_MASTERY));
 				break;
 			case SPEAR:
-				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.SPEAR_MASTERY);
+				if (type == AttackType.MELEE) {
+					skills.add(Integer.valueOf(Skills.SPEAR_MASTERY));
+					skills.add(Integer.valueOf(Skills.BEHOLDER));
+				}
 				break;
 			case POLE_ARM:
-				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.POLE_ARM_MASTERY);
+				if (type == AttackType.MELEE) {
+					skills.add(Integer.valueOf(Skills.POLE_ARM_MASTERY));
+					skills.add(Integer.valueOf(Skills.BEHOLDER));
+				}
 				break;
 			case BOW:
-				if (type == AttackType.RANGED)
-					return p.getSkillLevel(Skills.BOW_MASTERY);
+				if (type == AttackType.RANGED) {
+					skills.add(Integer.valueOf(Skills.BOW_MASTERY));
+					skills.add(Integer.valueOf(Skills.BOW_EXPERT));
+				}
 				break;
 			case CROSSBOW:
-				if (type == AttackType.RANGED)
-					return p.getSkillLevel(Skills.XBOW_MASTERY);
+				if (type == AttackType.RANGED) {
+					skills.add(Integer.valueOf(Skills.XBOW_MASTERY));
+					skills.add(Integer.valueOf(Skills.MARKSMAN_BOOST));
+				}
 				break;
 			case CLAW:
 				if (type == AttackType.RANGED)
-					return p.getSkillLevel(Skills.CLAW_MASTERY);
+					skills.add(Integer.valueOf(Skills.CLAW_MASTERY));
 				break;
 			case KNUCKLE:
 				if (type == AttackType.MELEE)
-					return p.getSkillLevel(Skills.KNUCKLER_MASTERY);
+					skills.add(Integer.valueOf(Skills.KNUCKLER_MASTERY));
 				break;
 			case GUN:
 				if (type == AttackType.RANGED)
-					return p.getSkillLevel(Skills.GUN_MASTERY);
+					skills.add(Integer.valueOf(Skills.GUN_MASTERY));
 				break;
 			case WAND:
 			case STAFF:
-				return 0;
+				if (type == AttackType.MAGIC)
+					skills.add(Integer.valueOf(skill));
+				break;
 		}
-		return 0;
+		byte sum = 0;
+		for (Integer skillId : skills) {
+			PlayerSkillEffectsData skillData = SkillDataLoader.getInstance().getSkill(skillId.intValue()).getLevel(p.getSkillLevel(skillId.intValue()));
+			if (skillData != null)
+				sum += skillData.getMastery();
+		}
+		return sum;
 	}
 
 	private static void writeAttackData(LittleEndianWriter lew, int cid, AttackInfo info, byte mastery) {
@@ -620,10 +643,10 @@ public class DealDamageHandler {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeMagicAttack(int cid, AttackInfo info) {
+	private static byte[] writeMagicAttack(int cid, AttackInfo info, byte mastery) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MAGIC_ATTACK);
-		writeAttackData(lew, cid, info, (byte) 0);
+		writeAttackData(lew, cid, info, mastery);
 		if (info.charge != 0)
 			lew.writeInt(info.charge);
 		return lew.getBytes();

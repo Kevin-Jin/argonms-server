@@ -79,7 +79,7 @@ public class InventoryHandler {
 				gc.getSession().send(GamePackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
-			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getDataId()));
+			p.getMap().drop(d, 0, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getDataId()));
 		} else { //move item
 			Inventory inv = p.getInventory(type);
 			InventorySlot move = inv.get(src);
@@ -112,7 +112,7 @@ public class InventoryHandler {
 		if (amount <= p.getMesos()) {
 			p.gainMesos(-amount, false);
 			ItemDrop d = new ItemDrop(amount);
-			p.getMap().drop(d, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), false);
+			p.getMap().drop(d, 0, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), false);
 		}
 	}
 

@@ -1555,7 +1555,7 @@ public class GamePackets {
 		lew.writeInt(drop.getOwner());
 		lew.writeByte(pickupAllow);
 		lew.writePos(drop.getPosition());
-		lew.writeInt(0); //source mob entity id
+		lew.writeInt(drop.getMob()); //when this is 0, i.e. a player drop, anyone can pick it up, overriding pickupAllow. TODO: but then how do reactors work?
 		if (animation != ItemDrop.SPAWN_ANIMATION_NONE) {
 			lew.writePos(drop.getSourcePos());
 			lew.writeShort((short) 0);

@@ -56,6 +56,7 @@ public class ItemDrop extends AbstractEntity {
 	private byte mod;
 	private byte dropType;
 	private int id;
+	private int mob;
 	private int owner;
 	private Point dropFrom;
 	private InventorySlot item;
@@ -73,7 +74,8 @@ public class ItemDrop extends AbstractEntity {
 		this.id = amt;
 	}
 
-	public void init(int owner, Point dropTo, Point dropFrom, byte allow) {
+	public void init(int mob, int owner, Point dropTo, Point dropFrom, byte allow) {
+		this.mob = mob;
 		this.owner = owner;
 		this.setPosition(dropTo);
 		this.dropFrom = dropFrom;
@@ -90,6 +92,10 @@ public class ItemDrop extends AbstractEntity {
 
 	public int getDataId() {
 		return id;
+	}
+
+	public int getMob() {
+		return mob;
 	}
 
 	public int getOwner() {
