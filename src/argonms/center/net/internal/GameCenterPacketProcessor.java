@@ -28,7 +28,6 @@ import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
-import argonms.game.character.PartyList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -206,6 +205,25 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						}
 					}
 				}
+
+				//TODO: not safe if player is being concurrently loaded
+				Collection<Party.Member> offlineMembers = party.getMembersOfChannel(Party.OFFLINE_CH);
+				if (!offlineMembers.isEmpty()) {
+					Connection con = null;
+					PreparedStatement ps = null;
+					try {
+						con = DatabaseManager.getConnection(DatabaseType.STATE);
+						ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
+						for (Party.Member mem : offlineMembers) {
+							ps.setInt(1, mem.getPlayerId());
+							ps.executeUpdate();
+						}
+					} catch (SQLException ex) {
+						LOG.log(Level.WARNING, "Could not expel offline members from disbanded party " + partyId, ex);
+					} finally {
+						DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
+					}
+				}
 			} finally {
 				party.unlockRead();
 			}
@@ -232,7 +250,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				party.lockRead();
 				try {
 					Set<Byte> partyChannels = party.allChannels();
-					if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(PartyList.OFFLINE_CH))) {
+					if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH))) {
 						CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
 					} else {
 						partyChannels = new HashSet<Byte>(partyChannels);
@@ -259,7 +277,8 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 					party.unlockRead();
 				}
 
-				if (leaverChannel == PartyList.OFFLINE_CH) {
+				//TODO: not safe if player is being concurrently loaded
+				if (leaverChannel == Party.OFFLINE_CH) {
 					Connection con = null;
 					PreparedStatement ps = null;
 					try {
@@ -395,7 +414,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				//no write locking necessary because scope is still limited
 				while (rs.next()) {
 					int cid = rs.getInt(1);
-					party.addPlayer(new Party.Member(cid, rs.getString(2), rs.getShort(3), rs.getShort(4), PartyList.OFFLINE_CH));
+					party.addPlayer(new Party.Member(cid, rs.getString(2), rs.getShort(3), rs.getShort(4), Party.OFFLINE_CH));
 					if (rs.getBoolean(5))
 						party.setLeader(cid);
 				}
@@ -481,9 +500,14 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		if (party != null) {
 			party.lockWrite();
 			try {
-				party.setMemberChannel(exiterId, PartyList.OFFLINE_CH);
+				party.setMemberChannel(exiterId, Party.OFFLINE_CH);
+			} finally {
+				party.unlockWrite();
+			}
+			party.lockRead();
+			try {
 				Set<Byte> partyChannels = party.allChannels();
-				if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(PartyList.OFFLINE_CH))) {
+				if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH))) {
 					CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
 				} else {
 					partyChannels = new HashSet<Byte>(partyChannels);
@@ -505,7 +529,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 					}
 				}
 			} finally {
-				party.unlockWrite();
+				party.unlockRead();
 			}
 		}
 	}

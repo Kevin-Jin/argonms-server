@@ -358,14 +358,14 @@ public class GameMap {
 		return ret != null ? ret : fallback;
 	}
 
-	public void drop(ItemDrop drop, Point dropperPos, Point dropPos, byte pickupAllow, int owner) {
-		drop.init(owner, dropPos, dropperPos, pickupAllow);
+	public void drop(ItemDrop drop, int dropperMobId, Point dropperPos, Point dropPos, byte pickupAllow, int owner) {
+		drop.init(dropperMobId, owner, dropPos, dropperPos, pickupAllow);
 		drop(drop);
 	}
 
-	public void drop(ItemDrop drop, GameCharacter dropper, byte pickupAllow, int owner, boolean undroppable) {
+	public void drop(ItemDrop drop, int dropperMobId, GameCharacter dropper, byte pickupAllow, int owner, boolean undroppable) {
 		Point pos = dropper.getPosition();
-		drop.init(owner, calcDropPos(pos, pos), pos, pickupAllow);
+		drop.init(dropperMobId, owner, calcDropPos(pos, pos), pos, pickupAllow);
 		if (!undroppable)
 			drop(drop);
 		else //sendToAll or just dropper.getClient().getSession().send(...)?
@@ -384,7 +384,7 @@ public class GameMap {
 				dropPos.x = entX + delta;
 			else //drop odd numbered drops left
 				dropPos.x = entX - delta;
-			drop.init(owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
+			drop.init(ent.getId(), owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
 			drop(drop);
 		}
 	}

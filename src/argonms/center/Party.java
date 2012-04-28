@@ -20,6 +20,7 @@ package argonms.center;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public final class Party {
+	public static final byte OFFLINE_CH = -1;
+
 	public static class Member {
 		private final int playerId;
 		private final String name;
@@ -110,7 +113,10 @@ public final class Party {
 	 * @return 
 	 */
 	public Collection<Member> getMembersOfChannel(byte channel) {
-		return channelMembers.get(Byte.valueOf(channel)).values();
+		Map<Integer, Member> members = channelMembers.get(Byte.valueOf(channel));
+		if (members == null)
+			return Collections.emptyList();
+		return members.values();
 	}
 
 	/**
