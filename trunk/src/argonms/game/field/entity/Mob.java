@@ -18,14 +18,13 @@
 
 package argonms.game.field.entity;
 
-import argonms.common.GlobalConstants;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Scheduler;
-import argonms.common.util.collections.LockableMap;
+import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -43,13 +42,9 @@ import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -57,6 +52,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -79,7 +77,9 @@ public class Mob extends AbstractEntity {
 	private final AtomicInteger remHp;
 	private final AtomicInteger remMp;
 	private final Queue<MobDeathListener> subscribers;
-	private final LockableMap<GameCharacter, PlayerDamage> damages;
+	private final WeakHashMap<GameCharacter, PlayerAttacker> playerDamages;
+	private final WeakHashMap<PartyList, PartyAttacker> partyDamages;
+	private final Lock damagesReadLock, damagesWriteLock;
 	private WeakReference<GameCharacter> controller;
 	private volatile boolean aggroAware, hasAggro;
 	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
@@ -95,7 +95,11 @@ public class Mob extends AbstractEntity {
 		this.remHp = new AtomicInteger(stats.getMaxHp());
 		this.remMp = new AtomicInteger(stats.getMaxMp());
 		this.subscribers = new ConcurrentLinkedQueue<MobDeathListener>();
-		this.damages = new LockableMap<GameCharacter, PlayerDamage>(new WeakHashMap<GameCharacter, PlayerDamage>());
+		this.playerDamages = new WeakHashMap<GameCharacter, PlayerAttacker>();
+		this.partyDamages = new WeakHashMap<PartyList, PartyAttacker>();
+		ReadWriteLock lock = new ReentrantReadWriteLock();
+		this.damagesReadLock = lock.readLock();
+		this.damagesWriteLock = lock.writeLock();
 		this.controller = new WeakReference<GameCharacter>(null);
 		this.activeEffects = new ConcurrentSkipListMap<MonsterStatusEffect, MonsterStatusEffectValues>();
 		this.skillCancels = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
@@ -136,93 +140,37 @@ public class Mob extends AbstractEntity {
 		}, getAnimationTime("die1")); //artificial drop lag...
 	}
 
-	private GameCharacter giveExp(GameCharacter killer) {
-		GameCharacter highestDamageAttacker = null;
+	private Pair<Attacker, GameCharacter> giveExp(GameCharacter killer) {
+		Attacker highestDamageAttacker = null;
+		GameCharacter highestDamageIndividual = null;
 		long highestDamage = 0;
+		long highestIndividualDamage = 0;
 
-		Map<PartyList, PartyExp> parties = new HashMap<PartyList, PartyExp>();
-		GameCharacter attacker;
-		long damage;
-		short attackerLevel;
-		PartyList attackerParty;
-		PartyExp partyExp;
-		//damages shouldn't be accessed from here on out anyway since the mob is
-		//already dead and cannot be attacked any more, but some lagger might
-		//screw up our assertion...
-		damages.lockRead();
+		damagesReadLock.lock();
 		try {
-			for (Entry<GameCharacter, PlayerDamage> pd : damages.entrySet()) {
-				attacker = pd.getKey();
-				damage = pd.getValue().getDamage();
+			List<Attacker> allDamages = new ArrayList<Attacker>(playerDamages.size() + partyDamages.size());
+			allDamages.addAll(playerDamages.values());
+			allDamages.addAll(partyDamages.values());
+
+			for (Attacker pd : allDamages) {
+				long damage = pd.getHighestDamage();
+				if (damage > highestIndividualDamage) {
+					highestDamageIndividual = pd.getHighestDamageAttacker();
+					highestIndividualDamage = damage;
+				}
+				damage = pd.totalDamage();
 				if (damage > highestDamage) {
-					highestDamageAttacker = attacker;
+					highestDamageAttacker = pd;
 					highestDamage = damage;
 				}
-				if (attacker == null || attacker.isClosed() || attacker.getMapId() != map.getDataId() || !attacker.isAlive())
-					continue;
 
-				attackerLevel = attacker.getLevel();
-				attackerParty = attacker.getParty();
-
-				if (attackerParty != null) {
-					partyExp = parties.get(attackerParty);
-					if (partyExp == null) {
-						partyExp = new PartyExp();
-						parties.put(attackerParty, partyExp);
-					}
-					partyExp.compareAndSetMinAttackerLevel(attackerLevel);
-					partyExp.compareAndSetMaxDamage(damage, attacker);
-				} else {
-					int hsRate = attacker.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-							attacker.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
-					long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (attacker == killer ? 2 : 0)) / 10;
-					exp *= GameServer.getVariables().getExpRate();
-					//exp = exp * getTauntEffect() / 100;
-					exp += exp * hsRate / 100;
-					attacker.gainExp((int) Math.min(exp, Integer.MAX_VALUE), attacker == killer, false);
-				}
+				long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (pd.attackersInclude(killer) ? 2 : 0)) / 10;
+				pd.distributeExp(exp, killer);
 			}
 		} finally {
-			damages.unlockRead();
+			damagesReadLock.unlock();
 		}
-		if (!parties.isEmpty()) {
-			for (Entry<PartyList, PartyExp> entry : parties.entrySet()) {
-				attackerParty = entry.getKey();
-				partyExp = entry.getValue();
-				short totalLevel = 0;
-				int membersCount = 0;
-				List<GameCharacter> splitExpMembers = new ArrayList<GameCharacter>();
-				int hsRate = 0;
-				attackerParty.lockRead();
-				try {
-					for (GameCharacter member : attackerParty.getLocalMembersInMap(map.getDataId())) {
-						attackerLevel = member.getLevel();
-						if (attackerLevel >= (partyExp.getMinAttackerLevel() - 5) || attackerLevel >= (stats.getLevel() - 5) || partyExp.playerAttackedMob(member)) {
-							totalLevel += attackerLevel;
-							splitExpMembers.add(member);
-							//TODO: if more than one priest, only use highest? or use latest cast?
-							hsRate = Math.max(member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
-									member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0, hsRate);
-						}
-						membersCount++; //I'm pretty sure party bonus is based on every member, not just for those who are getting EXP
-					}
-				} finally {
-					attackerParty.unlockRead();
-				}
-				for (GameCharacter member : splitExpMembers) {
-					//TODO: party should only get part of the mob's
-					//exp if some player outside the party did damage
-					//to it
-					long exp = (long) stats.getExp() * ((8 * member.getLevel() / totalLevel) + (member == partyExp.getHighestDamagePlayer() ? 2 : 0)) / 10;
-					exp *= GameServer.getVariables().getExpRate();
-					//exp = exp * getTauntEffect() / 100;
-					exp += exp * 5 * membersCount / 100; //party bonus, 5% for each member
-					exp += exp * hsRate / 100;
-					member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
-				}
-			}
-		}
-		return highestDamageAttacker;
+		return new Pair<Attacker, GameCharacter>(highestDamageAttacker, highestDamageIndividual);
 	}
 
 	public void died(GameCharacter killer) {
@@ -236,19 +184,10 @@ public class Mob extends AbstractEntity {
 			killer.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
 			map.sendToAll(GamePackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
 		}
-		GameCharacter highestDamage = giveExp(killer);
+		Pair<Attacker, GameCharacter> highestDamage = giveExp(killer);
 		for (MobDeathListener hook : subscribers)
-			hook.monsterKilled(highestDamage, killer);
-		int id;
-		byte pickupAllow;
-		if (highestDamage.getParty() != null) {
-			id = highestDamage.getParty().getId();
-			pickupAllow = ItemDrop.PICKUP_ALLOW_PARTY;
-		} else {
-			id = highestDamage.getId();
-			pickupAllow = ItemDrop.PICKUP_ALLOW_OWNER;
-		}
-		makeDrops(id, pickupAllow);
+			hook.monsterKilled(highestDamage.right, killer);
+		makeDrops(highestDamage.left.getId(), highestDamage.left.getDropPickUpAllow());
 	}
 
 	public void addListener(MobDeathListener subscriber) {
@@ -357,18 +296,27 @@ public class Mob extends AbstractEntity {
 		if (overkill > 0)
 			damage -= overkill;
 
-		damages.lockWrite();
+		damagesWriteLock.lock();
 		try {
-			PlayerDamage pd = damages.get(p);
-			if (pd != null) {
-				pd.addDamage(damage);
+			if (p.getParty() != null) {
+				PartyAttacker pd = partyDamages.get(p.getParty());
+				if (pd == null) {
+					pd = new PartyAttacker(p.getParty());
+					partyDamages.put(p.getParty(), pd);
+				}
+				pd.addDamage(p, damage);
 			} else {
-				damages.put(p, new PlayerDamage(damage));
-				for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
-					subscribers.offer(hook);
+				PlayerAttacker pd = playerDamages.get(p);
+				if (pd == null) {
+					pd = new PlayerAttacker(p);
+					playerDamages.put(p, pd);
+				}
+				pd.addDamage(p, damage);
 			}
+			for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
+				subscribers.offer(hook);
 		} finally {
-			damages.unlockWrite();
+			damagesWriteLock.unlock();
 		}
 
 		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
@@ -483,7 +431,16 @@ public class Mob extends AbstractEntity {
 	}
 
 	public boolean wasAttackedBy(GameCharacter player) {
-		return damages.getWhenSafe(player) != null;
+		damagesReadLock.lock();
+		try {
+			if (player.getParty() != null) {
+				PartyAttacker pd = partyDamages.get(player.getParty());
+				return pd != null && pd.attackersInclude(player);
+			}
+			return playerDamages.containsKey(player);
+		} finally {
+			damagesReadLock.unlock();
+		}
 	}
 
 	public boolean controllerHasAggro() {
@@ -541,57 +498,184 @@ public class Mob extends AbstractEntity {
 		public void monsterKilled(GameCharacter highestDamage, GameCharacter last);
 	}
 
-	private static class PlayerDamage {
+	private interface Attacker {
+		public long totalDamage();
+		public void distributeExp(long share, GameCharacter killer);
+		public void addDamage(GameCharacter c, int gain);
+		public long getHighestDamage();
+		public GameCharacter getHighestDamageAttacker();
+		public boolean attackersInclude(GameCharacter p);
+		public byte getDropPickUpAllow();
+		public int getId();
+	}
+
+	private class PlayerAttacker implements Attacker {
+		private final WeakReference<GameCharacter> player;
 		private long damage;
 
-		public PlayerDamage(int initialDamage) {
-			this.damage = initialDamage;
+		public PlayerAttacker(GameCharacter player) {
+			this.player = new WeakReference<GameCharacter>(player);
 		}
 
-		public void addDamage(int gain) {
+		@Override
+		public long totalDamage() {
+			return damage;
+		}
+
+		@Override
+		public void distributeExp(long share, GameCharacter killer) {
+			GameCharacter attacker = player.get();
+			if (attacker == null || attacker.isClosed() || attacker.getMapId() != map.getDataId() || !attacker.isAlive())
+				return;
+			int hsRate = player.get().isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+					player.get().getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0;
+			share *= GameServer.getVariables().getExpRate();
+			//share = share * getTauntEffect() / 100;
+			share += share * hsRate / 100;
+			player.get().gainExp((int) Math.min(share, Integer.MAX_VALUE), player.get() == killer, false);
+		}
+
+		@Override
+		public void addDamage(GameCharacter c, int gain) {
 			damage += gain;
 		}
 
-		public long getDamage() {
+		@Override
+		public long getHighestDamage() {
 			return damage;
+		}
+
+		@Override
+		public GameCharacter getHighestDamageAttacker() {
+			return player.get();
+		}
+
+		@Override
+		public boolean attackersInclude(GameCharacter p) {
+			return player.get() == p;
+		}
+
+		@Override
+		public byte getDropPickUpAllow() {
+			return ItemDrop.PICKUP_ALLOW_OWNER;
+		}
+
+		@Override
+		public int getId() {
+			GameCharacter p = player.get();
+			if (p == null)
+				return 0;
+			return p.getId();
 		}
 	}
 
-	private static class PartyExp {
-		private short minAttackerLevel;
-		private GameCharacter highestDamagePlayer;
-		private final Set<GameCharacter> allAttackers;
-		private long highestDamage;
+	private class PartyAttacker implements Attacker {
+		private WeakReference<PartyList> party;
+		private final WeakHashMap<GameCharacter, Long> attackers;
+		private short lowestAttackerLevel;
+		private WeakReference<GameCharacter> highestDamageAttacker;
 
-		public PartyExp() {
-			minAttackerLevel = GlobalConstants.MAX_LEVEL;
-			allAttackers = new HashSet<GameCharacter>();
+		public PartyAttacker(PartyList party) {
+			this.party = new WeakReference<PartyList>(party);
+			attackers = new WeakHashMap<GameCharacter, Long>();
+			lowestAttackerLevel = 0xFF;
+			highestDamageAttacker = new WeakReference<GameCharacter>(null);
 		}
 
-		public void compareAndSetMinAttackerLevel(short damagerlevel) {
-			if (damagerlevel < minAttackerLevel)
-				minAttackerLevel = damagerlevel;
-		}
-
-		public void compareAndSetMaxDamage(long damage, GameCharacter attacker) {
-			if (damage > highestDamage) {
-				highestDamagePlayer = attacker;
-				highestDamage = damage;
+		@Override
+		public long totalDamage() {
+			long sum = 0;
+			synchronized (attackers) {
+				for (Long individualDamage : attackers.values())
+					sum += individualDamage.longValue();
 			}
-			if (damage > 0)
-				allAttackers.add(attacker);
+			return sum;
 		}
 
-		public short getMinAttackerLevel() {
-			return minAttackerLevel;
+		@Override
+		public void distributeExp(long share, GameCharacter killer) {
+			synchronized (attackers) {
+				PartyList attackerParty = party.get();
+				if (attackerParty == null)
+					return;
+				short totalLevel = 0;
+				int membersCount = 0;
+				List<GameCharacter> splitExpMembers = new ArrayList<GameCharacter>();
+				int hsRate = 0;
+				attackerParty.lockRead();
+				try {
+					int minAttackerLevel = lowestAttackerLevel - 5;
+					for (GameCharacter member : attackerParty.getLocalMembersInMap(map.getDataId())) {
+						if (member.isClosed() || member.getMapId() != map.getDataId() || !member.isAlive())
+							continue;
+						short attackerLevel = member.getLevel();
+						if (attackerLevel >= minAttackerLevel || attackerLevel >= (stats.getLevel() - 5) || attackers.containsKey(member)) {
+							totalLevel += attackerLevel;
+							splitExpMembers.add(member);
+							//TODO: if more than one priest, only use highest? or use latest cast?
+							hsRate = Math.max(member.isEffectActive(PlayerStatusEffect.HOLY_SYMBOL) ?
+									member.getEffectValue(PlayerStatusEffect.HOLY_SYMBOL).getModifier() : 0, hsRate);
+						}
+						membersCount++; //I'm pretty sure party bonus is based on every member, not just for those who are getting EXP
+					}
+				} finally {
+					attackerParty.unlockRead();
+				}
+				for (GameCharacter member : splitExpMembers) {
+					long exp = (long) share * ((8 * member.getLevel() / totalLevel) + (member == highestDamageAttacker.get() ? 2 : 0)) / 10;
+					exp *= GameServer.getVariables().getExpRate();
+					//exp = exp * getTauntEffect() / 100;
+					exp += exp * 5 * membersCount / 100; //party bonus, 5% for each member
+					exp += exp * hsRate / 100;
+					member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
+				}
+			}
 		}
 
-		public GameCharacter getHighestDamagePlayer() {
-			return highestDamagePlayer;
+		@Override
+		public void addDamage(GameCharacter c, int gain) {
+			synchronized (attackers) {
+				Long currentDamage = attackers.get(c);
+				if (currentDamage != null)
+					currentDamage = Long.valueOf(currentDamage.longValue() + gain);
+				else
+					currentDamage = Long.valueOf(gain);
+				attackers.put(c, currentDamage);
+				GameCharacter currentHighestDamageAttacker = highestDamageAttacker.get();
+				if (currentHighestDamageAttacker == null || currentDamage.compareTo(attackers.get(currentHighestDamageAttacker)) > 0)
+					highestDamageAttacker = new WeakReference<GameCharacter>(c);
+				if (c.getLevel() < lowestAttackerLevel)
+					lowestAttackerLevel = c.getLevel();
+			}
 		}
 
-		public boolean playerAttackedMob(GameCharacter player) {
-			return allAttackers.contains(player);
+		@Override
+		public long getHighestDamage() {
+			Long damage = attackers.get(highestDamageAttacker.get());
+			return damage != null ? damage.longValue() : 0;
+		}
+
+		@Override
+		public GameCharacter getHighestDamageAttacker() {
+			return highestDamageAttacker.get();
+		}
+
+		@Override
+		public boolean attackersInclude(GameCharacter p) {
+			return attackers.containsKey(p);
+		}
+
+		@Override
+		public byte getDropPickUpAllow() {
+			return ItemDrop.PICKUP_ALLOW_PARTY;
+		}
+
+		@Override
+		public int getId() {
+			PartyList p = party.get();
+			if (p == null)
+				return 0;
+			return p.getId();
 		}
 	}
 

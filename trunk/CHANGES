@@ -1628,6 +1628,16 @@
 	* Fixed mob item drops can be leeched by anyone. Still need a solution for
 	reactor drops.
 
+2012-05-12  GoldenKevin  (revision 84)
+
+	* New method for distributing mob EXP. This finally refactors that huge,
+	ugly Mob.giveExp method into more manageable chunks. If a party attacks a
+	mob and that mob has another attacker outside the party, the distribution
+	makes a bit more sense (before, the party would get the mob's full EXP
+	instead of only a share based on how much damage it did). It is somewhat
+	more object oriented now, although not as much as I would have liked.
+	* Autoban detects when client wants to control a mob that it did not aggro.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
