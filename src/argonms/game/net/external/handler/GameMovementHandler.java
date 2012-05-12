@@ -18,6 +18,7 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Rng;
 import argonms.common.util.input.LittleEndianReader;
@@ -189,7 +190,7 @@ public class GameMovementHandler {
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
 			} else {
-				//TODO: is this a hacking/packet-editing attempt?
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to control mob before attacking it");
 				return;
 			}
 		} else if (skill == -1 && monster.controllerKnowsAboutAggro() && !monster.isMobile() && !monster.isFirstAttack()) {
