@@ -1291,6 +1291,20 @@ public class InterChannelCommunication {
 
 							leavingPlayer.setParty(null);
 							leavingPlayer.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+
+							//GameCenterPacketProcessor.processPartyMemberLeft
+							//has an explanation for this
+							if (removeParty) {
+								boolean save;
+								party.lockRead();
+								try {
+									save = party.allOffline();
+								} finally {
+									party.unlockRead();
+								}
+								if (save)
+									leavingPlayer.saveCharacter();
+							}
 						} else {
 							leaverName = packet.readLengthPrefixedString();
 							party.removePlayer(leaverCh, leaverId);

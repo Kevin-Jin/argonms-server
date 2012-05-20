@@ -256,6 +256,14 @@ public class PartyList {
 		return filtered;
 	}
 
+	/**
+	 * This PartyList must be read locked when this method is called.
+	 * @return 
+	 */
+	public boolean allOffline() {
+		return localMembers.isEmpty() && remoteMembers.size() == 1 && remoteMembers.containsKey(Byte.valueOf(OFFLINE_CH));
+	}
+
 	private void removeFromOffline(Member member) {
 		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
 		others.remove(Integer.valueOf(member.getPlayerId()));
