@@ -245,11 +245,11 @@ public class CheatTracker {
 			ps.setByte(8, reason.byteValue());
 			ps.setShort(9, points);
 			ps.executeUpdate();
-			if (totalPoints >= TOLERANCE) {
+			/*if (totalPoints >= TOLERANCE) {
 				ban(con);
 				if (dcOnBan)
 					client.getSession().close("Banned", null);
-			}
+			}*/
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cheatlog for account "
 					+ getAccountId(), ex);

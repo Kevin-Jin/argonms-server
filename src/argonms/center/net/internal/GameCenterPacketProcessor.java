@@ -250,26 +250,28 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				party.lockRead();
 				try {
 					Set<Byte> partyChannels = party.allChannels();
-					if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH))) {
+					if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
+						//make sure the leaving player saves himself to the
+						//database. otherwise if another player in the party
+						//logs on before he changes channels or logs off, he
+						//will still be loaded into the party list
 						CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
-					} else {
-						partyChannels = new HashSet<Byte>(partyChannels);
-						partyChannels.add(Byte.valueOf(leaverChannel));
-						for (Byte channel : partyChannels) {
-							for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-								if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-									LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(leaverChannel == channel.byteValue() ? 13 : (15 + leaverName.length()));
-									lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-									lew.writeByte(channel.byteValue());
-									lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
-									lew.writeInt(partyId);
-									lew.writeInt(leaverId);
-									lew.writeByte(leaverChannel);
-									lew.writeBool(leaverExpelled);
-									if (leaverChannel != channel.byteValue())
-										lew.writeLengthPrefixedString(leaverName);
-									cgi.getSession().send(lew.getBytes());
-								}
+					partyChannels = new HashSet<Byte>(partyChannels);
+					partyChannels.add(Byte.valueOf(leaverChannel));
+					for (Byte channel : partyChannels) {
+						for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+							if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
+								LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(leaverChannel == channel.byteValue() ? 13 : (15 + leaverName.length()));
+								lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+								lew.writeByte(channel.byteValue());
+								lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
+								lew.writeInt(partyId);
+								lew.writeInt(leaverId);
+								lew.writeByte(leaverChannel);
+								lew.writeBool(leaverExpelled);
+								if (leaverChannel != channel.byteValue())
+									lew.writeLengthPrefixedString(leaverName);
+								cgi.getSession().send(lew.getBytes());
 							}
 						}
 					}
@@ -507,24 +509,22 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			party.lockRead();
 			try {
 				Set<Byte> partyChannels = party.allChannels();
-				if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH))) {
+				if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
 					CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
-				} else {
-					partyChannels = new HashSet<Byte>(partyChannels);
-					partyChannels.add(Byte.valueOf(lastCh));
-					for (Byte channel : partyChannels) {
-						for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-							if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-								LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
-								lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-								lew.writeByte(channel.byteValue());
-								lew.writeByte(InterServerPartyOps.MEMBER_DISCONNECTED);
-								lew.writeInt(partyId);
-								lew.writeInt(exiterId);
-								lew.writeByte(lastCh);
-								lew.writeBool(loggingOff);
-								cgi.getSession().send(lew.getBytes());
-							}
+				partyChannels = new HashSet<Byte>(partyChannels);
+				partyChannels.add(Byte.valueOf(lastCh));
+				for (Byte channel : partyChannels) {
+					for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
+							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+							lew.writeByte(channel.byteValue());
+							lew.writeByte(InterServerPartyOps.MEMBER_DISCONNECTED);
+							lew.writeInt(partyId);
+							lew.writeInt(exiterId);
+							lew.writeByte(lastCh);
+							lew.writeBool(loggingOff);
+							cgi.getSession().send(lew.getBytes());
 						}
 					}
 				}

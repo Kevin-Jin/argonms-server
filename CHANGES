@@ -1638,6 +1638,15 @@
 	more object oriented now, although not as much as I would have liked.
 	* Autoban detects when client wants to control a mob that it did not aggro.
 
+2012-05-20  GoldenKevin  (revision 85)
+
+	* Fixed game server not removing party when last online member logs off
+	* Fixed expelled party member or leaver remaining in party list if he was
+	the last online member and another member logged on before he was saved to
+	the database
+	* Disabled banning system for now until I find a better solution to detect
+	excessive amounts of suspicious activity that could be from packet editing
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
