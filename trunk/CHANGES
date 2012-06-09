@@ -1647,6 +1647,10 @@
 	* Disabled banning system for now until I find a better solution to detect
 	excessive amounts of suspicious activity that could be from packet editing
 
+2012-06-09  GoldenKevin  (revision 86)
+
+	* Fixed party EXP bug where you got 5% bonus EXP for being in a party of one
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

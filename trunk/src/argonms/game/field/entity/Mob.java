@@ -625,7 +625,8 @@ public class Mob extends AbstractEntity {
 					long exp = (long) share * ((8 * member.getLevel() / totalLevel) + (member == highestDamageAttacker.get() ? 2 : 0)) / 10;
 					exp *= GameServer.getVariables().getExpRate();
 					//exp = exp * getTauntEffect() / 100;
-					exp += exp * 5 * membersCount / 100; //party bonus, 5% for each member
+					if (membersCount > 1)
+						exp += exp * 5 * membersCount / 100; //party bonus, 5% for each member
 					exp += exp * hsRate / 100;
 					member.gainExp((int) Math.min(exp, Integer.MAX_VALUE), member == killer, false);
 				}
