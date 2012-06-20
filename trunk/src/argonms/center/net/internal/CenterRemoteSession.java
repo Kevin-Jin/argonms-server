@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,7 +60,6 @@ public class CenterRemoteSession implements Session {
 	private final SocketChannel commChn;
 	private final AtomicBoolean closeEventsTriggered;
 	private ByteBuffer readBuffer;
-	private final CloseListener onClose;
 	private CenterRemoteInterface cri;
 
 	private final SelectionKey selectionKey;
@@ -78,11 +78,7 @@ public class CenterRemoteSession implements Session {
 
 	private final String interServerPwd;
 
-	/* package-private */ interface CloseListener {
-		public void closed(CenterRemoteSession session);
-	}
-
-	/* package-private */ CenterRemoteSession(SocketChannel channel, SelectionKey key, String authKey, CloseListener onClose) {
+	/* package-private */ CenterRemoteSession(SocketChannel channel, SelectionKey key, String authKey) {
 		closeEventsTriggered = new AtomicBoolean(false);
 		readBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
 		readBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -92,7 +88,6 @@ public class CenterRemoteSession implements Session {
 		nextMessageType = MessageType.HEADER;
 
 		this.commChn = channel;
-		this.onClose = onClose;
 		this.selectionKey = key;
 		this.interServerPwd = authKey;
 
@@ -120,9 +115,11 @@ public class CenterRemoteSession implements Session {
 		buf.put(b);
 		buf.flip();
 		sendQueue.insert(buf);
-		if (selectionKey.isValid() && tryFlushSendQueue() == 0) {
-			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
-			selectionKey.selector().wakeup();
+		synchronized (commChn) {
+			if (selectionKey.isValid() && tryFlushSendQueue() == 0) {
+				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
+				selectionKey.selector().wakeup();
+			}
 		}
 	}
 
@@ -151,10 +148,12 @@ public class CenterRemoteSession implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			try {
-				commChn.close();
-			} catch (IOException ex) {
-				LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
+			synchronized (commChn) {
+				try {
+					commChn.close();
+				} catch (IOException ex) {
+					LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
+				}
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);
@@ -165,7 +164,6 @@ public class CenterRemoteSession implements Session {
 				LOG.log(Level.FINE, getServerName() + " server (" + getAddress() + ") disconnected: " + reason, reasonExc);
 			if (cri != null)
 				cri.disconnected();
-			onClose.closed(this);
 			return true;
 		}
 		return false;

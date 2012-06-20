@@ -122,17 +122,16 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 								if (key == acceptorKey) {
 									if (key.isValid() && key.isAcceptable()) {
 										try {
-											final SocketChannel client = listener.accept();
+											SocketChannel client = listener.accept();
 											client.socket().setTcpNoDelay(true);
 											client.configureBlocking(false);
 											LOG.log(Level.FINE, "Client connected from {0}", client.socket().getRemoteSocketAddress());
 											final SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
-											final T clientState = clientCtor.newInstance();
+											T clientState = clientCtor.newInstance();
 											ClientSession<T> session = new ClientSession<T>(client, acceptedKey, clientState, new CloseListener<T>() {
 												@Override
 												public void closed(ClientSession<T> session) {
 													connected.remove(acceptedKey);
-													acceptedKey.cancel();
 												}
 											});
 											clientState.setSession(session);
@@ -145,43 +144,45 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 								} else {
 									SocketChannel client = (SocketChannel) key.channel();
 									final ClientSession<T> session = connected.get(key);
-									if (key.isValid() && key.isReadable()) {
-										try {
-											int read = client.read(session.readBuffer());
-											byte[][] ivAndMessage = session.readMessage(read);
-											if (ivAndMessage != null) {
-												//the header or the body was received successfully
-												if (ivAndMessage.length == 0) {
-													//header received, try a non-blocking read to see if we also got the message body
-													read = client.read(session.readBuffer());
-													ivAndMessage = session.readMessage(read);
-												}
-												if (ivAndMessage != null && ivAndMessage.length == 2) {
-													//decrypt the body and handle it on a worker thread
-													final byte[] iv = ivAndMessage[0];
-													final byte[] body = ivAndMessage[1];
-													workerThreadPool.submit(new Runnable() {
-														@Override
-														public void run() {
-															try {
-																MapleAesOfb.aesCrypt(body, iv);
-																MapleAesOfb.mapleDecrypt(body);
-																pp.process(new LittleEndianByteArrayReader(body), session.getClient());
-															} catch (Exception ex) {
-																LOG.log(Level.WARNING, "Uncaught exception while processing packet from client " + session.getAccountName() + " (" + session.getAddress() + ")", ex);
+									synchronized (client) {
+										if (key.isValid() && key.isReadable()) {
+											try {
+												int read = client.read(session.readBuffer());
+												byte[][] ivAndMessage = session.readMessage(read);
+												if (ivAndMessage != null) {
+													//the header or the body was received successfully
+													if (ivAndMessage.length == 0) {
+														//header received, try a non-blocking read to see if we also got the message body
+														read = client.read(session.readBuffer());
+														ivAndMessage = session.readMessage(read);
+													}
+													if (ivAndMessage != null && ivAndMessage.length == 2) {
+														//decrypt the body and handle it on a worker thread
+														final byte[] iv = ivAndMessage[0];
+														final byte[] body = ivAndMessage[1];
+														workerThreadPool.submit(new Runnable() {
+															@Override
+															public void run() {
+																try {
+																	MapleAesOfb.aesCrypt(body, iv);
+																	MapleAesOfb.mapleDecrypt(body);
+																	pp.process(new LittleEndianByteArrayReader(body), session.getClient());
+																} catch (Exception ex) {
+																	LOG.log(Level.WARNING, "Uncaught exception while processing packet from client " + session.getAccountName() + " (" + session.getAddress() + ")", ex);
+																}
 															}
-														}
-													});
+														});
+													}
 												}
+											} catch (IOException ex) {
+												//does an IOException in read always mean an invalid channel?
+												session.close("Error while reading", ex);
 											}
-										} catch (IOException ex) {
-											//does an IOException in read always mean an invalid channel?
-											session.close("Error while reading", ex);
 										}
+										if (key.isValid() && key.isWritable())
+											if (session.tryFlushSendQueue() == 1)
+												key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 									}
-									if (key.isValid() && key.isWritable())
-										if (session.tryFlushSendQueue() == 1)
-											key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 								}
 							}
 						}

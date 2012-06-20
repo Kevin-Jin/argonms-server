@@ -54,7 +54,6 @@ public class TelnetSession implements Session {
 	private final SocketChannel commChn;
 	private final AtomicBoolean closeEventsTriggered;
 	private final ByteBuffer readBuffer;
-	private final CloseListener onClose;
 	private final TelnetClient client;
 
 	private final SelectionKey selectionKey;
@@ -66,15 +65,11 @@ public class TelnetSession implements Session {
 	private int inputCount;
 	private int inputCursor;
 
-	/* package-private */ interface CloseListener {
-		public void closed(TelnetSession session);
-	}
-
 	/* package-private */ interface CommandReceivedDelegate {
 		public void lineReceived(String message, TelnetClient client);
 	}
 
-	/* package-private */ TelnetSession(SocketChannel channel, SelectionKey key, TelnetClient client, CommandReceivedDelegate processor, CloseListener onClose) {
+	/* package-private */ TelnetSession(SocketChannel channel, SelectionKey key, TelnetClient client, CommandReceivedDelegate processor) {
 		closeEventsTriggered = new AtomicBoolean(false);
 		readBuffer = ByteBuffer.allocate(BUFFER_SIZE);
 		sendQueue = new OrderedQueue();
@@ -82,7 +77,6 @@ public class TelnetSession implements Session {
 		inputBuffer = new StringBuilder(BUFFER_SIZE);
 
 		this.commChn = channel;
-		this.onClose = onClose;
 		this.client = client;
 		this.selectionKey = key;
 		this.commandHandler = processor;
@@ -100,9 +94,11 @@ public class TelnetSession implements Session {
 	private void send(ByteBuffer buf) {
 		int queueInsertNo = sendQueue.getNextPush();
 		sendQueue.insert(queueInsertNo, buf);
-		if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
-			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
-			selectionKey.selector().wakeup();
+		synchronized (commChn) {
+			if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
+				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
+				selectionKey.selector().wakeup();
+			}
 		}
 	}
 
@@ -135,10 +131,12 @@ public class TelnetSession implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			try {
-				commChn.close();
-			} catch (IOException e) {
-				LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
+			synchronized (commChn) {
+				try {
+					commChn.close();
+				} catch (IOException e) {
+					LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
+				}
 			}
 
 			if (reasonExc == null)
@@ -146,7 +144,6 @@ public class TelnetSession implements Session {
 			else
 				LOG.log(Level.FINE, "Telnet client " + getClient().getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
 			client.disconnected();
-			onClose.closed(this);
 			return true;
 		}
 		return false;

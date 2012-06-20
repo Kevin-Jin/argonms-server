@@ -1651,6 +1651,14 @@
 
 	* Fixed party EXP bug where you got 5% bonus EXP for being in a party of one
 
+2012-06-20  GoldenKevin  (revision 87)
+
+	* SocketChannel should already be closed before CloseListener.closed is
+	called, so there is no need to cancel the associated SelectionKey.
+	* Synchronize closing of a socket channel (which in turn closes its
+	associated selection key) with any operations that require the key be valid,
+	to avoid several race conditions.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
