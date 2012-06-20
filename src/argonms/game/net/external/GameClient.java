@@ -101,11 +101,7 @@ public class GameClient extends RemoteClient {
 		return GameServer.getInstance().getServerId();
 	}
 
-	@Override
-	public void disconnected() {
-		boolean changingChannels = isMigrating();
-		if (npc != null)
-			npc.endConversation();
+	private void dissociate(boolean changingChannels) {
 		if (player != null) {
 			if (!changingChannels)
 				player.prepareLogOff();
@@ -115,6 +111,23 @@ public class GameClient extends RemoteClient {
 		}
 		getSession().removeClient();
 		setSession(null);
+	}
+
+	@Override
+	public void disconnected() {
+		final boolean changingChannels = isMigrating();
+		if (npc != null)
+			npc.endConversation();
+		if (getSession().getQueuedReads() == 0) {
+			dissociate(changingChannels);
+		} else {
+			getSession().setEmptyReadQueueHandler(new Runnable() {
+				@Override
+				public void run() {
+					dissociate(changingChannels);
+				}
+			});
+		}
 		if (!changingChannels)
 			updateState(STATUS_NOTLOGGEDIN);
 	}

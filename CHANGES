@@ -1659,6 +1659,16 @@
 	associated selection key) with any operations that require the key be valid,
 	to avoid several race conditions.
 
+2012-06-20  GoldenKevin  (revision 88)
+
+	* Rearranged ClientSession.send(byte[]) so that length of a message won't
+	have any effect on the queue insert number of the message and instead is
+	mostly dependent on when the method was called.
+	* Let players linger in their channel and map after client disconnection
+	until all the remaining messages read from the client are processed. Should
+	fix problems with null characters when a client disconnects while it still
+	has queued messages.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

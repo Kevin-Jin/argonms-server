@@ -452,10 +452,23 @@ public class LoginClient extends RemoteClient {
 		return ServerType.LOGIN;
 	}
 
-	@Override
-	public void disconnected() {
+	private void dissociate() {
 		getSession().removeClient();
 		setSession(null);
+	}
+
+	@Override
+	public void disconnected() {
+		if (getSession().getQueuedReads() == 0) {
+			dissociate();
+		} else {
+			getSession().setEmptyReadQueueHandler(new Runnable() {
+				@Override
+				public void run() {
+					dissociate();
+				}
+			});
+		}
 		if (!isMigrating() && getAccountId() != 0)
 			updateState(STATUS_NOTLOGGEDIN);
 	}

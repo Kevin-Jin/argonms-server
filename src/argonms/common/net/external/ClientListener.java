@@ -157,6 +157,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 														ivAndMessage = session.readMessage(read);
 													}
 													if (ivAndMessage != null && ivAndMessage.length == 2) {
+														session.readEnqueued();
 														//decrypt the body and handle it on a worker thread
 														final byte[] iv = ivAndMessage[0];
 														final byte[] body = ivAndMessage[1];
@@ -167,6 +168,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 																	MapleAesOfb.aesCrypt(body, iv);
 																	MapleAesOfb.mapleDecrypt(body);
 																	pp.process(new LittleEndianByteArrayReader(body), session.getClient());
+																	session.readDequeued();
 																} catch (Exception ex) {
 																	LOG.log(Level.WARNING, "Uncaught exception while processing packet from client " + session.getAccountName() + " (" + session.getAddress() + ")", ex);
 																}

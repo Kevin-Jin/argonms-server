@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -59,6 +60,8 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	private ByteBuffer readBuffer;
 	private final CloseListener<T> onClose;
 	private T client;
+	private final AtomicInteger queuedReads;
+	private volatile Runnable emptyReadQueueHandler;
 
 	private final SelectionKey selectionKey;
 	private final OrderedQueue sendQueue;
@@ -85,6 +88,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		closeEventsTriggered = new AtomicBoolean(false);
 		sendQueue = new OrderedQueue();
 		heartbeatTask = new KeepAliveTask();
+		queuedReads = new AtomicInteger(0);
 
 		//we don't need to lock for receiving - see readMessage()
 		sendIvLock = new ReentrantLock();
@@ -133,8 +137,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 	@Override
 	public void send(byte[] message) {
-		byte[] input = new byte[message.length];
-		System.arraycopy(message, 0, input, 0, message.length);
 		//we will have to synchronize here because send can be called from any
 		//thread. we have to ensure that this message is sent before any shorter
 		//messages that use a newer IV are sent, so use an OrderedQueue.
@@ -148,6 +150,8 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		} finally {
 			sendIvLock.unlock();
 		}
+		byte[] input = new byte[message.length];
+		System.arraycopy(message, 0, input, 0, message.length);
 		byte[] header = MapleAesOfb.makePacketHeader(input.length, iv);
 		byte[] output = new byte[header.length + input.length];
 		MapleAesOfb.mapleEncrypt(input);
@@ -155,6 +159,23 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		System.arraycopy(header, 0, output, 0, header.length);
 		System.arraycopy(input, 0, output, header.length, input.length);
 		send(queueInsertNo, ByteBuffer.wrap(output));
+	}
+
+	public void readEnqueued() {
+		queuedReads.incrementAndGet();
+	}
+
+	public void readDequeued() {
+		if (queuedReads.decrementAndGet() == 0 && emptyReadQueueHandler != null)
+			emptyReadQueueHandler.run();
+	}
+
+	public int getQueuedReads() {
+		return queuedReads.get();
+	}
+
+	public void setEmptyReadQueueHandler(Runnable runnable) {
+		emptyReadQueueHandler = runnable;
 	}
 
 	public void receivedPong() {
