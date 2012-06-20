@@ -76,14 +76,27 @@ public class ShopClient extends RemoteClient {
 		return ServerType.SHOP;
 	}
 
-	@Override
-	public void disconnected() {
+	private void dissociate() {
 		if (player != null) {
 			ShopServer.getInstance().removePlayer(player);
 			player = null;
 		}
 		getSession().removeClient();
 		setSession(null);
+	}
+
+	@Override
+	public void disconnected() {
+		if (getSession().getQueuedReads() == 0) {
+			dissociate();
+		} else {
+			getSession().setEmptyReadQueueHandler(new Runnable() {
+				@Override
+				public void run() {
+					dissociate();
+				}
+			});
+		}
 		if (!isMigrating())
 			updateState(STATUS_NOTLOGGEDIN);
 	}
