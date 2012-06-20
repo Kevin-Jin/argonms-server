@@ -1691,6 +1691,15 @@
 	the pool has to throw out all the connections in the cache before we realize
 	that the database server is offline.
 
+2012-06-20  GoldenKevin  (revision 90)
+
+	* Fixed deadlock in RemoteCenterSession. Reverted changes to that file from
+	r87.
+	* DatabaseManager.ThreadLocalConnections.getConnection() now always throws
+	an SQLException if the database server cannot be reached rather than return
+	null in some cases. Refactored out connectionCheck since it's body is a
+	single line.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

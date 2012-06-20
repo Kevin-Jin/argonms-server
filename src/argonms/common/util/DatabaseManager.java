@@ -143,14 +143,6 @@ public class DatabaseManager {
 		return exceptions;
 	}
 
-	private static boolean connectionCheck(Connection con) {
-		try {
-			return con.isValid(0);
-		} catch (SQLException ex) {
-			return false;
-		}
-	}
-
 	private static interface ConnectionPool {
 		public Connection getConnection() throws SQLException;
 		public void returnConnection(Connection con);
@@ -186,8 +178,7 @@ public class DatabaseManager {
 			}
 		}
 
-		@Override
-		public Connection getConnection() throws SQLException {
+		private Connection tryGetConnection() throws SQLException {
 			Connection con = get();
 			if (con == null) {
 				remove();
@@ -195,10 +186,13 @@ public class DatabaseManager {
 				exceptions.remove();
 				throw ex;
 			}
-			if (connectionCheck(con)) {
-				taken.incrementAndGet();
-				return con;
-			} else {
+			return con;
+		}
+
+		@Override
+		public Connection getConnection() throws SQLException {
+			Connection con = tryGetConnection();
+			if (!con.isValid(0)) {
 				try {
 					con.close();
 					allConnections.removeWhenSafe(con);
@@ -206,9 +200,10 @@ public class DatabaseManager {
 					throw new SQLException("Could not remove invalid connection to database.", e);
 				}
 				remove();
-				taken.incrementAndGet();
-				return get();
+				con = tryGetConnection();
 			}
+			taken.incrementAndGet();
+			return con;
 		}
 
 		@Override
@@ -250,7 +245,7 @@ public class DatabaseManager {
 		@Override
 		public Connection getConnection() throws SQLException {
 			Connection next = available.poll();
-			while (next != null && !connectionCheck(next)) {
+			while (next != null && !next.isValid(0)) {
 				try {
 					next.close();
 					allConnections.removeWhenSafe(next);

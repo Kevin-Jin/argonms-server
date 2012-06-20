@@ -121,10 +121,6 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		return getClient() != null ? getClient().getAccountName() : null;
 	}
 
-	public boolean isOpen() {
-		return commChn.isOpen();
-	}
-
 	private void send(int queueInsertNo, ByteBuffer buf) {
 		sendQueue.insert(queueInsertNo, buf);
 		synchronized (commChn) {
