@@ -18,7 +18,6 @@
 
 package argonms.center.net.remoteadmin;
 
-import argonms.center.net.remoteadmin.TelnetSession.CloseListener;
 import argonms.common.net.SessionCreator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -119,18 +118,13 @@ public class TelnetListener implements SessionCreator {
 								if (key == acceptorKey) {
 									if (key.isValid() && key.isAcceptable()) {
 										try {
-											final SocketChannel client = listener.accept();
+											SocketChannel client = listener.accept();
 											client.socket().setTcpNoDelay(false);
 											client.configureBlocking(false);
 											LOG.log(Level.FINE, "Telnet client connected from {0}", client.socket().getRemoteSocketAddress());
-											final SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
-											final TelnetClient clientState = new TelnetClient();
-											TelnetSession session = new TelnetSession(client, acceptedKey, clientState, packetDelegate, new CloseListener() {
-												@Override
-												public void closed(TelnetSession session) {
-													acceptedKey.cancel();
-												}
-											});
+											SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
+											TelnetClient clientState = new TelnetClient();
+											TelnetSession session = new TelnetSession(client, acceptedKey, clientState, packetDelegate);
 											clientState.setSession(session);
 											acceptedKey.attach(session);
 										} catch (IOException ex) {
@@ -140,30 +134,32 @@ public class TelnetListener implements SessionCreator {
 								} else {
 									SocketChannel client = (SocketChannel) key.channel();
 									final TelnetSession session = (TelnetSession) key.attachment();
-									if (key.isValid() && key.isReadable()) {
-										try {
-											int read = client.read(session.readBuffer());
-											final byte[] message = session.readMessage(read);
-											if (message != null && message.length > 0) {
-												workerThreadPool.submit(new Runnable() {
-													@Override
-													public void run() {
-														try {
-															session.processRead(message);
-														} catch (Exception ex) {
-															LOG.log(Level.WARNING, "Uncaught exception while processing packet from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
+									synchronized (client) {
+										if (key.isValid() && key.isReadable()) {
+											try {
+												int read = client.read(session.readBuffer());
+												final byte[] message = session.readMessage(read);
+												if (message != null && message.length > 0) {
+													workerThreadPool.submit(new Runnable() {
+														@Override
+														public void run() {
+															try {
+																session.processRead(message);
+															} catch (Exception ex) {
+																LOG.log(Level.WARNING, "Uncaught exception while processing packet from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
+															}
 														}
-													}
-												});
+													});
+												}
+											} catch (IOException ex) {
+												//does an IOException in read always mean an invalid channel?
+												session.close("Error while reading", ex);
 											}
-										} catch (IOException ex) {
-											//does an IOException in read always mean an invalid channel?
-											session.close("Error while reading", ex);
 										}
+										if (key.isValid() && key.isWritable())
+											if (session.tryFlushSendQueue() == 1)
+												key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 									}
-									if (key.isValid() && key.isWritable())
-										if (session.tryFlushSendQueue() == 1)
-											key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 								}
 							}
 						}

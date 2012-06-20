@@ -123,9 +123,11 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 	private void send(int queueInsertNo, ByteBuffer buf) {
 		sendQueue.insert(queueInsertNo, buf);
-		if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
-			selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
-			selectionKey.selector().wakeup();
+		synchronized (commChn) {
+			if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
+				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
+				selectionKey.selector().wakeup();
+			}
 		}
 	}
 
@@ -171,10 +173,12 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			try {
-				commChn.close();
-			} catch (IOException ex) {
-				LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
+			synchronized (commChn) {
+				try {
+					commChn.close();
+				} catch (IOException ex) {
+					LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
+				}
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);

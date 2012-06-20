@@ -54,7 +54,6 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	private final SocketChannel commChn;
 	private final AtomicBoolean closeEventsTriggered;
 	private ByteBuffer readBuffer;
-	private final CloseListener<T> onClose;
 	private final T server;
 
 	private KeepAliveTask heartbeatTask;
@@ -71,16 +70,11 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	private final ExecutorService workerThreadPool;
 	private String interServerPwd;
 
-	private interface CloseListener<T extends RemoteCenterInterface> {
-		public void closed(RemoteCenterSession<T> session);
-	}
-
-	private RemoteCenterSession(SocketChannel channel, T server, String password, ExecutorService workerThreadPool, CloseListener<T> onClose) {
+	private RemoteCenterSession(SocketChannel channel, T server, String password, ExecutorService workerThreadPool) {
 		closeEventsTriggered = new AtomicBoolean(false);
 		heartbeatTask = new KeepAliveTask();
 
 		this.commChn = channel;
-		this.onClose = onClose;
 		this.server = server;
 		this.workerThreadPool = workerThreadPool;
 		this.interServerPwd = password;
@@ -119,13 +113,17 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 		buf.putInt(b.length);
 		buf.put(b);
 		buf.flip();
-		try {
-			//spin loop if we don't write the entire buffer (although in
-			//blocking mode, that should never happen...)
-			while (buf.remaining() != commChn.write(buf));
-		} catch (IOException ex) {
-			//does an IOException in write always mean an invalid channel?
-			close("Error while writing", ex);
+		synchronized (commChn) {
+			if (commChn.isOpen()) {
+				try {
+					//spin loop if we don't write the entire buffer (although in
+					//blocking mode, that should never happen...)
+					while (buf.remaining() != commChn.write(buf));
+				} catch (IOException ex) {
+					//does an IOException in write always mean an invalid channel?
+					close("Error while writing", ex);
+				}
+			}
 		}
 	}
 
@@ -145,10 +143,12 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			try {
-				commChn.close();
-			} catch (IOException ex) {
-				LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
+			synchronized (commChn) {
+				try {
+					commChn.close();
+				} catch (IOException ex) {
+					LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
+				}
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);
@@ -158,7 +158,6 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			else
 				LOG.log(Level.FINE, "Disconnected from center server (" + getAddress() + "): " + reason, reasonExc);
 			server.disconnected();
-			onClose.closed(this);
 			return true;
 		}
 		return false;
@@ -276,7 +275,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	 * @param ip the name of the host of the center server
 	 * @param port the center server's listening port
 	 */
-	public static <T extends RemoteCenterInterface> RemoteCenterSession<T> connect(final String ip, final int port, final String authKey, final T serverState) {
+	public static <T extends RemoteCenterInterface> RemoteCenterSession<T> connect(String ip, int port, String authKey, final T serverState) {
 		ExecutorService workerThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			private final ThreadGroup group;
 
@@ -302,32 +301,30 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			center.socket().setTcpNoDelay(false);
 			center.configureBlocking(true);
 			center.connect(new InetSocketAddress(ip, port));
-			final RemoteCenterSession<T> session = new RemoteCenterSession<T>(center, serverState, authKey, workerThreadPool, new CloseListener<T>() {
-				@Override
-				public void closed(RemoteCenterSession<T> session) {
-				}
-			});
+			final RemoteCenterSession<T> session = new RemoteCenterSession<T>(center, serverState, authKey, workerThreadPool);
 			serverState.setSession(session);
 			LOG.log(Level.FINE, "Connected to Center server at {0}", session.getAddress());
 			workerThreadPool.submit(new Runnable() {
 				@Override
 				public void run() {
 					session.sendInitPacket();
-					while (center.isOpen()) {
-						try {
-							int read = center.read(session.readBuffer());
-							byte[] message = session.readMessage(read);
-							if (message != null && message.length != 0) {
-								//the body was received successfully
-								try {
-									serverState.process(message);
-								} catch (Exception ex) {
-									LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
+					synchronized (center) {
+						while (center.isOpen()) {
+							try {
+								int read = center.read(session.readBuffer());
+								byte[] message = session.readMessage(read);
+								if (message != null && message.length != 0) {
+									//the body was received successfully
+									try {
+										serverState.process(message);
+									} catch (Exception ex) {
+										LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
+									}
 								}
+							} catch (IOException ex) {
+								//does an IOException in read always mean an invalid channel?
+								session.close("Error while reading", ex);
 							}
-						} catch (IOException ex) {
-							//does an IOException in read always mean an invalid channel?
-							session.close("Error while reading", ex);
 						}
 					}
 				}

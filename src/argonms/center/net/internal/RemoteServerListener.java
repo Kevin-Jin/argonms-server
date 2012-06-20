@@ -18,7 +18,6 @@
 
 package argonms.center.net.internal;
 
-import argonms.center.net.internal.CenterRemoteSession.CloseListener;
 import argonms.common.net.SessionCreator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -112,17 +111,12 @@ public class RemoteServerListener implements SessionCreator {
 								if (key == acceptorKey) {
 									if (key.isValid() && key.isAcceptable()) {
 										try {
-											final SocketChannel client = listener.accept();
+											SocketChannel client = listener.accept();
 											client.socket().setTcpNoDelay(false);
 											client.configureBlocking(false);
 											LOG.log(Level.FINE, "Remote server connected from {0}", client.socket().getRemoteSocketAddress());
-											final SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
-											acceptedKey.attach(new CenterRemoteSession(client, acceptedKey, interServerPassword, new CloseListener() {
-												@Override
-												public void closed(CenterRemoteSession session) {
-													acceptedKey.cancel();
-												}
-											}));
+											SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
+											acceptedKey.attach(new CenterRemoteSession(client, acceptedKey, interServerPassword));
 										} catch (IOException ex) {
 											LOG.log(Level.FINE, "Error while accepting remote server", ex);
 										}
@@ -130,40 +124,42 @@ public class RemoteServerListener implements SessionCreator {
 								} else {
 									SocketChannel client = (SocketChannel) key.channel();
 									final CenterRemoteSession session = (CenterRemoteSession) key.attachment();
-									if (key.isValid() && key.isReadable()) {
-										try {
-											int read = client.read(session.readBuffer());
-											byte[] message = session.readMessage(read);
-											if (message != null) {
-												//the header or the body was received successfully
-												if (message.length == 0) {
-													//header received, try a non-blocking read to see if we also got the message body
-													read = client.read(session.readBuffer());
-													message = session.readMessage(read);
-												}
+									synchronized (client) {
+										if (key.isValid() && key.isReadable()) {
+											try {
+												int read = client.read(session.readBuffer());
+												byte[] message = session.readMessage(read);
 												if (message != null) {
-													final byte[] body = message;
-													//handle the body on a worker thread
-													workerThreadPool.submit(new Runnable() {
-														@Override
-														public void run() {
-															try {
-																session.process(body);
-															} catch (Exception ex) {
-																LOG.log(Level.WARNING, "Uncaught exception while processing packet from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
+													//the header or the body was received successfully
+													if (message.length == 0) {
+														//header received, try a non-blocking read to see if we also got the message body
+														read = client.read(session.readBuffer());
+														message = session.readMessage(read);
+													}
+													if (message != null) {
+														final byte[] body = message;
+														//handle the body on a worker thread
+														workerThreadPool.submit(new Runnable() {
+															@Override
+															public void run() {
+																try {
+																	session.process(body);
+																} catch (Exception ex) {
+																	LOG.log(Level.WARNING, "Uncaught exception while processing packet from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
+																}
 															}
-														}
-													});
+														});
+													}
 												}
+											} catch (IOException ex) {
+												//does an IOException in read always mean an invalid channel?
+												session.close("Error while reading", ex);
 											}
-										} catch (IOException ex) {
-											//does an IOException in read always mean an invalid channel?
-											session.close("Error while reading", ex);
 										}
+										if (key.isValid() && key.isWritable())
+											if (session.tryFlushSendQueue() == 1)
+												key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 									}
-									if (key.isValid() && key.isWritable())
-										if (session.tryFlushSendQueue() == 1)
-											key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
 								}
 							}
 						}
