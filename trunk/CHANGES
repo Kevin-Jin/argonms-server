@@ -1669,6 +1669,28 @@
 	fix problems with null characters when a client disconnects while it still
 	has queued messages.
 
+2012-06-20  GoldenKevin  (revision 89)
+
+	* Use Connection.isValid(timeout) instead of Connection.prepareStatement
+	("/* ping */ SELECT 1") for DatabaseManager.connectionCheck since MySQL
+	Connector/J implements both pretty much the same (except it returns false
+	instead of throwing an exception if the connection is closed and doesn't
+	instantiate a "fakeSelectOneResultSet") in a more readable and concise
+	manner. (cf. com.mysql.jdbc.ConnectionImpl.pingInternal(boolean
+	checkForClosedConnection, int timeoutMillis), com.mysql.jdbc.JDBC4Connection
+	.isValid(int timeout), com.mysql.jdbc.ConnectionImpl.ping(), and com.mysql
+	.jdbc.StatementImpl.doPingInstead()). The Java 6 only argument is moot since
+	we use other Java 6 APIs.
+	* argonms.common.util.DatabaseManager.CachedConnectionPool.getConnection()
+	throws out dead connections and tries the next one until there are none left
+	rather than immediately replacing them with fresh connections. Only if there
+	are no (valid) connections does it create new ones. This should clear out
+	all dead connections in a single call to DatabaseManager.getConnection()
+	since the least recently used connections are the ones that time out first
+	and are also the first to be connection checked. The only downside is that
+	the pool has to throw out all the connections in the cache before we realize
+	that the database server is offline.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

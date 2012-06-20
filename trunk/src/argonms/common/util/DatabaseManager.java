@@ -144,25 +144,10 @@ public class DatabaseManager {
 	}
 
 	private static boolean connectionCheck(Connection con) {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("/* ping */ SELECT 1");
-			rs = ps.executeQuery();
-			if (!rs.next())
-				return false;
-			return true;
+			return con.isValid(0);
 		} catch (SQLException ex) {
 			return false;
-		} finally {
-			if (rs != null)
-				try {
-					rs.close();
-				if (ps != null)
-					ps.close();
-			} catch (SQLException ex) {
-				//nothing we can do!
-			}
 		}
 	}
 
@@ -265,21 +250,18 @@ public class DatabaseManager {
 		@Override
 		public Connection getConnection() throws SQLException {
 			Connection next = available.poll();
-			if (next == null || !connectionCheck(next)) {
-				if (next != null) { //only happens when con != null, but is dead
-					try {
-						next.close();
-						allConnections.removeWhenSafe(next);
-					} catch (SQLException e) {
-						throw new SQLException("Could not remove invalid connection to database.", e);
-					}
+			while (next != null && !connectionCheck(next)) {
+				try {
+					next.close();
+					allConnections.removeWhenSafe(next);
+				} catch (SQLException e) {
+					throw new SQLException("Could not remove invalid connection to database.", e);
 				}
-				//try {
-					next = DriverManager.getConnection(url, user, password);
-					allConnections.addWhenSafe(next);
-				/*} catch (SQLException e) {
-					throw new SQLException("Could not connect to database.", e);
-				}*/
+				next = available.poll();
+			}
+			if (next == null) {
+				next = DriverManager.getConnection(url, user, password);
+				allConnections.addWhenSafe(next);
 			}
 			taken.incrementAndGet();
 			return next;
