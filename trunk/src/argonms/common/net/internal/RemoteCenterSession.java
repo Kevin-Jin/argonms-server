@@ -113,17 +113,13 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 		buf.putInt(b.length);
 		buf.put(b);
 		buf.flip();
-		synchronized (commChn) {
-			if (commChn.isOpen()) {
-				try {
-					//spin loop if we don't write the entire buffer (although in
-					//blocking mode, that should never happen...)
-					while (buf.remaining() != commChn.write(buf));
-				} catch (IOException ex) {
-					//does an IOException in write always mean an invalid channel?
-					close("Error while writing", ex);
-				}
-			}
+		try {
+			//spin loop if we don't write the entire buffer (although in
+			//blocking mode, that should never happen...)
+			while (buf.remaining() != commChn.write(buf));
+		} catch (IOException ex) {
+			//does an IOException in write always mean an invalid channel?
+			close("Error while writing", ex);
 		}
 	}
 
@@ -143,12 +139,10 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			synchronized (commChn) {
-				try {
-					commChn.close();
-				} catch (IOException ex) {
-					LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
-				}
+			try {
+				commChn.close();
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);
@@ -308,23 +302,21 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 				@Override
 				public void run() {
 					session.sendInitPacket();
-					synchronized (center) {
-						while (center.isOpen()) {
-							try {
-								int read = center.read(session.readBuffer());
-								byte[] message = session.readMessage(read);
-								if (message != null && message.length != 0) {
-									//the body was received successfully
-									try {
-										serverState.process(message);
-									} catch (Exception ex) {
-										LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
-									}
+					while (center.isOpen()) {
+						try {
+							int read = center.read(session.readBuffer());
+							byte[] message = session.readMessage(read);
+							if (message != null && message.length != 0) {
+								//the body was received successfully
+								try {
+									serverState.process(message);
+								} catch (Exception ex) {
+									LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
 								}
-							} catch (IOException ex) {
-								//does an IOException in read always mean an invalid channel?
-								session.close("Error while reading", ex);
 							}
+						} catch (IOException ex) {
+							//does an IOException in read always mean an invalid channel?
+							session.close("Error while reading", ex);
 						}
 					}
 				}
