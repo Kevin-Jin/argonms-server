@@ -1700,6 +1700,15 @@
 	null in some cases. Refactored out connectionCheck since it's body is a
 	single line.
 
+2012-06-20  GoldenKevin  (revision 91)
+
+	* Added all server side NPC scripts for NPCs on Maple Island. The eclectic
+	text is meant to be faithful to GMS v0.62 yet free of blatant misspellings
+	and broken English.
+	* Most commonly called methods outside of NpcConversationActions now have
+	aliases in that class or its super class. The idea is to minimize the scope
+	of scripts so that refactoring the sources will have less pitfalls.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

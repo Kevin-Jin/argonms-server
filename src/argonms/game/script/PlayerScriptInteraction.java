@@ -47,8 +47,16 @@ public abstract class PlayerScriptInteraction {
 		client.getPlayer().gainExp((int) Math.min((long) gain * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
 	}
 
+	public boolean playerHasMesos(int min) {
+		return client.getPlayer().getMesos() >= min;
+	}
+
 	public void giveMesos(int gain) {
 		client.getPlayer().gainMesos((int) Math.min((long) gain * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
+	}
+
+	public void takeMesos(int lose) {
+		client.getPlayer().gainMesos(-lose, true);
 	}
 
 	public boolean playerHasItem(int itemid, int quantity) {
@@ -102,5 +110,17 @@ public abstract class PlayerScriptInteraction {
 			return true;
 		}
 		return false;
+	}
+
+	public int getMap() {
+		return client.getPlayer().getMapId();
+	}
+
+	public void warpPlayer(int mapId) {
+		client.getPlayer().changeMap(mapId);
+	}
+
+	public short getPlayerLevel() {
+		return client.getPlayer().getLevel();
 	}
 }

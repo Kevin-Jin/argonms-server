@@ -24,10 +24,10 @@
  * Greets newly created players at the entrance of the Mushroom Town Training
  * Camp, and gives a player some help in Upper Level of the Training Camp.
  *
- * @author GoldenKevin
+ * @author GoldenKevin (content from KiniroMS r227)
  */
 
-var map = npc.getClient().getPlayer().getMapId();
+var map = npc.getMap();
 if (map == 0 || map == 3) {
 	var enterCamp = npc.askYesNo("Welcome to the world of MapleStory. The purpose of this training camp is to help beginners. Would you like to enter this training camp? Some people start their journey without taking the training program. But I strongly recommend you take the training program first.");
 	if (enterCamp == 1) {
@@ -36,7 +36,7 @@ if (map == 0 || map == 3) {
 		var confirm = npc.askYesNo("Do you really want to start your journey right away?");
 		if (confirm) {
 			npc.sayNext("It seems like you want to start your journey without taking the training program. Then, I will let you move on to the training ground. Be careful~");
-			npc.getClient().getPlayer().changeMap(40000);
+			npc.warpPlayer(40000);
 		} else {
 			warpToTrainingCamp();
 		}
@@ -48,5 +48,5 @@ if (map == 0 || map == 3) {
 
 function warpToTrainingCamp() {
 	npc.sayNext("Ok then, I will let you enter the training camp. Please follow your instructor's lead.");
-	npc.getClient().getPlayer().changeMap(1);
+	npc.warpPlayer(1);
 }
