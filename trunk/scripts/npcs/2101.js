@@ -22,13 +22,13 @@
  *
  * Teleports players from inside the Mushroom Town Training Camp to the exit.
  *
- * @author GoldenKevin
+ * @author GoldenKevin (content from KiniroMS r227)
  */
 
 var result = npc.askYesNo("Are you done with your training? If you wish, I will send you out from this training camp.");
 if (result == 1) {
 	npc.sayNext("Then, I will send you out from here. Good job.");
-	npc.getClient().getPlayer().changeMap(3);
+	npc.warpPlayer(3);
 } else {
 	npc.say("Haven't you finish the training program yet? If you want to leave this place, please do not hesitate to tell me.");
 }
