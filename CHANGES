@@ -1709,6 +1709,12 @@
 	aliases in that class or its super class. The idea is to minimize the scope
 	of scripts so that refactoring the sources will have less pitfalls.
 
+2012-06-22  GoldenKevin  (revision 92)
+	* All Lith Harbor NPCs (except Chef, since I can't find any reliable script
+	for him, and Duey and EXP Gachapon because they're too complicated at the
+	moment) are now scripted.
+	* argon.sql updated.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

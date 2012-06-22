@@ -18,6 +18,8 @@
 
 package argonms.game.script;
 
+import argonms.common.character.BuddyList;
+import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -25,6 +27,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
+import argonms.game.character.MapMemoryVariable;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 
@@ -122,5 +125,35 @@ public abstract class PlayerScriptInteraction {
 
 	public short getPlayerLevel() {
 		return client.getPlayer().getLevel();
+	}
+
+	public boolean playerIsBeginner() {
+		return client.getPlayer().getJob() == PlayerJob.JOB_BEGINNER;
+	}
+
+	public void rememberMap(String variable) {
+		client.getPlayer().rememberMap(MapMemoryVariable.valueOf(variable));
+	}
+
+	public int getRememberedMap(String variable) {
+		return client.getPlayer().getRememberedMap(MapMemoryVariable.valueOf(variable));
+	}
+
+	public int resetRememberedMap(String variable) {
+		return client.getPlayer().resetRememberedMap(MapMemoryVariable.valueOf(variable));
+	}
+
+	public short getPlayerBuddyCapacity() {
+		return client.getPlayer().getBuddyList().getCapacity();
+	}
+
+	public void giveBuddySlots(short delta) {
+		BuddyList bList = client.getPlayer().getBuddyList();
+		bList.increaseCapacity(delta);
+		client.getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
+	}
+
+	public boolean isQuestFinished(short questId) {
+		return client.getPlayer().isQuestCompleted(questId);
 	}
 }

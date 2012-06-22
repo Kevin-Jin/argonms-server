@@ -248,6 +248,17 @@ CREATE TABLE `macbans` (
   CONSTRAINT FOREIGN KEY (`banid`) REFERENCES `bans` (`banid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS `mapmemory`;
+CREATE TABLE `mapmemory` (
+  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` INT(11) NOT NULL,
+  `key` ENUM('FREE_MARKET','WORLD_TOUR','FLORINA') NOT NULL,
+  `value` INT(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS `minigamescores`;
 CREATE TABLE `minigamescores` (
   `entryid` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,

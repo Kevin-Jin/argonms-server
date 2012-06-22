@@ -26,8 +26,7 @@
  */
 
 while (true) {
-	var selection = npc.askMenu(
-			"Now... ask me any questions you might have on traveling!!\r\n"
+	var selection = npc.askMenu("Now... ask me any questions you might have on traveling!!\r\n"
 			+ "#L0##bHow do I move?#l\r\n"
 			+ "#L1#How do I take down the monsters?#l\r\n"
 			+ "#L2#How can I pick up an item?#l\r\n"
@@ -44,8 +43,7 @@ while (true) {
 			+ "#L13#How do I check out the items that I'm wearing?#l\r\n"
 			+ "#L14#What are skills? (K)#l\r\n"
 			+ "#L15#How do I get to Victoria Island?#l\r\n"
-			+ "#L16#What are mesos?#l#k"
-	);
+			+ "#L16#What are mesos?#l#k");
 
 	switch (selection) {
 		case 0:
