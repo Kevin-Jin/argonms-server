@@ -112,6 +112,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private final LockableList<Mob> controllingMobs;
 	private GameMap map;
+	private final ConcurrentMap<MapMemoryVariable, Integer> rememberedMaps;
 
 	private BuddyList buddies;
 	private int guild;
@@ -157,6 +158,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		diseaseFutures = new ConcurrentHashMap<Short, Pair<MobSkillState, ScheduledFuture<?>>>();
 		summons = new ConcurrentHashMap<Integer, PlayerSkillSummon>();
 		controllingMobs = new LockableList<Mob>(new ArrayList<Mob>());
+		rememberedMaps = new ConcurrentHashMap<MapMemoryVariable, Integer>();
 		questStatuses = new ConcurrentHashMap<Short, QuestEntry>();
 		questSubscriptions = Collections.synchronizedMap(new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class));
 		minigameStats = Collections.synchronizedMap(new EnumMap<MiniroomType, Map<MinigameResult, AtomicInteger>>(MiniroomType.class));
@@ -178,6 +180,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			con.setAutoCommit(false);
 			updateDbAccount(con);
 			updateDbStats(con);
+			updateDbMapMemory(con);
 			updateDbInventory(con);
 			updateDbSkills(con);
 			updateDbCooldowns(con);
@@ -281,6 +284,30 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			throw new SQLException("Failed to save stats of character " + name, e);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
+	private void updateDbMapMemory(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `mapmemory` WHERE "
+					+ "`characterid` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,"
+					+ "`key`,`value`) VALUES (?,?,?)");
+			ps.setInt(1, getDataId());
+			for (Entry<MapMemoryVariable, Integer> entry : rememberedMaps.entrySet()) {
+				ps.setString(2, entry.getKey().toString());
+				ps.setInt(3, entry.getValue().intValue());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 		}
 	}
 
@@ -618,6 +645,15 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			p.buddies = new BuddyList(rs.getShort(32));
 			c.setAccountName(rs.getString(42));
 			p.storage = new StorageInventory(rs.getShort(43), rs.getInt(44));
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `key`,`value` FROM `mapmemory` "
+					+ "WHERE `characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			while (rs.next())
+				p.rememberedMaps.put(MapMemoryVariable.valueOf(rs.getString(1)), Integer.valueOf(rs.getInt(2)));
 			rs.close();
 			ps.close();
 
@@ -1251,6 +1287,20 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public int getMapId() {
 		return (map != null ? map.getDataId() : super.getMapId());
+	}
+
+	public void rememberMap(MapMemoryVariable key) {
+		rememberedMaps.put(key, Integer.valueOf(getMapId()));
+	}
+
+	public int getRememberedMap(MapMemoryVariable key) {
+		Integer mapId = rememberedMaps.get(key);
+		return (mapId != null ? mapId.intValue() : GlobalConstants.NULL_MAP);
+	}
+
+	public int resetRememberedMap(MapMemoryVariable key) {
+		Integer mapId = rememberedMaps.remove(key);
+		return (mapId != null ? mapId.intValue() : GlobalConstants.NULL_MAP);
 	}
 
 	public BuddyList getBuddyList() {
@@ -2048,6 +2098,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		QuestEntry status = questStatuses.get(Short.valueOf(questId));
 		return status != null && status.getState() == QuestEntry.STATE_STARTED
 				&& !QuestDataLoader.getInstance().canCompleteQuest(this, questId);
+	}
+
+	public boolean isQuestCompleted(short questId) {
+		QuestEntry status = questStatuses.get(Short.valueOf(questId));
+		return status != null && status.getState() == QuestEntry.STATE_COMPLETED;
 	}
 
 	public int getMinigamePoints(MiniroomType game, MinigameResult stat) {

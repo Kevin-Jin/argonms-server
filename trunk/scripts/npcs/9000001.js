@@ -17,20 +17,21 @@
  */
 
 /**
- * Paul: Event Assistant (NPC 9000000)
- * Maple Road: Southperry (Map 60000)
+ * Jean: Event Assistant (NPC 9000001)
+ * Victoria Road: Lith Harbor (Map 104000000)
  *
- * Maple Anniversary event assistant in Southperry.
+ * Maple Anniversary event assistant in Lith Harbor.
  *
  * @author GoldenKevin (content from Vana r2111)
  */
 
-npc.sayNext("Hey, I'm #b#p9000000##k, if you're not busy and all ... then can I hang out with you? I heard there are people gathering up around here for an #revent#k but I don't want to go there by myself ... Well, do you want to go check it out with me?");
-var option = npc.askMenu("Huh? What kind of an event? Well, that's... \r\n"
+npc.sayNext("Hey, I'm #b#p9000001##k. I am waiting for my brother #b#p9000000##k. He is supposed to be here by now...");
+npc.sayNext("Hmm... what should I do? The event will start, soon... many people went to participate in the event, so we better be hurry...");
+var selection = npc.askMenu("Hey... why don't you go with me? I think my brother will come with other people.\r\n"
 		+ "#L0##e1. #n#bWhat kind of an event is it?#k#l\r\n"
 		+ "#L1##e2. #n#bExplain the event game to me.#k#l\r\n"
 		+ "#L2##e3. #n#bAlright, let's go!#k#l");
-switch (option) {
+switch (selection) {
 	case 0:
 		//TODO: 1st anniversary? really?
 		npc.sayNext("All this month MapleStory Global is celebrating its 1st anniversary! The GM's will be holding surprise GM Events throughout the event, so stay on your toes and make sure to participate in at least one of the events for great prizes!");
