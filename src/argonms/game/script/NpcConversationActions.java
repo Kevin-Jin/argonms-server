@@ -28,6 +28,7 @@ import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
@@ -56,20 +57,19 @@ import org.mozilla.javascript.Scriptable;
 public class NpcConversationActions extends PlayerScriptInteraction {
 	private static final Logger LOG = Logger.getLogger(NpcConversationActions.class.getName());
 
-	private int npcId;
-	private Context cx;
-	private Scriptable globalScope;
-	private Object continuation;
-	private boolean endingChat;
-	private PreviousMessageCache prevs;
+	private final int npcId;
+	private final Scriptable globalScope;
+	private final PreviousMessageCache prevs;
+	private final AtomicBoolean terminated;
+	private volatile boolean endingChat;
+	private volatile Object continuation;
 
-	public NpcConversationActions(int npcId, GameClient client, Context cx, Scriptable globalScope) {
+	public NpcConversationActions(int npcId, GameClient client, Scriptable globalScope) {
 		super(client);
 		this.npcId = npcId;
-		this.cx = cx;
 		this.globalScope = globalScope;
-		this.endingChat = false;
 		this.prevs = new PreviousMessageCache();
+		this.terminated = new AtomicBoolean(false);
 	}
 
 	private static final byte
@@ -102,37 +102,67 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		else
 			clearBackButton();
 		getClient().getSession().send(writeNpcSay(npcId, message, hasPrev, false));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public void sayNext(String message) {
 		prevs.add(message, true);
 		getClient().getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public byte askYesNo(String message) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public byte askAccept(String message) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public byte askAcceptNoESC(String message) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public String askQuiz(byte type, int objectId, int correct, int questions, int time) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public String askQuizQuestion(String title, String problem,
@@ -140,38 +170,68 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		clearBackButton();
 		getClient().getSession().send(writeNpcQuizQuestion(npcId,
 				title, problem, hint, min, max, timeLimit));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public String askText(String message, String def, short min, short max) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskText(npcId, message, def, min, max));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	//I think this is probably 14 (0x0E)...
 	/*public String askBoxText(String message, String def, int col, int line) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcBoxText(npcId, message, def, col, line));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}*/
 
 	public int askNumber(String message, int def, int min, int max) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public int askMenu(String message) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public int askAvatar(String message, int... styles) {
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskAvatar(npcId, message, styles));
-		throw cx.captureContinuation();
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public boolean sendShop(int shopId) {
@@ -202,11 +262,14 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			clearBackButton(); //we probably don't want a back button in the end chat hook...
 			Object f = globalScope.get("chatEnded", globalScope);
 			if (f != Scriptable.NOT_FOUND) {
+				Context cx = Context.enter();
 				try {
 					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
 					endConversation();
 				} catch (ContinuationPending pending) {
 					setContinuation(pending.getContinuation());
+				} finally {
+					Context.exit();
 				}
 			} else {
 				endConversation();
@@ -217,12 +280,15 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	private void resume(Object obj) {
-		if (!cx.isSealed()) {
+		if (!terminated.get()) {
+			Context cx = Context.enter();
 			try {
 				cx.resumeContinuation(continuation, globalScope, obj);
 				endConversation();
 			} catch (ContinuationPending pending) {
 				setContinuation(pending.getContinuation());
+			} finally {
+				Context.exit();
 			}
 		}
 	}
@@ -330,10 +396,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public void endConversation() {
-		if (!cx.isSealed()) {
-			cx.seal(null);
+		if (terminated.compareAndSet(false, true))
 			getClient().setNpc(null);
-		}
 	}
 
 	private static void writeCommonNpcAction(LittleEndianWriter lew, int npcId, byte type, String msg) {

@@ -1715,6 +1715,14 @@
 	moment) are now scripted.
 	* argon.sql updated.
 
+2012-06-23  GoldenKevin  (revision 93)
+	* Fixed improper usage of Rhino Context instances.
+	* Packaged libraries have been updated. Rhino has been updated from version
+	1.7R3 to 1.7R4 and MySQL Connector/J from 5.1.16 to 5.1.20. MySQL's .jar and
+	Rhino's .jar files have been recompressed to reduce their size by a few
+	kilobytes, so they do not match the size of the download you would get on
+	their respective websites.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
