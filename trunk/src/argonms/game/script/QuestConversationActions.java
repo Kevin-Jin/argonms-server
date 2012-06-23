@@ -19,7 +19,6 @@
 package argonms.game.script;
 
 import argonms.game.net.external.GameClient;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
 /**
@@ -27,10 +26,10 @@ import org.mozilla.javascript.Scriptable;
  * @author GoldenKevin
  */
 public class QuestConversationActions extends NpcConversationActions {
-	private short questId;
+	private final short questId;
 
-	public QuestConversationActions(int npcId, short questId, GameClient client, Context cx, Scriptable globalScope) {
-		super(npcId, client, cx, globalScope);
+	public QuestConversationActions(int npcId, short questId, GameClient client, Scriptable globalScope) {
+		super(npcId, client, globalScope);
 		this.questId = questId;
 	}
 

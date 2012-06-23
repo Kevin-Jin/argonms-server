@@ -79,11 +79,11 @@ public class NpcScriptManager {
 			FileReader reader = new FileReader(npcPath + npcId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
-			convoMan = new NpcConversationActions(npcId, client, cx, globalScope);
-			globalScope.put("npc", globalScope, convoMan);
-			client.setNpc(convoMan);
 			Script script = cx.compileReader(reader, "n" + npcId, 1, null);
 			reader.close();
+			convoMan = new NpcConversationActions(npcId, client, globalScope);
+			globalScope.put("npc", globalScope, convoMan);
+			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();
 		} catch (ContinuationPending pending) {
@@ -93,70 +93,10 @@ public class NpcScriptManager {
 				client.getSession().send(unscriptedNpc(npcId));
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing NPC script " + npcId, ex);
-			if (convoMan != null)
-				convoMan.endConversation();
 		} finally {
 			Context.exit();
 		}
 	}
-
-	//one script two methods routines for quests
-	/*private void runQuestScript(int npcId, short questId, GameClient client, String fn) {
-		Context cx = Context.enter();
-		QuestConversationActions convoMan = null;
-		try {
-			FileReader reader = new FileReader(questPath + questId + ".js");
-			Scriptable globalScope = cx.initStandardObjects();
-			cx.setOptimizationLevel(-1); // must use interpreter mode
-			convoMan = new QuestConversationActions(npcId, questId, client, cx, globalScope);
-			globalScope.put("npc", globalScope, convoMan);
-			client.setNpc(convoMan);
-			cx.evaluateReader(globalScope, reader, "q" + questId + fn, 1, null);
-			reader.close();
-			Object f = globalScope.get(fn, globalScope);
-			if (f != Scriptable.NOT_FOUND) {
-				try {
-					cx.callFunctionWithContinuations((Function) f, globalScope, new Object[] { });
-					convoMan.endConversation();
-				} catch (ContinuationPending pending) {
-					convoMan.setContinuation(pending.getContinuation());
-				}
-			} else {
-				client.getSession().send(unscriptedQuest(npcId, questId, fn));
-				convoMan.endConversation();
-			}
-		} catch (FileNotFoundException ex) {
-			client.getSession().send(unscriptedQuest(npcId, questId, fn));
-		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Error executing quest script " + questId, ex);
-			if (convoMan != null)
-				convoMan.endConversation();
-		} finally {
-			Context.exit();
-		}
-	}
-
-	public void runStartQuestScript(int npcId, short questId, GameClient client) {
-		runQuestScript(npcId, questId, client, "start");
-	}
-
-	public void runCompleteQuestScript(int npcId, short questId, GameClient client) {
-		runQuestScript(npcId, questId, client, "end");
-	}
-
-	private static byte[] unscriptedQuest(int npc, short quest, String type) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-
-		lew.writeShort(ClientSendOps.NPC_TALK);
-		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
-		lew.writeInt(npc);
-		lew.writeByte((byte) 0); //SAY (ok box)
-		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about quest #" + quest + " (" + type + ")!");
-		lew.writeBool(false); //prev button
-		lew.writeBool(false); //next button
-
-		return lew.getBytes();
-	}*/
 
 	private void runQuestScript(int npcId, short questId, GameClient client, String scriptName) {
 		Context cx = Context.enter();
@@ -165,11 +105,11 @@ public class NpcScriptManager {
 			FileReader reader = new FileReader(questPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
-			convoMan = new QuestConversationActions(npcId, questId, client, cx, globalScope);
-			globalScope.put("npc", globalScope, convoMan);
-			client.setNpc(convoMan);
 			Script script = cx.compileReader(reader, scriptName, 1, null);
 			reader.close();
+			convoMan = new QuestConversationActions(npcId, questId, client, globalScope);
+			globalScope.put("npc", globalScope, convoMan);
+			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();
 		} catch (ContinuationPending pending) {
@@ -178,8 +118,6 @@ public class NpcScriptManager {
 			client.getSession().send(unscriptedQuest(npcId, scriptName));
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing quest script " + scriptName, ex);
-			if (convoMan != null)
-				convoMan.endConversation();
 		} finally {
 			Context.exit();
 		}

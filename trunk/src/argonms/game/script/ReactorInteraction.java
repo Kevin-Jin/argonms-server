@@ -31,7 +31,6 @@ import argonms.game.net.external.GameClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
 /**
@@ -39,9 +38,9 @@ import org.mozilla.javascript.Scriptable;
  * @author GoldenKevin
  */
 public class ReactorInteraction extends PlayerScriptInteraction {
-	private Reactor reactor;
+	private final Reactor reactor;
 
-	public ReactorInteraction(int reactorId, Reactor reactor, GameClient client, Context cx, Scriptable globalScope) {
+	public ReactorInteraction(int reactorId, Reactor reactor, GameClient client, Scriptable globalScope) {
 		super(client);
 		this.reactor = reactor;
 	}
