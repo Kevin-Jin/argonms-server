@@ -25,7 +25,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-var result = npc.askYesNo("Are you done with your training? If you wish, I will send you out from this training camp.");
+let result = npc.askYesNo("Are you done with your training? If you wish, I will send you out from this training camp.");
 if (result == 1) {
 	npc.sayNext("Then, I will send you out from here. Good job.");
 	npc.warpPlayer(3);

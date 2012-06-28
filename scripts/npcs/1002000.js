@@ -25,11 +25,11 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-var taxiMaps = [102000000, 101000000, 100000000, 103000000, 120000000];
-var taxiFares = [1200, 1200, 800, 1000, 1000];
+let taxiMaps = [102000000, 101000000, 100000000, 103000000, 120000000];
+let taxiFares = [1200, 1200, 800, 1000, 1000];
 
 npc.sayNext("Do you wanna head over to some other town? With a little money involved, I can make it happen. It's a tad expensive, but I run a special 90% discount for beginners.");
-var selection = npc.askMenu("It's understandable that you may be confused about this place if this is your first time around. If you got any questions about this place, fire away.\r\n#b"
+let selection = npc.askMenu("It's understandable that you may be confused about this place if this is your first time around. If you got any questions about this place, fire away.\r\n#b"
 		+ "#L0#What kind of towns are here in Victoria Island?#l\r\n"
 		+ "#L1#Please take me somewhere else.#l#k");
 if (selection == 0) {
@@ -74,18 +74,18 @@ if (selection == 0) {
 			break;
 	}
 } else if (selection == 1) {
-	var prompt;
+	let prompt;
 	if (npc.playerIsBeginner()) {
 		prompt = "There's a special 90% discount for all beginners. Alright, where would you want to go?#b";
-		for (var i = 0; i < taxiMaps.length; i++)
+		for (let i = 0; i < taxiMaps.length; i++)
 			prompt += "\r\n#L" + i + "##m" + taxiMaps[i] + "#(" + taxiFares[i] / 10 + " mesos)#l";
 	} else {
 		prompt = "Oh you aren't a beginner, huh? Then I'm afraid I may have to charge you full price. Where would you like to go?#b";
-		for (var i = 0; i < taxiMaps.length; i++)
+		for (let i = 0; i < taxiMaps.length; i++)
 			prompt += "\r\n#L" + i + "##m" + taxiMaps[i] + "#(" + taxiFares[i] + " mesos)#l";
 	}
 	mapIndex = npc.askMenu(prompt);
-	var fare = taxiFares[mapIndex];
+	let fare = taxiFares[mapIndex];
 	if (npc.playerIsBeginner())
 		fare /= 10;
 	selection = npc.askYesNo("I guess you don't need to be here. Do you really want to move to #b#m" + taxiMaps[mapIndex] + "##k? Well it'll cost you #b" + fare + " meso#k. What do you think?");

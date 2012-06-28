@@ -27,13 +27,13 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-var map = npc.getMap();
+let map = npc.getMap();
 if (map == 0 || map == 3) {
-	var enterCamp = npc.askYesNo("Welcome to the world of MapleStory. The purpose of this training camp is to help beginners. Would you like to enter this training camp? Some people start their journey without taking the training program. But I strongly recommend you take the training program first.");
+	let enterCamp = npc.askYesNo("Welcome to the world of MapleStory. The purpose of this training camp is to help beginners. Would you like to enter this training camp? Some people start their journey without taking the training program. But I strongly recommend you take the training program first.");
 	if (enterCamp == 1) {
 		warpToTrainingCamp();
 	} else {
-		var confirm = npc.askYesNo("Do you really want to start your journey right away?");
+		let confirm = npc.askYesNo("Do you really want to start your journey right away?");
 		if (confirm) {
 			npc.sayNext("It seems like you want to start your journey without taking the training program. Then, I will let you move on to the training ground. Be careful~");
 			npc.warpPlayer(40000);

@@ -1723,6 +1723,12 @@
 	kilobytes, so they do not match the size of the download you would get on
 	their respective websites.
 
+2012-06-28  GoldenKevin  (revision 94)
+	* Enabled JavaScript version 1.7 features in Rhino.
+	* var declarations are replaced with let in all scripts since its behavior
+	is more akin to local variable declarations in Java.
+	* Don't let scripts capture continuations if client disconnected.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -28,20 +28,20 @@
  */
 
 if (npc.isQuestFinished(2013)) {
-	var items = [2000002, 2022003, 2022000, 2001000];
-	var costs = [310, 1060, 1600, 3120];
-	var recoverAmount = [300, 1000, 800, 1000];
-	var recoverType = ["HP", "HP", "MP", "HP and MP"];
+	let items = [2000002, 2022003, 2022000, 2001000];
+	let costs = [310, 1060, 1600, 3120];
+	let recoverAmount = [300, 1000, 800, 1000];
+	let recoverType = ["HP", "HP", "MP", "HP and MP"];
 
 	npc.sayNext("It's you... thanks to you I was able to get a lot done. Nowadays I've been making a bunch of items. If you need anything let me know.");
-	var selStr = "Which item would you like to buy?#b";
-	for (var i = 0; i < items.length; i++)
+	let selStr = "Which item would you like to buy?#b";
+	for (let i = 0; i < items.length; i++)
 		selStr += "\r\n#L" + i + "##z" + items[i] + "# (Price : " + costs[i] + " mesos)#l";
 	selection = npc.askMenu(selStr);
 
-	var item = items[selection];
-	var cost = costs[selection];
-	var count = npc.askNumber("You want #b#t" + item + "##k? #t" + item + "# allows you to recover " + recoverAmount[selection] + " " + recoverType[selection] + ". How many would you like to buy?", 1, 1, 100);
+	let item = items[selection];
+	let cost = costs[selection];
+	let count = npc.askNumber("You want #b#t" + item + "##k? #t" + item + "# allows you to recover " + recoverAmount[selection] + " " + recoverType[selection] + ". How many would you like to buy?", 1, 1, 100);
 	selection = npc.askYesNo("Will you purchase #r" + count + "#k #b#t" + item + "#(s)#k? #t" + item + "# costs " + cost + " mesos for one, so the total comes out to be #r" + cost * count + "#k mesos.");
 	cost *= count;
 	if (selection == 1) {

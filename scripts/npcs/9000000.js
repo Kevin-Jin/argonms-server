@@ -26,7 +26,7 @@
  */
 
 npc.sayNext("Hey, I'm #b#p9000000##k, if you're not busy and all ... then can I hang out with you? I heard there are people gathering up around here for an #revent#k but I don't want to go there by myself ... Well, do you want to go check it out with me?");
-var option = npc.askMenu("Huh? What kind of an event? Well, that's... \r\n"
+let option = npc.askMenu("Huh? What kind of an event? Well, that's... \r\n"
 		+ "#L0##e1. #n#bWhat kind of an event is it?#k#l\r\n"
 		+ "#L1##e2. #n#bExplain the event game to me.#k#l\r\n"
 		+ "#L2##e3. #n#bAlright, let's go!#k#l");
