@@ -27,7 +27,7 @@
 
 npc.sayNext("Hey, I'm #b#p9000001##k. I am waiting for my brother #b#p9000000##k. He is supposed to be here by now...");
 npc.sayNext("Hmm... what should I do? The event will start, soon... many people went to participate in the event, so we better be hurry...");
-var selection = npc.askMenu("Hey... why don't you go with me? I think my brother will come with other people.\r\n"
+let selection = npc.askMenu("Hey... why don't you go with me? I think my brother will come with other people.\r\n"
 		+ "#L0##e1. #n#bWhat kind of an event is it?#k#l\r\n"
 		+ "#L1##e2. #n#bExplain the event game to me.#k#l\r\n"
 		+ "#L2##e3. #n#bAlright, let's go!#k#l");

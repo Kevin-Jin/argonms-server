@@ -34,7 +34,7 @@ function declineResponse() {
 	npc.sayNext("You must have some business to take care of here. You must be tired from all that traveling and hunting. Go take some rest, and if you feel like changing your mind, then come talk to me.");
 }
 
-var selection = npc.askMenu("Have you heard of the beach with a spectacular view of the ocean called #b#m110000000##k, located near #m104000000#? I can take you there right now for either #b1500 mesos#k, or if you have #b#t4031134##k with you, in which case you'll be in for free.\r\n"
+let selection = npc.askMenu("Have you heard of the beach with a spectacular view of the ocean called #b#m110000000##k, located near #m104000000#? I can take you there right now for either #b1500 mesos#k, or if you have #b#t4031134##k with you, in which case you'll be in for free.\r\n"
 		+ "#b#L0# I'll pay #b1500 mesos#k.#l\r\n"
 		+ "#b#L1# I have #b#t4031134##k.#l\r\n"
 		+ "#b#L2# What is a #b#t4031134##k?#l");

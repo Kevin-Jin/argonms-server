@@ -33,7 +33,7 @@ function warp() {
 	npc.warpPlayer(104000000);
 }
 
-var response = npc.askYesNo("Take this ship and you'll head off to a bigger continent. For #e150 mesos#n, I'll take you to #bVictoria Island#k."
+let response = npc.askYesNo("Take this ship and you'll head off to a bigger continent. For #e150 mesos#n, I'll take you to #bVictoria Island#k."
 		+ "The thing is, once you leave this place, you can't ever come back. What do you think? Do you want to go to Victoria Island?");
 if (response == 1) {
 	if (npc.playerHasItem(4031801, 1)) {

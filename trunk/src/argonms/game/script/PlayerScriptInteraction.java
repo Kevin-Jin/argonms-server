@@ -36,10 +36,14 @@ import argonms.game.net.external.GamePackets;
  * @author GoldenKevin
  */
 public abstract class PlayerScriptInteraction {
-	private final GameClient client;
+	private GameClient client;
 
 	public PlayerScriptInteraction(GameClient c) {
 		this.client = c;
+	}
+
+	protected void dissociateClient() {
+		client = null;
 	}
 
 	public GameClient getClient() {

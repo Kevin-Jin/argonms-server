@@ -26,7 +26,7 @@
  */
 
 while (true) {
-	var selection = npc.askMenu("Now... ask me any questions you might have on traveling!!\r\n"
+	let selection = npc.askMenu("Now... ask me any questions you might have on traveling!!\r\n"
 			+ "#L0##bHow do I move?#l\r\n"
 			+ "#L1#How do I take down the monsters?#l\r\n"
 			+ "#L2#How can I pick up an item?#l\r\n"

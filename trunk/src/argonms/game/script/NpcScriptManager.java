@@ -79,6 +79,7 @@ public class NpcScriptManager {
 			FileReader reader = new FileReader(npcPath + npcId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
+			cx.setLanguageVersion(Context.VERSION_1_7);
 			Script script = cx.compileReader(reader, "n" + npcId, 1, null);
 			reader.close();
 			convoMan = new NpcConversationActions(npcId, client, globalScope);
@@ -105,6 +106,7 @@ public class NpcScriptManager {
 			FileReader reader = new FileReader(questPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
+			cx.setLanguageVersion(Context.VERSION_1_7);
 			Script script = cx.compileReader(reader, scriptName, 1, null);
 			reader.close();
 			convoMan = new QuestConversationActions(npcId, questId, client, globalScope);

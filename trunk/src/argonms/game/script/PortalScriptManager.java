@@ -48,6 +48,7 @@ public class PortalScriptManager {
 		try {
 			FileReader reader = new FileReader(portalPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setLanguageVersion(Context.VERSION_1_7);
 			PortalActions portalManager = new PortalActions(p.getClient());
 			globalScope.put("portal", globalScope, portalManager);
 			cx.evaluateReader(globalScope, reader, "p_" + scriptName, 1, null);

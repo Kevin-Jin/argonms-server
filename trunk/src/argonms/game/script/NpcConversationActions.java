@@ -55,6 +55,12 @@ import org.mozilla.javascript.Scriptable;
  * @author GoldenKevin
  */
 public class NpcConversationActions extends PlayerScriptInteraction {
+	/* package-private */ static class ScriptInterruptedException extends RuntimeException {
+		private ScriptInterruptedException(int npc, String player) {
+			super("NPC " + npc + " conversation with player " + player + " was interrupted");
+		}
+	}
+
 	private static final Logger LOG = Logger.getLogger(NpcConversationActions.class.getName());
 
 	private final int npcId;
@@ -96,6 +102,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public void say(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		boolean hasPrev = prevs.hasPrevOrIsFirst();
 		if (hasPrev)
 			prevs.add(message, false);
@@ -111,6 +119,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public void sayNext(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		prevs.add(message, true);
 		getClient().getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
 		Context cx = Context.enter();
@@ -122,6 +132,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public byte askYesNo(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
 		Context cx = Context.enter();
@@ -133,6 +145,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public byte askAccept(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
 		Context cx = Context.enter();
@@ -144,6 +158,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public byte askAcceptNoESC(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
 		Context cx = Context.enter();
@@ -155,6 +171,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public String askQuiz(byte type, int objectId, int correct, int questions, int time) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
 		Context cx = Context.enter();
@@ -167,6 +185,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 
 	public String askQuizQuestion(String title, String problem,
 			String hint, int min, int max, int timeLimit) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcQuizQuestion(npcId,
 				title, problem, hint, min, max, timeLimit));
@@ -179,6 +199,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public String askText(String message, String def, short min, short max) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskText(npcId, message, def, min, max));
 		Context cx = Context.enter();
@@ -191,6 +213,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 
 	//I think this is probably 14 (0x0E)...
 	/*public String askBoxText(String message, String def, int col, int line) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcBoxText(npcId, message, def, col, line));
 		Context cx = Context.enter();
@@ -202,6 +226,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}*/
 
 	public int askNumber(String message, int def, int min, int max) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
 		Context cx = Context.enter();
@@ -213,6 +239,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public int askMenu(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
 		Context cx = Context.enter();
@@ -224,6 +252,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public int askAvatar(String message, int... styles) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		clearBackButton();
 		getClient().getSession().send(writeNpcAskAvatar(npcId, message, styles));
 		Context cx = Context.enter();
@@ -235,6 +265,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public boolean sendShop(int shopId) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		NpcShop shop = NpcShopDataLoader.getInstance().getShopByNpc(shopId);
 		if (shop != null) {
 			endConversation();
@@ -246,6 +278,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public boolean sendStorage(int npcId) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
 		NpcStorageKeeper storage = NpcDataLoader.getInstance().getStorageById(npcId);
 		if (storage != null) {
 			endConversation();
@@ -257,6 +291,8 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	private void fireEndChatEvent() {
+		if (terminated.get())
+			return;
 		if (!endingChat) {
 			endingChat = true;
 			clearBackButton(); //we probably don't want a back button in the end chat hook...
@@ -396,8 +432,12 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	}
 
 	public void endConversation() {
-		if (terminated.compareAndSet(false, true))
+		if (terminated.compareAndSet(false, true)) {
 			getClient().setNpc(null);
+			//prevent memory leak of clients in case script is still running -
+			//we cannot interrupt it
+			dissociateClient();
+		}
 	}
 
 	private static void writeCommonNpcAction(LittleEndianWriter lew, int npcId, byte type, String msg) {

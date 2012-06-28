@@ -49,6 +49,7 @@ public class ReactorScriptManager {
 		try {
 			FileReader reader = new FileReader(reactorScriptPath + reactorId + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setLanguageVersion(Context.VERSION_1_7);
 			ReactorInteraction actions = new ReactorInteraction(reactorId, reactor, client, globalScope);
 			globalScope.put("reactor", globalScope, actions);
 			cx.evaluateReader(globalScope, reader, "r" + reactorId, 1, null);
