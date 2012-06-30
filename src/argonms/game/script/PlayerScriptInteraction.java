@@ -25,6 +25,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.MapMemoryVariable;
@@ -68,6 +69,10 @@ public abstract class PlayerScriptInteraction {
 
 	public boolean playerHasItem(int itemid, int quantity) {
 		return InventoryTools.hasItem(client.getPlayer(), itemid, quantity);
+	}
+
+	public boolean playerCanHoldItem(int itemid, short quantity) {
+		return InventoryTools.canFitEntirely(client.getPlayer().getInventory(InventoryTools.getCategory(itemid)), itemid, quantity, true);
 	}
 
 	public boolean giveItem(int itemid, short quantity) {
@@ -159,5 +164,19 @@ public abstract class PlayerScriptInteraction {
 
 	public boolean isQuestFinished(short questId) {
 		return client.getPlayer().isQuestCompleted(questId);
+	}
+
+	public int getPlayerPetCount() {
+		int count = 0;
+		Pet[] pets = client.getPlayer().getPets();
+		for (int i = 0; i < pets.length; i++)
+			if (pets[i] != null)
+				count++;
+		return count;
+	}
+
+	public void giveCloseness(short gain) {
+		//TODO: pet exp rate?
+		//TODO: implement
 	}
 }

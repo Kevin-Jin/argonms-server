@@ -1729,6 +1729,9 @@
 	is more akin to local variable declarations in Java.
 	* Don't let scripts capture continuations if client disconnected.
 
+2012-06-30  GoldenKevin  (revision 95)
+	* Scripts for Henesys area NPCs with NPC IDs in the 101200x range.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
