@@ -985,6 +985,24 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	@Override
+	public void setHair(short newHair) {
+		super.setHair(newHair);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HAIR, Short.valueOf(hair)), false));
+	}
+
+	@Override
+	public void setSkin(byte newSkin) {
+		super.setSkin(newSkin);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.SKIN, Byte.valueOf(skin)), false));
+	}
+
+	@Override
+	public void setEyes(short newEyes) {
+		super.setEyes(newEyes);
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FACE, Short.valueOf(eyes)), false));
+	}
+
+	@Override
 	public void setStr(short newStr) {
 		super.setStr(newStr);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.STR, Short.valueOf(baseStr)), false));

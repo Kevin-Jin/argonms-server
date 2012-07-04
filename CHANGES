@@ -1732,6 +1732,12 @@
 2012-06-30  GoldenKevin  (revision 95)
 	* Scripts for Henesys area NPCs with NPC IDs in the 101200x range.
 
+2012-07-04  GoldenKevin  (revision 96)
+	* Scripts for Henesys area NPCs with NPC IDs < 9102100 and NPC ID 9200100
+	(bowman job advancement, Henesys PQ, Henesys beauty shops, etc.).
+	* Added in stub files for unimplemented Lith Harbor scripted NPCs so I don't
+	forget about them in the future.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

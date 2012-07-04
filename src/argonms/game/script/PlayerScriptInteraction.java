@@ -19,7 +19,6 @@
 package argonms.game.script;
 
 import argonms.common.character.BuddyList;
-import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -29,8 +28,10 @@ import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.MapMemoryVariable;
+import argonms.game.character.PartyList;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.GameChatHandler;
 
 /**
  *
@@ -136,8 +137,119 @@ public abstract class PlayerScriptInteraction {
 		return client.getPlayer().getLevel();
 	}
 
-	public boolean playerIsBeginner() {
-		return client.getPlayer().getJob() == PlayerJob.JOB_BEGINNER;
+	public short getPlayerJob() {
+		return client.getPlayer().getJob();
+	}
+
+	public void setPlayerJob(short newJob) {
+		client.getPlayer().setJob(newJob);
+	}
+
+	public byte getPlayerGender() {
+		return client.getPlayer().getGender();
+	}
+
+	public short getPlayerHair() {
+		return client.getPlayer().getHair();
+	}
+
+	public void setPlayerHair(short newHair) {
+		client.getPlayer().setHair(newHair);
+	}
+
+	public void setPlayerSkin(byte newSkin) {
+		client.getPlayer().setSkin(newSkin);
+	}
+
+	public short getPlayerFace() {
+		return client.getPlayer().getEyes();
+	}
+
+	public void setPlayerFace(short newEyes) {
+		client.getPlayer().setEyes(newEyes);
+	}
+
+	public short getPlayerStr() {
+		return client.getPlayer().getStr();
+	}
+
+	public short getPlayerDex() {
+		return client.getPlayer().getDex();
+	}
+
+	public short getPlayerInt() {
+		return client.getPlayer().getInt();
+	}
+
+	public short getPlayerLuk() {
+		return client.getPlayer().getLuk();
+	}
+
+	public void increasePlayerMaxHp(short delta) {
+		client.getPlayer().setMaxHp((short) (client.getPlayer().getMaxHp() + delta));
+		client.getPlayer().gainHp(delta);
+	}
+
+	public void increasePlayerMaxMp(short delta) {
+		client.getPlayer().setMaxMp((short) (client.getPlayer().getMaxMp() + delta));
+		client.getPlayer().gainMp(delta);
+	}
+
+	public void giveEquipInventorySlots(short delta) {
+		client.getPlayer().getInventory(InventoryType.EQUIP).increaseCapacity(delta);
+	}
+
+	public void giveUseInventorySlots(short delta) {
+		client.getPlayer().getInventory(InventoryType.USE).increaseCapacity(delta);
+	}
+
+	public void giveEtcInventorySlots(short delta) {
+		client.getPlayer().getInventory(InventoryType.ETC).increaseCapacity(delta);
+	}
+
+	public void giveSp(short gain) {
+		client.getPlayer().setSp((short) (client.getPlayer().getSp() + gain));
+	}
+
+	public short getPlayerSp() {
+		return client.getPlayer().getSp();
+	}
+
+	public byte getPlayerPartyMembersInMapCount() {
+		PartyList p = client.getPlayer().getParty();
+		if (p == null)
+			return 0;
+		p.lockRead();
+		try {
+			return (byte) p.getLocalMembersInMap(client.getPlayer().getMapId()).size();
+		} finally {
+			p.unlockRead();
+		}
+	}
+
+	public boolean playerIsPartyLeader() {
+		PartyList p = client.getPlayer().getParty();
+		return p != null && p.getLeader() == client.getPlayer().getId();
+	}
+
+	public byte getPlayerPartyMembersInLevelCount(short min, short max) {
+		PartyList p = client.getPlayer().getParty();
+		if (p == null)
+			return 0;
+		byte count = 0;
+		p.lockRead();
+		try {
+			for (PartyList.LocalMember m : p.getMembersInLocalChannel())
+				if (m.getLevel() >= min && m.getLevel() <= max)
+					count++;
+		} finally {
+			p.unlockRead();
+		}
+		return count;
+	}
+
+	public void sayInChat(String message) {
+		client.getSession().send(GamePackets.writeServerMessage(GameChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void rememberMap(String variable) {

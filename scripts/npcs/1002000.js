@@ -75,7 +75,7 @@ if (selection == 0) {
 	}
 } else if (selection == 1) {
 	let prompt;
-	if (npc.playerIsBeginner()) {
+	if (npc.getPlayerJob() == 0) {
 		prompt = "There's a special 90% discount for all beginners. Alright, where would you want to go?#b";
 		for (let i = 0; i < taxiMaps.length; i++)
 			prompt += "\r\n#L" + i + "##m" + taxiMaps[i] + "#(" + taxiFares[i] / 10 + " mesos)#l";
@@ -86,7 +86,7 @@ if (selection == 0) {
 	}
 	mapIndex = npc.askMenu(prompt);
 	let fare = taxiFares[mapIndex];
-	if (npc.playerIsBeginner())
+	if (npc.getPlayerJob() == 0)
 		fare /= 10;
 	selection = npc.askYesNo("I guess you don't need to be here. Do you really want to move to #b#m" + taxiMaps[mapIndex] + "##k? Well it'll cost you #b" + fare + " meso#k. What do you think?");
 	if (selection == 1) {

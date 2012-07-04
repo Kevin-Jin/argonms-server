@@ -1,0 +1,49 @@
+/*
+ * ArgonMS MapleStory server emulator written in Java
+ * Copyright (C) 2011-2012  GoldenKevin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Dr. Feeble: Doctor w/o License (NPC 1052005)
+ * Victoria Road: Henesys Plastic Surgery (Map 100000103)
+ *
+ * Henesys face changer - random face, eye style only.
+ *
+ * @author GoldenKevin (content from Vana r2111)
+ */
+
+function getRandomStyle(gender, currentFace) {
+	let color = currentFace % 1000 - (currentFace % 100);
+	let styles;
+	if (gender == 0)
+		styles = [20000, 20001, 20002, 20003, 20004, 20005, 20006, 20007, 20008, 20012, 20014];
+	else if (gender == 1)
+		styles = [21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21012, 21014];
+	return styles[Math.floor(Math.random() * styles.length)] + color;
+}
+
+let selection = npc.askYesNo("If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152000##k?");
+if (selection == 1) {
+	if (npc.playerHasItem(5152000, 1)) {
+		npc.takeItem(5152000, 1);
+		npc.setPlayerFace(getRandomStyle(npc.getPlayerGender(), npc.getPlayerFace()));
+		npc.say("Enjoy!");
+	} else {
+		npc.sayNext("Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you.");
+	}
+} else if (selection == 0) {
+	npc.sayNext("I see ... take your time, see if you really want it. Let me know when you make up your mind.");
+}

@@ -52,7 +52,7 @@ if (npc.getMap() == 800000000) {
 	}
 } else {
 	let msg = "If you're tired of the monotonous daily life, how about getting out for a change? There's nothing quite like soaking up a new culture, learning something new by the minute! It's time for you to get out and travel. We, at the Maple Travel Agency recommend you going on a #bWorld Tour#k! Are you worried about the travel expense? ";
-	if (npc.playerIsBeginner())
+	if (npc.getPlayerJob() == 0)
 		msg += "No need to worry! The #bMaple Travel Agency#k offers first class travel accommodation for the low price of #b300 mesos#k";
 	else
 		msg += "You shouldn't be! We, the #bMaple Travel Agency#k, have carefully come up with a plan to let you travel for ONLY #b3,000 mesos!#k";
@@ -63,7 +63,7 @@ if (npc.getMap() == 800000000) {
 		npc.sayNext("Would you like to travel to #b#m800000000# of Japan#k? If you desire to feel the essence of Japan, there's nothing like visiting the Shrine, a Japanese cultural melting pot. #m800000000# is a mythical place that serves the incomparable Mushroom God from ancient times.");
 		npc.sayNext("Check out the female shaman serving the Mushroom God, and I strongly recommend trying Takoyaki, Yakisoba, and other delicious food sold in the streets of Japan. Now, let's head over to #b#m800000000##k, a mythical place if there ever was one.");
 		let cost = 3000;
-		if (npc.playerIsBeginner())
+		if (npc.getPlayerJob() == 0)
 			cost /= 10;
 		if (npc.playerHasMesos(cost)) {
 			npc.rememberMap("WORLD_TOUR");
