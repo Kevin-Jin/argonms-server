@@ -98,6 +98,7 @@ public class GamePackets {
 				case LEVEL: //unsigned
 					lew.writeByte((byte) statupdate.getValue().shortValue());
 					break;
+				case SKIN:
 				case JOB:
 				case STR:
 				case DEX:
