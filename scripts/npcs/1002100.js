@@ -27,7 +27,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.isQuestFinished(2013)) {
+if (npc.isQuestCompleted(2013)) {
 	let items = [2000002, 2022003, 2022000, 2001000];
 	let costs = [310, 1060, 1600, 3120];
 	let recoverAmount = [300, 1000, 800, 1000];
@@ -54,7 +54,7 @@ if (npc.isQuestFinished(2013)) {
 	} else if (selection == 0) {
 		npc.sayNext("I still have quite a few of the materials you got me before. The items are all there so take your time choosing.");
 	}
-} else if (npc.isQuestFinished(2010)) {
+} else if (npc.isQuestCompleted(2010)) {
 	npc.sayNext("You don't seem strong enough to be able to purchase my potion...");
 } else {
 	npc.say("My dream is to travel everywhere, much like you. My father, however, does not allow me to do it, because he thinks it's very dangerous. He may say yes, though, if I show him some sort of a proof that I'm not the weak girl that he thinks I am...");

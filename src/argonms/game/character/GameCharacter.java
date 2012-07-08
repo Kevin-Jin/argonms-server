@@ -2106,6 +2106,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	/**
+	 * 
+	 * @param questId
+	 * @return false if quest is completed, fofeited, or untouched.
+	 */
+	public boolean isQuestStarted(short questId) {
+		QuestEntry status = questStatuses.get(Short.valueOf(questId));
+		return status != null && status.getState() == QuestEntry.STATE_STARTED;
+	}
+
+	/**
 	 *
 	 * @param questId
 	 * @return false if the quest is not started (i.e. is completed, forfeited,

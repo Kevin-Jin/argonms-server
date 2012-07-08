@@ -147,7 +147,7 @@ public class QuestChecks {
 		if (reqPets.isEmpty())
 			return true;
 		for (Pet pet : p.getPets())
-			if (reqPets.contains(Integer.valueOf(pet.getDataId())))
+			if (pet != null && reqPets.contains(Integer.valueOf(pet.getDataId())))
 				return true;
 		return false;
 	}
