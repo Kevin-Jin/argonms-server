@@ -1738,6 +1738,11 @@
 	* Added in stub files for unimplemented Lith Harbor scripted NPCs so I don't
 	forget about them in the future.
 
+2012-07-08  GoldenKevin  (revision 97)
+	* Renamed script API isQuestFinished to isQuestCompleted.
+	* Fixed NullPointerException in QuestChecks.hasPet.
+	* Finished all NPC scripts for Henesys area.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

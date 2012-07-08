@@ -274,8 +274,16 @@ public abstract class PlayerScriptInteraction {
 		client.getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
 	}
 
-	public boolean isQuestFinished(short questId) {
+	public boolean isQuestCompleted(short questId) {
 		return client.getPlayer().isQuestCompleted(questId);
+	}
+
+	public boolean isQuestActive(short questId) {
+		return client.getPlayer().isQuestActive(questId);
+	}
+
+	public boolean isQuestStarted(short questId) {
+		return client.getPlayer().isQuestStarted(questId);
 	}
 
 	public int getPlayerPetCount() {
