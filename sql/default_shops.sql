@@ -32,7 +32,7 @@ CREATE TABLE `shopitems` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1837 DEFAULT CHARSET=latin1;
 
 /*!40000 ALTER TABLE `shopitems` DISABLE KEYS */;
-INSERT INTO `shopitems` (`shopitemid`,`shopid`,`itemid`,`price`,`position`) VALUES 
+INSERT INTO `shopitems` (`shopitemid`,`shopid`,`itemid`,`price`,`position`) VALUES
  (1,1,1302000,50,1),
  (2,1,1312004,50,2),
  (3,1,1322005,50,3),
@@ -1831,7 +1831,7 @@ INSERT INTO `shopitems` (`shopitemid`,`shopid`,`itemid`,`price`,`position`) VALU
 DROP TABLE IF EXISTS `shops`;
 CREATE TABLE `shops` (
   `shopid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `npcid` INT(11) NOT NULL DEFAULT '0',
+  `npcid` INT(7) NOT NULL DEFAULT '0',
   PRIMARY KEY (`shopid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=latin1;
 

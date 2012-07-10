@@ -17,10 +17,10 @@
  */
 
 /**
- * VIP Cab (NPC 1002004)
- * Victoria Road: Lith Harbor (Map 104000000)
+ * VIP Cab (NPC 1032005)
+ * Victoria Road: Ellinia (Map 101000000)
  *
- * Teleports player from Lith Harbor to Ant Tunnel Park.
+ * Teleports player from Ellinia to Ant Tunnel Park.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */

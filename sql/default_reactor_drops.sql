@@ -31,7 +31,7 @@ CREATE TABLE `reactordrops` (
 ) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=latin1;
 
 /*!40000 ALTER TABLE `reactordrops` DISABLE KEYS */;
-INSERT INTO `reactordrops` (`reactordropid`,`reactorid`,`itemid`,`chance`) VALUES 
+INSERT INTO `reactordrops` (`reactordropid`,`reactorid`,`itemid`,`chance`) VALUES
  (1,2000,4031161,1),
  (2,2000,4031162,1),
  (3,2000,2010009,2),

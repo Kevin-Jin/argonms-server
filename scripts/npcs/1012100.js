@@ -32,11 +32,11 @@ if (npc.getPlayerJob() == 0) {
 		if (selection == 1) {
 			npc.sayNext("Alright! You are the Bowman from here on out, because I said so...haha here's a little bit of my power to you...Haahhhh!");
 
-			if (getLevel() >= 30) { //For the rare "too high level" instance.
+			if (npc.getPlayerLevel() >= 30) { //For the rare "too high level" instance.
 				npc.sayNext("I think you've made the job advancement way too late. Usually, for beginners under Level 29 that were late in making job advancements, we compensate them with lost Skill Points, that weren't rewarded, but...I think you're a little too late for that. I am so sorry, but there's nothing I can do.");
 				npc.giveSp(1);
 			} else {
-				npc.giveSp((getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
+				npc.giveSp((npc.getPlayerLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
 			npc.setPlayerJob(300);
 			npc.giveItem(1452051, 1); //Beginner Bow
@@ -49,19 +49,22 @@ if (npc.getPlayerJob() == 0) {
 			npc.increasePlayerMaxMp(mpinc);
 			npc.giveEquipInventorySlots(4);
 			npc.giveUseInventorySlots(4);
+			npc.clearBackButton();
 			npc.sayNext("I have added slots for your equipment and etc. inventory. You have also gotten much stronger. Train harder, and you may one day reach the very top of the bowman. I'll be watching you from afar. Please work hard.");
+			npc.clearBackButton();
 			npc.sayNext("I just gave you a little bit of #bSP#k. When you open up the #bSkill menu#k on the lower left corner of the screen, there are skills you can learn by using SP's. One warning, though: You can't raise it all together all at once. There are also skills you can acquire only after having learned a couple of skills first.");
 			npc.sayNext("One more warning. Once you have chosen your job, try to stay alive as much as you can. Once you reach that level, when you die, you will lose your experience level. You wouldn't want to lose your hard-earned experience points, do you?");
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. I'll be waiting for you.");
 			npc.sayNext("Oh, and... if you have any other questions about being the Bowman, feel free to ask. I don't every single thing about  being the bowman, but I'll answer as many questions as I can. Til then...");
 		} else {
+			npc.clearBackButton();
 			npc.sayNext("Really? Have to give more though to it, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once you have made your decision.");
 		}
 	} else {
 		npc.sayNext("You need to train more. Don't think being the Bowman is a walk in the park...");
 	}
-} else if (npc.getPlayerJob() == 300 && npc.getPlayerLevel() >= 30) { 
-	if (npc.playerHasItem(4031010, 0) && npc.playerHasItem(4031012, 0)) { 
+} else if (npc.getPlayerJob() == 300 && npc.getPlayerLevel() >= 30) {
+	if (npc.playerHasItem(4031010, 0) && npc.playerHasItem(4031012, 0)) {
 		let selection = npc.askYesNo("Hmmm...you have grown a lot since I last saw you. I don't see the weakling I saw before, and instead, look much more like a bowman now. Well, what do you think? Don't you want to get even more powerful than that? Pass a simple test and I'll do just that for you. Do you want to do it?");
 		if (selection == 0) {
 			npc.sayNext("Really? Have to give it more thought, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once you have made your decision.");
@@ -94,56 +97,59 @@ if (npc.getPlayerJob() == 0) {
 				selection = npc.askMenu("Hmmm, have you made up your mind? Then choose the 2nd job advancement of your liking.\r\n"
 						+ "#L0##bHunter#k#l\r\n"
 						+ "#L1##bCrossbowman#k#l\r\n");
-				if (selection == 0) {
-					selection = npc.askYesNo("So you want to make the second job advancement as the #bHunter#k? You know you won't be able to choose a different job for the second job advancement once you make your decision here, right?");
-					if (selection == 0) {
-						npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");                         
-					} else if (selection == 1) {
-						if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
-							npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
-						} else {
-							npc.setPlayerJob(310);
-							npc.giveSp(1);
-							npc.takeItem(4031012, 1); //Take The Proof of a Hero
-							npc.giveEtcInventorySlots(4);
-							let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
-							let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
-							npc.increasePlayerMaxHp(hpinc);
-							npc.increasePlayerMaxMp(mpinc);
-							npc.sayNext("Alright, you're the #bHunter#k from here on out. Hunters are the intelligent bunch with incredible vision, able to pierce the arrow through the heart of the monsters with ease...please train yourself each and everyday. We'll help you become even stronger than you already are.");
-							npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as a hunter. Also your etc. inventory has expanded by adding another row to it. Your max HP and MP have also increased, too. Go check and see for it yourself.");
-							npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
-							npc.sayNext("Hunters need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because...for you to use that the right way, that is much harder than just getting stronger. Find me after you have advanced much further. I'll be waiting for you.");
+				switch (selection) {
+					case 0:
+						selection = npc.askYesNo("So you want to make the second job advancement as the #bHunter#k? You know you won't be able to choose a different job for the second job advancement once you make your decision here, right?");
+						if (selection == 0) {
+							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");                         
+						} else if (selection == 1) {
+							if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
+								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
+							} else {
+								npc.setPlayerJob(310);
+								npc.giveSp(1);
+								npc.takeItem(4031012, 1); //Take The Proof of a Hero
+								npc.giveEtcInventorySlots(4);
+								let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
+								let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
+								npc.increasePlayerMaxHp(hpinc);
+								npc.increasePlayerMaxMp(mpinc);
+								npc.sayNext("Alright, you're the #bHunter#k from here on out. Hunters are the intelligent bunch with incredible vision, able to pierce the arrow through the heart of the monsters with ease...please train yourself each and everyday. We'll help you become even stronger than you already are.");
+								npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as a hunter. Also your etc. inventory has expanded by adding another row to it. Your max HP and MP have also increased, too. Go check and see for it yourself.");
+								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
+								npc.sayNext("Hunters need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because...for you to use that the right way, that is much harder than just getting stronger. Find me after you have advanced much further. I'll be waiting for you.");
+							}
 						}
-					}
-				} else if (selection == 1) {
-					selection = npc.askYesNo("So you want to make the second job advancement as the #bCrossbowman#k? You know you won't be able to choose a different job for the second job advancement once you make your decision here, right?");
+						break;
+					case 1:
+						selection = npc.askYesNo("So you want to make the second job advancement as the #bCrossbowman#k? You know you won't be able to choose a different job for the second job advancement once you make your decision here, right?");
 
-					if (selection == 0) {
-						npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");
-					} else if (selection == 1) { 
-						if (getSP() > ((getLevel() - 30) * 3)) {
-							npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
-						} else {
-							npc.setPlayerJob(320);
-							npc.giveSp(1);
-							npc.takeItem(4031012, 1); //Take The Proof of a Hero
-							npc.giveEtcInventorySlots(4);
-							let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
-							let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
-							npc.increasePlayerMaxHp(hpinc);
-							npc.increasePlayerMaxMp(mpinc);
-							npc.sayNext("Alright, you're the #bCrossbowman#k from here on out. Crossbowman are the intelligent bunch with incredible vision, able to pierce the arrow through the heart of the monsters with ease...please train yourself each and everyday. We'll help you become even stronger than you already are.");
-							npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as a hunter. Also your etc. inventory has expanded by adding another row to it. Your max HP and MP have also increased, too. Go check and see for it yourself.");
-							npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
-							npc.sayNext("Crossbowmen need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because...for you to use that the right way, that is much harder than just getting stronger. Find me after you have advanced much further. I'll be waiting for you.");
+						if (selection == 0) {
+							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");
+						} else if (selection == 1) {
+							if (getSP() > ((getLevel() - 30) * 3)) {
+								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
+							} else {
+								npc.setPlayerJob(320);
+								npc.giveSp(1);
+								npc.takeItem(4031012, 1); //Take The Proof of a Hero
+								npc.giveEtcInventorySlots(4);
+								let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
+								let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
+								npc.increasePlayerMaxHp(hpinc);
+								npc.increasePlayerMaxMp(mpinc);
+								npc.sayNext("Alright, you're the #bCrossbowman#k from here on out. Crossbowman are the intelligent bunch with incredible vision, able to pierce the arrow through the heart of the monsters with ease...please train yourself each and everyday. We'll help you become even stronger than you already are.");
+								npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as a hunter. Also your etc. inventory has expanded by adding another row to it. Your max HP and MP have also increased, too. Go check and see for it yourself.");
+								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
+								npc.sayNext("Crossbowmen need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because...for you to use that the right way, that is much harder than just getting stronger. Find me after you have advanced much further. I'll be waiting for you.");
+							}
 						}
-					}
+						break;
 				}
 				break;
 		}
 	}
-} else if (npc.getPlayerJob() / 100 == 3) {
+} else if (Math.floor(npc.getPlayerJob() / 100) == 3) {
 	let selection = npc.askMenu("Do you have any questions regarding the life of the Bowman?\r\n"
 			+ "#L0##bWhat are the basic characters of a Bowman?#k#l\r\n"
 			+ "#L1##bWhat are the weapons that the Bowman use?#k#l\r\n"
