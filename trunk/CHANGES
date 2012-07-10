@@ -1743,6 +1743,10 @@
 	* Fixed NullPointerException in QuestChecks.hasPet.
 	* Finished all NPC scripts for Henesys area.
 
+2012-07-10  GoldenKevin  (revision 98)
+	* Fixed Athena Pierce script.
+	* Added Ellinia NPC scripts in the 103200x range.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

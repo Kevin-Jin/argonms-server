@@ -27,10 +27,10 @@ CREATE TABLE `monsterdrops` (
   `itemid` INT(11) NOT NULL DEFAULT '0',
   `chance` INT(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`monsterdropid`)
-) ENGINE=InnoDB AUTO_INCREMENT=7552 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=7555 DEFAULT CHARSET=latin1;
 
 /*!40000 ALTER TABLE `monsterdrops` DISABLE KEYS */;
-INSERT INTO `monsterdrops` (`monsterdropid`,`monsterid`,`itemid`,`chance`) VALUES 
+INSERT INTO `monsterdrops` (`monsterdropid`,`monsterid`,`itemid`,`chance`) VALUES
  (1,9400567,2022251,600),
  (2,100100,1061002,2400),
  (3,100100,1302000,7000),

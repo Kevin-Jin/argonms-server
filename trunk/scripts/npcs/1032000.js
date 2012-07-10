@@ -17,17 +17,17 @@
  */
 
 /**
- * Regular Cab (NPC 1012000)
- * Victoria Road: Henesys (Map 100000000)
+ * Regular Cab (NPC 1032000)
+ * Victoria Road: Ellinia (Map 101000000)
  *
- * Taxi NPC for Henesys. Teleports players from Henesys to other Victoria Island
+ * Taxi NPC for Ellinia. Teleports players from Ellinia to other Victoria Island
  * towns.
  *
  * @author GoldenKevin (content from Vana r2111)
  */
 
-let taxiMaps = [104000000, 102000000, 101000000, 103000000, 120000000];
-let taxiFares = [800, 1000, 1000, 1200, 1000];
+let taxiMaps = [104000000, 102000000, 103000000, 100000000, 120000000];
+let taxiFares = [1200, 1000, 1200, 1000, 1000];
 
 /**
  * Thanks to http://stackoverflow.com/a/2901298/444402!
@@ -37,7 +37,7 @@ function groupThousands(x) {
 	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-npc.sayNext("Hi! I drive the #p1012000#. If you want to go from town to town safely and fast, then ride our cab. We'll gladly take you to your destination with an affordable price.");
+npc.sayNext("Hi! I drive the #p1032000#. If you want to go from town to town safely and fast, then ride our cab. We'll gladly take you to your destination with an affordable price.");
 let prompt;
 if (npc.getPlayerJob() == 0) {
 	prompt = "We have a special 90% discount for beginners. Choose your destination, for fees will change from place to place.#b";
