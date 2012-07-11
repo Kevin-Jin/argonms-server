@@ -224,6 +224,10 @@ public abstract class PlayerScriptInteraction {
 		return client.getPlayer().getSp();
 	}
 
+	public String getPlayerName() {
+		return client.getPlayer().getName();
+	}
+
 	public byte getPlayerPartyMembersInMapCount() {
 		PartyList p = client.getPlayer().getParty();
 		if (p == null)

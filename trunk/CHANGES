@@ -1758,6 +1758,9 @@
 	their respective data files instead of their numeric ID. MCBB users must
 	execute default_reactor_scripts.sql and default_npc_scripts.sql.
 
+2012-07-11  GoldenKevin  (revision 101)
+	* Fixed player NPC script.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

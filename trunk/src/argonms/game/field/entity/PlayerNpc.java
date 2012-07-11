@@ -39,6 +39,10 @@ public class PlayerNpc extends Npc {
 		super(npcId);
 		setPosition(new Point(p.getPosition()));
 		//setStance(p.getStance()); //it's entertaining to see a player NPC stuck in an alert pose, flying pose, or ladder climbing pose!
+		refreshAppearance(p);
+	}
+
+	public final void refreshAppearance(GameCharacter p) {
 		setStance((byte) (p.getStance() & 0x01)); //only uses lsb, which is what determines direction
 		setFoothold(p.getMap().getStaticData().getFootholds().findBelow(getPosition()).getId());
 		setCy((short) getPosition().y);
