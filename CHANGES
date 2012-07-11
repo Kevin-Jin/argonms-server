@@ -1752,6 +1752,12 @@
 	handling.
 	* Finished Ellinia area scripts (or at least created stubs for them).
 
+2012-07-11  GoldenKevin  (revision 100)
+	* Fixed messed up reactor drop source position.
+	* Reactor and NPC scripts now are named after the script name fields in
+	their respective data files instead of their numeric ID. MCBB users must
+	execute default_reactor_scripts.sql and default_npc_scripts.sql.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

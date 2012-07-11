@@ -108,7 +108,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 					processItemEvent(reader, stats);
 					break;
 				case SCRIPT_NAME:
-					reader.readNullTerminatedString();
+					stats.setScript(reader.readNullTerminatedString());
 					break;
 			}
 		}

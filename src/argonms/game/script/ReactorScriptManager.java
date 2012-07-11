@@ -20,6 +20,7 @@ package argonms.game.script;
 
 import argonms.common.GlobalConstants;
 import argonms.game.field.entity.Reactor;
+import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.net.external.GameClient;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -45,22 +46,23 @@ public class ReactorScriptManager {
 	}
 
 	public boolean runScript(int reactorId, Reactor reactor, GameClient client) {
+		String scriptName = ReactorDataLoader.getInstance().getReactorStats(reactorId).getScript();
 		Context cx = Context.enter();
 		try {
-			FileReader reader = new FileReader(reactorScriptPath + reactorId + ".js");
+			FileReader reader = new FileReader(reactorScriptPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			ReactorInteraction actions = new ReactorInteraction(reactorId, reactor, client, globalScope);
 			globalScope.put("reactor", globalScope, actions);
-			cx.evaluateReader(globalScope, reader, "r" + reactorId, 1, null);
+			cx.evaluateReader(globalScope, reader, "Reactor " + scriptName, 1, null);
 			reader.close();
 			return true;
 		} catch (FileNotFoundException ex) {
 			//not like most of our reactor scripts are implemented anyway...
-			LOG.log(Level.FINE, "Missing reactor script {0}", reactorId);
+			LOG.log(Level.FINE, "Missing reactor script {0}", scriptName);
 			return false;
 		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Error executing reactor script " + reactorId, ex);
+			LOG.log(Level.WARNING, "Error executing reactor script " + scriptName, ex);
 			return false;
 		} finally {
 			Context.exit();

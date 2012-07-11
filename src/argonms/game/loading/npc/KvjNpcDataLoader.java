@@ -82,7 +82,7 @@ public class KvjNpcDataLoader extends NpcDataLoader {
 		for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
 			switch (now) {
 				case SCRIPT_NAME:
-					reader.readNullTerminatedString();
+					scriptNames.put(Integer.valueOf(npcId), reader.readNullTerminatedString());
 					break;
 				case TRUNK_PUT:
 					depositCost = reader.readInt();

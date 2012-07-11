@@ -384,7 +384,7 @@ public class GameMap {
 				dropPos.x = entX + delta;
 			else //drop odd numbered drops left
 				dropPos.x = entX - delta;
-			drop.init(ent.getId(), owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
+			drop.init((ent instanceof Mob) ? ent.getId() : 0, owner, calcDropPos(dropPos, entPos), entPos, pickupAllow);
 			drop(drop);
 		}
 	}

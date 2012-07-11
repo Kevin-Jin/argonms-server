@@ -18,14 +18,24 @@
 
 package argonms.game.loading.npc;
 
+import argonms.common.util.DatabaseManager;
+import argonms.common.util.DatabaseManager.DatabaseType;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class DefaultNpcDataLoader extends NpcDataLoader {
+	private static final Logger LOG = Logger.getLogger(DefaultNpcDataLoader.class.getName());
+
 	private final Map<Integer, NpcStorageKeeper> hardCodedTable;
 
 	protected DefaultNpcDataLoader() {
@@ -57,6 +67,21 @@ public class DefaultNpcDataLoader extends NpcDataLoader {
 	@Override
 	protected void load(int npcId) {
 		storageCosts.put(Integer.valueOf(npcId), hardCodedTable.get(Integer.valueOf(npcId)));
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `script` FROM `npcscriptnames` WHERE `npcid` = ?");
+			ps.setInt(1, npcId);
+			rs = ps.executeQuery();
+			if (rs.next())
+				scriptNames.put(Integer.valueOf(npcId), rs.getString(1));
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not read script name for NPC " + npcId, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 		loaded.add(Integer.valueOf(npcId));
 	}
 
@@ -64,6 +89,23 @@ public class DefaultNpcDataLoader extends NpcDataLoader {
 	public boolean loadAll() {
 		storageCosts.putAll(hardCodedTable);
 		loaded.addAll(hardCodedTable.keySet());
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `npcid`,`script` FROM `npcscriptnames`");
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				Integer npcId = Integer.valueOf(rs.getInt(1));
+				scriptNames.put(npcId, rs.getString(2));
+				loaded.add(npcId);
+			}
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not load all NPC script names", e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 		return true;
 	}
 }
