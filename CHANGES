@@ -1747,6 +1747,11 @@
 	* Fixed Athena Pierce script.
 	* Added Ellinia NPC scripts in the 103200x range.
 
+2012-07-11  GoldenKevin  (revision 99)
+	* Fixed problems in InventoryTools with regards to equipped inventory
+	handling.
+	* Finished Ellinia area scripts (or at least created stubs for them).
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

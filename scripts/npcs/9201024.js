@@ -17,32 +17,24 @@
  */
 
 /**
- * Shane (NPC 1032003)
+ * Nana(E): Love Fairy (NPC 9201024)
  * Victoria Road: Ellinia (Map 101000000)
  *
- * NPC for Sabitrama and the Diet Medicine (Quest 2050) and
- * Sabitrama's Anti-Aging Medicine (Quest 2051).
+ * Barters soft feathers for a proof of love.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.getPlayerLevel() < 25) {
-	npc.say("You must be a higher level to enter the Forest of Patience.");
-} else {
-	let selection = npc.askYesNo("Hi, i'm Shane. I can let you into the Forest of Patience for a small fee. Would you like to enter for #b5000#k mesos?");
-	if (selection == 0) {
-		npc.say("Alright, see you next time.");
+//TODO: implement marriage quest (?)
+//if (npc.getPlayerMarriageQuestLevel() != 1 && npc.getPlayerMarriageQuestLevel() != 52) {
+	npc.say("Hi, I'm Nana the love fairy... Hows it going?");
+/*} else {
+	if (!npc.playerHasItem(4003005, 20)) {
+		npc.sayNext("Hey, you look like you need Proofs of Love? I can get them for you.");
+		npc.sayNext("All you have to do is bring me 20 #b#t4003005#s#k.");
 	} else {
-		if (!npc.playerHasMesos(5000)) {
-			npc.say("Sorry but it doesn't look like you have enough mesos!");
-		} else {
-			let quest1 = npc.isQuestStarted(2050);
-			let quest2 = npc.isQuestStarted(2051);
-			if (quest1 || !quest2 && npc.getPlayerLevel() < 50)
-				npc.warpPlayer(101000100);
-			else if (quest2 || !quest1 && npc.getPlayerLevel() >= 50)
-				npc.warpPlayer(101000102);
-			npc.takeMesos(5000);
-		}
+		npc.sayNext("Wow, you were quick! Here's the #t4031368#...");
+		npc.takeItem(4003005, 20)
+		npc.giveItem(4031368, 1);
 	}
-}
+}*/

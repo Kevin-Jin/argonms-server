@@ -388,7 +388,6 @@ public class InventoryTools {
 		for (Short slot : inv.getItemSlots(itemId)) {
 			InventorySlot item = inv.get(slot.shortValue());
 			delta = Math.min(quantity, item.getQuantity());
-			quantity -= delta;
 			short newQty = (short) (item.getQuantity() - delta);
 			if (newQty == 0 && !rechargeable) {
 				inv.remove(slot);
@@ -397,12 +396,27 @@ public class InventoryTools {
 				item.setQuantity(newQty);
 				changed.add(slot);
 			}
+			quantity -= delta;
+			if (quantity == 0)
+				break;
 		}
 		return new UpdatedSlots(changed, removed);
 	}
 
 	public static UpdatedSlots removeFromInventory(Player p, int itemId, int quantity) {
-		return removeFromInventory(p.getInventory(getCategory(itemId)), itemId, quantity);
+		InventoryType type = getCategory(itemId);
+		if (type != InventoryType.EQUIP) {
+			return removeFromInventory(p.getInventory(type), itemId, quantity);
+		} else {
+			Inventory inv = p.getInventory(type);
+			short start = getAmountOfItem(inv, itemId);
+			UpdatedSlots updatedSlots = removeFromInventory(inv, itemId, quantity);
+			short end = getAmountOfItem(inv, itemId);
+			quantity -= start - end;
+			if (quantity > 0)
+				updatedSlots.union(removeFromInventory(p.getInventory(InventoryType.EQUIPPED), itemId, quantity));
+			return updatedSlots;
+		}
 	}
 
 	/**
@@ -437,17 +451,21 @@ public class InventoryTools {
 
 	public static boolean hasItem(Player p, int itemId, int quantity) {
 		InventoryType type = getCategory(itemId);
-		if (quantity > 0) {
-			return (p.getInventory(type).hasItem(itemId, quantity)
-					|| (type == InventoryType.EQUIP
-					&& p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity)));
-		} else if (quantity == 0) {
-			return (p.getInventory(type).hasItem(itemId, quantity)
-					&& (type != InventoryType.EQUIP
-					|| p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity)));
-		} else {
-			throw new IllegalArgumentException("Domain error. Quantity must be >= 0");
-		}
+		if (type != InventoryType.EQUIP)
+			return p.getInventory(type).hasItem(itemId, quantity);
+		else
+			if (quantity == 0)
+				return p.getInventory(type).hasItem(itemId, quantity) && p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, quantity);
+			else if (quantity > 0)
+				if (p.getInventory(InventoryType.EQUIPPED).hasItem(itemId, 1)) //assert that we can't equip two of the same items at once
+					if (quantity == 1)
+						return true;
+					else
+						return p.getInventory(type).hasItem(itemId, quantity - 1);
+				else
+					return p.getInventory(type).hasItem(itemId, quantity);
+			else
+				throw new IllegalArgumentException("Domain error. Quantity must be >= 0");
 	}
 
 	public static Equip getCleanEquip(int itemId) {
