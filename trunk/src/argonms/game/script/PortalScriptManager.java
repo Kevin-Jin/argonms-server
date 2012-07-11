@@ -51,7 +51,7 @@ public class PortalScriptManager {
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			PortalActions portalManager = new PortalActions(p.getClient());
 			globalScope.put("portal", globalScope, portalManager);
-			cx.evaluateReader(globalScope, reader, "p_" + scriptName, 1, null);
+			cx.evaluateReader(globalScope, reader, "Portal " + scriptName, 1, null);
 			reader.close();
 			return portalManager.warped();
 		} catch (FileNotFoundException ex) {

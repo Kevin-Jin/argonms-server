@@ -33,10 +33,12 @@ public abstract class NpcDataLoader {
 
 	protected final Set<Integer> loaded;
 	protected final Map<Integer, NpcStorageKeeper> storageCosts;
+	protected final Map<Integer, String> scriptNames;
 
 	protected NpcDataLoader() {
 		loaded = new HashSet<Integer>();
 		storageCosts = new HashMap<Integer, NpcStorageKeeper>();
+		scriptNames = new HashMap<Integer, String>();
 	}
 
 	protected abstract void load(int npcId);
@@ -47,6 +49,12 @@ public abstract class NpcDataLoader {
 		if (!loaded.contains(Integer.valueOf(npcId)))
 			load(npcId);
 		return storageCosts.get(Integer.valueOf(npcId));
+	}
+
+	public String getScriptName(int npcId) {
+		if (!loaded.contains(Integer.valueOf(npcId)))
+			load(npcId);
+		return scriptNames.get(Integer.valueOf(npcId));
 	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {

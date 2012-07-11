@@ -73,14 +73,20 @@ public class NpcScriptManager {
 
 	//scripts for shop NPC overrides the shop.
 	public void runScript(int npcId, GameClient client) {
+		String scriptName = NpcDataLoader.getInstance().getScriptName(npcId);
+		if (scriptName == null) {
+			if (!openDefault(npcId, client))
+				client.getSession().send(missingShop(npcId));
+			return;
+		}
 		Context cx = Context.enter();
 		NpcConversationActions convoMan = null;
 		try {
-			FileReader reader = new FileReader(npcPath + npcId + ".js");
+			FileReader reader = new FileReader(npcPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
-			Script script = cx.compileReader(reader, "n" + npcId, 1, null);
+			Script script = cx.compileReader(reader, "NPC " + scriptName, 1, null);
 			reader.close();
 			convoMan = new NpcConversationActions(npcId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
@@ -90,8 +96,7 @@ public class NpcScriptManager {
 		} catch (ContinuationPending pending) {
 			convoMan.setContinuation(pending.getContinuation());
 		} catch (FileNotFoundException ex) {
-			if (!openDefault(npcId, client))
-				client.getSession().send(unscriptedNpc(npcId));
+			client.getSession().send(unscriptedNpc(npcId, scriptName));
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error executing NPC script " + npcId, ex);
 		} finally {
@@ -107,7 +112,7 @@ public class NpcScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
-			Script script = cx.compileReader(reader, scriptName, 1, null);
+			Script script = cx.compileReader(reader, "Quest " + scriptName, 1, null);
 			reader.close();
 			convoMan = new QuestConversationActions(npcId, questId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
@@ -139,14 +144,28 @@ public class NpcScriptManager {
 		runQuestScript(npcId, questId, client, scriptName);
 	}
 
-	private static byte[] unscriptedNpc(int npc) {
+	private static byte[] missingShop(int npc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.NPC_TALK);
 		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
 		lew.writeInt(npc);
 		lew.writeByte((byte) 0); //SAY (ok box)
-		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about NPC #" + npc + "!");
+		lew.writeLengthPrefixedString("Please tell your server administrator about a possible missing shop from NPC " + npc + ".");
+		lew.writeBool(false); //prev button
+		lew.writeBool(false); //next button
+
+		return lew.getBytes();
+	}
+
+	private static byte[] unscriptedNpc(int npc, String script) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.NPC_TALK);
+		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
+		lew.writeInt(npc);
+		lew.writeByte((byte) 0); //SAY (ok box)
+		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about scipt " + script + " (NPC " + npc + ")!");
 		lew.writeBool(false); //prev button
 		lew.writeBool(false); //next button
 

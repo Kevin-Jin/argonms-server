@@ -58,6 +58,24 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
+		con = null;
+		ps = null;
+		rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `script` FROM `reactorscriptnames` WHERE `reactorid` = ?");
+			ps.setInt(1, reactorid);
+			rs = ps.executeQuery();
+			if (rs.next()) {
+				if (stats == null)
+					stats = new ReactorStats(reactorid);
+				stats.setScript(rs.getString(1));
+			}
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not read reactor script name for reactor " + reactorid, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 		reactorStats.put(Integer.valueOf(reactorid), stats);
 	}
 
@@ -77,13 +95,35 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 				more = doWork(rs, reactorid, stats);
 				reactorStats.put(Integer.valueOf(reactorid), stats);
 			}
-			return true;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load all reactor data from MCDB.", ex);
 			return false;
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
+		con = null;
+		ps = null;
+		rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `reactorid`,`script` FROM `reactorscriptnames` ORDER BY `reactorid`");
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				int reactorid = rs.getInt(1);
+				ReactorStats stats = reactorStats.get(Integer.valueOf(reactorid));
+				if (stats == null) {
+					stats = new ReactorStats(reactorid);
+					reactorStats.put(Integer.valueOf(reactorid), stats);
+				}
+				stats.setScript(rs.getString(2));
+			}
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not load all reactor scripts from MCDB.", ex);
+			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+		return true;
 	}
 
 	@Override
@@ -93,20 +133,34 @@ public class McdbReactorDataLoader extends ReactorDataLoader {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
-		boolean exists = false;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.WZ);
 			ps = con.prepareStatement("SELECT * FROM `reactoreventdata` WHERE `reactorid` = ?");
 			ps.setInt(1, reactorid);
 			rs = ps.executeQuery();
 			if (rs.next())
-				exists = true;
+				return true;
 		} catch (SQLException e) {
 			LOG.log(Level.WARNING, "Could not use MCDB to determine whether reactor " + reactorid + " is valid.", e);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
-		return exists;
+		con = null;
+		ps = null;
+		rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT * FROM `reactorscriptnames` WHERE `reactorid` = ?");
+			ps.setInt(1, reactorid);
+			rs = ps.executeQuery();
+			if (rs.next())
+				return true;
+		} catch (SQLException e) {
+			LOG.log(Level.WARNING, "Could not use reactor scripts table to determine whether reactor " + reactorid + " is valid.", e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+		return false;
 	}
 
 	private boolean doWork(ResultSet rs, int reactorid, ReactorStats stats) throws SQLException {

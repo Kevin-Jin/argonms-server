@@ -1,0 +1,1 @@
+npc.say("I am #r" + npc.getNpcId() + ", and I have reached level #b" + npc.getMaxLevel() + "#k.");

@@ -18,6 +18,7 @@
 
 package argonms.game.script;
 
+import argonms.common.GlobalConstants;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -438,6 +439,10 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 			//we cannot interrupt it
 			dissociateClient();
 		}
+	}
+
+	public short getMaxLevel() {
+		return GlobalConstants.MAX_LEVEL;
 	}
 
 	private static void writeCommonNpcAction(LittleEndianWriter lew, int npcId, byte type, String msg) {

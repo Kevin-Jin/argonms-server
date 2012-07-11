@@ -29,6 +29,7 @@ public class ReactorStats {
 	private int reactorId;
 	private int link;
 	private Map<Byte, State> states;
+	private String action;
 
 	protected ReactorStats(int reactorId) {
 		this.reactorId = reactorId;
@@ -47,11 +48,19 @@ public class ReactorStats {
 		states.put(Byte.valueOf(stateid), s);
 	}
 
+	protected void setScript(String action) {
+		this.action = action;
+	}
+
 	protected int getLink() {
 		return link;
 	}
 
 	public Map<Byte, State> getStates() {
 		return states;
+	}
+
+	public String getScript() {
+		return action;
 	}
 }

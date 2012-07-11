@@ -17,17 +17,29 @@
  */
 
 /**
- * Jean: Event Assistant (NPC 9000001)
- * Victoria Road: Lith Harbor (Map 104000000)
+ * Paul: Event Assistant (NPC 9000000),
+ *   Jean: Event Assistant (NPC 9000001)
+ * Maple Road: Southperry (Map 60000),
+ *   Victoria Road: Lith Harbor (Map 104000000)
  *
- * Maple Anniversary event assistant in Lith Harbor.
+ * Maple Anniversary event assistants.
  *
  * @author GoldenKevin (content from Vana r2111)
  */
 
-npc.sayNext("Hey, I'm #b#p9000001##k. I am waiting for my brother #b#p9000000##k. He is supposed to be here by now...");
-npc.sayNext("Hmm... what should I do? The event will start, soon... many people went to participate in the event, so we better be hurry...");
-let selection = npc.askMenu("Hey... why don't you go with me? I think my brother will come with other people.\r\n"
+let str;
+switch (npc.getNpcId()) {
+	case 9000000:
+		npc.sayNext("Hey, I'm #b#p9000000##k, if you're not busy and all ... then can I hang out with you? I heard there are people gathering up around here for an #revent#k but I don't want to go there by myself ... Well, do you want to go check it out with me?");
+		str = "Huh? What kind of an event? Well, that's...";
+		break;
+	case 9000001:
+		npc.sayNext("Hey, I'm #b#p9000001##k. I am waiting for my brother #b#p9000000##k. He is supposed to be here by now...");
+		npc.sayNext("Hmm... what should I do? The event will start, soon... many people went to participate in the event, so we better be hurry...");
+		str = "Hey... why don't you go with me? I think my brother will come with other people.";
+		break;
+}
+let selection = npc.askMenu(str + "\r\n"
 		+ "#L0##e1. #n#bWhat kind of an event is it?#k#l\r\n"
 		+ "#L1##e2. #n#bExplain the event game to me.#k#l\r\n"
 		+ "#L2##e3. #n#bAlright, let's go!#k#l");
