@@ -21,6 +21,8 @@ package argonms.game.script;
 import argonms.common.GlobalConstants;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.game.field.entity.Npc;
+import argonms.game.field.entity.PlayerNpc;
 import argonms.game.loading.npc.NpcDataLoader;
 import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.quest.QuestDataLoader;
@@ -72,7 +74,8 @@ public class NpcScriptManager {
 	}
 
 	//scripts for shop NPC overrides the shop.
-	public void runScript(int npcId, GameClient client) {
+	public void runScript(Npc npc, GameClient client) {
+		int npcId = npc.getDataId();
 		String scriptName = NpcDataLoader.getInstance().getScriptName(npcId);
 		if (scriptName == null) {
 			if (!openDefault(npcId, client))
@@ -88,7 +91,10 @@ public class NpcScriptManager {
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			Script script = cx.compileReader(reader, "NPC " + scriptName, 1, null);
 			reader.close();
-			convoMan = new NpcConversationActions(npcId, client, globalScope);
+			if (npc.isPlayerNpc())
+				convoMan = new PlayerNpcConversationActions((PlayerNpc) npc, client, globalScope);
+			else
+				convoMan = new NpcConversationActions(npcId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);

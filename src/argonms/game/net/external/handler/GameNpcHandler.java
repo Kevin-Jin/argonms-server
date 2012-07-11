@@ -40,18 +40,7 @@ public class GameNpcHandler {
 		int entId = packet.readInt();
 		/*Point currentPos = */packet.readPos(); //player's position at time of click
 		Npc npc = (Npc) gc.getPlayer().getMap().getEntityById(EntityType.NPC, entId);
-
-		if (npc.isPlayerNpc()) {
-			switch (gc.getPlayer().getMapId()) {
-				case 100000201: //Bowman Instructional School
-				case 101000003: //Magic Library
-				case 102000003: //Warriors' Sanctuary
-				case 103000003: //Thieves' Hideout
-					gc.getSession().send(writeMaxLevelPlayerNpc(npc.getDataId()));
-					return;
-			}
-		}
-		NpcScriptManager.getInstance().runScript(npc.getDataId(), gc);
+		NpcScriptManager.getInstance().runScript(npc, gc);
 	}
 
 	public static void handleContinueConversation(LittleEndianReader packet, GameClient gc) {
@@ -115,19 +104,5 @@ public class GameNpcHandler {
 				break;
 			}
 		}
-	}
-
-	private static byte[] writeMaxLevelPlayerNpc(int npc) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-
-		lew.writeShort(ClientSendOps.NPC_TALK);
-		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
-		lew.writeInt(npc);
-		lew.writeByte((byte) 0); //SAY (ok box)
-		lew.writeLengthPrefixedString("I am #r" + npc + ", and I have reached level #b" + GlobalConstants.MAX_LEVEL + "#k.");
-		lew.writeBool(false); //prev button
-		lew.writeBool(false); //next button
-
-		return lew.getBytes();
 	}
 }
