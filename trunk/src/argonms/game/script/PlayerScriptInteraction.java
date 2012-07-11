@@ -106,7 +106,7 @@ public abstract class PlayerScriptInteraction {
 			InventoryType type = InventoryTools.getCategory(itemid);
 			Inventory inv = client.getPlayer().getInventory(type);
 			ClientSession<?> ses = client.getSession();
-			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemid, quantity);
+			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(client.getPlayer(), itemid, quantity);
 			short pos;
 			InventorySlot slot;
 			for (Short s : changedSlots.modifiedSlots) {
@@ -123,6 +123,15 @@ public abstract class PlayerScriptInteraction {
 			return true;
 		}
 		return false;
+	}
+
+	public void takeItem(int itemid) {
+		InventoryType type = InventoryTools.getCategory(itemid);
+		short quantity = InventoryTools.getAmountOfItem(client.getPlayer().getInventory(type), itemid);
+		if (type == InventoryType.EQUIP)
+			quantity += InventoryTools.getAmountOfItem(client.getPlayer().getInventory(InventoryType.EQUIPPED), itemid);
+		if (quantity > 0)
+			takeItem(itemid, quantity);
 	}
 
 	public int getMap() {
