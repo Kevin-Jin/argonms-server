@@ -1710,12 +1710,14 @@
 	of scripts so that refactoring the sources will have less pitfalls.
 
 2012-06-22  GoldenKevin  (revision 92)
+
 	* All Lith Harbor NPCs (except Chef, since I can't find any reliable script
 	for him, and Duey and EXP Gachapon because they're too complicated at the
 	moment) are now scripted.
 	* argon.sql updated.
 
 2012-06-23  GoldenKevin  (revision 93)
+
 	* Fixed improper usage of Rhino Context instances.
 	* Packaged libraries have been updated. Rhino has been updated from version
 	1.7R3 to 1.7R4 and MySQL Connector/J from 5.1.16 to 5.1.20. MySQL's .jar and
@@ -1724,44 +1726,53 @@
 	their respective websites.
 
 2012-06-28  GoldenKevin  (revision 94)
+
 	* Enabled JavaScript version 1.7 features in Rhino.
 	* var declarations are replaced with let in all scripts since its behavior
 	is more akin to local variable declarations in Java.
 	* Don't let scripts capture continuations if client disconnected.
 
 2012-06-30  GoldenKevin  (revision 95)
+
 	* Scripts for Henesys area NPCs with NPC IDs in the 101200x range.
 
 2012-07-04  GoldenKevin  (revision 96)
+
 	* Scripts for Henesys area NPCs with NPC IDs < 9102100 and NPC ID 9200100
 	(bowman job advancement, Henesys PQ, Henesys beauty shops, etc.).
 	* Added in stub files for unimplemented Lith Harbor scripted NPCs so I don't
 	forget about them in the future.
 
 2012-07-08  GoldenKevin  (revision 97)
+
 	* Renamed script API isQuestFinished to isQuestCompleted.
 	* Fixed NullPointerException in QuestChecks.hasPet.
 	* Finished all NPC scripts for Henesys area.
 
 2012-07-10  GoldenKevin  (revision 98)
+
 	* Fixed Athena Pierce script.
 	* Added Ellinia NPC scripts in the 103200x range.
 
 2012-07-11  GoldenKevin  (revision 99)
+
 	* Fixed problems in InventoryTools with regards to equipped inventory
 	handling.
 	* Finished Ellinia area scripts (or at least created stubs for them).
 
 2012-07-11  GoldenKevin  (revision 100)
+
 	* Fixed messed up reactor drop source position.
 	* Reactor and NPC scripts now are named after the script name fields in
 	their respective data files instead of their numeric ID. MCBB users must
 	execute default_reactor_scripts.sql and default_npc_scripts.sql.
 
 2012-07-11  GoldenKevin  (revision 101)
+
 	* Fixed player NPC script.
 
 2012-07-14  GoldenKevin  (revision 102)
+
 	* Inventory.increaseCapacity, StorageInventory.increaseCapacity, and
 	BuddyList.increaseCapacity nows clip capacities to <= 0xFF. Capacities no
 	longer overflow when increased beyond max.
@@ -1770,6 +1781,10 @@
 	hardcoded in like shops and storages.
 	* Changed sourceName for scripts again. They should be the relative path to
 	the executed script file, with the scripts folder as the root directory.
+
+2012-07-14  GoldenKevin  (revision 103)
+
+	* Implemented all Perion area NPCs.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

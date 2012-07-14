@@ -252,7 +252,7 @@ DROP TABLE IF EXISTS `mapmemory`;
 CREATE TABLE `mapmemory` (
   `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
-  `key` ENUM('FREE_MARKET','WORLD_TOUR','FLORINA') NOT NULL,
+  `key` ENUM('FREE_MARKET','WORLD_TOUR','FLORINA','ARIANT') NOT NULL,
   `value` INT(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY (`characterid`),

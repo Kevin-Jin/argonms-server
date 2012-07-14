@@ -142,6 +142,14 @@ public abstract class PlayerScriptInteraction {
 		client.getPlayer().changeMap(mapId);
 	}
 
+	public void warpPlayer(int mapId, byte portal) {
+		client.getPlayer().changeMap(mapId, portal);
+	}
+
+	public void warpPlayer(int mapId, String portal) {
+		warpPlayer(mapId, GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
+	}
+
 	public short getPlayerLevel() {
 		return client.getPlayer().getLevel();
 	}
