@@ -54,7 +54,7 @@ public class ReactorScriptManager {
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			ReactorInteraction actions = new ReactorInteraction(reactorId, reactor, client, globalScope);
 			globalScope.put("reactor", globalScope, actions);
-			cx.evaluateReader(globalScope, reader, "Reactor " + scriptName, 1, null);
+			cx.evaluateReader(globalScope, reader, "reactors/" + scriptName + ".js", 1, null);
 			reader.close();
 			return true;
 		} catch (FileNotFoundException ex) {

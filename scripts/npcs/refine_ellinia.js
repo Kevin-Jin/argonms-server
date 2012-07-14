@@ -47,8 +47,8 @@ function itemMakePrompt(str, itemids, itemreqs, itemlimits, itemjobs) {
 			str += "#t" + reqs[i] + "#";
 		str += "\r\n";
 	}
-
 	let approve = npc.askYesNo(str);
+
 	if (approve == 0)
 		return -1;
 	return selection;
@@ -66,7 +66,7 @@ function itemUpgradePrompt(warning, str, itemids, itemreqs, itemlimits, itemjobs
 	let stat = itemstats[selection];
 
 	str = "To upgrade one #t" + item + "#, you'll need these items below. The level limit for the item is " + limit + ", ";
-	if (stat != "none")
+	if (stat != null)
 		str += "with the item option of #r" + stat + "#k attached to it, ";
 	str += "so please check and see if you really need it. Oh, and one thing. Please make sure NOT to use an upgraded item as a material for the upgrade. Now, are you sure you want to make this item?\r\n\r\n";
 	for (let i = 0; i < reqs.length; i += 2) {
@@ -79,8 +79,8 @@ function itemUpgradePrompt(warning, str, itemids, itemreqs, itemlimits, itemjobs
 			str += "#t" + reqs[i] + "#";
 		str += "\r\n";
 	}
-
 	let approve = npc.askYesNo(str);
+
 	if (approve == 0)
 		return -1;
 	return selection;

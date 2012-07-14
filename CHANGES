@@ -1761,6 +1761,16 @@
 2012-07-11  GoldenKevin  (revision 101)
 	* Fixed player NPC script.
 
+2012-07-14  GoldenKevin  (revision 102)
+	* Inventory.increaseCapacity, StorageInventory.increaseCapacity, and
+	BuddyList.increaseCapacity nows clip capacities to <= 0xFF. Capacities no
+	longer overflow when increased beyond max.
+	* Proper packets for increasing inventory capacity. Thanks Vana!
+	* Removed null.js. Apparently Duey is not scripted, but instead is
+	hardcoded in like shops and storages.
+	* Changed sourceName for scripts again. They should be the relative path to
+	the executed script file, with the scripts folder as the root directory.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

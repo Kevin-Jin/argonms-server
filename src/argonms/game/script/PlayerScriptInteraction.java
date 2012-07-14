@@ -205,15 +205,23 @@ public abstract class PlayerScriptInteraction {
 	}
 
 	public void giveEquipInventorySlots(short delta) {
-		client.getPlayer().getInventory(InventoryType.EQUIP).increaseCapacity(delta);
+		short newCap = client.getPlayer().getInventory(InventoryType.EQUIP).increaseCapacity(delta);
+		client.getSession().send(GamePackets.writeInventoryUpdateCapacity(InventoryType.EQUIP, newCap));
 	}
 
 	public void giveUseInventorySlots(short delta) {
-		client.getPlayer().getInventory(InventoryType.USE).increaseCapacity(delta);
+		short newCap = client.getPlayer().getInventory(InventoryType.USE).increaseCapacity(delta);
+		client.getSession().send(GamePackets.writeInventoryUpdateCapacity(InventoryType.USE, newCap));
+	}
+
+	public void giveSetupInventorySlots(short delta) {
+		short newCap = client.getPlayer().getInventory(InventoryType.SETUP).increaseCapacity(delta);
+		client.getSession().send(GamePackets.writeInventoryUpdateCapacity(InventoryType.SETUP, newCap));
 	}
 
 	public void giveEtcInventorySlots(short delta) {
-		client.getPlayer().getInventory(InventoryType.ETC).increaseCapacity(delta);
+		short newCap = client.getPlayer().getInventory(InventoryType.ETC).increaseCapacity(delta);
+		client.getSession().send(GamePackets.writeInventoryUpdateCapacity(InventoryType.ETC, newCap));
 	}
 
 	public void giveSp(short gain) {

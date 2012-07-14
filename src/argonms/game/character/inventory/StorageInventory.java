@@ -225,6 +225,6 @@ public class StorageInventory implements IInventory {
 	}
 
 	public void increaseCapacity(short delta) {
-		capacity += delta;
+		capacity = (short) Math.min(capacity + delta, 0xFF);
 	}
 }

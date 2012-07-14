@@ -70,6 +70,10 @@ public class NpcScriptManager {
 			client.getSession().send(GamePackets.writeNpcStorage(npcId, client.getPlayer().getStorageInventory()));
 			return true;
 		}
+		if (npcId == 9010009) { //duey
+			//TODO: Maple Package Service
+			return true;
+		}
 		return false;
 	}
 
@@ -89,7 +93,7 @@ public class NpcScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
-			Script script = cx.compileReader(reader, "NPC " + scriptName, 1, null);
+			Script script = cx.compileReader(reader, "npcs/" + scriptName + ".js", 1, null);
 			reader.close();
 			if (npc.isPlayerNpc())
 				convoMan = new PlayerNpcConversationActions((PlayerNpc) npc, client, globalScope);
@@ -118,7 +122,7 @@ public class NpcScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
-			Script script = cx.compileReader(reader, "Quest " + scriptName, 1, null);
+			Script script = cx.compileReader(reader, "quests/" + scriptName + ".js", 1, null);
 			reader.close();
 			convoMan = new QuestConversationActions(npcId, questId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
