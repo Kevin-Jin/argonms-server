@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
-
 /**
+ * Gachapon (NPC 9100102)
+ * Victoria Road: Perion (Map 102000000)
+ *
+ * Perion Gachapon.
  *
  * @author GoldenKevin
  */
-public enum MapMemoryVariable {
-	FREE_MARKET, WORLD_TOUR, FLORINA, ARIANT
-}
+
+//TODO: implement gachapon
