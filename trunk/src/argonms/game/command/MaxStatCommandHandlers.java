@@ -134,19 +134,17 @@ public class MaxStatCommandHandlers {
 		p.setJob(PlayerJob.JOB_SUPER_GM);
 		p.setFame(Short.MAX_VALUE);
 
-		if (ParseHelper.hasOpt(args, "-i")) {
-			p.setMesos(Integer.MAX_VALUE);
-			//TODO: find some packets to notify client of new slot limits
-			for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
-				Inventory inv = p.getInventory(type);
-				inv.increaseCapacity((short) (0xFF - inv.getMaxSlots()));
-			}
-			StorageInventory inv = p.getStorageInventory();
-			inv.increaseCapacity((short) (0xFF - inv.getMaxSlots()));
+		p.setMesos(Integer.MAX_VALUE);
+		for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
+			Inventory inv = p.getInventory(type);
+			inv.increaseCapacity((short) 0xFF);
+			p.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(type, (short) 0xFF));
 		}
+		StorageInventory inv = p.getStorageInventory();
+		inv.increaseCapacity((short) 0xFF);
 
 		BuddyList bList = p.getBuddyList();
-		bList.increaseCapacity((short) (0xFF - bList.getCapacity()));
+		bList.increaseCapacity((short) 0xFF);
 		p.getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
 
 		//TODO: increase character limit to 6
@@ -199,12 +197,12 @@ public class MaxStatCommandHandlers {
 	public static class MaxAllHandler extends AbstractCommandDefinition {
 		@Override
 		public String getHelpMessage() {
-			return "Maxes out your base stats (including amount of inventory/storage slots and mesos by specifying -i), your equipment bonus stats, and your skill levels.";
+			return "Maxes out your base stats, your equipment bonus stats, and your skill levels.";
 		}
 
 		@Override
 		public String getUsage() {
-			return "Usage: !maxall [-i]";
+			return "Usage: !maxall";
 		}
 
 		@Override

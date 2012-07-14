@@ -789,6 +789,14 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeInventoryUpdateCapacity(InventoryType type, short capacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.UPDATE_INVENTORY_CAPACITY);
+		lew.writeByte(type.byteValue());
+		lew.writeByte((byte) capacity);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeChangeMap(int mapid, byte spawnPoint, GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(26);
 

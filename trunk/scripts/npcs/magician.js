@@ -52,7 +52,6 @@ if (npc.getPlayerJob() == 0) {
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. I'll be waiting for you here...");
 			npc.sayNext("Oh, and... if you have any questions about being the Magician, feel free to ask. I don't know EVERYTHING, per se, but I'll help you out with all that I know of. Til then...");
 		} else {
-			npc.clearBackButton();
 			npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once your have made your decision...");
 		}
 	} else {

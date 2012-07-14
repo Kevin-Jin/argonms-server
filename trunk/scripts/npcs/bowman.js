@@ -57,7 +57,6 @@ if (npc.getPlayerJob() == 0) {
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. I'll be waiting for you.");
 			npc.sayNext("Oh, and... if you have any other questions about being the Bowman, feel free to ask. I don't every single thing about  being the bowman, but I'll answer as many questions as I can. Til then...");
 		} else {
-			npc.clearBackButton();
 			npc.sayNext("Really? Have to give more though to it, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once you have made your decision.");
 		}
 	} else {
@@ -123,7 +122,6 @@ if (npc.getPlayerJob() == 0) {
 						break;
 					case 1:
 						selection = npc.askYesNo("So you want to make the second job advancement as the #bCrossbowman#k? You know you won't be able to choose a different job for the second job advancement once you make your decision here, right?");
-
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");
 						} else if (selection == 1) {
