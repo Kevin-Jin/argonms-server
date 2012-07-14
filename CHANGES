@@ -1102,7 +1102,8 @@
 
 2011-07-18  GoldenKevin  (revision 54)
 
-	* Renamed MapleAESOFB to MapleAesOfb. Initialisms of three or more letters should be camel case instead of upper case.
+	* Renamed MapleAESOFB to MapleAesOfb. Initialisms of three or more letters
+	should be camel case instead of upper case.
 
 2011-07-18  GoldenKevin  (revision 55)
 
@@ -1785,6 +1786,11 @@
 2012-07-14  GoldenKevin  (revision 103)
 
 	* Implemented all Perion area NPCs.
+
+2012-07-14  GoldenKevin  (revision 104)
+
+	* Unignore Eclipse project files outside of trunk since Eclipse project
+	should reside in trunk only.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
