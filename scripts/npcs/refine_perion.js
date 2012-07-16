@@ -20,7 +20,7 @@
  * Mr. Thunder: Item Creator (NPC 1022003)
  * Victoria Road: Perion (Map 102000000)
  *
- * Jewel refiner.
+ * Ore refiner.
  * Refining NPC for warriors - upgrades only.
  *
  * @author GoldenKevin (content from Vana r3171)

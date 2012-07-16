@@ -175,7 +175,7 @@ public class NpcScriptManager {
 		lew.writeByte((byte) 4); //4 is for NPC conversation actions I guess...
 		lew.writeInt(npc);
 		lew.writeByte((byte) 0); //SAY (ok box)
-		lew.writeLengthPrefixedString("I have not been scripted yet. Please tell your server administrator about scipt " + script + " (NPC " + npc + ")!");
+		lew.writeLengthPrefixedString("#rI have not been scripted yet.#k Please tell your server administrator about script #b" + script + "#k (NPC #b" + npc + "#k)!");
 		lew.writeBool(false); //prev button
 		lew.writeBool(false); //next button
 

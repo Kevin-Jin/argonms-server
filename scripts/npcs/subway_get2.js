@@ -17,21 +17,19 @@
  */
 
 /**
- * a pile of herbs (NPC 1043001)
- * Hidden Street: The Forest of Patience <Step 5> (Map 101000104)
+ * Treasure Chest (NPC 1052009)
+ * Line 3 Construction Site: B2 <Subway Depot> (Map 103000905)
  *
- * Completes Sabitrama's Anti-Aging Medicine (Quest 2051) and gives rare jewel
- * or mineral ores or Red-Hearted Earrings as a reward if the quest is completed
- * and the player successfully reached the end.
+ * Completes Shumi's Lost Bundle of Money (Quest 2056) and gives jewel ores as a
+ * reward if the quest is completed and the player successfully reached the end.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.isQuestActive(2051)) {
-	npc.giveItem(4031032, 1);
+if (npc.isQuestActive(2056)) {
+	npc.giveItem(4031040, 1);
 } else {
-	let rewards = [4020007, 2, 4020008, 2, 4010006, 2, 1032013, 1];
-	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	npc.giveItem(rewards[index], rewards[index + 1]);
+	let rewards = [4020005, 4020006, 4020004, 4020001, 4020003, 4020000, 4020002];
+	npc.giveItem(rewards[Math.floor(Math.random() * rewards.length)], 2);
 }
-npc.warpPlayer(101000000);
+npc.warpPlayer(103000100);

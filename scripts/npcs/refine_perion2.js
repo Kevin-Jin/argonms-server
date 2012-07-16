@@ -94,7 +94,6 @@ if (selection == 0) {
 			+ "#L2# Create materials#l");
 	let itemids;
 	let itemreqs;
-	let quantity;
 	let equip;
 	switch (selection) {
 		case 0:
@@ -114,7 +113,6 @@ if (selection == 0) {
 			];
 			selection = itemMakePrompt("I'm the best glove-maker in this town!! Now...what kind of a glove do you want to make?",
 					itemids, itemreqs, glovelimits, glovejobs);
-			quantity = 1;
 			equip = true;
 			break;
 		case 1:
@@ -135,7 +133,6 @@ if (selection == 0) {
 			];
 			selection = itemUpgradePrompt("So you want to upgrade the glove? Ok, then. A word of warning, though: All the items that will be used for upgrading will be gone, but if you use an item that has been #rupgraded#k with a scroll, the effect will disappear when upgraded. Please take that into consideration when making the decision, ok?",
 					"So~~ what kind of a glove do you want to upgrade and create?", itemids, itemreqs, upgradelimits, upgradejobs);
-			quantity = 1;
 			equip = true;
 			break;
 		case 2: {
@@ -164,7 +161,7 @@ if (selection == 0) {
 					break;
 			}
 			let reqs = itemreqs[selection];
-			quantity = npc.askNumber(str, 0, 0, 100);
+			let quantity = npc.askNumber(str, 0, 0, 100);
 
 			// Output for this step is all messed up, thank Nexon
 			switch (selection) {
@@ -226,13 +223,13 @@ if (selection == 0) {
 			let reqs = itemreqs[selection];
 			for (let i = 0; i < reqs.length && okay; i += 2) {
 				if (reqs[i] != MESOS) {
-					if (!npc.playerHasItem(reqs[i], reqs[i + 1] * quantity))
+					if (!npc.playerHasItem(reqs[i], reqs[i + 1]))
 						okay = false;
-				} else if (!npc.playerHasMesos(reqs[i + 1] * quantity)) {
+				} else if (!npc.playerHasMesos(reqs[i + 1])) {
 					okay = false;
 				}
 			}
-			if (!npc.playerCanHoldItem(item, quantity))
+			if (!npc.playerCanHoldItem(item, 1))
 				okay = false;
 
 			if (!okay) {
@@ -240,10 +237,10 @@ if (selection == 0) {
 			} else {
 				for (let i = 0; i < reqs.length; i += 2)
 					if (reqs[i] != MESOS)
-						npc.takeItem(reqs[i], reqs[i + 1] * quantity);
+						npc.takeItem(reqs[i], reqs[i + 1]);
 					else
-						npc.takeMesos(reqs[i + 1] * quantity);
-				npc.giveItem(item, quantity);
+						npc.takeMesos(reqs[i + 1]);
+				npc.giveItem(item, 1);
 				npc.sayNext("Here! take the #t" + item + "#. Don't you think I'm as good as Mr. Thunder? You'll be more than satisfied with what I made here.");
 			}
 		}
