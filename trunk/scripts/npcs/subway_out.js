@@ -17,21 +17,20 @@
  */
 
 /**
- * a pile of herbs (NPC 1043001)
- * Hidden Street: The Forest of Patience <Step 5> (Map 101000104)
+ * Exit (NPC 1052011)
+ * Line 3 Construction Site: B1 <Area 1> (Map 103000900),
+ *   Line 3 Construction Site: B1 <Area 2> (Map 103000901),
+ *   Line 3 Construction Site: B2 <Area 1> (Map 103000903),
+ *   Line 3 Construction Site: B2 <Area 2> (Map 103000904),
+ *   Line 3 Construction Site: B3 <Area 1> (Map 103000906),
+ *   Line 3 Construction Site: B3 <Area 2> (Map 103000907),
+ *   Line 3 Construction Site: B3 <Area 3> (Map 103000908)
  *
- * Completes Sabitrama's Anti-Aging Medicine (Quest 2051) and gives rare jewel
- * or mineral ores or Red-Hearted Earrings as a reward if the quest is completed
- * and the player successfully reached the end.
+ * Exit sign in Kerning City subway constructions sites, to forfeit Shumi's jump
+ * quests.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.isQuestActive(2051)) {
-	npc.giveItem(4031032, 1);
-} else {
-	let rewards = [4020007, 2, 4020008, 2, 4010006, 2, 1032013, 1];
-	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	npc.giveItem(rewards[index], rewards[index + 1]);
-}
-npc.warpPlayer(101000000);
+if (npc.askYesNo("This device is connected to outside. Are you going to give up and leave this place? You'll have to start from scratch the next time you come in...") == 1)
+	npc.warpPlayer(103000100);

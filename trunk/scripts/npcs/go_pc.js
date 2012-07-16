@@ -17,21 +17,16 @@
  */
 
 /**
- * a pile of herbs (NPC 1043001)
- * Hidden Street: The Forest of Patience <Step 5> (Map 101000104)
+ * Mong from Kong: Internet Cafe Worker (NPC 1052012)
+ * Victoria Road: Kerning City (Map 103000000)
  *
- * Completes Sabitrama's Anti-Aging Medicine (Quest 2051) and gives rare jewel
- * or mineral ores or Red-Hearted Earrings as a reward if the quest is completed
- * and the player successfully reached the end.
+ * Maple Internet Cafe bouncer.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.isQuestActive(2051)) {
-	npc.giveItem(4031032, 1);
-} else {
-	let rewards = [4020007, 2, 4020008, 2, 4010006, 2, 1032013, 1];
-	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	npc.giveItem(rewards[index], rewards[index + 1]);
-}
-npc.warpPlayer(101000000);
+let selection = npc.askYesNo("Aren't you connected through the Internet Cafe? If so, then go in here ... you'll probably head to a familiar place. What do you think? Do you want to go in?");
+if (selection == 1)
+	npc.sayNext("Hey, hey ... I don't think you're logging on from the internet cafe. You can't enter this place if you are logging on from home ...");
+else
+	npc.sayNext("You must be busy, huh? But if you're loggin on from the internet cafe, then you should try going in. You may end up in a strange place once inside.");

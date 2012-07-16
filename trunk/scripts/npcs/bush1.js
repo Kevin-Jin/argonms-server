@@ -21,8 +21,8 @@
  * Hidden Street: The Forest of Patience <Step 2> (Map 101000101)
  *
  * Completes Sabitrama and the Diet Medicine (Quest 2050) and gives jewel ores
- * as rewards if the quest is completed and the player successfully reached the
- * top.
+ * as a reward if the quest is completed and the player successfully reached the
+ * end.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
