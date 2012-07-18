@@ -1797,6 +1797,10 @@
 	* Implemented all Kerning City NPCs in the 10520xx range.
 	* Made unscripted NPC notice more legible.
 
+2012-07-18  GoldenKevin  (revision 106)
+
+	* Implemented Kerning City beauty NPCs and Monster Carnival NPC.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
-
 /**
+ * Mr. Pickall: Master of Lock-Picking (NPC 9000008)
+ * Victoria Road: Kerning City (Map 103000000)
+ *
+ * <insert description here>
  *
  * @author GoldenKevin
  */
-public enum MapMemoryVariable {
-	FREE_MARKET, WORLD_TOUR, FLORINA, ARIANT, MONSTER_CARNIVAL
-}
+
+//TODO: get GMS like conversation
