@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
-
 /**
+ * Chun Ji (NPC 9000007)
+ * Victoria Road: Kerning City Construction Site (Map 103010000)
+ *
+ * <insert description here>
  *
  * @author GoldenKevin
  */
-public enum MapMemoryVariable {
-	FREE_MARKET, WORLD_TOUR, FLORINA, ARIANT, MONSTER_CARNIVAL
-}
+
+//TODO: get GMS like conversation

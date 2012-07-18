@@ -83,12 +83,12 @@ if (npc.getPlayerLevel() < 40) {
 		if (!okay) {
 			if (item != 4031042) {
 				str = "Are you sure you have enough mesos? Please check and see if you have the refined ";
-				for (var i = 0; i < mats.length; i++)
+				for (let i = 0; i < mats.length; i++)
 					str += "#b#t" + mats[i] + "##k, ";
 				npc.sayNext(str + "one of each.");
 			} else {
 				str = "Are you sure you have enough mesos? Please check and see if you have ";
-				for (var i = 0; i < mats.length - 1; i++)
+				for (let i = 0; i < mats.length - 1; i++)
 					str += "#b1 #t" + mats[i] + "##k, ";
 				npc.sayNext(str + "and #b1 #t" + mats[mats.length - 1] + "##k ready for me.");
 			}
