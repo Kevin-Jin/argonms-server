@@ -198,6 +198,16 @@ public class InterChannelCommunication {
 		}
 	}
 
+	public void changeRemoteChannelPort(byte channel, int port) {
+		Byte ch = Byte.valueOf(channel);
+		writeLock.lock();
+		try {
+			remoteChannelPorts.put(ch, Integer.valueOf(port));
+		} finally {
+			writeLock.unlock();
+		}
+	}
+
 	private GameCenterInterface getCenterComm() {
 		return GameServer.getInstance().getCenterInterface();
 	}

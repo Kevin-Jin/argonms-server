@@ -1801,6 +1801,15 @@
 
 	* Implemented Kerning City beauty NPCs and Monster Carnival NPC.
 
+2012-07-20  GoldenKevin  (revision 107)
+
+	* Reverted r87's synchronized valid checks and socket closing. No need to
+	make read and writes contested just to prevent such a rare case that has no
+	side effects.
+	* SessionCreator.shutdown rewritten to resemble Session.close.
+	* Added shutdown command, though not yet fully implemented.
+	* Fixed channel port change.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

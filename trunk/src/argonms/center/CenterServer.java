@@ -255,7 +255,6 @@ public class CenterServer {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeByte(CenterRemoteOps.CHANNEL_PORT_CHANGE);
 		lew.writeByte(world);
-		lew.writeByte(serverId);
 		lew.writeByte(channel);
 		lew.writeInt(newPort);
 		byte[] bytes = lew.getBytes();

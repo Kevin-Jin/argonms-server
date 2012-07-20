@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
@@ -123,11 +124,13 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 	private void send(int queueInsertNo, ByteBuffer buf) {
 		sendQueue.insert(queueInsertNo, buf);
-		synchronized (commChn) {
+		try {
 			if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
 				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 				selectionKey.selector().wakeup();
 			}
+		} catch (CancelledKeyException e) {
+			//don't worry about it - session is already closed
 		}
 	}
 
@@ -190,12 +193,10 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			synchronized (commChn) {
-				try {
-					commChn.close();
-				} catch (IOException ex) {
-					LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
-				}
+			try {
+				commChn.close();
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);

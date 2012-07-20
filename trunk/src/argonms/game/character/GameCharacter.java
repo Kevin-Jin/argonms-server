@@ -1651,7 +1651,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return false;
 	}
 
-	private void prepareExitChannel() {
+	private void prepareExitChannel(boolean quickCleanup) {
 		//TODO: need to save debuffs in database so players cannot exploit
 		//logging off and then on to get rid of debuffs...
 		for (Pair<SkillState, ScheduledFuture<?>> cancelTask : skillFutures.values())
@@ -1664,23 +1664,25 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		for (Cooldown cooling : cooldowns.values())
 			cooling.cancel();
 
-		leaveMapRoutines();
-		if (map != null)
-			map.removePlayer(this);
-		saveCharacter();
+		if (!quickCleanup) {
+			leaveMapRoutines();
+			if (map != null)
+				map.removePlayer(this);
+			saveCharacter();
+		}
 	}
 
 	public void prepareChannelChange() {
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
-		prepareExitChannel();
+		prepareExitChannel(false);
 	}
 
-	public void prepareLogOff() {
+	public void prepareLogOff(boolean quickCleanup) {
 		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
-		prepareExitChannel();
+		prepareExitChannel(quickCleanup);
 	}
 
 	public int getGuildId() {

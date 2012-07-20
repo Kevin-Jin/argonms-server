@@ -61,4 +61,9 @@ public class PlayerLog<T extends Player> {
 	public Collection<T> getConnectedPlayers() {
 		return nameToPlayerMapping.values();
 	}
+
+	public void clear() {
+		nameToPlayerMapping.clear();
+		idToPlayerMapping.clear();
+	}
 }

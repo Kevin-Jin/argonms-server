@@ -21,6 +21,7 @@ package argonms.center.net.remoteadmin;
 import argonms.common.net.SessionCreator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -30,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,8 +46,10 @@ public class TelnetListener implements SessionCreator {
 	private final TelnetCommandProcessor packetProc;
 	private final TelnetSession.CommandReceivedDelegate packetDelegate;
 	private ServerSocketChannel listener;
+	private final AtomicBoolean closeEventsTriggered;
 
 	public TelnetListener(boolean useNio) {
+		closeEventsTriggered = new AtomicBoolean(false);
 		bossThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			private final ThreadGroup group;
 
@@ -128,13 +132,13 @@ public class TelnetListener implements SessionCreator {
 											clientState.setSession(session);
 											acceptedKey.attach(session);
 										} catch (IOException ex) {
-											LOG.log(Level.FINE, "Error while accepting telnet client", ex);
+											close("Error while accepting telnet client", ex);
 										}
 									}
 								} else {
 									SocketChannel client = (SocketChannel) key.channel();
 									final TelnetSession session = (TelnetSession) key.attachment();
-									synchronized (client) {
+									try {
 										if (key.isValid() && key.isReadable()) {
 											try {
 												int read = client.read(session.readBuffer());
@@ -159,17 +163,14 @@ public class TelnetListener implements SessionCreator {
 										if (key.isValid() && key.isWritable())
 											if (session.tryFlushSendQueue() == 1)
 												key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
+									} catch (CancelledKeyException e) {
+										//don't worry about it - session is already closed
 									}
 								}
 							}
 						}
 					} catch (IOException ex) {
-						LOG.log(Level.WARNING, "Telnet selector error", ex);
-						try {
-							listener.close();
-						} catch (IOException e) {
-							LOG.log(Level.WARNING, "Could not close telnet selector", e);
-						}
+						close("Error while opening", ex);
 					}
 				}
 			});
@@ -180,13 +181,19 @@ public class TelnetListener implements SessionCreator {
 		}
 	}
 
-	public boolean shutdown() {
-		try {
-			listener.close();
-			return true;
-		} catch (IOException ex) {
-			LOG.log(Level.WARNING, "Could not unbind server", ex);
-			return false;
+	public void close(String reason, Throwable reasonExc) {
+		if (closeEventsTriggered.compareAndSet(false, true)) {
+			try {
+				listener.close();
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error while unbinding telnet selector (" + listener.socket().getLocalSocketAddress() + ")", ex);
+			}
+			if (reasonExc == null)
+				LOG.log(Level.FINE, "Telnet selector ({0}) closed: {1}", new Object[] { listener.socket().getLocalSocketAddress(), reason });
+			else
+				LOG.log(Level.FINE, "Telnet selector (" + listener.socket().getLocalSocketAddress() + ") closed: " + reason, reasonExc);
+			bossThreadPool.shutdown();
+			workerThreadPool.shutdown();
 		}
 	}
 }

@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -39,7 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -115,11 +115,13 @@ public class CenterRemoteSession implements Session {
 		buf.put(b);
 		buf.flip();
 		sendQueue.insert(buf);
-		synchronized (commChn) {
+		try {
 			if (selectionKey.isValid() && tryFlushSendQueue() == 0) {
 				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 				selectionKey.selector().wakeup();
 			}
+		} catch (CancelledKeyException e) {
+			//don't worry about it - session is already closed
 		}
 	}
 
@@ -148,12 +150,10 @@ public class CenterRemoteSession implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			synchronized (commChn) {
-				try {
-					commChn.close();
-				} catch (IOException ex) {
-					LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
-				}
+			try {
+				commChn.close();
+			} catch (IOException ex) {
+				LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
 			idleTaskFuture.cancel(false);

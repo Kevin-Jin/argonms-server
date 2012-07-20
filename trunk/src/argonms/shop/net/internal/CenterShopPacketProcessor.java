@@ -60,6 +60,9 @@ public class CenterShopPacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.GAME_DISCONNECTED:
 				processGameDisconnected(packet);
 				break;
+			case CenterRemoteOps.CHANNEL_PORT_CHANGE:
+				processChannelPortChange(packet);
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
 				break;
@@ -81,5 +84,12 @@ public class CenterShopPacketProcessor extends CenterRemotePacketProcessor {
 		byte serverId = packet.readByte();
 		byte world = packet.readByte();
 		local.unregisterGame(serverId, world);
+	}
+
+	private void processChannelPortChange(LittleEndianReader packet) {
+		byte world = packet.readByte();
+		byte channel = packet.readByte();
+		int newPort = packet.readInt();
+		local.getWorld(Byte.valueOf(world)).setPort(channel, newPort);
 	}
 }

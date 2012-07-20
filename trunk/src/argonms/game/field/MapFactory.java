@@ -32,6 +32,7 @@ public class MapFactory {
 	private Map<Integer, GameMap> maps;
 
 	public MapFactory() {
+		//TODO: thread safety
 		this.maps = new HashMap<Integer, GameMap>();
 	}
 
@@ -45,6 +46,10 @@ public class MapFactory {
 				maps.put(oId, new GameMap(stats));
 		}
 		return maps.get(oId);
+	}
+
+	public void clear() {
+		maps.clear();
 	}
 
 	public Map<Integer, GameMap> getMaps() {

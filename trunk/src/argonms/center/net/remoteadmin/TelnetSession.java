@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
@@ -94,11 +95,13 @@ public class TelnetSession implements Session {
 	private void send(ByteBuffer buf) {
 		int queueInsertNo = sendQueue.getNextPush();
 		sendQueue.insert(queueInsertNo, buf);
-		synchronized (commChn) {
+		try {
 			if (selectionKey.isValid() && !sendQueue.willBlock() && tryFlushSendQueue() == 0) {
 				selectionKey.interestOps(selectionKey.interestOps() | SelectionKey.OP_WRITE);
 				selectionKey.selector().wakeup();
 			}
+		} catch (CancelledKeyException e) {
+			//don't worry about it - session is already closed
 		}
 	}
 
@@ -131,12 +134,10 @@ public class TelnetSession implements Session {
 	@Override
 	public boolean close(String reason, Throwable reasonExc) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
-			synchronized (commChn) {
-				try {
-					commChn.close();
-				} catch (IOException e) {
-					LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
-				}
+			try {
+				commChn.close();
+			} catch (IOException e) {
+				LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
 			}
 
 			if (reasonExc == null)
