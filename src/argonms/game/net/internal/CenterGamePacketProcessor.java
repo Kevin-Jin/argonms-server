@@ -67,6 +67,9 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.SHOP_DISCONNECTED:
 				processShopDisconnected(packet);
 				break;
+			case CenterRemoteOps.CHANNEL_PORT_CHANGE:
+				processChannelPortChange(packet);
+				break;
 			case CenterRemoteOps.INTER_CHANNEL_RELAY:
 				processInterChannelMessage(packet);
 				break;
@@ -104,6 +107,13 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 
 	private void processShopDisconnected(LittleEndianReader packet) {
 		local.unregisterShop();
+	}
+
+	private void processChannelPortChange(LittleEndianReader packet) {
+		/*byte world = */packet.readByte();
+		byte channel = packet.readByte();
+		int newPort = packet.readInt();
+		local.updateRemoteChannelPort(channel, newPort);
 	}
 
 	private void processInterChannelMessage(LittleEndianReader packet) {

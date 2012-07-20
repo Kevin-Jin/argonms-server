@@ -25,10 +25,12 @@ import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.MapleAesOfb;
+import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
+import argonms.game.character.GameCharacter;
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.npc.NpcDataLoader;
@@ -81,6 +83,7 @@ public class GameServer implements LocalServer {
 	private boolean centerConnected;
 	private final GameRegistry registry;
 	private final Map<Byte, Set<Byte>> remoteGameChannelMapping;
+	private volatile boolean terminated;
 
 	private GameServer(byte serverid) {
 		this.serverId = serverid;
@@ -321,6 +324,11 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.INFO, "Shop server unregistered.");
 	}
 
+	public void updateRemoteChannelPort(byte channel, int port) {
+		for (WorldChannel ch : channels.values())
+			ch.getInterChannelInterface().changeRemoteChannelPort(channel, port);
+	}
+
 	@Override
 	public String getExternalIp() {
 		return address;
@@ -346,6 +354,49 @@ public class GameServer implements LocalServer {
 
 	public GameRegistry getRegistry() {
 		return registry;
+	}
+
+	private void terminate(boolean halt) {
+		terminated = true;
+		List<GameCharacter> toSave = new ArrayList<GameCharacter>();
+		for (WorldChannel chn : channels.values()) {
+			chn.shutdown();
+			for (GameCharacter p : chn.getConnectedPlayers()) {
+				p.getClient().getSession().close("Shutdown", null);
+				toSave.add(p);
+			}
+		}
+		for (GameCharacter p : toSave) {
+			p.saveCharacter();
+			p.getClient().updateState(RemoteClient.STATUS_NOTLOGGEDIN);
+		}
+		if (halt) {
+			Scheduler.getInstance().shutdown();
+			Scheduler.getWheelTimer().shutdown();
+			gci.getSession().close("Halt", null);
+		} else {
+			for (WorldChannel chn : channels.values()) {
+				chn.getMapFactory().clear();
+				chn.resetConnectedPlayers();
+			}
+		}
+	}
+
+	public void shutdown(final boolean halt, int time) {
+		if (time == 0) {
+			terminate(halt);
+		} else {
+			Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
+				public void run() {
+					terminate(halt);
+				}
+			}, time);
+		}
+	}
+
+	public boolean isTerminated() {
+		return terminated;
 	}
 
 	public static GameServer getInstance() {

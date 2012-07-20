@@ -128,6 +128,10 @@ public class WorldChannel {
 		return storage.getConnectedPlayers();
 	}
 
+	public void resetConnectedPlayers() {
+		storage.clear();
+	}
+
 	private void channelChangeError(GameCharacter p) {
 		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
 		queuedChannelChanges.remove(Integer.valueOf(p.getId()));
@@ -198,6 +202,7 @@ public class WorldChannel {
 	}
 
 	public void shutdown() {
+		handler.close("Shutdown", null);
 		port = -1;
 		sendNewPort();
 	}

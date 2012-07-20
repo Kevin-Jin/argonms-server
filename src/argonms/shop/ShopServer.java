@@ -243,6 +243,15 @@ public class ShopServer implements LocalServer {
 			onlineWorlds.remove(oW);
 	}
 
+	/**
+	 * This may return null if no channels of this world have connected yet.
+	 * @param world
+	 * @return
+	 */
+	public ShopWorld getWorld(byte world) {
+		return onlineWorlds.get(Byte.valueOf(world));
+	}
+
 	public static ShopServer getInstance() {
 		return instance;
 	}

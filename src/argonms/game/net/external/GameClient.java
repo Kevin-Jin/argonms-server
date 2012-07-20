@@ -101,12 +101,13 @@ public class GameClient extends RemoteClient {
 		return GameServer.getInstance().getServerId();
 	}
 
-	private void dissociate(boolean changingChannels) {
+	private void dissociate(boolean quickCleanup, boolean changingChannels) {
 		if (player != null) {
 			if (!changingChannels)
-				player.prepareLogOff();
+				player.prepareLogOff(quickCleanup);
 			player.disconnect();
-			GameServer.getChannel(getChannel()).removePlayer(player);
+			if (!quickCleanup)
+				GameServer.getChannel(getChannel()).removePlayer(player);
 			player = null;
 		}
 		getSession().removeClient();
@@ -115,20 +116,21 @@ public class GameClient extends RemoteClient {
 
 	@Override
 	public void disconnected() {
+		final boolean quickCleanup = GameServer.getInstance().isTerminated();
 		final boolean changingChannels = isMigrating();
 		if (npc != null)
 			npc.endConversation();
 		if (getSession().getQueuedReads() == 0) {
-			dissociate(changingChannels);
+			dissociate(quickCleanup, changingChannels);
 		} else {
 			getSession().setEmptyReadQueueHandler(new Runnable() {
 				@Override
 				public void run() {
-					dissociate(changingChannels);
+					dissociate(quickCleanup, changingChannels);
 				}
 			});
 		}
-		if (!changingChannels)
+		if (!quickCleanup && !changingChannels)
 			updateState(STATUS_NOTLOGGEDIN);
 	}
 }

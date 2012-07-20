@@ -383,6 +383,7 @@ public class CommandProcessor {
 						+ "Can add a max of " + (heapMax - (heapNow - heapFree)) + "MB to heap without OutOfMemoryError.");
 			}
 		}, "Print general info about the server's resource usage. Pass -gc flag to attempt to run the garbage collector before collecting heap info.", UserPrivileges.ADMIN));
+		definitions.put("!shutdown", new ShutdownCommandHandler());
 		definitions.put("!help", new CommandDefinition(new HelpCommandHandler(),
 				"Lists available commands and their descriptions. Specify a command to read only its description.", UserPrivileges.USER));
 	}

@@ -51,6 +51,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//TODO: NOT THREAD SAFE
 /**
  *
  * @author GoldenKevin
