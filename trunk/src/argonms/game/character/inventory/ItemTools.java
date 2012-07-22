@@ -59,7 +59,7 @@ public class ItemTools {
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		if (e.getHpRecoverPercent() != 0) {
-			int hpGain = Math.round(e.getHpRecoverPercent() * p.getHp() / 100f);
+			int hpGain = Math.round(e.getHpRecoverPercent() * p.getMaxHp() / 100f);
 			p.setLocalHp((short) Math.min(p.getHp() + hpGain, Short.MAX_VALUE));
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
@@ -68,7 +68,7 @@ public class ItemTools {
 			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
 		}
 		if (e.getMpRecoverPercent() != 0) {
-			int mpGain = Math.round(e.getMpRecoverPercent() * p.getMp() / 100f);
+			int mpGain = Math.round(e.getMpRecoverPercent() * p.getMaxMp() / 100f);
 			p.setLocalMp((short) Math.min(p.getMp() + mpGain, Short.MAX_VALUE));
 			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
 		}

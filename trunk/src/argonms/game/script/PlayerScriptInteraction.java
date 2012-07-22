@@ -27,6 +27,7 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
 import argonms.game.character.MapMemoryVariable;
 import argonms.game.character.PartyList;
 import argonms.game.net.external.GameClient;
@@ -150,6 +151,10 @@ public abstract class PlayerScriptInteraction {
 		warpPlayer(mapId, GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
 	}
 
+	public int getPlayerId() {
+		return client.getPlayer().getId();
+	}
+
 	public short getPlayerLevel() {
 		return client.getPlayer().getLevel();
 	}
@@ -244,32 +249,20 @@ public abstract class PlayerScriptInteraction {
 		return client.getPlayer().getName();
 	}
 
-	public byte getPlayerPartyMembersInMapCount() {
-		PartyList p = client.getPlayer().getParty();
-		if (p == null)
-			return 0;
-		p.lockRead();
-		try {
-			return (byte) p.getLocalMembersInMap(client.getPlayer().getMapId()).size();
-		} finally {
-			p.unlockRead();
-		}
-	}
-
 	public boolean playerIsPartyLeader() {
 		PartyList p = client.getPlayer().getParty();
 		return p != null && p.getLeader() == client.getPlayer().getId();
 	}
 
-	public byte getPlayerPartyMembersInLevelCount(short min, short max) {
+	public byte getMapPartyMembersCount(short minLevel, short maxLevel) {
 		PartyList p = client.getPlayer().getParty();
 		if (p == null)
-			return 0;
+			return -1;
 		byte count = 0;
 		p.lockRead();
 		try {
-			for (PartyList.LocalMember m : p.getMembersInLocalChannel())
-				if (m.getLevel() >= min && m.getLevel() <= max)
+			for (GameCharacter c : p.getLocalMembersInMap(client.getPlayer().getMapId()))
+				if (c.getLevel() >= minLevel && c.getLevel() <= maxLevel)
 					count++;
 		} finally {
 			p.unlockRead();
