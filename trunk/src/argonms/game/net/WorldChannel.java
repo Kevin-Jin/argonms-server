@@ -130,6 +130,7 @@ public class WorldChannel {
 
 	public void resetConnectedPlayers() {
 		storage.clear();
+		sendNewLoad((short) 0);
 	}
 
 	private void channelChangeError(GameCharacter p) {

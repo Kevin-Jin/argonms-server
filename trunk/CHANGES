@@ -1816,6 +1816,11 @@
 	* Fixed percentage based potions.
 	* Implemented Kerning City Party Quest NPCs.
 
+2012-07-22  GoldenKevin  (revision 109)
+
+	* Implemented or added stubs for remaining Kerning City area NPCs.
+	* LoginServer loads for shutdown game servers are reset to 0.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
