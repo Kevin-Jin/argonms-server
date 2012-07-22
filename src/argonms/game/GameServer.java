@@ -369,6 +369,7 @@ public class GameServer implements LocalServer {
 		for (GameCharacter p : toSave) {
 			p.saveCharacter();
 			p.getClient().updateState(RemoteClient.STATUS_NOTLOGGEDIN);
+			p.disconnect();
 		}
 		if (halt) {
 			Scheduler.getInstance().shutdown();

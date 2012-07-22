@@ -1810,6 +1810,12 @@
 	* Added shutdown command, though not yet fully implemented.
 	* Fixed channel port change.
 
+2012-07-21  GoldenKevin  (revision 108)
+
+	* Fixed NullPointerException when shutting down server.
+	* Fixed percentage based potions.
+	* Implemented Kerning City Party Quest NPCs.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

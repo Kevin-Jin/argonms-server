@@ -31,13 +31,13 @@ switch (npc.getMap()) {
 		let selection = npc.askMenu("Would you like to go help Growlie?\r\n#b"
 				+ "#L0#Yes, I will go.#l#k");
 		if (selection == 0) {
-			let partyMembersInMap = npc.getPlayerPartyMembersInMapCount();
-			if (partyMembersInMap == 0) {
+			let partyMembersInMap = npc.getMapPartyMembersCount(10, 255);
+			if (partyMembersInMap == -1) {
 				npc.say("You are not in a party.");
 			} else if (!npc.playerIsPartyLeader()) {
 				npc.say("You are not the party leader.");
 			} else {
-				if (partyMembersInMap >= 3 && npc.getPlayerPartyMembersInLevelCount(10, 255)) {
+				if (partyMembersInMap >= 3) {
 					//TODO: start the event
 					npc.say("#e#b#rPrimrose Hill#k is not yet ready. Sorry!#n#k");
 				} else {
