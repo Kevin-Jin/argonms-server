@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script;
+package argonms.game.script.binding;
 
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.InventorySlot;
@@ -37,10 +37,10 @@ import org.mozilla.javascript.Scriptable;
  *
  * @author GoldenKevin
  */
-public class ReactorInteraction extends PlayerScriptInteraction {
+public class ScriptReactor extends PlayerScriptInteraction {
 	private final Reactor reactor;
 
-	public ReactorInteraction(int reactorId, Reactor reactor, GameClient client, Scriptable globalScope) {
+	public ScriptReactor(int reactorId, Reactor reactor, GameClient client, Scriptable globalScope) {
 		super(client);
 		this.reactor = reactor;
 	}

@@ -23,7 +23,7 @@ import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
-import argonms.game.script.NpcConversationActions;
+import argonms.game.script.binding.ScriptNpc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,7 +43,7 @@ public class GameClient extends RemoteClient {
 	}
 
 	private GameCharacter player;
-	private NpcConversationActions npc;
+	private ScriptNpc npc;
 	private NpcMiniroom npcRoom;
 
 	public GameClient(byte world, byte channel) {
@@ -71,11 +71,11 @@ public class GameClient extends RemoteClient {
 		return ret;
 	}
 
-	public void setNpc(NpcConversationActions npc) {
+	public void setNpc(ScriptNpc npc) {
 		this.npc = npc;
 	}
 
-	public NpcConversationActions getNpc() {
+	public ScriptNpc getNpc() {
 		return npc;
 	}
 

@@ -16,36 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script;
+package argonms.game.script.binding;
 
-import argonms.common.GlobalConstants;
-import argonms.game.field.entity.PlayerNpc;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
-public class PlayerNpcConversationActions extends NpcConversationActions {
-	private PlayerNpc npc;
+public class ScriptQuest extends ScriptNpc {
+	private final short questId;
 
-	public PlayerNpcConversationActions(PlayerNpc npc, GameClient client, Scriptable globalScope) {
-		super(npc.getDataId(), client, globalScope);
-		this.npc = npc;
+	public ScriptQuest(int npcId, short questId, GameClient client, Scriptable globalScope) {
+		super(npcId, client, globalScope);
+		this.questId = questId;
 	}
 
-	public String getNpcName() {
-		return npc.getPlayerName();
+	public void startQuest() {
+		getClient().getPlayer().startQuest(questId, getNpcId());
 	}
 
-	public short getNpcLevel() {
-		return GlobalConstants.MAX_LEVEL;
-	}
-
-	public void refreshAppearance() {
-		npc.refreshAppearance(getClient().getPlayer());
-		getClient().getPlayer().getMap().sendToAll(GamePackets.writePlayerNpcLook(npc));
+	public void completeQuest() {
+		getClient().getPlayer().completeQuest(questId, getNpcId(), -1);
 	}
 }

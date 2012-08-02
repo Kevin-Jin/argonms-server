@@ -111,7 +111,7 @@ public class InventoryTools {
 		equipCache = new HashMap<Integer, Equip>();
 	}
 
-	public static boolean canFitEntirely(Inventory inv, int itemid, short remQty, boolean breakRechargeableStack) {
+	public static boolean canFitEntirely(Inventory inv, int itemid, int remQty, boolean breakRechargeableStack) {
 		if (remQty > 0) {
 			if (!isRechargeable(itemid) || breakRechargeableStack) {
 				//TODO: getPersonalSlotMax, but this is in argonms.common. X.X

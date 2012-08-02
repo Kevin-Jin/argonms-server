@@ -43,7 +43,7 @@ switch (npc.getMap()) {
 				item = 4031711;
 			else
 				item = 4031712;
-		else if (slection == 0)
+		else if (selection == 0)
 			npc.say("Ok, come talk to me again when you want to go to NLC.");
 		break;
 	case 600010001:
@@ -53,21 +53,21 @@ switch (npc.getMap()) {
 				item = 4031713;
 			else
 				item = 4031714;
-		else if (slection == 0)
+		else if (selection == 0)
 			npc.say("Ok, come talk to me again when you want to go back to Kerning City.");
 		break;
 	case 600010004:
 		selection = npc.askYesNo("Do you want to go back to Kerning City subway station now?");
 		if (selection == 1)
 			npc.warpPlayer(103000100);
-		else if (slection == 0)
+		else if (selection == 0)
 			npc.sayNext("Okay, Please wait~!");
 		break;
 	case 600010002:
 		selection = npc.askYesNo("Do you want to go back to New Leaf City subway station now?");
 		if (selection == 1)
 			npc.warpPlayer(600010001);
-		else if (slection == 0)
+		else if (selection == 0)
 			npc.sayNext("Okay, Please wait~!");
 		break;
 }
