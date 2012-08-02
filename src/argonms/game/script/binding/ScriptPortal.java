@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script;
+package argonms.game.script.binding;
 
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -26,10 +26,10 @@ import argonms.game.net.external.GameClient;
  *
  * @author GoldenKevin
  */
-public class PortalActions extends PlayerScriptInteraction {
+public class ScriptPortal extends PlayerScriptInteraction {
 	private boolean warped;
 
-	public PortalActions(GameClient gameClient) {
+	public ScriptPortal(GameClient gameClient) {
 		super(gameClient);
 		this.warped = true;
 	}
@@ -42,7 +42,7 @@ public class PortalActions extends PlayerScriptInteraction {
 		warped = false;
 	}
 
-	protected boolean warped() {
+	public boolean warped() {
 		return warped;
 	}
 

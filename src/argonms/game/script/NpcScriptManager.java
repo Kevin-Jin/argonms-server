@@ -30,6 +30,9 @@ import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.script.binding.ScriptNpc;
+import argonms.game.script.binding.ScriptPlayerNpc;
+import argonms.game.script.binding.ScriptQuest;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -87,7 +90,7 @@ public class NpcScriptManager {
 			return;
 		}
 		Context cx = Context.enter();
-		NpcConversationActions convoMan = null;
+		ScriptNpc convoMan = null;
 		try {
 			FileReader reader = new FileReader(npcPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
@@ -96,9 +99,9 @@ public class NpcScriptManager {
 			Script script = cx.compileReader(reader, "npcs/" + scriptName + ".js", 1, null);
 			reader.close();
 			if (npc.isPlayerNpc())
-				convoMan = new PlayerNpcConversationActions((PlayerNpc) npc, client, globalScope);
+				convoMan = new ScriptPlayerNpc((PlayerNpc) npc, client, globalScope);
 			else
-				convoMan = new NpcConversationActions(npcId, client, globalScope);
+				convoMan = new ScriptNpc(npcId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
@@ -116,7 +119,7 @@ public class NpcScriptManager {
 
 	private void runQuestScript(int npcId, short questId, GameClient client, String scriptName) {
 		Context cx = Context.enter();
-		QuestConversationActions convoMan = null;
+		ScriptQuest convoMan = null;
 		try {
 			FileReader reader = new FileReader(questPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
@@ -124,7 +127,7 @@ public class NpcScriptManager {
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			Script script = cx.compileReader(reader, "quests/" + scriptName + ".js", 1, null);
 			reader.close();
-			convoMan = new QuestConversationActions(npcId, questId, client, globalScope);
+			convoMan = new ScriptQuest(npcId, questId, client, globalScope);
 			globalScope.put("npc", globalScope, convoMan);
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);

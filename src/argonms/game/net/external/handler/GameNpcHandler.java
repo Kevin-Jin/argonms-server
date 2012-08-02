@@ -28,8 +28,8 @@ import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Npc;
 import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.net.external.GameClient;
-import argonms.game.script.NpcConversationActions;
 import argonms.game.script.NpcScriptManager;
+import argonms.game.script.binding.ScriptNpc;
 
 /**
  *
@@ -44,7 +44,7 @@ public class GameNpcHandler {
 	}
 
 	public static void handleContinueConversation(LittleEndianReader packet, GameClient gc) {
-		NpcConversationActions npc = gc.getNpc();
+		ScriptNpc npc = gc.getNpc();
 		if (npc != null)
 			npc.responseReceived(packet);
 	}

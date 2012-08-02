@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script;
+package argonms.game.script.binding;
 
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
@@ -54,14 +54,14 @@ import org.mozilla.javascript.Scriptable;
  *
  * @author GoldenKevin
  */
-public class NpcConversationActions extends PlayerScriptInteraction {
+public class ScriptNpc extends PlayerScriptInteraction {
 	/* package-private */ static class ScriptInterruptedException extends RuntimeException {
 		private ScriptInterruptedException(int npc, String player) {
 			super("NPC " + npc + " conversation with player " + player + " was interrupted");
 		}
 	}
 
-	private static final Logger LOG = Logger.getLogger(NpcConversationActions.class.getName());
+	private static final Logger LOG = Logger.getLogger(ScriptNpc.class.getName());
 
 	private final int npcId;
 	private final Scriptable globalScope;
@@ -70,7 +70,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 	private volatile boolean endingChat;
 	private volatile Object continuation;
 
-	public NpcConversationActions(int npcId, GameClient client, Scriptable globalScope) {
+	public ScriptNpc(int npcId, GameClient client, Scriptable globalScope) {
 		super(client);
 		this.npcId = npcId;
 		this.globalScope = globalScope;
@@ -91,7 +91,7 @@ public class NpcConversationActions extends PlayerScriptInteraction {
 		ASK_ACCEPT_NO_ESC = 0x0D
 	;
 
-	protected void setContinuation(Object continuation) {
+	public void setContinuation(Object continuation) {
 		this.continuation = continuation;
 	}
 

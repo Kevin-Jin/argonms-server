@@ -22,6 +22,7 @@ import argonms.common.GlobalConstants;
 import argonms.game.field.entity.Reactor;
 import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.net.external.GameClient;
+import argonms.game.script.binding.ScriptReactor;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class ReactorScriptManager {
 			FileReader reader = new FileReader(reactorScriptPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setLanguageVersion(Context.VERSION_1_7);
-			ReactorInteraction actions = new ReactorInteraction(reactorId, reactor, client, globalScope);
+			ScriptReactor actions = new ScriptReactor(reactorId, reactor, client, globalScope);
 			globalScope.put("reactor", globalScope, actions);
 			cx.evaluateReader(globalScope, reader, "reactors/" + scriptName + ".js", 1, null);
 			reader.close();

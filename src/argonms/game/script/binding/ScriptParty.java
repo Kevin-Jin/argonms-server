@@ -16,28 +16,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script;
+package argonms.game.script.binding;
 
-import argonms.game.net.external.GameClient;
-import org.mozilla.javascript.Scriptable;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 
 /**
  *
  * @author GoldenKevin
  */
-public class QuestConversationActions extends NpcConversationActions {
-	private final short questId;
+public class ScriptParty {
+	private final PartyList party;
 
-	public QuestConversationActions(int npcId, short questId, GameClient client, Scriptable globalScope) {
-		super(npcId, client, globalScope);
-		this.questId = questId;
+	public ScriptParty(PartyList party) {
+		this.party = party;
 	}
 
-	public void startQuest() {
-		getClient().getPlayer().startQuest(questId, getNpcId());
+	public int getLeader() {
+		return party.getLeader();
 	}
 
-	public void completeQuest() {
-		getClient().getPlayer().completeQuest(questId, getNpcId(), -1);
+	public byte getMapPartyMembersCount(int mapId, short minLevel, short maxLevel) {
+		byte count = 0;
+		party.lockRead();
+		try {
+			for (GameCharacter c : party.getLocalMembersInMap(mapId))
+				if (c.getLevel() >= minLevel && c.getLevel() <= maxLevel)
+					count++;
+		} finally {
+			party.unlockRead();
+		}
+		return count;
 	}
 }
