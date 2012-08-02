@@ -29,10 +29,10 @@ let selection = npc.askYesNo("I hope I can make as much as yesterday... well, he
 if (selection == 1) {
 	selection = npc.askYesNo("Alright, good call! It's not that expensive actually. #b250,000 mesos and I'll add 5 more slots to your buddy list#k. And no, I won't be selling them individually. Once you buy it, it's going to be permanently on your buddy list. So if you're one of those that needs more space there, then you might as well do it. What do you think? Will you spend 250,000 mesos for it?");
 	if (selection == 1) {
-		if (npc.playerHasMesos(250000) && npc.getPlayerBuddyCapacity() < 50) {
-			npc.takeMesos(250000);
+		if (player.hasMesos(250000) && player.getBuddyCapacity() < 50) {
+			player.loseMesos(250000);
 			npc.say("Alright! Your buddy list will have 5 extra slots by now. Check and see for it yourself. And if you still need more room on your buddy list, you know who to find. Of course, it isn't going to be for free... well, so long...");
-			npc.giveBuddySlots(5);
+			player.gainBuddySlots(5);
 		} else {
 			npc.sayNext("Hey... are you sure you have #b250,000 mesos#k?? If so, then check and see if you have extended your buddy list to the max. Even if you pay up, the most you can have on your buddy list is #b50#k.");
 		}

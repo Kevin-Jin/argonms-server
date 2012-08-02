@@ -28,5 +28,5 @@
 
 npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
 npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
-npc.warpPlayer(40000);
-npc.giveExp(3);
+player.changeMap(40000);
+player.gainExp(3);

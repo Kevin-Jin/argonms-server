@@ -29,10 +29,10 @@
 let prompt;
 let destination;
 
-if (npc.getMap() == 100000000) {
+if (map.getId() == 100000000) {
 	prompt = "I can take you to Amoria Village. Are you ready to go?";
 	destination = 680000000;
-} else if (npc.getMap() == 680000000) {
+} else if (map.getId() == 680000000) {
 	prompt = "I can take you back to your original location. Are you ready to go?";
 	destination = 100000000;
 }
@@ -40,7 +40,7 @@ if (npc.getMap() == 100000000) {
 let selection = npc.askYesNo(prompt);
 if (selection == 1) {
 	npc.sayNext("I hope you had a great time! See you around!");
-	npc.warpPlayer(destination);
+	player.changeMap(destination);
 } else if (selection == 0) {
 	npc.say("Ok, feel free to hang around until you're ready to go!");
 }

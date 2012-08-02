@@ -27,11 +27,11 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.isQuestActive(2051)) {
-	npc.giveItem(4031032, 1);
+if (player.isQuestActive(2051)) {
+	player.gainItem(4031032, 1);
 } else {
 	let rewards = [4020007, 2, 4020008, 2, 4010006, 2, 1032013, 1];
 	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	npc.giveItem(rewards[index], rewards[index + 1]);
+	player.gainItem(rewards[index], rewards[index + 1]);
 }
-npc.warpPlayer(101000000);
+player.changeMap(101000000);

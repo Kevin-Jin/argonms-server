@@ -37,9 +37,9 @@ function getRandomStyle(gender, currentFace) {
 
 let selection = npc.askYesNo("If you use the regular coupon, your face may transform into a random new look...do you still want to do it using #b#t5152000##k?");
 if (selection == 1) {
-	if (npc.playerHasItem(5152000, 1)) {
-		npc.takeItem(5152000, 1);
-		npc.setPlayerFace(getRandomStyle(npc.getPlayerGender(), npc.getPlayerFace()));
+	if (player.hasItem(5152000, 1)) {
+		player.loseItem(5152000, 1);
+		player.setFace(getRandomStyle(player.getGender(), player.getFace()));
 		npc.say("Enjoy!");
 	} else {
 		npc.sayNext("Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you.");

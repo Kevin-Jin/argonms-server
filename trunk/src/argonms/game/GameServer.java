@@ -105,6 +105,7 @@ public class GameServer implements LocalServer {
 		int centerPort;
 		String authKey;
 		String[] chList;
+		String[] initialEvents;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.game.config.file", "game" + serverId + ".properties"));
 			prop.load(fr);
@@ -127,17 +128,21 @@ public class GameServer implements LocalServer {
 			registry.setItemsWillExpire(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".itemexpire")));
 			registry.setBuffsWillCooldown(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablecooltime")));
 			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
+
+			initialEvents = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "").split(",");
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
 			System.exit(2);
 			return;
 		}
+		wzPath = System.getProperty("argonms.data.dir");
+		scriptsPath = System.getProperty("argonms.scripts.dir");
 
 		channels = new HashMap<Byte, WorldChannel>(chList.length);
 		List<Byte> localChannels = new ArrayList<Byte>(channels.size());
 		for (int i = 0; i < chList.length; i++) {
 			byte chNum = Byte.parseByte(chList[i]);
-			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")));
+			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")), scriptsPath, initialEvents);
 			channels.put(Byte.valueOf(chNum), ch);
 			localChannels.add(Byte.valueOf(chNum));
 		}
@@ -197,8 +202,6 @@ public class GameServer implements LocalServer {
 			System.exit(3);
 			return;
 		}
-		wzPath = System.getProperty("argonms.data.dir");
-		scriptsPath = System.getProperty("argonms.scripts.dir");
 
 		try {
 			MapleAesOfb.testCipher();

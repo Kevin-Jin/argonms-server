@@ -33,11 +33,11 @@ function admit(str, map) {
 	if (selection == 0) {
 		npc.say("Please confirm the departure time you wish to leave. Thank you.");
 	} else if (selection == 1) {
-		if (!npc.playerHasItem(4031731, 1)) {
+		if (!player.hasItem(4031731, 1)) {
 			npc.sayNext("Please do purchase the ticket first. Thank you~");
 		} else {
-			npc.takeItem(4031731, 1);
-			npc.warpPlayer(map);
+			player.loseItem(4031731, 1);
+			player.changeMap(map);
 		}
 	}
 }
@@ -51,11 +51,11 @@ switch (selection) {
 		if (selection == 0) {
 			npc.sayNext("I am here for a long time. Please talk to me again when you change your mind.");
 		} else if (selection == 1) {
-			if (!npc.playerCanHoldItem(4031731, 1) || !npc.playerHasMesos(COST)) {
+			if (!player.canGainItem(4031731, 1) || !player.hasMesos(COST)) {
 				npc.say("I don't think you have enough meso or empty slot in your ETC inventory. Please check and talk to me again.");
 			} else {
-				npc.takeMesos(-COST);
-				npc.giveItem(4031731, 1);
+				player.loseMesos(COST);
+				player.gainItem(4031731, 1);
 			}
 		}
 		break;

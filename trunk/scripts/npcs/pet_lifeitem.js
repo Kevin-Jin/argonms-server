@@ -75,20 +75,20 @@ let selection = npc.askMenu("Do you have any business with me?\r\n"
 		+ "#L1#I'm here through a word from Mar the Fairy...#k#l");
 switch (selection) {
 	case 0:
-		if (npc.playerHasItem(4031035, 1)) {
+		if (player.hasItem(4031035, 1)) {
 			npc.sayNext("Get that letter, jump over obstacles with your pet, and take that letter to my brother Trainer Frod. Give him the letter and something good is going to happen to your pet.");
 		} else {
 			selection = npc.askYesNo("This is the road where you can go take a walk with your pet. You can just walk around with it, or you can train your pet to go through the obstacles here. If you aren't too close with your pet yet, that may present a problem and he will not follow your command as much... So, what do you think? Wanna train your pet?");
 			if (selection == 0) {
 				npc.sayNext("Hmmm ... too busy to do it right now? If you feel like doing it, though, come back and find me.");
 			} else {
-				npc.giveItem(4031035, 1);
+				player.gainItem(4031035, 1);
 				npc.sayNext("Ok, here's the letter. He wouldn't know I sent you if you just went there straight, so go through the obstacles with your pet, go to the very top, and then talk to Trainer Frod to give him the letter. It won't be hard if you pay attention to your pet while going through obstacles. Good luck!");
 			}
 		}
 		break;
 	case 1:
-		if (npc.playerHasItem(4031034, 1)) {
+		if (player.hasItem(4031034, 1)) {
 			npc.sayNext("Hmmm... You already have #b#t4031034##k. Take that scroll to #b#p1032102##k from #m101000000#.");
 		} else if (npc.getRememberedMap("MAR_THE_FAIRY") != 999999999) {
 			//TODO: we haven't really added this to MapMemoryVariable or database enum.
@@ -102,8 +102,8 @@ switch (selection) {
 				npc.sayNext("Alright! 5 questions, and you need to answer all of them right! Are you up for it? Here it is!!!");
 				if (askQuestions()) {
 					npc.sayNext("Alright!! Hmmm... you do know quite a bit on pets. Good, since you know a lot, I'll happily give you the scroll. I know it's not mine and all, but... who's the one that wore someone else's clothes and then left something very important in it? Anyway here you go!");
-					if (npc.playerHasItem(4031034, 0))
-						npc.giveItem(4031034, 1);
+					if (player.hasItem(4031034, 0))
+						player.gainItem(4031034, 1);
 					npc.sayNext("Well then, all you need to do now is to take it and go to\r\n"
 							+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
 				}

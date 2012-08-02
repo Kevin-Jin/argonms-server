@@ -29,12 +29,12 @@
 //if (npc.getPlayerMarriageQuestLevel() != 1 && npc.getPlayerMarriageQuestLevel() != 52) {
 	npc.say("Hi, I'm Nana the love fairy... Hows it going?");
 /*} else {
-	if (!npc.playerHasItem(4003005, 20)) {
+	if (!player.hasItem(4003005, 20)) {
 		npc.sayNext("Hey, you look like you need Proofs of Love? I can get them for you.");
 		npc.sayNext("All you have to do is bring me 20 #b#t4003005#s#k.");
 	} else {
 		npc.sayNext("Wow, you were quick! Here's the #t4031368#...");
-		npc.takeItem(4003005, 20)
-		npc.giveItem(4031368, 1);
+		player.loseItem(4003005, 20)
+		player.gainItem(4031368, 1);
 	}
 }*/

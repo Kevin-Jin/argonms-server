@@ -100,6 +100,7 @@ public class ShopServer implements LocalServer {
 			System.exit(2);
 			return;
 		}
+		wzPath = System.getProperty("argonms.data.dir");
 
 		handler = new ClientListener<ShopClient>(new ClientShopPacketProcessor(), new ClientFactory<ShopClient>() {
 			@Override
@@ -155,7 +156,6 @@ public class ShopServer implements LocalServer {
 			System.exit(3);
 			return;
 		}
-		wzPath = System.getProperty("argonms.data.dir");
 
 		try {
 			MapleAesOfb.testCipher();

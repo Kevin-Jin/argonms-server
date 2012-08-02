@@ -48,16 +48,16 @@ let hair;
 if (selection == 0) {
 	item = 5150010;
 	selection = npc.askYesNo("If you use the EXP coupon your hair will change RANDOMLY with a chance to obtain a new experimental style that even you didn't think was possible. Are you going to use #b#t5150010##k and really change your hairstyle?");
-	hair = getRandomStyle(npc.getPlayerGender(), npc.getPlayerHair());
+	hair = getRandomStyle(player.getGender(), player.getHair());
 } else if (selection == 1) {
 	item = 5151000;
 	selection = npc.askYesNo("If you use a regular coupon your hair will change RANDOMLY. Do you still want to use #b#t5151000##k and change it up?");
-	hair = getRandomColor(npc.getPlayerHair());
+	hair = getRandomColor(player.getHair());
 }
 if (selection == 1) {
-	if (npc.playerHasItem(item, 1)) {
-		npc.takeItem(item, 1);
-		npc.setPlayerHair(hair);
+	if (player.hasItem(item, 1)) {
+		player.loseItem(item, 1);
+		player.setHair(hair);
 		npc.say("Enjoy!");
 	} else {
 		npc.sayNext("Hmmm...it looks like you don't have our designated coupon...I'm afraid I can't give you a haircut without it. I'm sorry.");

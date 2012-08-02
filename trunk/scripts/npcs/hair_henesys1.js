@@ -55,31 +55,31 @@ let styleChange;
 let hairs;
 switch (selection) {
 	case 0:
-		hairs = getStyleChoices(npc.getPlayerGender(), npc.getPlayerHair());
+		hairs = getStyleChoices(player.getGender(), player.getHair());
 		selection = npc.askAvatar("I can totally change up your hairstyle and make it look so good. Why don't you change it up a bit? If you have #b#t5150001##k I'll change it for you. Choose the one to your liking~", hairs);
 		item = 5150001;
 		take = true;
 		styleChange = true;
 		break;
 	case 1:
-		hairs = getColorChoices(npc.getPlayerHair());
+		hairs = getColorChoices(player.getHair());
 		selection = npc.askAvatar("I can totally change your haircolor and make it look so good. Why don't you change it up a bit? With #b#t5151001##k I'll change it for you. Choose the one to your liking.", hairs);
 		item = 5151001;
 		take = true;
 		styleChange = false;
 		break;
 	case 2:
-		hairs = getStyleChoices(npc.getPlayerGender(), npc.getPlayerHair());
+		hairs = getStyleChoices(player.getGender(), player.getHair());
 		selection = npc.askAvatar("I can totally change up your hairstyle and make it look so good. Why don't you change it up a bit? If you have #b#t5420002##k I'll change it for you. With this coupon, you have the power to change your hairstyle to something totally new, as often as you want, for ONE MONTH! Now, please choose the hairstyle of your liking.", hairs);
 		item = 5420002;
 		take = false;
 		styleChange = true;
 		break;
 }
-if (npc.playerHasItem(item, 1)) {
+if (player.hasItem(item, 1)) {
 	if (take)
-		npc.takeItem(item, 1);
-	npc.setPlayerHair(hairs[selection]);
+		player.loseItem(item, 1);
+	player.setHair(hairs[selection]);
 	npc.say("Enjoy your new and improved hairstyle!");
 } else {
 	npc.sayNext("Hmmm...it looks like you don't have our designated coupon...I'm afraid I can't " + (styleChange ? "give you a haircut" : "dye your hair") + " without it. I'm sorry.");

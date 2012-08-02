@@ -35,6 +35,7 @@ import argonms.game.net.external.ClientGamePacketProcessor;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.internal.InterChannelCommunication;
+import argonms.game.script.EventManager;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Map;
@@ -58,16 +59,18 @@ public class WorldChannel {
 	private final byte world, channel;
 	private int port;
 	private final MapFactory mapFactory;
+	private final EventManager eventManager;
 	private final PlayerLog<GameCharacter> storage;
 	private InterChannelCommunication worldComm;
 
-	public WorldChannel(final byte world, final byte channel, int port) {
+	public WorldChannel(final byte world, final byte channel, int port, String scriptPath, String[] persistentEvents) {
 		channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
 		queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
 		mapFactory = new MapFactory();
+		eventManager = new EventManager(scriptPath, persistentEvents);
 		storage = new PlayerLog<GameCharacter>();
 		handler = new ClientListener<GameClient>(new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
 			@Override
@@ -223,6 +226,10 @@ public class WorldChannel {
 
 	public MapFactory getMapFactory() {
 		return mapFactory;
+	}
+
+	public EventManager getEventManager() {
+		return eventManager;
 	}
 
 	public void createWorldComm(byte[] local) {

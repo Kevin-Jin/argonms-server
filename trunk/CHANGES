@@ -1821,10 +1821,17 @@
 	* Implemented or added stubs for remaining Kerning City area NPCs.
 	* LoginServer loads for shutdown game servers are reset to 0.
 
-2012-08-02  GoldenKevin  (revision 11)
+2012-08-02  GoldenKevin  (revision 110)
 
 	* Began a refactor of scripting APIs.
 	* Fixed syntax error in Bell's script.
+
+2012-08-22  GoldenKevin  (revision 111)
+
+	* Started work on events.
+	* Finished script refactor started last revision.
+	* Fixed some more of improper usage of Rhino with regards to passing Java
+	objects into a script's scope.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

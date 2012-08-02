@@ -38,21 +38,21 @@
  * @author GoldenKevin (content from Vana r2111)
  */
 
-if (npc.getMap() == 800000000) {
+if (map.getId() == 800000000) {
 	let returnMap = npc.getRememberedMap("WORLD_TOUR");
 	let selection = npc.askMenu("How's the traveling? Are you enjoying it?\r\n"
 			+ "#b#L0#Yes, I'm done with traveling. Can I go back to #m" + returnMap + "#? #l\r\n"
 			+ "#b#L1#No, I'd like to continue exploring this place.#l");
 	if (selection == 0) {
 		npc.sayNext("Alright. I'll now take you back to where you were before the visit to Japan. If you ever feel like traveling again down the road, please let me know!");
-		npc.warpPlayer(returnMap);
+		player.changeMap(returnMap);
 		npc.resetRememberedMap("WORLD_TOUR");
 	} else if (selection == 1) {
 		npc.say("OK. If you ever change your mind, please let me know.");
 	}
 } else {
 	let msg = "If you're tired of the monotonous daily life, how about getting out for a change? There's nothing quite like soaking up a new culture, learning something new by the minute! It's time for you to get out and travel. We, at the Maple Travel Agency recommend you going on a #bWorld Tour#k! Are you worried about the travel expense? ";
-	if (npc.getPlayerJob() == 0)
+	if (player.getJob() == 0)
 		msg += "No need to worry! The #bMaple Travel Agency#k offers first class travel accommodation for the low price of #b300 mesos#k";
 	else
 		msg += "You shouldn't be! We, the #bMaple Travel Agency#k, have carefully come up with a plan to let you travel for ONLY #b3,000 mesos!#k";
@@ -63,12 +63,12 @@ if (npc.getMap() == 800000000) {
 		npc.sayNext("Would you like to travel to #b#m800000000# of Japan#k? If you desire to feel the essence of Japan, there's nothing like visiting the Shrine, a Japanese cultural melting pot. #m800000000# is a mythical place that serves the incomparable Mushroom God from ancient times.");
 		npc.sayNext("Check out the female shaman serving the Mushroom God, and I strongly recommend trying Takoyaki, Yakisoba, and other delicious food sold in the streets of Japan. Now, let's head over to #b#m800000000##k, a mythical place if there ever was one.");
 		let cost = 3000;
-		if (npc.getPlayerJob() == 0)
+		if (player.getJob() == 0)
 			cost /= 10;
-		if (npc.playerHasMesos(cost)) {
+		if (player.hasMesos(cost)) {
 			npc.rememberMap("WORLD_TOUR");
-			npc.warpPlayer(800000000);
-			npc.takeMesos(cost);
+			player.changeMap(800000000);
+			player.loseMesos(cost);
 		} else {
 			npc.say("Please check and see if you have enough mesos to go.");
 		}

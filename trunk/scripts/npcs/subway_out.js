@@ -33,4 +33,4 @@
  */
 
 if (npc.askYesNo("This device is connected to outside. Are you going to give up and leave this place? You'll have to start from scratch the next time you come in...") == 1)
-	npc.warpPlayer(103000100);
+	player.changeMap(103000100);

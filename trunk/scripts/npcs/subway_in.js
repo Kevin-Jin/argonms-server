@@ -29,11 +29,11 @@
  */
 
 let str = "Here's the ticket reader. ";
-let a = npc.playerHasItem(4031036, 1);
-let b = npc.playerHasItem(4031037, 1);
-let c = npc.playerHasItem(4031038, 1);
-let d = npc.playerHasItem(4031711, 1);
-let e = npc.playerHasItem(4031710, 1);
+let a = player.hasItem(4031036, 1);
+let b = player.hasItem(4031037, 1);
+let c = player.hasItem(4031038, 1);
+let d = player.hasItem(4031711, 1);
+let e = player.hasItem(4031710, 1);
 if (a || b || c || d || e) {
 	str += "You will be brought in immediately. Which ticket would you like to use?\r\n";
 	if (a)
@@ -66,8 +66,8 @@ if (a || b || c || d || e) {
 		}
 	}
 	if (go) {
-		npc.takeItem(items[selection], 1);
-		npc.warpPlayer(maps[selection]);
+		player.loseItem(items[selection], 1);
+		player.changeMap(maps[selection]);
 	}
 } else {
 	npc.say(str + "You are not allowed in without the ticket.");

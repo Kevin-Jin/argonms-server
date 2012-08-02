@@ -104,6 +104,15 @@ public class ScriptPlayer {
 		return false;
 	}
 
+	public void loseItem(int itemId) {
+		Inventory.InventoryType type = InventoryTools.getCategory(itemId);
+		short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
+		if (type == Inventory.InventoryType.EQUIP)
+			quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
+		if (quantity > 0)
+			loseItem(itemId, quantity);
+	}
+
 	public boolean hasMesos(int min) {
 		return player.getMesos() >= min;
 	}
@@ -114,6 +123,18 @@ public class ScriptPlayer {
 
 	public void loseMesos(int lose) {
 		player.gainMesos(-lose, true);
+	}
+
+	public void changeMap(int mapId) {
+		player.changeMap(mapId);
+	}
+
+	public void changeMap(int mapId, byte portal) {
+		player.changeMap(mapId, portal);
+	}
+
+	public void changeMap(int mapId, String portal) {
+		changeMap(mapId, GameServer.getChannel(player.getClient().getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
 	}
 
 	public short getLevel() {
@@ -176,6 +197,10 @@ public class ScriptPlayer {
 	public void increaseMaxMp(short delta) {
 		player.setMaxMp((short) (player.getMaxMp() + delta));
 		player.gainMp(delta);
+	}
+
+	public void setHp(short newHp) {
+		player.setHp(newHp);
 	}
 
 	public void gainEquipInventorySlots(short delta) {

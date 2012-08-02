@@ -198,13 +198,13 @@ if (selection == 0) {
 		let reqs = itemreqs[selection];
 		for (let i = 0; i < reqs.length && okay; i += 2) {
 			if (reqs[i] != MESOS) {
-				if (!npc.playerHasItem(reqs[i], reqs[i + 1]))
+				if (!player.hasItem(reqs[i], reqs[i + 1]))
 					okay = false;
-			} else if (!npc.playerHasMesos(reqs[i + 1])) {
+			} else if (!player.hasMesos(reqs[i + 1])) {
 				okay = false;
 			}
 		}
-		if (!npc.playerCanHoldItem(item, 1))
+		if (!player.canGainItem(item, 1))
 			okay = false;
 
 		if (!okay) {
@@ -212,10 +212,10 @@ if (selection == 0) {
 		} else {
 			for (let i = 0; i < reqs.length; i += 2)
 				if (reqs[i] != MESOS)
-					npc.takeItem(reqs[i], reqs[i + 1]);
+					player.loseItem(reqs[i], reqs[i + 1]);
 				else
-					npc.takeMesos(reqs[i + 1]);
-			npc.giveItem(item, 1);
+					player.loseMesos(reqs[i + 1]);
+			player.gainItem(item, 1);
 			npc.sayNext("Here, take #t" + item + "#. The more I see it, the more it looks perfect. Hahah, it's not a stretch to think that other magicians fear my skills ...");
 		}
 	}

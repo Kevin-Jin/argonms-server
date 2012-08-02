@@ -26,23 +26,23 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.getPlayerLevel() < 25) {
+if (player.getLevel() < 25) {
 	npc.say("You must be a higher level to enter the Forest of Patience.");
 } else {
 	let selection = npc.askYesNo("Hi, i'm Shane. I can let you into the Forest of Patience for a small fee. Would you like to enter for #b5000#k mesos?");
 	if (selection == 0) {
 		npc.say("Alright, see you next time.");
 	} else {
-		if (!npc.playerHasMesos(5000)) {
+		if (!player.hasMesos(5000)) {
 			npc.say("Sorry but it doesn't look like you have enough mesos!");
 		} else {
-			let quest1 = npc.isQuestStarted(2050);
-			let quest2 = npc.isQuestStarted(2051);
-			if (quest1 || !quest2 && npc.getPlayerLevel() < 50)
-				npc.warpPlayer(101000100);
-			else if (quest2 || !quest1 && npc.getPlayerLevel() >= 50)
-				npc.warpPlayer(101000102);
-			npc.takeMesos(5000);
+			let quest1 = player.isQuestStarted(2050);
+			let quest2 = player.isQuestStarted(2051);
+			if (quest1 || !quest2 && player.getLevel() < 50)
+				player.changeMap(101000100);
+			else if (quest2 || !quest1 && player.getLevel() >= 50)
+				player.changeMap(101000102);
+			player.loseMesos(5000);
 		}
 	}
 }

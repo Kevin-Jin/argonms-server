@@ -30,6 +30,6 @@ let selection = npc.askYesNo("#b(I can see something covered in grass. Should I 
 if (selection == 0) {
 	npc.sayNext("#b(I didn't think much of it, so I didn't touch it.)");
 } else {
-	npc.giveItem(4031922, 1);
+	player.gainItem(4031922, 1);
 	npc.sayNext("#b(Yuck... it's pet poop!)");
 }

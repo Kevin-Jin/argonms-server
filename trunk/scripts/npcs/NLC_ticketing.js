@@ -28,14 +28,14 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
-let basic = (npc.getPlayerLevel() <= 10);
+let basic = (player.getLevel() <= 10);
 let cost = 5000;
 if (basic)
 	cost /= 5;
 let item = 0;
 
 let selection;
-switch (npc.getMap()) {
+switch (map.getId()) {
 	case 103000100:
 		selection = npc.askYesNo("Hi, I can take you to New Leaf City (NLC) for only #b" + cost + " mesos#k. Would you like to go?");
 		if (selection == 1)
@@ -59,23 +59,23 @@ switch (npc.getMap()) {
 	case 600010004:
 		selection = npc.askYesNo("Do you want to go back to Kerning City subway station now?");
 		if (selection == 1)
-			npc.warpPlayer(103000100);
+			player.changeMap(103000100);
 		else if (selection == 0)
 			npc.sayNext("Okay, Please wait~!");
 		break;
 	case 600010002:
 		selection = npc.askYesNo("Do you want to go back to New Leaf City subway station now?");
 		if (selection == 1)
-			npc.warpPlayer(600010001);
+			player.changeMap(600010001);
 		else if (selection == 0)
 			npc.sayNext("Okay, Please wait~!");
 		break;
 }
 
 if (item != 0) {
-	if (npc.playerHasMesos(cost)) {
-		npc.takeMesos(cost);
-		npc.giveItem(item, 1);
+	if (player.hasMesos(cost)) {
+		player.loseMesos(cost);
+		player.gainItem(item, 1);
 	} else {
 		npc.say("I'm sorry, but you don't have enough money. It costs #b" + cost + " Mesos#k.");
 	}
