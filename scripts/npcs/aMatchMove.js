@@ -30,23 +30,23 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.getPlayerLevel() >= 20 && npc.getPlayerLevel() <= 30) {
+if (player.getLevel() >= 20 && player.getLevel() <= 30) {
 	npc.sayNext("I have prepared a huge festival here at Ariant for the great fighters of MapleStory. It's called #bThe Ariant Coliseum Challenge#k.");
 	npc.sayNext("The Ariant Coliseum Challenge is a competition that matches the skills of monster combat against others. In this competition, your object isn't to hunt the monster;  rather, you need to #beliminate a set amount of HP from the monster, followed by absorbing it with a jewel#k. #bThe fighter that ends up with the most jewels will win the competition.#k.");
 
 	let str;
-	switch (npc.getMap()) {
+	switch (map.getId()) {
 		case 100000000:
-			str = "If you are a superior bowman from #b#m" + npc.getMap() + "##k, training under the mighty Athena Pierce, then are you interested in participating in The Ariant Coliseum Challenge?!";
+			str = "If you are a superior bowman from #b#m" + map.getId() + "##k, training under the mighty Athena Pierce, then are you interested in participating in The Ariant Coliseum Challenge?!";
 			break;
 		case 102000000:
-			str = "If you are a strong and brave warrior from #b#m" + npc.getMap() + "##k, training under Dances With Balrogs, then are you interested in participating in The Ariant Coliseum Challenge?!";
+			str = "If you are a strong and brave warrior from #b#m" + map.getId() + "##k, training under Dances With Balrogs, then are you interested in participating in The Ariant Coliseum Challenge?!";
 			break;
 		case 120000000:
-			str = "If you are a brave fighter from #b#m" + npc.getMap() + "##k, the town of fearless pirates, then are you interested in participating in The Ariant Coliseum Challenge?!";
+			str = "If you are a brave fighter from #b#m" + map.getId() + "##k, the town of fearless pirates, then are you interested in participating in The Ariant Coliseum Challenge?!";
 			break;
 		case 220000000:
-			str = "If you are an adventurer from #b#m" + npc.getMap() + "##k, then are you interested in participating in The Ariant Coliseum Challenge?!";
+			str = "If you are an adventurer from #b#m" + map.getId() + "##k, then are you interested in participating in The Ariant Coliseum Challenge?!";
 			break;
 		case 260000000:
 			str = "Are you interested in participating in The Ariant Coliseum Challenge?!";
@@ -58,7 +58,7 @@ if (npc.getPlayerLevel() >= 20 && npc.getPlayerLevel() <= 30) {
 		case 0:
 			npc.sayNext("Okay, now I'll send you to the battle arena. I'd like to see you emerge victorious!");
 			npc.rememberMap("ARIANT");
-			npc.warpPlayer(980010000, "out00");
+			player.changeMap(980010000, "out00");
 			break;
 	}
 } else {

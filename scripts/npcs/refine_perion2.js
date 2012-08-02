@@ -188,13 +188,13 @@ if (selection == 0) {
 					okay = false;
 				for (let i = 0; i < reqs.length && okay; i += 2) {
 					if (reqs[i] != MESOS) {
-						if (!npc.playerHasItem(reqs[i], reqs[i + 1] * quantity))
+						if (!player.hasItem(reqs[i], reqs[i + 1] * quantity))
 							okay = false;
-					} else if (!npc.playerHasMesos(reqs[i + 1] * quantity)) {
+					} else if (!player.hasMesos(reqs[i + 1] * quantity)) {
 						okay = false;
 					}
 				}
-				if (!npc.playerCanHoldItem(item, giveCount * quantity))
+				if (!player.canGainItem(item, giveCount * quantity))
 					okay = false;
 
 				if (!okay) {
@@ -202,10 +202,10 @@ if (selection == 0) {
 				} else {
 					for (let i = 0; i < reqs.length; i += 2)
 						if (reqs[i] != MESOS)
-							npc.takeItem(reqs[i], reqs[i + 1] * quantity);
+							player.loseItem(reqs[i], reqs[i + 1] * quantity);
 						else
-							npc.takeMesos(reqs[i + 1] * quantity);
-					npc.giveItem(item, giveCount * quantity);
+							player.loseMesos(reqs[i + 1] * quantity);
+					player.gainItem(item, giveCount * quantity);
 					npc.sayNext("Here! take " + giveCount * quantity  + " #t" + item + "#(s). Don't you think I'm as good as Mr. Thunder? You'll be more than satisfied with what I made here.");
 				}
 			}
@@ -223,13 +223,13 @@ if (selection == 0) {
 			let reqs = itemreqs[selection];
 			for (let i = 0; i < reqs.length && okay; i += 2) {
 				if (reqs[i] != MESOS) {
-					if (!npc.playerHasItem(reqs[i], reqs[i + 1]))
+					if (!player.hasItem(reqs[i], reqs[i + 1]))
 						okay = false;
-				} else if (!npc.playerHasMesos(reqs[i + 1])) {
+				} else if (!player.hasMesos(reqs[i + 1])) {
 					okay = false;
 				}
 			}
-			if (!npc.playerCanHoldItem(item, 1))
+			if (!player.canGainItem(item, 1))
 				okay = false;
 
 			if (!okay) {
@@ -237,10 +237,10 @@ if (selection == 0) {
 			} else {
 				for (let i = 0; i < reqs.length; i += 2)
 					if (reqs[i] != MESOS)
-						npc.takeItem(reqs[i], reqs[i + 1]);
+						player.loseItem(reqs[i], reqs[i + 1]);
 					else
-						npc.takeMesos(reqs[i + 1]);
-				npc.giveItem(item, 1);
+						player.loseMesos(reqs[i + 1]);
+				player.gainItem(item, 1);
 				npc.sayNext("Here! take the #t" + item + "#. Don't you think I'm as good as Mr. Thunder? You'll be more than satisfied with what I made here.");
 			}
 		}

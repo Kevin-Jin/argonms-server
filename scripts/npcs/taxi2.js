@@ -39,7 +39,7 @@ function groupThousands(x) {
 
 npc.sayNext("Hi! I drive the #p1012000#. If you want to go from town to town safely and fast, then ride our cab. We'll gladly take you to your destination with an affordable price.");
 let prompt;
-if (npc.getPlayerJob() == 0) {
+if (player.getJob() == 0) {
 	prompt = "We have a special 90% discount for beginners. Choose your destination, for fees will change from place to place.#b";
 	for (let i = 0; i < taxiMaps.length; i++)
 		prompt += "\r\n#L" + i + "##m" + taxiMaps[i] + "#(" + groupThousands(taxiFares[i] / 10) + " mesos)#l";
@@ -50,13 +50,13 @@ if (npc.getPlayerJob() == 0) {
 }
 mapIndex = npc.askMenu(prompt);
 let fare = taxiFares[mapIndex];
-if (npc.getPlayerJob() == 0)
+if (player.getJob() == 0)
 	fare /= 10;
 selection = npc.askYesNo("You don't have anything else to do here, huh? Do you really want to go to #b#m" + taxiMaps[mapIndex] + "##k? It'll cost you #b" + groupThousands(fare) + " mesos#k.");
 if (selection == 1) {
-	if (npc.playerHasMesos(fare)) {
-		npc.takeMesos(fare);
-		npc.warpPlayer(taxiMaps[mapIndex]);
+	if (player.hasMesos(fare)) {
+		player.loseMesos(fare);
+		player.changeMap(taxiMaps[mapIndex]);
 	} else {
 		npc.say("You don't have enough mesos. Sorry to say this, but without them, you won't be able to ride this cab.");
 	}

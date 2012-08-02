@@ -30,9 +30,9 @@ let skinColorChoices = [0, 1, 2, 3, 4];
 npc.sayNext("Well, hello! Welcome to the Henesys Skin-Care! Would you like to have a firm, tight, healthy looking skin like mine?  With #b#t5153000##k, you can let us take care of the rest and have the kind of skin you've always wanted~!");
 let selection = npc.askAvatar("With our specialized machine, you can see yourself after the treatment in advance. What kind of skin-treatment would you like to do? Choose the style of your liking...", skinColorChoices);
 
-if (npc.playerHasItem(5153000, 1)) {
-	npc.takeItem(5153000, 1);
-	npc.setPlayerSkin(skinColorChoices[selection]);
+if (player.hasItem(5153000, 1)) {
+	player.loseItem(5153000, 1);
+	player.setSkin(skinColorChoices[selection]);
 	npc.sayNext("Enjoy your new and improved skin!");
 } else {
 	npc.sayNext("Um...you don't have the skin-care coupon you need to receive the treatment. Sorry, but I am afraid we can't do it for you.");

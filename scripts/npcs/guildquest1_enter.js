@@ -47,7 +47,7 @@ switch (selection) {
 					//start GQ
 					let guildId = npc.getPlayerGuildId();
 					let eim = em.newInstance(guildId);
-					em.startInstance(eim, npc.getPlayerName());
+					em.startInstance(eim, player.getName());
 
 					//force the two scripts on portals in the map
 					let map = eim.getMapInstance(990000000);
@@ -60,7 +60,7 @@ switch (selection) {
 
 					//remove all GQ items from player entering
 					for (let i = 0; i < gqItems.length; i++)
-						npc.takeItem(gqItems[i]);
+						player.loseItem(gqItems[i]);
 				}
 			}
 		}
@@ -82,7 +82,7 @@ switch (selection) {
 
 						//remove all GQ items from player entering
 						for (let i = 0; i < gqItems.length; i++)
-							npc.takeItem(gqItems[i]);
+							player.loseItem(gqItems[i]);
 					} else {
 						npc.say("I'm sorry, but the guild has gone on without you. Try again later.");
 					}

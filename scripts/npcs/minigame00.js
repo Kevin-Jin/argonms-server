@@ -41,18 +41,18 @@ if (selection == 0) {
 		for (let i = 0; i < sets.length; i++)
 			menuText += "\r\n#L" + i + "##t" + sets[i] + "##l";
 		selection = npc.askMenu(menuText);
-		if (npc.playerHasItem(mat1[selection], 99) && npc.playerHasItem(mat2[selection], 99) && npc.playerHasItem(4030009, 1) && npc.playerCanHoldItem(sets[selection], 1)) {
-			npc.takeItem(mat1[selection], 99);
-			npc.takeItem(mat2[selection], 99);
-			npc.takeItem(4030009, 1);
-			npc.giveItem(sets[selection], 1);
+		if (player.hasItem(mat1[selection], 99) && player.hasItem(mat2[selection], 99) && player.hasItem(4030009, 1) && player.canGainItem(sets[selection], 1)) {
+			player.loseItem(mat1[selection], 99);
+			player.loseItem(mat2[selection], 99);
+			player.loseItem(4030009, 1);
+			player.gainItem(sets[selection], 1);
 		} else {
 			npc.sayNext("#bYou want to make #t" + sets[selection] + "##k? Hmm... get me the materials, and I can do just that. Listen carefully, the materials you need will be: #r99 #t" + mat1[selection] + "#, 99 #t" + mat2[selection] + "#, 1 #t4030009##k. The monsters will probably drop those every once in a while...");
 		}
 	} else if (selection == 1) {
-		if (npc.playerHasItem(4030012, 99)) {
-			npc.takeItem(4030012, 99);
-			npc.giveItem(4080100, 1);
+		if (player.hasItem(4030012, 99)) {
+			player.loseItem(4030012, 99);
+			player.gainItem(4080100, 1);
 		} else {
 			npc.sayNext("You want #b#t4080100##k? Hmmm... to make #t4080100#, you'll need some #b#t4030012#s#k. #t4030012# can be obtained by taking out the monsters all around the island. Collect 99 #t4030012#s and you can make a set of Match Cards.");
 		}

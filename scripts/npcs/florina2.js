@@ -27,7 +27,7 @@
 
 function warp() {
 	npc.rememberMap("FLORINA")
-	npc.warpPlayer(110000000);
+	player.changeMap(110000000);
 }
 
 function declineResponse() {
@@ -42,8 +42,8 @@ switch (selection) {
 	case 0:
 		selection = npc.askYesNo("So you want to pay #b1500 mesos#k and leave for #m110000000#? Alright, then, but just be aware that you may be running into some monsters around there, too. Okay, would you like to head over to #m110000000# right now?");
 		if (selection == 1) {
-			if (npc.playerHasMesos(1500)) {
-				npc.takeMesos(1500);
+			if (player.hasMesos(1500)) {
+				player.loseMesos(1500);
 				warp();
 			} else {
 				npc.sayNext("I think you're lacking mesos. There are many ways to gather up some money, you know, like... selling your armor... defeating monsters... doing quests... you know what I'm talking about.");
@@ -55,7 +55,7 @@ switch (selection) {
 	case 1:
 		selection = npc.askYesNo("So you have #b#b#t4031134##k? You can always head over to #m110000000# with that Alright, then, but just be aware that you may be running into some monsters there, too. Okay, would you like to head over to #m110000000# right now?");
 		if (selection == 1) {
-			if (npc.playerHasItem(4031134, 1)) {
+			if (player.hasItem(4031134, 1)) {
 				warp();
 			} else {
 				npc.sayNext("Hmmm, so where exactly is your #b#t4031134##k? Are you sure you have one? Please double-check.");

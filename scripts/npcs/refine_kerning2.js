@@ -125,23 +125,23 @@ if (selection != -1) {
 		let okay = true;
 		for (let i = 0; i < reqs.length && okay; i += 2) {
 			if (reqs[i] != MESOS) {
-				if (!npc.playerHasItem(reqs[i], reqs[i + 1] * quantity))
+				if (!player.hasItem(reqs[i], reqs[i + 1] * quantity))
 					okay = false;
-			} else if (!npc.playerHasMesos(reqs[i + 1] * quantity)) {
+			} else if (!player.hasMesos(reqs[i + 1] * quantity)) {
 				okay = false;
 			}
 		}
-		if (!npc.playerCanHoldItem(item, quantity))
+		if (!player.canGainItem(item, quantity))
 			okay = false;
 		if (!okay) {
 			npc.say("I cannot accept substitutes. If you don't have what I need, then I won't be able to help you.");
 		} else {
 			for (let i = 0; i < reqs.length; i += 2)
 				if (reqs[i] != MESOS)
-					npc.takeItem(reqs[i], reqs[i + 1] * quantity);
+					player.loseItem(reqs[i], reqs[i + 1] * quantity);
 				else
-					npc.takeMesos(reqs[i + 1] * quantity);
-			npc.giveItem(item, quantity);
+					player.loseMesos(reqs[i + 1] * quantity);
+			player.gainItem(item, quantity);
 			npc.say("Phew... I almost didn't think that would work for a second... Well, I hope you enjoy it, anyway.");
 		}
 	}

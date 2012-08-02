@@ -25,19 +25,18 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-switch (npc.getMap()) {
+switch (map.getId()) {
 	case 100000200: {
 		npc.sayNext("This is the #rPrimrose Hill#k. When there is a full moon the moon bunny comes to make rice cakes. Growlie wants rice cakes so you better go help him or he'll eat you.");
 		let selection = npc.askMenu("Would you like to go help Growlie?\r\n#b"
 				+ "#L0#Yes, I will go.#l#k");
 		if (selection == 0) {
-			let partyMembersInMap = npc.getMapPartyMembersCount(10, 255);
-			if (partyMembersInMap == -1) {
+			if (party == null) {
 				npc.say("You are not in a party.");
-			} else if (!npc.playerIsPartyLeader()) {
+			} else if (player.getId() != party.getLeader()) {
 				npc.say("You are not the party leader.");
 			} else {
-				if (partyMembersInMap >= 3) {
+				if (party.getMembersCount(map.getId(), 10, 255) >= 3) {
 					//TODO: start the event
 					npc.say("#e#b#rPrimrose Hill#k is not yet ready. Sorry!#n#k");
 				} else {
@@ -48,11 +47,11 @@ switch (npc.getMap()) {
 		break;
 	}
 	case 910010400:
-		npc.warpPlayer(100000200);
+		player.changeMap(100000200);
 		npc.sayInChat("You have been warped to Henesys Park.");
 		break;
 	case 910010100:
 		if (npc.askYesNo("Would you like go to #rHenesys Park#k?") == 1)
-			npc.warpPlayer(100000200, 0);
+			player.changeMap(100000200, 0);
 		break;
 }

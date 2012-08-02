@@ -29,7 +29,7 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.getPlayerName() != npc.getNpcName()) {
+if (player.getName() != npc.getNpcName()) {
 	npc.say("Hello, I am #b" + npc.getNpcName() + "#k, and I am LEVEL " + npc.getNpcLevel() + ".");
 } else {
 	/*if (last transform was less than 24 hours ago) {

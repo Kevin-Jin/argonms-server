@@ -27,7 +27,7 @@
 
 let selection = npc.askYesNo("Do you want to leave the waiting room? You can, but the ticket is NOT refundable. Are you sure you still want to leave this room?");
 if (selection == 0) {
-	npc.warpPlayer(101000300);
+	player.changeMap(101000300);
 } else if (selection == 1) {
 	npc.sayNext("You'll get to your destination in a few. Go ahead and talk to other people, and before you know it, you'll be there already.");
 }

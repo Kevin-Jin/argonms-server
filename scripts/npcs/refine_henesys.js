@@ -137,14 +137,14 @@ if (cost > 0)
 
 selection = npc.askYesNo(prompt);
 if (selection == 1) {
-	if (npc.playerHasMesos(cost)) {
+	if (player.hasMesos(cost)) {
 		let complete = true;
 		if (mats instanceof Array) {
 			for (let i = 0; complete && i < mats.length; i++)
-				if (!npc.playerHasItem(mats[i], matQty[i] * qty))
+				if (!player.hasItem(mats[i], matQty[i] * qty))
 					complete = false;
 		} else {
-			if (!npc.playerHasItem(mats, matQty * qty))
+			if (!player.hasItem(mats, matQty * qty))
 				complete = false;
 		}
 
@@ -157,16 +157,16 @@ if (selection == 1) {
 			else if (item == 4003000)
 				giveQty = qty * 15;
 
-			if (npc.playerCanHoldItem(item, giveQty)) {
+			if (player.canGainItem(item, giveQty)) {
 				if (mats instanceof Array)
 					for (let i = 0; i < mats.length; i++)
-						npc.takeItem(mats[i], matQty[i] * qty);
+						player.loseItem(mats[i], matQty[i] * qty);
 				else
-					npc.takeItem(mats, matQty * qty);
+					player.loseItem(mats, matQty * qty);
 				if (cost > 0)
-					npc.takeMesos(cost);
+					player.loseMesos(cost);
 
-				npc.giveItem(item, giveQty);
+				player.gainItem(item, giveQty);
 				npc.say("A perfect item, as usual. Come and see me if you need anything else.");
 			} else {
 				npc.say("Please make sure you have room in your inventory, and talk to me again.");

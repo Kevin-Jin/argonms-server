@@ -28,7 +28,7 @@
 let result = npc.askYesNo("Are you done with your training? If you wish, I will send you out from this training camp.");
 if (result == 1) {
 	npc.sayNext("Then, I will send you out from here. Good job.");
-	npc.warpPlayer(3);
+	player.changeMap(3);
 } else {
 	npc.say("Haven't you finish the training program yet? If you want to leave this place, please do not hesitate to tell me.");
 }

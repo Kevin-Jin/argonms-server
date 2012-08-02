@@ -25,38 +25,38 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.isQuestStarted(6141)) {
+if (player.isQuestStarted(6141)) {
 	let selection = npc.askYesNo("Would you like to go to the training ground?");
 	if (selection == 0) {
 		npc.say("Let me know when you want to enter.");
 	} else if (selection == 1) {
 		//TODO: implement instance maps - only warp if empty
-		//npc.warpPlayer(910300000);
+		//player.changeMap(910300000);
 		npc.say("Someone is already inside. Try again later.");
 	}
-} else if (npc.getPlayerJob() == 0) {
+} else if (player.getJob() == 0) {
 	npc.sayNext("Want to be a thief? There are some standards to meet, because we can't just accept EVERYONE in ... #bYour level should be at least 10#k. Let's see...");
-	if (npc.getPlayerLevel() >= 10) {
+	if (player.getLevel() >= 10) {
 		let selection = npc.askYesNo("Oh...! You look like someone that can definitely be a part of us...all you need is a little sinister mind, and...yeah...so, what do you think? Wanna be the Rouge?");
 		if (selection == 1) {
 			npc.sayNext("Alright, from here on out, you are part of us! You'll be living the life of a wanderer at first, but just be patient and soon, you'll be living the high life. Alright, it ain't much, but I'll give you some of my abilities...HAAAHHH!!");
 
-			if (npc.getPlayerLevel() >= 30) { //For the rare "too high level" instance.
+			if (player.getLevel() >= 30) { //For the rare "too high level" instance.
 				npc.sayNext("I think you've made the job advancement way too late. Usually, for beginners under Level 29 that were late in making job advancements, we compensate them with lost Skill Points, that weren't rewarded, but...I think you're a little too late for that. I am so sorry, but there's nothing I can do.");
-				npc.giveSp(1);
+				player.gainSp(1);
 			} else {
-				npc.giveSp((npc.getPlayerLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
+				player.gainSp((player.getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
-			npc.setPlayerJob(400);
-			npc.giveItem(1472061, 1); //Beginners Garnier
-			npc.giveItem(1332063, 1); //Beginners Dagger
-			npc.giveItem(2070015, 3); //Special subis
+			player.setJob(400);
+			player.gainItem(1472061, 1); //Beginners Garnier
+			player.gainItem(1332063, 1); //Beginners Dagger
+			player.gainItem(2070015, 3); //Special subis
 			let hpinc = 100 + Math.floor(Math.random() * 50); //Extra HP Given
 			let mpinc = 25 + Math.floor(Math.random() * 25); //Extra MP Given
-			npc.increasePlayerMaxHp(hpinc);
-			npc.increasePlayerMaxMp(mpinc);
-			npc.giveEquipInventorySlots(4);
-			npc.giveEtcInventorySlots(4);
+			player.increaseMaxHp(hpinc);
+			player.increaseMaxMp(mpinc);
+			player.gainEquipInventorySlots(4);
+			player.gainEtcInventorySlots(4);
 			npc.clearBackButton();
 			npc.sayNext("I've just created more slots for your equipment and etc. storage. Not only that, but you've also gotten stronger as well. As you become part of us, and learn to enjoy life in different angles, you may one day be on top of this of darkness. I'll be watching your every move, so don't let me down.");
 			npc.clearBackButton();
@@ -70,19 +70,19 @@ if (npc.isQuestStarted(6141)) {
 	} else {
 		npc.sayNext("I see...well, it's a very important step to take, choosing your job. But don't you want to live the fun life? let me know when you have made up your mind, ok?");
 	}
-} else if (npc.getPlayerJob() == 400 && npc.getPlayerLevel() >= 30) {
-	if (npc.playerHasItem(4031011, 0) && npc.playerHasItem(4031012, 0)) {
+} else if (player.getJob() == 400 && player.getLevel() >= 30) {
+	if (player.hasItem(4031011, 0) && player.hasItem(4031012, 0)) {
 		let selection = npc.askYesNo("Hmmm...you seem to have gotten a whole lot stronger. You got rid of the old, weak self and and look much more like a thief now. Well, what do you think? Don't you want to get even more powerful than that? Pass a simple test and I'll do just that for you. Do you want to do it?");
 		if (selection == 0) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
 		} else if (selection == 1) {
 			npc.sayNext("Good thinking. But, I need to make sure you are as strong as you look. It's not a hard test, one that should be easy for you to pass. First, take this letter...make sure you don't lose it.");
-			npc.giveItem(4031011, 1);
+			player.gainItem(4031011, 1);
 			npc.sayNext("Please take this letter to #b#p1072003##k around #b#m102040000##k near Kerning City. He's doing the job of an instructor in place of me. Give him the letter and he'll give you the test for me. If you want more details, hear it straight from him. I'll be wishing you good luck.");
 		}
-	} else if (npc.playerHasItem(4031010, 1) && npc.playerHasItem(4031012, 0)) {
+	} else if (player.hasItem(4031010, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072003##k who's around #b#m102040000##k near Kerning City. Give the letter to him and he may let you know what to do.");
-	} else if (npc.playerHasItem(4031010, 0) && npc.playerHasItem(4031012, 1)) {
+	} else if (player.hasItem(4031010, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("Hmmm...so you got back here safely. I knew that test would be too easy for you. I admit, you are a great great thief. Now...I'll make you even more powerful than you already are. But, before all that...you need to choose one of two ways. It'll be a difficult decision for you to make, but...if you have any questions, please ask.");
 
 		selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom...\r\n"
@@ -110,17 +110,17 @@ if (npc.isQuestStarted(6141)) {
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");				
 						} else if (selection == 1) {
-							if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
+							if (player.getSp() > ((player.getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 							} else {
-								npc.setPlayerJob(410);
-								npc.giveSp(1);
-								npc.takeItem(4031012, 1); //Take The Proof of a Hero
-								npc.giveUseInventorySlots(4);
+								player.setJob(410);
+								player.gainSp(1);
+								player.loseItem(4031012, 1); //Take The Proof of a Hero
+								player.gainUseInventorySlots(4);
 								let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
 								let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
-								npc.increasePlayerMaxHp(hpinc);
-								npc.increasePlayerMaxMp(mpinc);
+								player.increaseMaxHp(hpinc);
+								player.increaseMaxMp(mpinc);
 								npc.sayNext("Alright, from here on out you are the #bAssassin#k. Assassins revel in shadows and darkness, waiting until the right time comes for them to stick a dagger through the enemy's heart, suddenly and swiftly...please keep training. I'll make you even more powerful than you are right now!");
 								npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as an assassin. I have also added a whole row to your use inventory, along with boosting up your max HP and MP...go see for it yourself.");
 								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
@@ -136,14 +136,14 @@ if (npc.isQuestStarted(6141)) {
 							if (getSP() > ((getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 							} else {
-								npc.setPlayerJob(420);
-								npc.giveSp(1);
-								npc.takeItem(4031012, 1); //Take The Proof of a Hero
-								npc.giveUseInventorySlots(4);
+								player.setJob(420);
+								player.gainSp(1);
+								player.loseItem(4031012, 1); //Take The Proof of a Hero
+								player.gainUseInventorySlots(4);
 								let hpinc = 300 + Math.floor(Math.random() * 50); //Extra HP Given
 								let mpinc = 150 + Math.floor(Math.random() * 50); //Extra MP Given
-								npc.increasePlayerMaxHp(hpinc);
-								npc.increasePlayerMaxMp(mpinc);
+								player.increaseMaxHp(hpinc);
+								player.increaseMaxMp(mpinc);
 								npc.sayNext("Alright from here on out, you're the #bBandit#k. Bandits have quick hands and quicker feet to dominate the enemies. Please keep training. I'll make you even more powerful than you are right now.");
 								npc.sayNext("I have just given you a book that gives you the the list of skills you can acquire as an assassin. I have also added a whole row to your use inventory, along with boosting up your max HP and MP...go see for it yourself.");
 								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
@@ -155,7 +155,7 @@ if (npc.isQuestStarted(6141)) {
 				break;
 		}
 	}
-} else if (Math.floor(npc.getPlayerJob() / 100) == 3) {
+} else if (Math.floor(player.getJob() / 100) == 3) {
 	let selection = npc.askMenu("Do you have anything you want to know about thieves?\r\n"
 			+ "#L0##bWhat are the basic characters of a Thief?#k#l\r\n"
 			+ "#L1##bWhat are the weapons that the Thieves use?#k#l\r\n"

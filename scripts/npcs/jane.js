@@ -27,7 +27,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.isQuestCompleted(2013)) {
+if (player.isQuestCompleted(2013)) {
 	let items = [2000002, 2022003, 2022000, 2001000];
 	let costs = [310, 1060, 1600, 3120];
 	let recoverAmount = [300, 1000, 800, 1000];
@@ -45,8 +45,8 @@ if (npc.isQuestCompleted(2013)) {
 	selection = npc.askYesNo("Will you purchase #r" + count + "#k #b#t" + item + "#(s)#k? #t" + item + "# costs " + cost + " mesos for one, so the total comes out to be #r" + cost * count + "#k mesos.");
 	cost *= count;
 	if (selection == 1) {
-		if (npc.playerHasMesos(cost) && npc.giveItem(item, count)) {
-			npc.takeMesos(cost);
+		if (player.hasMesos(cost) && player.gainItem(item, count)) {
+			player.loseMesos(cost);
 			npc.sayNext("Thank you for coming. Stuff here can always be made so if you need something, please come again.");
 		} else {
 			npc.sayNext("Are you lacking mesos by any chance? Please check and see if you have an empty slot available at your etc. inventory, and if you have at least #r" + cost + "#k mesos with you.");
@@ -54,7 +54,7 @@ if (npc.isQuestCompleted(2013)) {
 	} else if (selection == 0) {
 		npc.sayNext("I still have quite a few of the materials you got me before. The items are all there so take your time choosing.");
 	}
-} else if (npc.isQuestCompleted(2010)) {
+} else if (player.isQuestCompleted(2010)) {
 	npc.sayNext("You don't seem strong enough to be able to purchase my potion...");
 } else {
 	npc.say("My dream is to travel everywhere, much like you. My father, however, does not allow me to do it, because he thinks it's very dangerous. He may say yes, though, if I show him some sort of a proof that I'm not the weak girl that he thinks I am...");

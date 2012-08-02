@@ -210,13 +210,13 @@ if (selection == 0) {
 			okay = false;
 		for (let i = 0; i < reqs.length && okay; i += 2) {
 			if (reqs[i] != MESOS) {
-				if (!npc.playerHasItem(reqs[i], reqs[i + 1] * quantity))
+				if (!player.hasItem(reqs[i], reqs[i + 1] * quantity))
 					okay = false;
-			} else if (!npc.playerHasMesos(reqs[i + 1] * quantity)) {
+			} else if (!player.hasMesos(reqs[i + 1] * quantity)) {
 				okay = false;
 			}
 		}
-		if (!npc.playerCanHoldItem(item, quantity))
+		if (!player.canGainItem(item, quantity))
 			okay = false;
 
 		if (!okay) {
@@ -224,10 +224,10 @@ if (selection == 0) {
 		} else {
 			for (let i = 0; i < reqs.length; i += 2)
 				if (reqs[i] != MESOS)
-					npc.takeItem(reqs[i], reqs[i + 1] * quantity);
+					player.loseItem(reqs[i], reqs[i + 1] * quantity);
 				else
-					npc.takeMesos(reqs[i + 1] * quantity);
-			npc.giveItem(item, quantity);
+					player.loseMesos(reqs[i + 1] * quantity);
+			player.gainItem(item, quantity);
 			if (equip)
 				npc.sayNext("Hey! Here, take #t" + item + "#. I'm good ... a finely refined item like this, have you seen it anywhere else?? Please come again~");
 			else

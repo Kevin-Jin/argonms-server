@@ -25,25 +25,25 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
-if (npc.getPlayerJob() == 0) {
+if (player.getJob() == 0) {
 	npc.sayNext("Do you want to be a Magician? You need to meet some requirements in order to do so. You need to be at least at #bLevel 8#k. Let's see if you have what it takes to become a Magician...");
-	if (npc.getPlayerLevel() >= 8) {
+	if (player.getLevel() >= 8) {
 		let selection = npc.askYesNo("You definitely have the look of a Magician. You may not be there yet, but I can see the Magician in you...what do you think? Do you want to become the Magician?");
 		if (selection == 1) {
 			npc.sayNext("Alright, you're a Magician from here on out, since I, Grendel the Really old, the head Magician, allow you so. It isn't much, but I'll give you a little bit of what I have...");
 
-			if (npc.getPlayerLevel() >= 30) { //For the rare "too high level" instance.
+			if (player.getLevel() >= 30) { //For the rare "too high level" instance.
 				npc.sayNext("I think you've made the job advancement way too late. Usually, for beginners under Level 29 that were late in making job advancements, we compensate them with lost Skill Points, that weren't rewarded, but...I think you're a little too late for that. I am so sorry, but there's nothing I can do.");
-				npc.giveSp(1);
+				player.gainSp(1);
 			} else {
-				npc.giveSp((npc.getPlayerLevel() - 8) * 3 + 1); //Make up any SP for over-leveling like in GMS
+				player.gainSp((player.getLevel() - 8) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
-			npc.setPlayerJob(200);
-			npc.giveItem(1372043, 1); //Beginner Wand
+			player.setJob(200);
+			player.gainItem(1372043, 1); //Beginner Wand
 			let mpinc = 100 + Math.floor(Math.random() * 50); //Extra MP Given
-			npc.increasePlayerMaxMp(mpinc);
-			npc.giveEquipInventorySlots(4);
-			npc.giveUseInventorySlots(4);
+			player.increaseMaxMp(mpinc);
+			player.gainEquipInventorySlots(4);
+			player.gainUseInventorySlots(4);
 			npc.clearBackButton();
 			npc.sayNext("You have just equipped yourself with much more magicial power. Please keep training and make yourself much better...I'll be watching you from here and there...");
 			npc.clearBackButton();
@@ -57,19 +57,19 @@ if (npc.getPlayerJob() == 0) {
 	} else {
 		npc.sayNext("You need more training to be a Magician. In order to be one, you need to train yourself to be more powerful than you are right now. Please come back much stronger.");
 	}
-} else if (npc.getPlayerJob() == 200 && npc.getPlayerLevel() >= 30) {
-	if (npc.playerHasItem(4031009, 0) && npc.playerHasItem(4031012, 0)) {
+} else if (player.getJob() == 200 && player.getLevel() >= 30) {
+	if (player.hasItem(4031009, 0) && player.hasItem(4031012, 0)) {
 		let selection = npc.askYesNo("Hmmm...you have grown quite a bit since last time. You look much different from before, where you looked weak and small...instead now I can definitely feel you presence as the Magician...so...what do you think? Do you want to get even stronger than you are right now? Pass a simple test and I can do that for you...do you want to do it?");
 		if (selection == 0) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
 		} else if (selection == 1) {
 			npc.sayNext("Good...you look strong, alright, but I need to see if it is for real. The test isn't terribly difficult and you should be able to pass it. Here, take my letter first. Make sure you don't lose it.");
-			npc.giveItem(4031009, 1);
+			player.gainItem(4031009, 1);
 			npc.sayNext("Please get this letter to #b#p1072001##k around #b#m101020000##k near Ellinia. He's doing the role of an instructor in place of me. He'll give you all the details about it. Best of luck to you...");
 		}
-	} else if (npc.playerHasItem(4031009, 1) && npc.playerHasItem(4031012, 0)) {
+	} else if (player.hasItem(4031009, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072001##k who's around #b#m101020000#k near Ellinia. Give the letter to him and he may let you know what to do.");
-	} else if (npc.playerHasItem(4031009, 0) && npc.playerHasItem(4031012, 1)) {
+	} else if (player.hasItem(4031009, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("You got back here safely. Well done. I knew you'd pass the tests very easily...alright, I'll make you much stronger now. Before that, though...you need to choose one of the three paths that will be given to you. It will be a tough decision for you to make, but...if you have any questions about it, feel free to ask.");
 		let selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom...\r\n"
 				+ "#L0##bPlease explain the characteristics of the Wizard of Fire and Poison.#l#k\r\n"
@@ -103,15 +103,15 @@ if (npc.getPlayerJob() == 0) {
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");				
 						} else if (selection == 1) {
-							if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
+							if (player.getSp() > ((player.getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 							} else {
-								npc.setPlayerJob(210);
-								npc.giveSp(1);
-								npc.takeItem(4031012, 1); //Take The Proof of a Hero
-								npc.giveEtcInventorySlots(4);
+								player.setJob(210);
+								player.gainSp(1);
+								player.loseItem(4031012, 1); //Take The Proof of a Hero
+								player.gainEtcInventorySlots(4);
 								let mpinc = 450 + Math.floor(Math.random() * 50); //Extra MP Given
-								npc.increasePlayerMaxMp(mpinc);
+								player.increaseMaxMp(mpinc);
 								npc.sayNext("From here on out, you have become the #bWizard of Fire and Poison#k... Wizards use high intelligence and the power of nature all around us to take down the enemies...please continue your studies, for one day I may make you much more powerful with my own power...");
 								npc.sayNext("I have just given you a book that gives you the list of skills you can acquire as the Wizard of Fire and Poison...I've also extended your etc. inventory by added a whole row to it, along with your maximum MP...go see it for yourself.");
 								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
@@ -124,15 +124,15 @@ if (npc.getPlayerJob() == 0) {
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");				
 						} else {
-							if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
+							if (player.getSp() > ((player.getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 							} else {
-								npc.setPlayerJob(220);
-								npc.giveSp(1);
-								npc.takeItem(4031012, 1); //Take The Proof of a Hero
-								npc.giveEtcInventorySlots(4);
+								player.setJob(220);
+								player.gainSp(1);
+								player.loseItem(4031012, 1); //Take The Proof of a Hero
+								player.gainEtcInventorySlots(4);
 								let mpinc = 450 + Math.floor(Math.random() * 50); //Extra MP Given
-								npc.increasePlayerMaxMp(mpinc);
+								player.increaseMaxMp(mpinc);
 								npc.sayNext("From here on out, you have become the #bWizard of Ice and Lightning#k... Wizards use high intelligence and the power of nature all around us to take down the enemies...please continue your studies, for one day I may make you much more powerful with my own power...");
 								npc.sayNext("I have just given you a book that gives you the list of skills you can acquire as the Wizard of Ice and Lightning...I've also extended your etc. inventory by added a whole row to it. Your maximum MP has gone up, too. Go see for it yourself.");
 								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
@@ -145,15 +145,15 @@ if (npc.getPlayerJob() == 0) {
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");				
 						} else {
-							if (npc.getPlayerSp() > ((npc.getPlayerLevel() - 30) * 3)) {
+							if (player.getSp() > ((player.getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 						} else {
-								npc.setPlayerJob(230);
-								npc.giveSp(1);
-								npc.takeItem(4031012, 1); //Take The Proof of a Hero
-								npc.giveEtcInventorySlots(4);
+								player.setJob(230);
+								player.gainSp(1);
+								player.loseItem(4031012, 1); //Take The Proof of a Hero
+								player.gainEtcInventorySlots(4);
 								let mpinc = 450 + Math.floor(Math.random() * 50); //Extra MP Given
-								npc.increasePlayerMaxMp(mpinc);
+								player.increaseMaxMp(mpinc);
 								npc.sayNext("Alright, you're a #bCleric#k from here on out. Clerics blow life into every living organism here with their undying faith in God. Never stop working on your faith...then one day, I'll help you become much more powerful...");
 								npc.sayNext("I have just given you a book that gives you the list of skills you can acquire as the Cleric...I've also extended your etc. inventory by added a whole row to it, along with your maximum MP...go see it for yourself.");
 								npc.sayNext("I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. You'll be able to boost up the newly-acquired 2nd level skills. A word of warning though: You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure to remember that.");
@@ -165,7 +165,7 @@ if (npc.getPlayerJob() == 0) {
 				break;
 		}
 	}
-} else if (Math.floor(npc.getPlayerJob() / 100) == 2) {
+} else if (Math.floor(player.getJob() / 100) == 2) {
 	let selection = npc.askMenu("Any questions about being a Magician?\r\n"
 		+ "#L0##bWhat are the basic characteristics of being a Magician?#k#l\r\n"
 		+ "#L1##bWhat are the weapons that the Magicians use?#k#l\r\n"

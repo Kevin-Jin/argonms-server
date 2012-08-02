@@ -33,11 +33,11 @@ if (bm == null) {*/
 	if (selection == 0) {
 		npc.sayNext("You must have some business to take care of here, right?");
 	} else {
-		if (!npc.playerHasItem(4031045, 1)) {
+		if (!player.hasItem(4031045, 1)) {
 			npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
 		} else {
-			npc.takeItem(4031045, 1);
-			npc.warpPlayer(200000100);
+			player.loseItem(4031045, 1);
+			player.changeMap(200000100);
 		}
 	}
 /*} else if (bm.getProperty("entry").equals("true")) {
@@ -45,11 +45,11 @@ if (bm == null) {*/
 	if (selection == 0) {
 		npc.sayNext("You must have some business to take care of here, right?");
 	} else {
-		if (!npc.playerHasItem(4031045, 1)) {
+		if (!player.hasItem(4031045, 1)) {
 			npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
 		} else {
-			npc.takeItem(4031045, 1);
-			npc.warpPlayer(101000301);
+			player.loseItem(4031045, 1);
+			player.changeMap(101000301);
 		}
 	}
 } else if (bm.getProperty("entry").equals("false") && bm.getProperty("docked").equals("true")) {

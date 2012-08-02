@@ -22,17 +22,22 @@
  *
  * Admits players into Kerning City party quest.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin
  */
 
-let partyMembersInMap = npc.getMapPartyMembersCount(21, 30);
-if (partyMembersInMap == -1) {
+if (party == null || player.getId() != party.getLeader()) {
 	npc.say("How about you and your party members collectively beating a quest? Here you'll find obstacles and problems where you won't be able to beat it without great teamwork.  If you want to try it, please tell the #bleader of your party#k to talk to me.");
-} else if (!npc.playerIsPartyLeader()) {
-	npc.say("If you want to try the quest, please tell the #bleader of your party#k to talk to me.");
-} else if (partyMembersInMap < 4) {
-	npc.say("Your party is not a party of four. Please make sure all your members are present and qualified to participate in this quest.");
+} else if (party.numberOfMembersInChannel() != 4 || party.getMembersCount(map.getId(), 1, 200) != 4) {
+	npc.say("Your party is not a party of four. Please come back when you have four party members.");
+} else if (party.getMembersCount(map.getId(), 21, 30) != 4) {
+	npc.say("Someone in your your party does not have a level between 21 ~ 30. Please double-check.");
+} else if (npc.getEvent("kpq") != null) {
+	npc.say("Some other party has already gotten in to try clearing the quest. Please try again later.");
 } else {
-	//TODO: start the event
-	//confiscate smuggled passes and coupons
+	//TODO: probably want to lock between (npc.getEvent("kpq") != null) and npc.makeEvent("kpq").
+	//don't want to let two parties in at once because of a race condition!
+	npc.makeEvent("kpq");
+	party.loseItem(4001008);
+	party.loseItem(4001007);
+	player.changeMap(103000800, "st00");
 }

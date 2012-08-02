@@ -30,7 +30,10 @@ import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.script.binding.ScriptField;
 import argonms.game.script.binding.ScriptNpc;
+import argonms.game.script.binding.ScriptParty;
+import argonms.game.script.binding.ScriptPlayer;
 import argonms.game.script.binding.ScriptPlayerNpc;
 import argonms.game.script.binding.ScriptQuest;
 import java.io.FileNotFoundException;
@@ -102,7 +105,10 @@ public class NpcScriptManager {
 				convoMan = new ScriptPlayerNpc((PlayerNpc) npc, client, globalScope);
 			else
 				convoMan = new ScriptNpc(npcId, client, globalScope);
-			globalScope.put("npc", globalScope, convoMan);
+			globalScope.put("npc", globalScope, Context.toObject(convoMan, globalScope));
+			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(client.getPlayer()), globalScope));
+			globalScope.put("map", globalScope, Context.toObject(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("party", globalScope, client.getPlayer().getParty() == null ? null : Context.toObject(new ScriptParty(client.getPlayer().getParty()), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();
@@ -128,7 +134,10 @@ public class NpcScriptManager {
 			Script script = cx.compileReader(reader, "quests/" + scriptName + ".js", 1, null);
 			reader.close();
 			convoMan = new ScriptQuest(npcId, questId, client, globalScope);
-			globalScope.put("npc", globalScope, convoMan);
+			globalScope.put("npc", globalScope, Context.toObject(convoMan, globalScope));
+			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(client.getPlayer()), globalScope));
+			globalScope.put("map", globalScope, Context.toObject(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("party", globalScope, client.getPlayer().getParty() == null ? null : Context.toObject(new ScriptParty(client.getPlayer().getParty()), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();

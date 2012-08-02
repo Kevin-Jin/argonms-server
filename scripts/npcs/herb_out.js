@@ -30,4 +30,4 @@
  */
 
 if (npc.askYesNo("Would you like to return to Ellinia?") == 1)
-	npc.warpPlayer(101000000);
+	player.changeMap(101000000);

@@ -31,25 +31,25 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.getMap() == 103000890) {
+if (map.getId() == 103000890) {
 	npc.sayNext("See you next time.");
-	npc.warpPlayer(103000000, "mid00");
-	npc.takeItem(4001007);
-	npc.takeItem(4001008);
+	player.changeMap(103000000, "mid00"); //TODO: shouldn't this be a random portal in Kerning?
+	player.loseItem(4001007);
+	player.loseItem(4001008);
 } else {
 	let str;
-	if (npc.getMap() == 103000805)
+	if (map.getId() == 103000805)
 		str = "Are you ready to leave this map?";
 	else
 		str = "Once you leave the map, you'll have to restart the whole quest if you want to try it again.  Do you still want to leave this map?";
 	if (npc.askYesNo(str)) {
 		//TODO: IMPLEMENT EVENT
-		let eim = npc.getPlayer().getEventInstance();
+		let eim = npc.getEvent("kpq");
 		if (eim == null)
-			npc.warpPlayer(103000890, "st00"); // Warp player
-		else if (cm.isLeader())
+			player.changeMap(103000890, "st00"); // Warp player
+		else if (party.getLeader() == player.getId())
 			eim.disbandParty();
 		else
-			eim.leftParty(cm.getPlayer());
+			eim.leftParty(player.getId());
 	}
 }

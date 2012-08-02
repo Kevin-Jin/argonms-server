@@ -20,6 +20,9 @@ package argonms.game.script;
 
 import argonms.common.GlobalConstants;
 import argonms.game.character.GameCharacter;
+import argonms.game.script.binding.ScriptField;
+import argonms.game.script.binding.ScriptParty;
+import argonms.game.script.binding.ScriptPlayer;
 import argonms.game.script.binding.ScriptPortal;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -51,7 +54,10 @@ public class PortalScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			ScriptPortal portalManager = new ScriptPortal(p.getClient());
-			globalScope.put("portal", globalScope, portalManager);
+			globalScope.put("portal", globalScope, Context.toObject(portalManager, globalScope));
+			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(p), globalScope));
+			globalScope.put("map", globalScope, Context.toObject(new ScriptField(p.getMap()), globalScope));
+			globalScope.put("party", globalScope, p.getParty() == null ? null : Context.toObject(new ScriptParty(p.getParty()), globalScope));
 			cx.evaluateReader(globalScope, reader, "portals/" + scriptName + ".js", 1, null);
 			reader.close();
 			return portalManager.warped();

@@ -44,11 +44,11 @@
 let MAPLE_COIN = 4001129;
 
 function giveReward(rewardpair) {
-	if (!npc.playerHasItem(MAPLE_COIN, rewardpair[1]) || !npc.playerCanHoldItem(rewardpair[0], 1)) {
+	if (!player.hasItem(MAPLE_COIN, rewardpair[1]) || !player.canGainItem(rewardpair[0], 1)) {
 		npc.sayNext("Check and see if you are either lacking #b#t4001129##k or if your Equipment inventory is full.");
 	} else {
-		npc.takeItem(MAPLE_COIN, rewardpair[1]);
-		npc.giveItem(rewardpair[0], 1);
+		player.loseItem(MAPLE_COIN, rewardpair[1]);
+		player.gainItem(rewardpair[0], 1);
 	}
 }
 
@@ -74,11 +74,11 @@ let selection = npc.askMenu("What would you like to do? If you have never partic
 
 switch (selection) {
 	case 0:
-		if (npc.getPlayerLevel() > 50 || npc.getPlayerLevel() < 30) {
+		if (player.getLevel() > 50 || player.getLevel() < 30) {
 			npc.say("I'm sorry, but only the users within Level 30~50 may participate in Monster Carnival.");
 		} else {
 			npc.rememberMap("MONSTER_CARNIVAL");
-			npc.warpPlayer(980000000, "st00");
+			player.changeMap(980000000, "st00");
 		}
 		break;
 	case 1: {

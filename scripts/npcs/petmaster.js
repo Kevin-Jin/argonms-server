@@ -363,8 +363,8 @@ switch (selection) {
 		npc.sayNext("In order to transfer the pet ability points, closeness and level, Pet AP Reset Scroll is required. If you take this\r\n"
 				+ "scroll to Mar the Fairy in Ellinia, she will transfer the level and closeness of the pet to another one. I am especially giving it to you because I can feel your heart for your pet. However, I can't give this out for free. I can give you this book for 250,000 mesos. Oh, I almost forgot! Even if you have this book, it is no use if you do not have a new pet to transfer the Ability points.");
 		if (npc.askYesNo("250,000 mesos will be deducted. Do you really want to buy?") == 1)
-			if (npc.playerHasMesos(250000) && npc.giveItem(4160011, 1))
-				npc.takeMesos(250000);
+			if (player.hasMesos(250000) && player.gainItem(4160011, 1))
+				player.loseMesos(250000);
 			else
 				npc.say("Please check if your inventory has empty slot or you don't have enough mesos.");
 		break;

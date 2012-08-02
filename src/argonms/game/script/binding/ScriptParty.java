@@ -18,8 +18,17 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.net.external.ClientSession;
+import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
+import argonms.game.net.external.GamePackets;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -36,7 +45,7 @@ public class ScriptParty {
 		return party.getLeader();
 	}
 
-	public byte getMapPartyMembersCount(int mapId, short minLevel, short maxLevel) {
+	public byte getMembersCount(int mapId, short minLevel, short maxLevel) {
 		byte count = 0;
 		party.lockRead();
 		try {
@@ -47,5 +56,72 @@ public class ScriptParty {
 			party.unlockRead();
 		}
 		return count;
+	}
+
+	public byte numberOfMembersInChannel() {
+		party.lockRead();
+		try {
+			return (byte) party.getMembersInLocalChannel().size();
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public void gainExp(int gain) {
+		party.lockRead();
+		try {
+			for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+				member.getPlayer().gainExp((int) Math.min((long) gain * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public void loseItem(int itemId) {
+		for (PartyList.LocalMember member : party.getMembersInLocalChannel()) {
+			GameCharacter player = member.getPlayer();
+			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
+			short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
+			if (type == Inventory.InventoryType.EQUIP)
+				quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
+
+			if (quantity > 0) {
+				Inventory inv = player.getInventory(type);
+				ClientSession<?> ses = player.getClient().getSession();
+				InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(player, itemId, quantity);
+				short pos;
+				InventorySlot slot;
+				for (Short s : changedSlots.modifiedSlots) {
+					pos = s.shortValue();
+					slot = inv.get(pos);
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+				}
+				for (Short s : changedSlots.addedOrRemovedSlots) {
+					pos = s.shortValue();
+					ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+				}
+				ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
+				player.itemCountChanged(itemId);
+			}
+		}
+	}
+
+	public int[] getMembersIdsInMap(int mapId) {
+		int[] members = new int[6];
+		int size = 0;
+		party.lockRead();
+		try {
+			for (GameCharacter c : party.getLocalMembersInMap(mapId))
+				members[size++] = c.getId();
+		} finally {
+			party.unlockRead();
+		}
+		int[] trimmed = new int[size];
+		System.arraycopy(members, 0, trimmed, 0, size);
+		return trimmed;
+	}
+
+	public Point positionOf(int playerId) {
+		return ((PartyList.LocalMember) party.getMember(playerId)).getPlayer().getPosition();
 	}
 }

@@ -34,7 +34,7 @@ function groupThousands(x) {
 	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-if (npc.getPlayerLevel() < 40) {
+if (player.getLevel() < 40) {
 	npc.say("I can make rare, valuable items but unfortunately I can't make it to a stranger like you.");
 } else {
 	npc.sayNext("Yeah... I am the master alchemist of the fairies. But the fairies are not supposed to be in contact with a human being for a long period of time... A strong person like you will be fine, though. If you get me the materials, I'll make you a special item.");
@@ -74,11 +74,11 @@ if (npc.getPlayerLevel() < 40) {
 	} else if (selection == 1) {
 		let okay = true;
 		for (let i = 0; i < mats.length && okay; i++)
-			if (!npc.playerHasItem(mats[i], 1))
+			if (!player.hasItem(mats[i], 1))
 				okay = false;
-		if (!npc.playerHasMesos(cost))
+		if (!player.hasMesos(cost))
 			okay = false;
-		if (!npc.playerCanHoldItem(item, 1))
+		if (!player.canGainItem(item, 1))
 			okay = false;
 		if (!okay) {
 			if (item != 4031042) {
@@ -93,10 +93,10 @@ if (npc.getPlayerLevel() < 40) {
 				npc.sayNext(str + "and #b1 #t" + mats[mats.length - 1] + "##k ready for me.");
 			}
 		} else {
-			npc.takeMesos(cost);
+			player.loseMesos(cost);
 			for (let i = 0; i < mats.length; i++)
-				npc.takeItem(mats[i], 1);
-			npc.giveItem(item, 1);
+				player.loseItem(mats[i], 1);
+			player.gainItem(item, 1);
 			npc.sayNext("Ok here, take #t" + item + "#. It's well-made, probably because I'm using good materials. If you need my help down the road, feel free to come back.");
 		}
 	}
