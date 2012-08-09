@@ -55,7 +55,8 @@ public class KvjMobDataLoader extends MobDataLoader {
 		SKILL = 20,
 		BUFF = 21,
 		DELAY = 22,
-		DROPS = 23
+		DROPS = 23,
+		NO_MESOS = 24
 	;
 
 	private String dataPath;
@@ -188,6 +189,9 @@ public class KvjMobDataLoader extends MobDataLoader {
 						int chance = reader.readInt();
 						stats.addItemDrop(itemid, chance);
 					}
+					break;
+				case NO_MESOS:
+					stats.setMesoDrop(0, 0, 0);
 					break;
 			}
 		}

@@ -61,10 +61,15 @@ public class EventManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			delegator = new EventManipulator(globalScope);
-			event = new ScriptEvent(channel, delegator);
+			event = new ScriptEvent(scriptName, channel, delegator, globalScope);
+
+			handlers.put(scriptName, delegator);
+			activatedEvents.put(scriptName, event);
+
 			globalScope.put("event", globalScope, Context.toObject(event, globalScope));
 			cx.evaluateReader(globalScope, reader, "events/" + scriptName + ".js", 1, null);
 			reader.close();
+
 			Object f = globalScope.get("init", globalScope);
 			if (f != Scriptable.NOT_FOUND)
 				((Function) f).call(cx, globalScope, globalScope, new Object[] { attachment });
@@ -77,8 +82,6 @@ public class EventManager {
 		} finally {
 			Context.exit();
 		}
-		handlers.put(scriptName, delegator);
-		activatedEvents.put(scriptName, event);
 		return event;
 	}
 
@@ -88,5 +91,10 @@ public class EventManager {
 
 	public EventManipulator getScriptInterface(String scriptName) {
 		return handlers.get(scriptName);
+	}
+
+	public void endScript(String scriptName) {
+		activatedEvents.remove(scriptName).stopTimers();
+		handlers.remove(scriptName).deinit();
 	}
 }

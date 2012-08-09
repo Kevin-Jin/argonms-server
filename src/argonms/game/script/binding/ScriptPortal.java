@@ -21,6 +21,7 @@ package argonms.game.script.binding;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.net.external.GameClient;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
@@ -29,8 +30,8 @@ import argonms.game.net.external.GameClient;
 public class ScriptPortal extends PlayerScriptInteraction {
 	private boolean warped;
 
-	public ScriptPortal(GameClient gameClient) {
-		super(gameClient);
+	public ScriptPortal(GameClient gameClient, Scriptable globalScope) {
+		super(gameClient, globalScope);
 		this.warped = true;
 	}
 

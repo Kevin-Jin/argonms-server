@@ -23,15 +23,19 @@ import argonms.game.character.MapMemoryVariable;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.GameChatHandler;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
 public abstract class PlayerScriptInteraction {
+	protected final Scriptable globalScope;
 	private GameClient client;
 
-	public PlayerScriptInteraction(GameClient c) {
+	public PlayerScriptInteraction(GameClient c, Scriptable globalScope) {
+		this.globalScope = globalScope;
 		this.client = c;
 	}
 
@@ -43,14 +47,12 @@ public abstract class PlayerScriptInteraction {
 		return client;
 	}
 
-	//TODO: Context.toObject
-	public ScriptEvent getEvent(String script) {
-		return GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script);
+	public Scriptable getEvent(String script) {
+		return Context.toObject(GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script), globalScope);
 	}
 
-	//TODO: Context.toObject
-	public ScriptEvent makeEvent(String script, Object attachment) {
-		return GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment);
+	public Scriptable makeEvent(String script, Object attachment) {
+		return Context.toObject(GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment), globalScope);
 	}
 
 	public void sayInChat(String message) {

@@ -41,7 +41,7 @@ public class ScriptReactor extends PlayerScriptInteraction {
 	private final Reactor reactor;
 
 	public ScriptReactor(int reactorId, Reactor reactor, GameClient client, Scriptable globalScope) {
-		super(client);
+		super(client, globalScope);
 		this.reactor = reactor;
 	}
 

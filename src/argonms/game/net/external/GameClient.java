@@ -106,8 +106,8 @@ public class GameClient extends RemoteClient {
 			if (!changingChannels)
 				player.prepareLogOff(quickCleanup);
 			if (!quickCleanup) {
-				player.disconnect();
 				GameServer.getChannel(getChannel()).removePlayer(player);
+				player.disconnect();
 			}
 			player = null;
 		}

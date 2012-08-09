@@ -42,14 +42,6 @@ if (map.getId() == 103000890) {
 		str = "Are you ready to leave this map?";
 	else
 		str = "Once you leave the map, you'll have to restart the whole quest if you want to try it again.  Do you still want to leave this map?";
-	if (npc.askYesNo(str)) {
-		//TODO: IMPLEMENT EVENT
-		let eim = npc.getEvent("kpq");
-		if (eim == null)
-			player.changeMap(103000890, "st00"); // Warp player
-		else if (party.getLeader() == player.getId())
-			eim.disbandParty();
-		else
-			eim.leftParty(player.getId());
-	}
+	if (npc.askYesNo(str) == 1)
+		player.changeMap(103000890, "st00");
 }

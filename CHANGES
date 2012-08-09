@@ -1826,12 +1826,29 @@
 	* Began a refactor of scripting APIs.
 	* Fixed syntax error in Bell's script.
 
-2012-08-22  GoldenKevin  (revision 111)
+2012-08-02  GoldenKevin  (revision 111)
 
 	* Started work on events.
 	* Finished script refactor started last revision.
 	* Fixed some more of improper usage of Rhino with regards to passing Java
 	objects into a script's scope.
+
+2012-08-09  GoldenKevin  (revision 112)
+
+	* Fixed persistent events loading before Scheduler was enabled.
+	* Added more features to script bindings and to EventManipulator. init()
+	function in event scripts now accept an attachment.
+	* Added EventManipulator field in GameCharacter.
+	* One of Cloto's lines is more GMS-like now.
+
+2012-08-09  GoldenKevin  (revision 113)
+
+	* Updated supported Kvj format to r29.
+	* Kerning City event script is fully implemented. Now I just have to
+	implement blocked portals so players can't skip stages.
+	* Fixed potential memory leak in ScriptPlayer.
+	* EventManipulator methods relating to player and party are now used. Still
+	have not added hooks for mobs.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

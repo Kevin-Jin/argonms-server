@@ -27,39 +27,44 @@ import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.external.GamePackets;
+import java.lang.ref.WeakReference;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptPlayer {
-	private GameCharacter player;
+	private WeakReference<GameCharacter> player;
 
 	public ScriptPlayer(GameCharacter player) {
-		this.player = player;
+		this.player = new WeakReference<GameCharacter>(player);
+	}
+
+	protected GameCharacter getPlayer() {
+		return player.get();
 	}
 
 	public int getId() {
-		return player.getId();
+		return getPlayer().getId();
 	}
 
 	public void gainExp(int gain) {
-		player.gainExp((int) Math.min((long) gain * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
+		getPlayer().gainExp((int) Math.min((long) gain * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
 	}
 
 	public boolean canGainItem(int itemId, int quantity) {
-		return InventoryTools.canFitEntirely(player.getInventory(InventoryTools.getCategory(itemId)), itemId, quantity, true);
+		return InventoryTools.canFitEntirely(getPlayer().getInventory(InventoryTools.getCategory(itemId)), itemId, quantity, true);
 	}
 
 	public boolean hasItem(int itemId, int quantity) {
-		return InventoryTools.hasItem(player, itemId, quantity);
+		return InventoryTools.hasItem(getPlayer(), itemId, quantity);
 	}
 
 	public boolean gainItem(int itemId, int quantity) {
 		Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-		Inventory inv = player.getInventory(type);
+		Inventory inv = getPlayer().getInventory(type);
 		if (InventoryTools.canFitEntirely(inv, itemId, quantity, true)) {
-			ClientSession<?> ses = player.getClient().getSession();
+			ClientSession<?> ses = getPlayer().getClient().getSession();
 			InventoryTools.UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
 			short pos;
 			InventorySlot slot;
@@ -74,18 +79,18 @@ public class ScriptPlayer {
 				ses.send(GamePackets.writeInventoryAddSlot(type, pos, slot));
 			}
 			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
-			player.itemCountChanged(itemId);
+			getPlayer().itemCountChanged(itemId);
 			return true;
 		}
 		return false;
 	}
 
 	public boolean loseItem(int itemId, int quantity) {
-		if (InventoryTools.hasItem(player, itemId, quantity)) {
+		if (InventoryTools.hasItem(getPlayer(), itemId, quantity)) {
 			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-			Inventory inv = player.getInventory(type);
-			ClientSession<?> ses = player.getClient().getSession();
-			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(player, itemId, quantity);
+			Inventory inv = getPlayer().getInventory(type);
+			ClientSession<?> ses = getPlayer().getClient().getSession();
+			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(getPlayer(), itemId, quantity);
 			short pos;
 			InventorySlot slot;
 			for (Short s : changedSlots.modifiedSlots) {
@@ -98,7 +103,7 @@ public class ScriptPlayer {
 				ses.send(GamePackets.writeInventoryClearSlot(type, pos));
 			}
 			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
-			player.itemCountChanged(itemId);
+			getPlayer().itemCountChanged(itemId);
 			return true;
 		}
 		return false;
@@ -106,160 +111,160 @@ public class ScriptPlayer {
 
 	public void loseItem(int itemId) {
 		Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-		short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
+		short quantity = InventoryTools.getAmountOfItem(getPlayer().getInventory(type), itemId);
 		if (type == Inventory.InventoryType.EQUIP)
-			quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
+			quantity += InventoryTools.getAmountOfItem(getPlayer().getInventory(Inventory.InventoryType.EQUIPPED), itemId);
 		if (quantity > 0)
 			loseItem(itemId, quantity);
 	}
 
 	public boolean hasMesos(int min) {
-		return player.getMesos() >= min;
+		return getPlayer().getMesos() >= min;
 	}
 
 	public void gainMesos(int gain) {
-		player.gainMesos((int) Math.min((long) gain * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
+		getPlayer().gainMesos((int) Math.min((long) gain * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
 	}
 
 	public void loseMesos(int lose) {
-		player.gainMesos(-lose, true);
+		getPlayer().gainMesos(-lose, true);
 	}
 
 	public void changeMap(int mapId) {
-		player.changeMap(mapId);
+		getPlayer().changeMap(mapId);
 	}
 
 	public void changeMap(int mapId, byte portal) {
-		player.changeMap(mapId, portal);
+		getPlayer().changeMap(mapId, portal);
 	}
 
 	public void changeMap(int mapId, String portal) {
-		changeMap(mapId, GameServer.getChannel(player.getClient().getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
+		changeMap(mapId, GameServer.getChannel(getPlayer().getClient().getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
 	}
 
 	public short getLevel() {
-		return player.getLevel();
+		return getPlayer().getLevel();
 	}
 
 	public short getJob() {
-		return player.getJob();
+		return getPlayer().getJob();
 	}
 
 	public void setJob(short newJob) {
-		player.setJob(newJob);
+		getPlayer().setJob(newJob);
 	}
 
 	public byte getGender() {
-		return player.getGender();
+		return getPlayer().getGender();
 	}
 
 	public short getHair() {
-		return player.getHair();
+		return getPlayer().getHair();
 	}
 
 	public void setHair(short newHair) {
-		player.setHair(newHair);
+		getPlayer().setHair(newHair);
 	}
 
 	public void setSkin(byte newSkin) {
-		player.setSkin(newSkin);
+		getPlayer().setSkin(newSkin);
 	}
 
 	public short getFace() {
-		return player.getEyes();
+		return getPlayer().getEyes();
 	}
 
 	public void setFace(short newEyes) {
-		player.setEyes(newEyes);
+		getPlayer().setEyes(newEyes);
 	}
 
 	public short getStr() {
-		return player.getStr();
+		return getPlayer().getStr();
 	}
 
 	public short getDex() {
-		return player.getDex();
+		return getPlayer().getDex();
 	}
 
 	public short getInt() {
-		return player.getInt();
+		return getPlayer().getInt();
 	}
 
 	public short getLuk() {
-		return player.getLuk();
+		return getPlayer().getLuk();
 	}
 
 	public void increaseMaxHp(short delta) {
-		player.setMaxHp((short) (player.getMaxHp() + delta));
-		player.gainHp(delta);
+		getPlayer().setMaxHp((short) (getPlayer().getMaxHp() + delta));
+		getPlayer().gainHp(delta);
 	}
 
 	public void increaseMaxMp(short delta) {
-		player.setMaxMp((short) (player.getMaxMp() + delta));
-		player.gainMp(delta);
+		getPlayer().setMaxMp((short) (getPlayer().getMaxMp() + delta));
+		getPlayer().gainMp(delta);
 	}
 
 	public void setHp(short newHp) {
-		player.setHp(newHp);
+		getPlayer().setHp(newHp);
 	}
 
 	public void gainEquipInventorySlots(short delta) {
-		short newCap = player.getInventory(Inventory.InventoryType.EQUIP).increaseCapacity(delta);
-		player.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.EQUIP, newCap));
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.EQUIP).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.EQUIP, newCap));
 	}
 
 	public void gainUseInventorySlots(short delta) {
-		short newCap = player.getInventory(Inventory.InventoryType.USE).increaseCapacity(delta);
-		player.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.USE, newCap));
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.USE).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.USE, newCap));
 	}
 
 	public void gainSetupInventorySlots(short delta) {
-		short newCap = player.getInventory(Inventory.InventoryType.SETUP).increaseCapacity(delta);
-		player.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.SETUP, newCap));
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.SETUP).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.SETUP, newCap));
 	}
 
 	public void gainEtcInventorySlots(short delta) {
-		short newCap = player.getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
-		player.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
 	}
 
 	public void gainSp(short gain) {
-		player.setSp((short) (player.getSp() + gain));
+		getPlayer().setSp((short) (getPlayer().getSp() + gain));
 	}
 
 	public short getSp() {
-		return player.getSp();
+		return getPlayer().getSp();
 	}
 
 	public String getName() {
-		return player.getName();
+		return getPlayer().getName();
 	}
 
 	public short getBuddyCapacity() {
-		return player.getBuddyList().getCapacity();
+		return getPlayer().getBuddyList().getCapacity();
 	}
 
 	public void gainBuddySlots(short gain) {
-		BuddyList bList = player.getBuddyList();
+		BuddyList bList = getPlayer().getBuddyList();
 		bList.increaseCapacity(gain);
-		player.getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
+		getPlayer().getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
 	}
 
 	public boolean isQuestCompleted(short questId) {
-		return player.isQuestCompleted(questId);
+		return getPlayer().isQuestCompleted(questId);
 	}
 
 	public boolean isQuestActive(short questId) {
-		return player.isQuestActive(questId);
+		return getPlayer().isQuestActive(questId);
 	}
 
 	public boolean isQuestStarted(short questId) {
-		return player.isQuestStarted(questId);
+		return getPlayer().isQuestStarted(questId);
 	}
 
 	public byte getPetCount() {
 		byte count = 0;
-		for (Pet p : player.getPets())
+		for (Pet p : getPlayer().getPets())
 			if (p != null)
 				count++;
 		return count;
