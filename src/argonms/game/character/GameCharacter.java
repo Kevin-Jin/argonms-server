@@ -63,6 +63,7 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.script.EventManipulator;
 import argonms.game.script.PartyMemberListener;
 import java.awt.Point;
 import java.lang.ref.WeakReference;
@@ -143,6 +144,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private final Map<Integer, Long> famesThisMonth;
 
 	private final List<Integer> wishList;
+
+	private EventManipulator event;
 
 	private GameCharacter () {
 		subscribers = new CopyOnWriteArrayList<PartyMemberListener>();
@@ -1627,6 +1630,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public boolean changeMap(int mapid, byte initialPortal) {
 		leaveMapRoutines();
+		if (event != null)
+			event.playerChangedMap(getId(), mapid);
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
 			map.removePlayer(this);
@@ -2179,6 +2184,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public List<Integer> getWishListSerialNumbers() {
 		return Collections.unmodifiableList(wishList);
+	}
+
+	public void setEvent(EventManipulator event) {
+		this.event = event;
 	}
 
 	@Override

@@ -57,6 +57,18 @@ public class EventManipulator {
 		}
 	}
 
+	public void playerChangedMap(int playerId, int map) {
+		Object f = globalScope.get("playerChangedMap", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId, map });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
+
 	public void timerExpired(String timerId) {
 		Object f = globalScope.get("timerExpired", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
@@ -69,12 +81,60 @@ public class EventManipulator {
 		}
 	}
 
+	public void partyDisbanded(int partyId) {
+		Object f = globalScope.get("partyDisbanded", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { partyId });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
+
+	public void partyMemberRemoved(int partyId, int playerId) {
+		Object f = globalScope.get("partyMemberRemoved", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { partyId, playerId });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
+
 	public void mobDied(int dataId, int entityId, int mapId) {
 		Object f = globalScope.get("mobDied", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
 				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
+
+	public void mobSpawned(int dataId, int entityId, int mapId) {
+		Object f = globalScope.get("mobSpawned", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
+
+	public void friendlyMobHurt(int dataId, int entityId, int mapId, int hp, int maxHp) {
+		Object f = globalScope.get("friendlyMobHurt", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId, hp, maxHp });
 			} finally {
 				Context.exit();
 			}

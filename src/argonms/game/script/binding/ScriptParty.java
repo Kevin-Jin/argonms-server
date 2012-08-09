@@ -27,17 +27,17 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptParty {
+	private final byte channel;
 	private final PartyList party;
 
-	public ScriptParty(PartyList party) {
+	public ScriptParty(byte channel, PartyList party) {
+		this.channel = channel;
 		this.party = party;
 	}
 
@@ -78,31 +78,36 @@ public class ScriptParty {
 	}
 
 	public void loseItem(int itemId) {
-		for (PartyList.LocalMember member : party.getMembersInLocalChannel()) {
-			GameCharacter player = member.getPlayer();
-			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-			short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
-			if (type == Inventory.InventoryType.EQUIP)
-				quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
+		party.lockRead();
+		try {
+			for (PartyList.LocalMember member : party.getMembersInLocalChannel()) {
+				GameCharacter player = member.getPlayer();
+				Inventory.InventoryType type = InventoryTools.getCategory(itemId);
+				short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
+				if (type == Inventory.InventoryType.EQUIP)
+					quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
 
-			if (quantity > 0) {
-				Inventory inv = player.getInventory(type);
-				ClientSession<?> ses = player.getClient().getSession();
-				InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(player, itemId, quantity);
-				short pos;
-				InventorySlot slot;
-				for (Short s : changedSlots.modifiedSlots) {
-					pos = s.shortValue();
-					slot = inv.get(pos);
-					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+				if (quantity > 0) {
+					Inventory inv = player.getInventory(type);
+					ClientSession<?> ses = player.getClient().getSession();
+					InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(player, itemId, quantity);
+					short pos;
+					InventorySlot slot;
+					for (Short s : changedSlots.modifiedSlots) {
+						pos = s.shortValue();
+						slot = inv.get(pos);
+						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+					}
+					for (Short s : changedSlots.addedOrRemovedSlots) {
+						pos = s.shortValue();
+						ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+					}
+					ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
+					player.itemCountChanged(itemId);
 				}
-				for (Short s : changedSlots.addedOrRemovedSlots) {
-					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryClearSlot(type, pos));
-				}
-				ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
-				player.itemCountChanged(itemId);
 			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -121,7 +126,37 @@ public class ScriptParty {
 		return trimmed;
 	}
 
+	//TODO: Context.toObject
 	public Point positionOf(int playerId) {
-		return ((PartyList.LocalMember) party.getMember(playerId)).getPlayer().getPosition();
+		party.lockRead();
+		try {
+			return ((PartyList.LocalMember) party.getMember(playerId)).getPlayer().getPosition();
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public void changeMap(int mapId) {
+		party.lockRead();
+		try {
+			for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+				member.getPlayer().changeMap(mapId);
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public void changeMap(int mapId, byte portal) {
+		party.lockRead();
+		try {
+			for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+				member.getPlayer().changeMap(mapId, portal);
+		} finally {
+			party.unlockRead();
+		}
+	}
+
+	public void changeMap(int mapId, String portal) {
+		changeMap(mapId, GameServer.getChannel(channel).getMapFactory().getMap(mapId).getPortalIdByName(portal));
 	}
 }

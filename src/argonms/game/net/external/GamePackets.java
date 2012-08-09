@@ -1769,6 +1769,14 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeTimer(int seconds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		lew.writeShort(ClientSendOps.CLOCK);
+		lew.writeByte((byte) 2);
+		lew.writeInt(seconds);
+		return lew.getBytes();
+	}
+
 	public static void writeMiniroomBalloon(LittleEndianWriter lew, Miniroom room) {
 		lew.writeByte(room.getMiniroomType().byteValue());
 		lew.writeInt(room.getId());

@@ -38,34 +38,36 @@ import org.mozilla.javascript.Scriptable;
 public class EventManager {
 	private static final Logger LOG = Logger.getLogger(EventManager.class.getName());
 
-	private String eventPath;
+	private final String eventPath;
+	private final byte channel;
 	private final Map<String, ScriptEvent> activatedEvents;
 	private final Map<String, EventManipulator> handlers;
 
-	public EventManager(String scriptPath, String[] activateNow) {
+	public EventManager(String scriptPath, byte channel, String[] activateNow) {
 		eventPath = scriptPath + "events" + GlobalConstants.DIR_DELIMIT;
+		this.channel = channel;
 		activatedEvents = new ConcurrentHashMap<String, ScriptEvent>();
 		handlers = new ConcurrentHashMap<String, EventManipulator>();
 		for (String script : activateNow)
-			runScript(script);
+			runScript(script, null);
 	}
 
-	public final ScriptEvent runScript(String scriptName) {
+	public final ScriptEvent runScript(String scriptName, Object attachment) {
 		ScriptEvent event = null;
 		EventManipulator delegator = null;
 		Context cx = Context.enter();
 		try {
 			FileReader reader = new FileReader(eventPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setLanguageVersion(Context.VERSION_1_7);
 			delegator = new EventManipulator(globalScope);
-			event = new ScriptEvent(delegator);
-			cx.setOptimizationLevel(-1); // must use interpreter mode
+			event = new ScriptEvent(channel, delegator);
 			globalScope.put("event", globalScope, Context.toObject(event, globalScope));
 			cx.evaluateReader(globalScope, reader, "events/" + scriptName + ".js", 1, null);
 			reader.close();
 			Object f = globalScope.get("init", globalScope);
 			if (f != Scriptable.NOT_FOUND)
-				((Function) f).call(cx, globalScope, globalScope, null);
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { attachment });
 		} catch (FileNotFoundException ex) {
 			LOG.log(Level.WARNING, "Missing event script {0}", scriptName);
 			return null;

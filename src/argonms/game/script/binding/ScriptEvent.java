@@ -19,6 +19,7 @@
 package argonms.game.script.binding;
 
 import argonms.common.util.Scheduler;
+import argonms.game.GameServer;
 import argonms.game.script.EventManipulator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,20 +29,28 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author GoldenKevin
  */
 public class ScriptEvent {
+	private final byte channel;
 	private final EventManipulator hooks;
-	private final Map<String, String> variables;
+	private final Map<String, Object> variables;
 
-	public ScriptEvent(EventManipulator hooks) {
+	public ScriptEvent(byte channel, EventManipulator hooks) {
+		this.channel = channel;
 		this.hooks = hooks;
-		variables = new ConcurrentHashMap<String, String>();
+		variables = new ConcurrentHashMap<String, Object>();
 	}
 
-	public void setVariable(String key, String value) {
+	public void setVariable(String key, Object value) {
 		variables.put(key, value);
 	}
 
-	public String getVariable(String key) {
+	//TODO: Context.toObject
+	public Object getVariable(String key) {
 		return variables.get(key);
+	}
+
+	//TODO: Context.toObject
+	public ScriptField getMap(int mapId) {
+		return new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId));
 	}
 
 	public void startTimer(final String key, int millisDelay) {

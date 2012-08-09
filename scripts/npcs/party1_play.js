@@ -184,7 +184,7 @@ function rectangleStages() {
 			// Otherwise, check for stage completed
 			let complete = eim.getVariable(stage + "stageclear");
 			if (complete != null) {
-				npc.sendNext("Please hurry on to the next stage, the portal opened!");
+				npc.sendNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 			} else { // Check for people on ropes and their positions
 				let totplayers = 0;
 				let members = party.getMembersIdsInMap(map.getId());
@@ -227,7 +227,7 @@ function rectangleStages() {
 	} else {
 		let complete = eim.getVariable(stage + "stageclear");
 		if (complete != null) {
-			npc.sayNext("Please hurry on to the next stage, the portal opened!");
+			npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 		} else {
 			npc.sayNext("Please have the party leader talk to me.");
 		}
@@ -275,7 +275,7 @@ switch (stage) {
 				// Check for stage completed
 				let complete = eim.getVariable(stage + "stageclear");
 				if (complete != null) {
-					npc.sayNext("Please hurry on to the next stage, the portal opened!");
+					npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 				} else {
 					let numPasses = party.numberOfMembersInChannel();
 					if (!player.hasItem(4001008, numPasses)) {
@@ -309,7 +309,7 @@ switch (stage) {
 			} else { // Otherwise, check for stage completed
 				let complete = eim.getVariable(stage + "stageclear");
 				if (complete != null) {
-					npc.sayNext("Please hurry on to the next stage, the portal opened!");
+					npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 				} else {
 					// Reply to player correct/incorrect response to the question they have been asked
 					let qstring = "member1st" + player.getId();
