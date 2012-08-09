@@ -39,16 +39,18 @@ public abstract class PlayerScriptInteraction {
 		client = null;
 	}
 
-	public GameClient getClient() {
+	protected GameClient getClient() {
 		return client;
 	}
 
+	//TODO: Context.toObject
 	public ScriptEvent getEvent(String script) {
 		return GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script);
 	}
 
-	public ScriptEvent makeEvent(String script) {
-		return GameServer.getChannel(client.getChannel()).getEventManager().runScript(script);
+	//TODO: Context.toObject
+	public ScriptEvent makeEvent(String script, Object attachment) {
+		return GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment);
 	}
 
 	public void sayInChat(String message) {

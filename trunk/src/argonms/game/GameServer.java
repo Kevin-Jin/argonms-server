@@ -79,6 +79,7 @@ public class GameServer implements LocalServer {
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath, scriptsPath;
+	private String[] initialEvents;
 	private boolean useNio;
 	private boolean centerConnected;
 	private final GameRegistry registry;
@@ -105,7 +106,6 @@ public class GameServer implements LocalServer {
 		int centerPort;
 		String authKey;
 		String[] chList;
-		String[] initialEvents;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.game.config.file", "game" + serverId + ".properties"));
 			prop.load(fr);
@@ -129,7 +129,8 @@ public class GameServer implements LocalServer {
 			registry.setBuffsWillCooldown(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablecooltime")));
 			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
 
-			initialEvents = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "").split(",");
+			String eventsString = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "");
+			initialEvents = eventsString.isEmpty() ? new String[0] : eventsString.split(",");
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
 			System.exit(2);
@@ -142,7 +143,7 @@ public class GameServer implements LocalServer {
 		List<Byte> localChannels = new ArrayList<Byte>(channels.size());
 		for (int i = 0; i < chList.length; i++) {
 			byte chNum = Byte.parseByte(chList[i]);
-			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")), scriptsPath, initialEvents);
+			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")));
 			channels.put(Byte.valueOf(chNum), ch);
 			localChannels.add(Byte.valueOf(chNum));
 		}
@@ -267,6 +268,8 @@ public class GameServer implements LocalServer {
 		}
 		end = System.nanoTime();
 		System.out.println("Preloaded data in " + ((end - start) / 1000000.0) + "ms.");
+		for (WorldChannel ch : channels.values())
+			ch.initializeEventManager(scriptsPath, initialEvents);
 	}
 
 	@Override

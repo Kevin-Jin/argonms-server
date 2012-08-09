@@ -36,8 +36,5 @@ if (party == null || player.getId() != party.getLeader()) {
 } else {
 	//TODO: probably want to lock between (npc.getEvent("kpq") != null) and npc.makeEvent("kpq").
 	//don't want to let two parties in at once because of a race condition!
-	npc.makeEvent("kpq");
-	party.loseItem(4001008);
-	party.loseItem(4001007);
-	player.changeMap(103000800, "st00");
+	npc.makeEvent("kpq", party);
 }

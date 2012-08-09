@@ -51,4 +51,8 @@ public class ScriptField {
 	public void soundEffect(String name) {
 		map.sendToAll(GamePackets.writeMapEffect((byte) 4, name));
 	}
+
+	public void showTimer(int seconds) {
+		map.sendToAll(GamePackets.writeTimer(seconds));
+	}
 }

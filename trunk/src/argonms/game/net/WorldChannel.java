@@ -59,18 +59,17 @@ public class WorldChannel {
 	private final byte world, channel;
 	private int port;
 	private final MapFactory mapFactory;
-	private final EventManager eventManager;
+	private EventManager eventManager;
 	private final PlayerLog<GameCharacter> storage;
 	private InterChannelCommunication worldComm;
 
-	public WorldChannel(final byte world, final byte channel, int port, String scriptPath, String[] persistentEvents) {
+	public WorldChannel(final byte world, final byte channel, int port) {
 		channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
 		queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
 		this.world = world;
 		this.channel = channel;
 		this.port = port;
 		mapFactory = new MapFactory();
-		eventManager = new EventManager(scriptPath, persistentEvents);
 		storage = new PlayerLog<GameCharacter>();
 		handler = new ClientListener<GameClient>(new ClientGamePacketProcessor(), new ClientFactory<GameClient>() {
 			@Override
@@ -103,6 +102,10 @@ public class WorldChannel {
 
 	public long getTimeStarted() {
 		return startTime;
+	}
+
+	public void initializeEventManager(String scriptPath, String[] persistentEvents) {
+		eventManager = new EventManager(scriptPath, channel, persistentEvents);
 	}
 
 	public void addPlayer(GameCharacter p) {
