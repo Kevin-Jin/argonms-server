@@ -64,16 +64,14 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	private static final Logger LOG = Logger.getLogger(ScriptNpc.class.getName());
 
 	private final int npcId;
-	private final Scriptable globalScope;
 	private final PreviousMessageCache prevs;
 	private final AtomicBoolean terminated;
 	private volatile boolean endingChat;
 	private volatile Object continuation;
 
 	public ScriptNpc(int npcId, GameClient client, Scriptable globalScope) {
-		super(client);
+		super(client, globalScope);
 		this.npcId = npcId;
-		this.globalScope = globalScope;
 		this.prevs = new PreviousMessageCache();
 		this.terminated = new AtomicBoolean(false);
 	}

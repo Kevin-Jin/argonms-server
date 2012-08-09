@@ -147,7 +147,7 @@ let prizeQtyEtc = [
 ];
 
 function clear(eim) {
-	eim.setVariable(stage + "stageclear", "true");
+	eim.setVariable(stage + "stageclear", true);
 	map.screenEffect("quest/party/clear");
 	map.soundEffect("Party1/Clear");
 	map.portalEffect("gate");
@@ -175,22 +175,22 @@ function rectangleStages() {
 	if (player.getId() == party.getLeader()) {
 		// Check for preamble
 		preamble = eim.getVariable("leader" + stages[index] + "preamble");
-		if (preamble == null) {
+		if (preamble == null || !preamble) {
 			npc.sayNext("Hi. Welcome to the " + stages[index] + " stage. Next to me, you'll see a number of " + objs[index] + ". Out of these " + objs[index] + ", #b3 are connected to the portal that sends you to the next stage#k. All you need to do is have #b3 party members find the correct " + objs[index] + " and " + verbs[index] + " on them.#k\r\nBUT, it doesn't count as an answer if you " + donts[index] + "; please be near the middle of the " + objs[index] + " to be counted as a correct answer. Also, only 3 members of your party are allowed on the " + objs[index] + ". Once they are " + verbs[index] + "ing on them, the leader of the party must #bdouble-click me to check and see if the answer's correct or not#k. Now, find the right " + objs[index] + " to " + verbs[index] + " on!");
-			eim.setVariable("leader" + stages[index] + "preamble","done");
+			eim.setVariable("leader" + stages[index] + "preamble", true);
 			let sequenceNum = Math.floor(Math.random() * combos[index].length);
-			eim.setVariable("stage" + stages[index] + "combo", sequenceNum.toString());
+			eim.setVariable("stage" + stages[index] + "combo", sequenceNum);
 		} else {
 			// Otherwise, check for stage completed
 			let complete = eim.getVariable(stage + "stageclear");
-			if (complete != null) {
-				npc.sendNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
+			if (complete != null && complete) {
+				npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 			} else { // Check for people on ropes and their positions
 				let totplayers = 0;
-				let members = party.getMembersIdsInMap(map.getId());
+				let members = eim.getVariable("members");
 				for (let i = 0; i < members.length; i++) {
 					for (let j = 0; j < objsets[index].length; j++) {
-						if (rects[index][j].contains(party.positionOf(members[i]))) {
+						if (members[i].getMapId() == map.getId() && rects[index][j].contains(members[i].getPosition())) {
 							objsets[index][j]++;
 							totplayers++;
 							break;
@@ -206,7 +206,7 @@ function rectangleStages() {
 							outstring += "\r\n" + (i + 1) + ". " + objsets[index][i];
 						npc.sayNext(outstring);
 					}
-					let combo = combos[index][parseInt(eim.getVariable("stage" + stages[index] + "combo"))];
+					let combo = combos[index][eim.getVariable("stage" + stages[index] + "combo")];
 					let testcombo = true;
 					for (let i = 0; i < objsets[index].length && testcombo; i++)
 						if (combo[i] != objsets[index][i])
@@ -226,11 +226,10 @@ function rectangleStages() {
 		}
 	} else {
 		let complete = eim.getVariable(stage + "stageclear");
-		if (complete != null) {
+		if (complete != null && complete)
 			npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
-		} else {
+		else
 			npc.sayNext("Please have the party leader talk to me.");
-		}
 	}
 }
 
@@ -268,16 +267,16 @@ switch (stage) {
 		if (player.getId() == party.getLeader()) {
 			let eim = npc.getEvent("kpq");
 			preamble = eim.getVariable("leader1stpreamble");
-			if (preamble == null) {
-				eim.setVariable("leader1stpreamble", "done");
+			if (preamble == null || !preamble) {
+				eim.setVariable("leader1stpreamble", true);
 				npc.sayNext("Hello. Welcome to the first stage. Look around and you'll see Ligators wandering around. When you defeat them, they will cough up a #bcoupon#k. Every member of the party other than the leader should talk to me, geta  question, and gather up the same number of #bcoupons#k as the answer to the question I'll give to them.\r\nIf you gather up the right amount of #bcoupons#k, I'll give the #bpass#k to that player. Once all the party members other than the leader gather up the #bpasses#k and give them to the leader, the leader will hand over the #bpasses#k to me, clearing the stage in the process. The faster you take care of the stages, the more stages you'll be able to challenge. So I suggest you take care of things quickly and swiftly. Well then, best of luck to you.");
 			} else { // Check how many they have compared to number of party members
 				// Check for stage completed
 				let complete = eim.getVariable(stage + "stageclear");
-				if (complete != null) {
+				if (complete != null && complete) {
 					npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 				} else {
-					let numPasses = party.numberOfMembersInChannel();
+					let numPasses = eim.getVariable("members").length - 1;
 					if (!player.hasItem(4001008, numPasses)) {
 						npc.sayNext("I'm sorry, but you are short on the number of passes. You need to give me the right number of passes; it should be the number of members of your party minus the leader, #b" + numPasses + " passes#k to clear the stage. Tell your party members to solve the questions, gather up the passes, and give them to you.");
 					} else {
@@ -293,27 +292,26 @@ switch (stage) {
 			let eim = npc.getEvent("kpq");
 			let pstring = "member1stpreamble" + player.getId();
 			preamble = eim.getVariable(pstring);
-			if (preamble == null) {
+			if (preamble == null || !preamble) {
 				let qstring = "member1st" + player.getId();
 				let question = eim.getVariable(qstring);
 				if (question == null) {
 					// Select a random question to ask the player.
-					let questionNum = Math.floor(Math.random() * questions.length);
-					eim.setVariable(qstring, questionNum.toString());
+					question = Math.floor(Math.random() * questions.length);
+					eim.setVariable(qstring, question);
 				}
 				npc.sayNext("Here, you need to collect #bcoupons#k by defeating the same number of Ligators as the answer to the questions asked individually.");
 				qstring = "member1st" + player.getId();
-				question = parseInt(eim.getVariable(qstring));
 				npc.sayNext("Here's the question. " + questions[question]);
-				eim.setVariable(pstring, "done");
+				eim.setVariable(pstring, true);
 			} else { // Otherwise, check for stage completed
 				let complete = eim.getVariable(stage + "stageclear");
-				if (complete != null) {
+				if (complete != null && complete) {
 					npc.sayNext("You all have cleared the quest for this stage. Use the portal to move to the next stage...");
 				} else {
 					// Reply to player correct/incorrect response to the question they have been asked
 					let qstring = "member1st" + player.getId();
-					let numcoupons = qanswers[parseInt(eim.getVariable(qstring))];
+					let numcoupons = qanswers[eim.getVariable(qstring)];
 					let qcorr = player.hasItem(4001007, numcoupons + 1);
 					let enough = false;
 					if (!qcorr) { // Not too many
@@ -327,7 +325,7 @@ switch (stage) {
 					}
 					if (!enough) {
 						qstring = "member1st" + player.getId();
-						let question = parseInt(eim.getVariable(qstring));
+						let question = eim.getVariable(qstring);
 						npc.sayNext("I'm sorry, but that is not the right answer! Please have the correct number of coupons in your inventory. Here's the question again : #b" + questions[question] + "#k");
 					}
 				}
@@ -341,8 +339,8 @@ switch (stage) {
 		break;
 	case 5:
 		let eim = npc.getEvent("kpq");
-		let stage5done = eim.getVariable("5stageclear");
-		if (stage5done == null) {
+		let complete = eim.getVariable(stage + "stageclear");
+		if (complete == null && complete) {
 			if (player.getId() == party.getLeader()) {
 				let passes = player.hasItem(4001008, 10);
 				if (passes) {

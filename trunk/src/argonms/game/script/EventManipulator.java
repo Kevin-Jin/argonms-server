@@ -140,4 +140,16 @@ public class EventManipulator {
 			}
 		}
 	}
+
+	public void deinit() {
+		Object f = globalScope.get("deinit", globalScope);
+		if (f != Scriptable.NOT_FOUND) {
+			Context cx = Context.enter();
+			try {
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { });
+			} finally {
+				Context.exit();
+			}
+		}
+	}
 }

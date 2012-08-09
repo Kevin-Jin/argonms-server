@@ -23,42 +23,64 @@ import argonms.game.GameServer;
 import argonms.game.script.EventManipulator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptEvent {
+	private final Scriptable globalScope;
+	private final String name;
 	private final byte channel;
 	private final EventManipulator hooks;
 	private final Map<String, Object> variables;
+	private final Map<String, ScheduledFuture<?>> timers;
 
-	public ScriptEvent(byte channel, EventManipulator hooks) {
+	public ScriptEvent(String scriptName, byte channel, EventManipulator hooks, Scriptable globalScope) {
+		this.globalScope = globalScope;
+		this.name = scriptName;
 		this.channel = channel;
 		this.hooks = hooks;
 		variables = new ConcurrentHashMap<String, Object>();
+		timers = new ConcurrentHashMap<String, ScheduledFuture<?>>();
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public void setVariable(String key, Object value) {
 		variables.put(key, value);
 	}
 
-	//TODO: Context.toObject
-	public Object getVariable(String key) {
-		return variables.get(key);
+	public Scriptable getVariable(String key) {
+		Object value = variables.get(key);
+		return value == null ? null : Context.toObject(value, globalScope);
 	}
 
-	//TODO: Context.toObject
-	public ScriptField getMap(int mapId) {
-		return new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId));
+	public Scriptable getMap(int mapId) {
+		return Context.toObject(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId)), globalScope);
 	}
 
 	public void startTimer(final String key, int millisDelay) {
-		Scheduler.getInstance().runAfterDelay(new Runnable() {
+		timers.put(key, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {
+				timers.remove(key);
 				hooks.timerExpired(key);
 			}
-		}, millisDelay);
+		}, millisDelay));
+	}
+
+	public void stopTimers() {
+		for (ScheduledFuture<?> future : timers.values())
+			future.cancel(false);
+	}
+
+	public void destroyEvent() {
+		GameServer.getChannel(channel).getEventManager().endScript(name);
 	}
 }

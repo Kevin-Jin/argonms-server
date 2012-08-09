@@ -26,19 +26,22 @@ import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.net.external.GamePackets;
-import java.awt.Point;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptParty {
+	private final Scriptable globalScope;
 	private final byte channel;
 	private final PartyList party;
 
-	public ScriptParty(byte channel, PartyList party) {
+	public ScriptParty(byte channel, PartyList party, Scriptable globalScope) {
 		this.channel = channel;
 		this.party = party;
+		this.globalScope = globalScope;
 	}
 
 	public int getLeader() {
@@ -111,31 +114,6 @@ public class ScriptParty {
 		}
 	}
 
-	public int[] getMembersIdsInMap(int mapId) {
-		int[] members = new int[6];
-		int size = 0;
-		party.lockRead();
-		try {
-			for (GameCharacter c : party.getLocalMembersInMap(mapId))
-				members[size++] = c.getId();
-		} finally {
-			party.unlockRead();
-		}
-		int[] trimmed = new int[size];
-		System.arraycopy(members, 0, trimmed, 0, size);
-		return trimmed;
-	}
-
-	//TODO: Context.toObject
-	public Point positionOf(int playerId) {
-		party.lockRead();
-		try {
-			return ((PartyList.LocalMember) party.getMember(playerId)).getPlayer().getPosition();
-		} finally {
-			party.unlockRead();
-		}
-	}
-
 	public void changeMap(int mapId) {
 		party.lockRead();
 		try {
@@ -158,5 +136,24 @@ public class ScriptParty {
 
 	public void changeMap(int mapId, String portal) {
 		changeMap(mapId, GameServer.getChannel(channel).getMapFactory().getMap(mapId).getPortalIdByName(portal));
+	}
+
+	public Scriptable getLocalMembers() {
+		Object[] members;
+		party.lockRead();
+		try {
+			members = new Object[party.getMembersInLocalChannel().size()];
+			int i = 0;
+			for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+				members[i++] = Context.toObject(new ScriptPartyMember(member, globalScope), globalScope);
+		} finally {
+			party.unlockRead();
+		}
+		Context cx = Context.enter();
+		try {
+			return cx.newArray(globalScope, members);
+		} finally {
+			Context.exit();
+		}
 	}
 }

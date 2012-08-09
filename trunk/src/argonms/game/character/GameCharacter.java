@@ -1080,6 +1080,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void died() {
 		getClient().getSession().send(GamePackets.writeEnableActions());
+		if (event != null)
+			event.playerDied(getId());
 		//TODO: lose exp
 	}
 
@@ -1678,12 +1680,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void prepareChannelChange() {
+		if (event != null)
+			event.playerDisconnected(getId());
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
 		prepareExitChannel(false);
 	}
 
 	public void prepareLogOff(boolean quickCleanup) {
+		if (event != null)
+			event.playerDisconnected(getId());
 		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
@@ -1699,6 +1705,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void setParty(PartyList party) {
+		if (party == null && event != null)
+			if (this.party.getLeader() == getId())
+				event.partyDisbanded(this.party.getId());
+			else
+				event.partyMemberRemoved(this.party.getId(), getId());
 		this.party = party;
 	}
 
