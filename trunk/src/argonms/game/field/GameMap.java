@@ -84,8 +84,9 @@ public class GameMap {
 	private final Map<EntityType, EntityPool> entPools;
 	private final LockableList<MonsterSpawn> monsterSpawns;
 	private final AtomicInteger monsters;
-	private ConcurrentHashMap<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
-	private ConcurrentHashMap<GameCharacter, ScheduledFuture<?>> decHpTasks;
+	private final Map<String, String> portalOverrides;
+	private Map<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
+	private Map<GameCharacter, ScheduledFuture<?>> decHpTasks;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
@@ -94,6 +95,7 @@ public class GameMap {
 			entPools.put(type, new EntityPool());
 		this.monsterSpawns = new LockableList<MonsterSpawn>(new LinkedList<MonsterSpawn>());
 		this.monsters = new AtomicInteger(0);
+		this.portalOverrides = new ConcurrentHashMap<String, String>();
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
 				case 'm': {
@@ -668,8 +670,10 @@ public class GameMap {
 	}
 
 	private boolean enterPortal(GameCharacter p, PortalData portal) {
-		String scriptName = portal.getScript();
-		if (scriptName != null && scriptName.length () != 0) {
+		String scriptName = portalOverrides.get(portal.getPortalName());
+		if (scriptName == null || scriptName.isEmpty())
+			scriptName = portal.getScript();
+		if (scriptName != null && !scriptName.isEmpty()) {
 			return PortalScriptManager.getInstance().runScript(scriptName, p);
 		} else {
 			int tm = portal.getTargetMapId();
@@ -681,6 +685,14 @@ public class GameMap {
 			}
 		}
 		return false;
+	}
+
+	public void overridePortal(String portalName, String script) {
+		portalOverrides.put(portalName, script);
+	}
+
+	public void revertPortal(String portalName) {
+		portalOverrides.remove(portalName);
 	}
 
 	public Point calcPointBelow(Point initial) {

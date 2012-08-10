@@ -48,7 +48,8 @@ public abstract class PlayerScriptInteraction {
 	}
 
 	public Scriptable getEvent(String script) {
-		return Context.toObject(GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script), globalScope);
+		ScriptEvent event = GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script);
+		return event == null ? null : Context.toObject(event, globalScope);
 	}
 
 	public Scriptable makeEvent(String script, Object attachment) {

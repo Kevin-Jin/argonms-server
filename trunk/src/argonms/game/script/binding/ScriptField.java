@@ -55,4 +55,12 @@ public class ScriptField {
 	public void showTimer(int seconds) {
 		map.sendToAll(GamePackets.writeTimer(seconds));
 	}
+
+	public void overridePortal(String portalName, String script) {
+		map.overridePortal(portalName, script);
+	}
+
+	public void revertPortal(String portalName) {
+		map.revertPortal(portalName);
+	}
 }

@@ -1850,6 +1850,14 @@
 	* EventManipulator methods relating to player and party are now used. Still
 	have not added hooks for mobs.
 
+2012-08-09  GoldenKevin  (revision 114)
+
+	* Cleaned up Cloto's script. kpq.js renamed to party1.js.
+	* Fixed NullPointerException when Kerning PQ times out, error when any party
+	member but the leader leaves while in the PQ, and TypeError when a party
+	tries entering when another party is still inside.
+	* Temporary implementation for portal blocking in Kerning PQ.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
