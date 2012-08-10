@@ -26,6 +26,7 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -37,6 +38,41 @@ public class GamePlayerMiscHandler {
 		BINDING_CHANGE_AUTO_HP_POT = 1,
 		BINDING_CHANGE_AUTO_MP_POT = 2
 	;
+
+	public static void handleChair(LittleEndianReader packet, GameClient gc) {
+		short chairId = packet.readShort();
+		GameCharacter p = gc.getPlayer();
+		if (chairId == -1) {
+			//cancel chair (item or map bench)
+			if (p.getItemChair() != 0) {
+				p.setItemChair(0);
+				p.getMap().sendToAll(writeShowChair(gc.getPlayer().getId(), 0));
+			} else {
+				p.setMapChair((short) 0);
+			}
+			gc.getSession().send(writeRiseFromChair());
+		} else {
+			//sit on map bench
+			if (p.getMap().isChairOccupied(chairId)) {
+				gc.getSession().send(writeRiseFromChair());
+				return;
+			}
+			p.setMapChair(chairId);
+			gc.getSession().send(writeSitOnChair(chairId));
+		}
+	}
+
+	public static void handleItemChair(LittleEndianReader packet, GameClient gc) {
+		int itemId = packet.readInt();
+		GameCharacter p = gc.getPlayer();
+		if (!p.getInventory(InventoryType.SETUP).hasItem(itemId, 1)) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use chair without owning the item");
+			return;
+		}
+		p.setItemChair(itemId);
+		p.getMap().sendToAll(writeShowChair(gc.getPlayer().getId(), itemId));
+		gc.getSession().send(GamePackets.writeEnableActions());
+	}
 
 	public static void handleReplenishHpMp(LittleEndianReader packet, GameClient gc) {
 		long now = System.currentTimeMillis();
@@ -119,6 +155,29 @@ public class GamePlayerMiscHandler {
 				break;
 			}
 		}
+	}
+
+	private static byte[] writeSitOnChair(short chairId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
+		lew.writeShort(ClientSendOps.CHAIR);
+		lew.writeBool(true);
+		lew.writeShort(chairId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeRiseFromChair() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+		lew.writeShort(ClientSendOps.CHAIR);
+		lew.writeBool(false);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeShowChair(int pId, int itemId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.ITEM_CHAIR);
+		lew.writeInt(pId);
+		lew.writeInt(itemId);
+		return lew.getBytes();
 	}
 
 	private static byte[] writeExpressionChange(GameCharacter p, int expression) {

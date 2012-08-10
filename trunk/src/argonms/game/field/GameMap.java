@@ -85,6 +85,7 @@ public class GameMap {
 	private final LockableList<MonsterSpawn> monsterSpawns;
 	private final AtomicInteger monsters;
 	private final Map<String, String> portalOverrides;
+	private final Set<Short> occupiedChairs;
 	private Map<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
 	private Map<GameCharacter, ScheduledFuture<?>> decHpTasks;
 
@@ -96,6 +97,7 @@ public class GameMap {
 		this.monsterSpawns = new LockableList<MonsterSpawn>(new LinkedList<MonsterSpawn>());
 		this.monsters = new AtomicInteger(0);
 		this.portalOverrides = new ConcurrentHashMap<String, String>();
+		this.occupiedChairs = Collections.newSetFromMap(new ConcurrentHashMap<Short, Boolean>());
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
 				case 'm': {
@@ -768,6 +770,18 @@ public class GameMap {
 
 	public List<MapEntity> getMapEntitiesInRect(Rectangle box) {
 		return getMapEntitiesInRect(box, EnumSet.allOf(EntityType.class));
+	}
+
+	public boolean isChairOccupied(short chairId) {
+		return occupiedChairs.contains(Short.valueOf(chairId));
+	}
+
+	public void occupyChair(short chairId) {
+		occupiedChairs.add(Short.valueOf(chairId));
+	}
+
+	public void leaveChair(short chairId) {
+		occupiedChairs.remove(Short.valueOf(chairId));
 	}
 
 	private class MonsterSpawn implements Comparable<MonsterSpawn> {

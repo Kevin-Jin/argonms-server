@@ -31,6 +31,7 @@ import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.IInventory;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
@@ -122,6 +123,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private volatile int mesos;
 	private StorageInventory storage;
+	private int itemChair;
+	private short mapChair;
 
 	private final ConcurrentMap<Byte, KeyBinding> bindings;
 	private final List<SkillMacro> skillMacros;
@@ -1082,7 +1085,31 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getClient().getSession().send(GamePackets.writeEnableActions());
 		if (event != null)
 			event.playerDied(getId());
-		//TODO: lose exp
+
+		byte lossPercent;
+		Inventory inv = getInventory(InventoryType.CASH);
+		if (PlayerJob.isBeginner(getJob()) || getLevel() == 200) {
+			lossPercent = 0;
+		} else if (inv.hasItem(5130000, 1)) { //safety charm
+			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, 5130000, 1);
+			for (Short s : changedSlots.modifiedSlots)
+				getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.CASH, s.shortValue(), inv.get(s.shortValue())));
+			for (Short s : changedSlots.addedOrRemovedSlots)
+				getClient().getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.CASH, s.shortValue()));
+			getClient().getSession().send(GamePackets.writeSelfCharmEffect((short) Math.min(0xFF, InventoryTools.getAmountOfItem(inv, 5130000)), (short) 99));
+			itemCountChanged(5130000);
+			lossPercent = 0;
+		} else if (map.getStaticData().reducedExpLoss()) {
+			lossPercent = 1;
+		} else if (PlayerJob.isThief(getJob())) {
+			lossPercent = 5;
+		} else if (PlayerJob.isMage(getJob())) {
+			lossPercent = 7;
+		} else {
+			lossPercent = 10;
+		}
+		if (lossPercent != 0)
+			setExp(Math.max(0, exp - (int) ((long) ExpTables.getForLevel(getLevel()) * lossPercent / 100)));
 	}
 
 	private void updateMaxHp(short newMax) {
@@ -1612,8 +1639,20 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return 0;
 	}
 
-	public int getChair() {
-		return 0;
+	public int getItemChair() {
+		return itemChair;
+	}
+
+	public void setItemChair(int itemId) {
+		itemChair = itemId;
+	}
+
+	public void setMapChair(short chairId) {
+		if (chairId == 0)
+			map.leaveChair(mapChair);
+		else
+			map.occupyChair(chairId);
+		mapChair = chairId;
 	}
 
 	public boolean changeMap(int mapid) {
@@ -1625,6 +1664,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			miniroom.leaveRoom(this);
 			miniroom = null;
 		}
+		if (mapChair != 0)
+			map.leaveChair(mapChair);
 		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
 		if (v != null)
 			SkillTools.cancelBuffSkill(this, v.getSource());

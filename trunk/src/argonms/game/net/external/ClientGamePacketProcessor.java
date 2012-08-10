@@ -67,6 +67,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.MOVE_PLAYER:
 				GameMovementHandler.handleMovePlayer(reader, gc);
 				break;
+			case ClientRecvOps.CHAIR:
+				GamePlayerMiscHandler.handleChair(reader, gc);
+				break;
+			case ClientRecvOps.USE_CHAIR_ITEM:
+				GamePlayerMiscHandler.handleItemChair(reader, gc);
+				break;
 			case ClientRecvOps.MELEE_ATTACK:
 				DealDamageHandler.handleMeleeAttack(reader, gc);
 				break;
