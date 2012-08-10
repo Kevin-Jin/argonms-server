@@ -549,6 +549,18 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeSelfCharmEffect(short charmsLeft, short daysLeft) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte(StatusEffectTools.SAFETY_CHARM);
+		lew.writeBool(true);
+		lew.writeByte((byte) charmsLeft);
+		lew.writeByte((byte) daysLeft);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowSelfQuestEffect() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
 
@@ -1164,7 +1176,7 @@ public class GamePackets {
 		CommonPackets.writeAvatar(lew, p, false);
 		lew.writeInt(0);
 		lew.writeInt(p.getItemEffect());
-		lew.writeInt(p.getChair());
+		lew.writeInt(p.getItemChair());
 		lew.writePos(p.getPosition());
 		lew.writeByte(p.getStance());
 		lew.writeShort(p.getFoothold());

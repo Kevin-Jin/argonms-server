@@ -1866,6 +1866,12 @@
 
 	* Added rest of Sleepywood area NPCs.
 
+2012-08-10  GoldenKevin  (revision 117)
+
+	* Updated supported Kvj format to r30.
+	* Implemented chairs
+	* Implemented EXP loss.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

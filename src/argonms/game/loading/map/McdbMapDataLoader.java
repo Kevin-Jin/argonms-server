@@ -112,6 +112,7 @@ public class McdbMapDataLoader extends MapDataLoader {
 	private void doWork(ResultSet rs, int mapid, MapStats stats, Connection con) throws SQLException {
 		stats.setReturnMap(rs.getInt(6));
 		stats.setForcedReturn(rs.getInt(7));
+		stats.setFieldLimit(rs.getInt(9));
 		stats.setDecHp(rs.getInt(10));
 		stats.setProtectItem(rs.getInt(11));
 		stats.setMobRate(rs.getFloat(16));

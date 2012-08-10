@@ -41,6 +41,7 @@ public class StatusEffectTools {
 		ITEM_GAIN = 3,
 		PET_LVL_UP = 3,
 		DRAGON_BLOOD = 5,
+		SAFETY_CHARM = 6,
 		JOB_ADVANCEMENT = 8,
 		QUEST = 9,
 		MOB_BUFF = 11

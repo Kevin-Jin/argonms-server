@@ -38,6 +38,12 @@ public class MapStats {
 	private boolean everlast;
 	private boolean boat;
 	private int forcedReturn;
+	/**
+	 * 19-bit bit field, with the flags (from most significant to least significant bits):
+	 * (?)(?)(?)(?)(?)(?)(?)(chalkboard)(dropDown)(potionUse)(mount)(minigames)(vipRock)(regularExpLoss)(channelSwitching)(mysticDoor)(summoningBag)(movementSkills)(jump)
+	 * when a bit is set, that functionality is disabled on the map.
+	 */
+	private int fieldLimit;
 	private int protectItem;
 	private int decHp;
 	private int timeLimit;
@@ -67,6 +73,10 @@ public class MapStats {
 
 	protected void setMobRate(float rate) {
 		this.monsterRate = rate;
+	}
+
+	protected void setFieldLimit(int bitset) {
+		this.fieldLimit = bitset;
 	}
 
 	protected void setDecHp(int dec) {
@@ -135,6 +145,10 @@ public class MapStats {
 
 	public float getMobRate() {
 		return monsterRate;
+	}
+
+	public boolean reducedExpLoss() {
+		return isTown() || (fieldLimit & 0x20) != 0; //regularExpLoss flag
 	}
 
 	public int getDecHp() {

@@ -37,17 +37,18 @@ public class KvjMapDataLoader extends MapDataLoader {
 		RETURN_MAP = 2,
 		FORCED_RETURN = 3,
 		MOB_RATE = 4,
-		DEC_HP = 5,
-		TIME_LIMIT = 6,
-		PROTECT_ITEM = 7,
-		EVERLAST = 8,
-		LIFE = 9,
-		AREA = 10,
-		CLOCK = 11,
-		BOAT = 12,
-		REACTOR = 13,
-		FOOTHOLD = 14,
-		PORTAL = 15
+		FIELD_LIMIT = 5,
+		DEC_HP = 6,
+		TIME_LIMIT = 7,
+		PROTECT_ITEM = 8,
+		EVERLAST = 9,
+		LIFE = 10,
+		AREA = 11,
+		CLOCK = 12,
+		BOAT = 13,
+		REACTOR = 14,
+		FOOTHOLD = 15,
+		PORTAL = 16
 	;
 
 	private String dataPath;
@@ -119,6 +120,9 @@ public class KvjMapDataLoader extends MapDataLoader {
 					break;
 				case MOB_RATE:
 					stats.setMobRate(reader.readFloat());
+					break;
+				case FIELD_LIMIT:
+					stats.setFieldLimit(reader.readInt());
 					break;
 				case DEC_HP:
 					stats.setDecHp(reader.readInt());
