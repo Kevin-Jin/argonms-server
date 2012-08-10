@@ -17,17 +17,20 @@
  */
 
 /**
- * Louis (NPC 1032004)
- * Hidden Street: The Forest of Patience <Step 1> (Map 101000100),
- *   Hidden Street: The Forest of Patience <Step 2> (Map 101000101),
- *   Hidden Street: The Forest of Patience <Step 3> (Map 101000102),
- *   Hidden Street: The Forest of Patience <Step 4> (Map 101000103),
- *   Hidden Street: The Forest of Patience <Step 5> (Map 101000104)
+ * a pile of pink flowers (NPC 1063000)
+ * Hidden Street: The Deep Forest of Patience <Step 2> (Map 105040311)
  *
- * Forfeits Sabitrama jump quests.
+ * Completes John's Pink Flower Basket (Quest 2052) and gives mineral ores
+ * as a reward if the quest is completed and the player successfully reached the
+ * end.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.askYesNo("Would you like to return to Ellinia?") == 1)
-	player.changeMap(101000000);
+if (player.isQuestActive(2052)) {
+	player.gainItem(4031025, 10);
+} else {
+	let rewards = [4010003, 4010000, 4010002, 4010005, 4010004, 4010001];
+	player.gainItem(rewards[Math.floor(Math.random() * rewards.length)], 2);
+}
+player.changeMap(105040300);

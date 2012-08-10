@@ -21,6 +21,7 @@
  * Victoria Road: Subway Ticketing Booth (Map 103000100)
  *
  * Sells tickets to Kerning City subway construction sites.
+ * Helper NPC for Shumi's jump quests.
  *
  * @author GoldenKevin (content from Vana r3171)
  */
