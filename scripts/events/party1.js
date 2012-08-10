@@ -34,6 +34,7 @@ function init(attachment) {
 	party.loseItem(4001007);
 	party.changeMap(103000800, "st00");
 	members = party.getLocalMembers();
+
 	event.getMap(103000800).showTimer(30 * 60);
 	event.startTimer("kick", 30 * 60 * 1000);
 
@@ -41,6 +42,9 @@ function init(attachment) {
 
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(event);
+
+	for (let stage = 1; stage <= 4; stage++)
+		event.getMap(103000800 - 1 + stage).overridePortal("next00", "party1");
 }
 
 function playerDisconnected(playerId) {
@@ -95,8 +99,9 @@ function partyMemberRemoved(partyId, playerId) {
 	for (let i = 0; i < members.length; i++) {
 		if (members[i].getId() == playerId) {
 			members[i].changeMap(EXIT_MAP, "st00");
-			members[i].setEvent(null);
-			members.splice(i, 1);
+			//assert members[i].setEvent(null) abd members.splice(i, 1) was
+			//already called when playerChangedMap(playerId, EXIT_MAP) was
+			//called by Java
 			break;
 		}
 	}
@@ -107,12 +112,16 @@ function timerExpired(key) {
 		case "kick":
 			for (let i = 0; i < members.length; i++)
 				members[i].changeMap(EXIT_MAP, "st00");
-			event.destroyEvent();
+			//assert event.destroyEvent() was already called when
+			//playerChangedMap(leader, EXIT_MAP) was called by Java
 			break;
 	}
 }
 
 function deinit() {
+	for (let stage = 1; stage <= 4; stage++)
+		event.getMap(103000800 - 1 + stage).revertPortal("next00");
+
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(null);
 }
