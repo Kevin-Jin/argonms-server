@@ -222,6 +222,17 @@ public class PartyList {
 	}
 
 	/**
+	 * This PartyList must be at least read locked when this method is called.
+	 * @return 
+	 */
+	public byte getMembersCount() {
+		byte total = (byte) localMembers.size();
+		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
+			total += channel.size();
+		return total;
+	}
+
+	/**
 	 * This PartyList must be at least read locked while the returned Collection is in scope.
 	 * @return 
 	 */

@@ -61,6 +61,15 @@ public class ScriptParty {
 		return count;
 	}
 
+	public byte getMembersCount() {
+		party.lockRead();
+		try {
+			return party.getMembersCount();
+		} finally {
+			party.unlockRead();
+		}
+	}
+
 	public byte numberOfMembersInChannel() {
 		party.lockRead();
 		try {
