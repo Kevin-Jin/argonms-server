@@ -26,8 +26,8 @@
  *   Line 3 Construction Site: B3 <Area 2> (Map 103000907),
  *   Line 3 Construction Site: B3 <Area 3> (Map 103000908)
  *
- * Exit sign in Kerning City subway constructions sites, to forfeit Shumi's jump
- * quests.
+ * Exit sign in Kerning City subway constructions sites.
+ * Forfeits Shumi's jump quests.
  *
  * @author GoldenKevin (content from Vana r3171)
  */

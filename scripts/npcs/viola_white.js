@@ -17,17 +17,20 @@
  */
 
 /**
- * Louis (NPC 1032004)
- * Hidden Street: The Forest of Patience <Step 1> (Map 101000100),
- *   Hidden Street: The Forest of Patience <Step 2> (Map 101000101),
- *   Hidden Street: The Forest of Patience <Step 3> (Map 101000102),
- *   Hidden Street: The Forest of Patience <Step 4> (Map 101000103),
- *   Hidden Street: The Forest of Patience <Step 5> (Map 101000104)
+ * a pile of white flowers (NPC 1063002)
+ * Hidden Street: The Deep Forest of Patience <Step 7> (Map 105040316)
  *
- * Forfeits Sabitrama jump quests.
+ * Completes John's Last Present (Quest 2054) and gives rare jewel or mineral
+ * ores as a reward if the quest is completed and the player successfully
+ * reached the end.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-if (npc.askYesNo("Would you like to return to Ellinia?") == 1)
-	player.changeMap(101000000);
+if (player.isQuestActive(2054)) {
+	player.gainItem(4031028, 30);
+} else {
+	let rewards = [4020007, 4020008, 4010006];
+	player.gainItem(rewards[Math.floor(Math.random() * rewards.length)], 2);
+}
+player.changeMap(105040300);
