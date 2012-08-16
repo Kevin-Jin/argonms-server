@@ -19,7 +19,7 @@
 /**
  * advice03
  * (Somewhere in Maple Island...)
- * 
+ *
  * Gives an hint to new players on movement.
  *
  * @author GoldenKevin

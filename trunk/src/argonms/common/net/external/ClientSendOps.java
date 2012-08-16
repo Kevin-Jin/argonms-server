@@ -60,6 +60,7 @@ public final class ClientSendOps {
 		CHANGE_MAP = 0x5C,
 		MTS_OPEN = 0x5D,
 		CS_OPEN = 0x5E,
+		BLOCK_PORTAL = 0x61,
 		SHOW_EQUIP_EFFECT = 0x63,
 		PRIVATE_CHAT = 0x64,
 		WHISPER = 0x65,

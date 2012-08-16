@@ -17,13 +17,14 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market03
+ * El Nath: El Nath Market (Map 211000100)
  *
- * Gives an hint to new players on movement.
+ * El Nath Free Market portal.
+ * Warps players from El Nath to Free Market.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+portal.rememberMap("FREE_MARKET");
+player.changeMap(910000000, "out00");

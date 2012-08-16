@@ -19,7 +19,7 @@
 /**
  * advice04
  * Maple Road: Entrance - Mushroom Town Training Camp (Map 0)
- * 
+ *
  * Gives an hint to new players on advancing to the next map.
  *
  * @author GoldenKevin

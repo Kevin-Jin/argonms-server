@@ -26,4 +26,6 @@
  * @author GoldenKevin
  */
 
-//TODO: get GMS-like conversation
+//TODO: find why this doesn't start the quest. probably some packet we have to
+//send to the client to signal that a pet is dead.
+player.startQuest(2049, npc.getNpcId());

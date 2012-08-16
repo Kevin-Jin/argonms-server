@@ -19,7 +19,7 @@
 /**
  * advice01
  * (Somewhere in Maple Island...)
- * 
+ *
  * Gives an hint to new players on advancing a quest.
  *
  * @author GoldenKevin

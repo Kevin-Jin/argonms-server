@@ -88,11 +88,7 @@ switch (selection) {
 		}
 		break;
 	case 1:
-		if (player.hasItem(4031034, 1)) {
-			npc.sayNext("Hmmm... You already have #b#t4031034##k. Take that scroll to #b#p1032102##k from #m101000000#.");
-		} else if (npc.getRememberedMap("MAR_THE_FAIRY") != 999999999) {
-			//TODO: we haven't really added this to MapMemoryVariable or database enum.
-			//We need a better way of miscellaenous storing player variables...
+		if (player.isQuestActive(2049)) {
 			npc.sayNext("Are you here with the #bunmoving pet#k? That's sad to see... Huh? You're here through #b#p1032102##k? I see... #b#t4031034##k, huh... hey hey~ as if I really have that with me... what the, what's this in my pocket?");
 			npc.sayNext("Whoa!! Is... is this the #b#t4031034##k? Oh okay... #p1012005# probably borrowed my clothes and went out or something... dang it, I told him not to just take someone else's clothes and wear them... Well this isn't mine anyway... you need this?? Hmm...");
 			selection = npc.askYesNo("I don't think I can just give it to you! I need to test your knowledge on pets in general. Sucks for a pet if its owner doesn't even care for it. You need to get all these right, or you won't get the scroll. What do you think? Wanna take the test?");
@@ -108,6 +104,8 @@ switch (selection) {
 							+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
 				}
 			}
+		} else if (player.isQuestStarted(2049)) {
+			npc.sayNext("Hmmm... You already have #b#t4031034##k. Take that scroll to #b#p1032102##k from #m101000000#.");
 		} else {
 			npc.say("Hey, are you sure you've met #bMar the Fairy#k? Don't lie to me if you've never met her before because it's obvious. That wasn't even a good lie!!");
 		}

@@ -262,6 +262,14 @@ public class ScriptPlayer {
 		return getPlayer().isQuestStarted(questId);
 	}
 
+	public void startQuest(short questId, int npcId) {
+		getPlayer().startQuest(questId, npcId);
+	}
+
+	public void completeQuest(short questId, int npcId) {
+		getPlayer().completeQuest(questId, npcId, -1);
+	}
+
 	public byte getPetCount() {
 		byte count = 0;
 		for (Pet p : getPlayer().getPets())

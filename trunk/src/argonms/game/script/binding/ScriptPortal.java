@@ -21,8 +21,6 @@ package argonms.game.script.binding;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.GameChatHandler;
 import org.mozilla.javascript.Scriptable;
 
 /**
@@ -42,8 +40,7 @@ public class ScriptPortal extends PlayerScriptInteraction {
 	}
 
 	public void block() {
-		//TODO: get actual packet
-		getClient().getSession().send(GamePackets.writeServerMessage(GameChatHandler.TextStyle.RED_TEXT_CLEAR_BG.byteValue(), "The portal is currently unavailable.", (byte) -1, true));
+		getClient().getSession().send(writePortalBlocked((byte) 0x01));
 		warped = false;
 	}
 
@@ -69,6 +66,13 @@ public class ScriptPortal extends PlayerScriptInteraction {
 		lew.writeShort(height);
 		lew.writeBool(true);
 
+		return lew.getBytes();
+	}
+
+	private static byte[] writePortalBlocked(byte message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+		lew.writeShort(ClientSendOps.BLOCK_PORTAL);
+		lew.writeByte(message);
 		return lew.getBytes();
 	}
 }
