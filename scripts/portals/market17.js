@@ -17,13 +17,14 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market17
+ * The Nautilus: Mid Floor - Hallway (Map 120000200)
  *
- * Gives an hint to new players on movement.
+ * Nautilus Free Market portal.
+ * Warps players from Nautilus to Free Market.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+portal.rememberMap("FREE_MARKET");
+player.changeMap(910000000, "out00");

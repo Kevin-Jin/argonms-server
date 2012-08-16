@@ -17,13 +17,29 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market01
+ * Hidden Street: Free Market Entrance (Map 910000000)
  *
- * Gives an hint to new players on movement.
+ * Free Market portal.
+ * Warps players from Free Market to entry map/portal.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+function getPortal(map) {
+	//TODO: less hackish way of doing this - perhaps save portal as a db variable
+	//if we implement a method of entering FM from a map that doesn't have an FM
+	//portal, this fails. we probably would have to save the nearest portal to
+	//the db in such a case.
+	switch (map) {
+		case 230000000: //Aquarium FM
+			return "market01";
+		default:
+			return "market00";
+	}
+}
+
+let map = portal.resetRememberedMap("FREE_MARKET");
+if (map == 999999999)
+	map = 102000000;
+player.changeMap(map, getPortal(map));

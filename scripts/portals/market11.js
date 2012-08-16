@@ -17,13 +17,14 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market11
+ * Herb Town: Herb Town (Map 251000000)
  *
- * Gives an hint to new players on movement.
+ * Herb Town Free Market portal.
+ * Warps players from Herb Town to Free Market.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+portal.rememberMap("FREE_MARKET");
+player.changeMap(910000000, "out00");

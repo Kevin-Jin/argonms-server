@@ -19,7 +19,7 @@
 /**
  * advice07
  * Maple Road: A Split Road (Map 50000)
- * 
+ *
  * Gives an hint to new players on how to open the world map.
  *
  * @author GoldenKevin

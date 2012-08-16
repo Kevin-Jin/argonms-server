@@ -43,7 +43,7 @@ function failStage() {
 }
 
 function rectangleStages(eim, stage) {
-	let debug = true; // makes these stages clear without being correct
+	let debug = false; //see which positions are occupied
 	let stages = ["2nd", "3rd", "4th"];
 	let objs = ["ropes", "platforms", "barrels"];
 	let verbs = ["hang", "stand", "stand"];
@@ -149,17 +149,27 @@ function rectangleStages(eim, stage) {
 				// Compare to correct positions
 				// Don't even bother if there aren't three players.
 				if (totplayers == 3 || debug) {
-					if (debug) {
-						let str = "Objects contain:"
-						for (let i = 0; i < objsets[index].length; i++)
-							str += "\r\n" + (i + 1) + ". " + objsets[index][i];
-						npc.sayNext(str);
-					}
 					let combo = combos[index][eim.getVariable("stage" + stages[index] + "combo")];
 					let testcombo = true;
 					for (let i = 0; i < objsets[index].length && testcombo; i++)
 						if (combo[i] != objsets[index][i])
 							testcombo = false;
+					if (debug) {
+						let str = "Objects contain:"
+						for (let i = 0; i < objsets[index].length; i++)
+							str += "\r\n" + (i + 1) + ". " + objsets[index][i];
+						str += "\r\nCorrect combination: ";
+						for (let i = 0; i < combo.length; i++)
+							str += "\r\n" + (i + 1) + ". " + combo[i];
+						if (testcombo) {
+							str += "\r\nResult: #gClear#k";
+							npc.say(str);
+						} else {
+							str += "\r\nResult: #rWrong#k";
+							str += "\r\n#bForce clear stage?#k";
+							debug = npc.askYesNo(str);
+						}
+					}
 					if (testcombo || debug) {
 						clear(eim, stage);
 						party.gainExp(Math.pow(2, stage) * 50);
@@ -216,8 +226,8 @@ function getPrize() {
 	else //10% chance
 		rewards = etc;
 	
-	let reward = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	player.gainItem(rewards[sel], rewards[index + 1]);
+	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
+	player.gainItem(rewards[index], rewards[index + 1]);
 	player.changeMap(103000805, "sp");
 }
 

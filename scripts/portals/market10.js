@@ -17,13 +17,14 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market10
+ * Mu Lung: Mu Lung (Map 250000000)
  *
- * Gives an hint to new players on movement.
+ * Mu Lung Free Market portal.
+ * Warps players from Mu Lung to Free Market.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+portal.rememberMap("FREE_MARKET");
+player.changeMap(910000000, "out00");

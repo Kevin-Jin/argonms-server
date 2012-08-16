@@ -1872,6 +1872,14 @@
 	* Implemented chairs
 	* Implemented EXP loss.
 
+2012-08-16  GoldenKevin  (revision 118)
+
+	* Disabled Kerning PQ debugging by default. Debug messages are now a bit
+	more informative.
+	* Fixed exception when giving prize in Kerning PQ.
+	* Reverse engineered portal blocked packet for Kerning PQ.
+	* Implemented Free Market portals.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

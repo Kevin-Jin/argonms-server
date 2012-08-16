@@ -17,13 +17,14 @@
  */
 
 /**
- * adviceMap
- * (Somewhere in Maple Island...)
+ * market02
+ * Ludibrium: Ludibrium (Map 220000000)
  *
- * Gives an hint to new players on movement.
+ * Ludibrium Free Market portal.
+ * Warps players from Ludibrium to Free Market.
  *
  * @author GoldenKevin
  */
 
-portal.showHint("Press the #e#b[Up]#k arrow#n to use the portal and move to the next map.", 230, 5);
-portal.abortWarp();
+portal.rememberMap("FREE_MARKET");
+player.changeMap(910000000, "out00");
