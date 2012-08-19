@@ -23,6 +23,16 @@ package argonms.common.character.inventory;
  * @author GoldenKevin
  */
 public abstract class InventorySlot implements Comparable<InventorySlot>, Cloneable {
+	//TODO: store database entry id so we can save some keys, because right now,
+	//we can do a maximum of 1403584 logouts in worst case.
+	//with maximum of 255 items per inventory and 5 inventories plus maximum of
+	//255 items in storage, we can have up to 1530 items per character (not
+	//taking into account a potential 65565 cash items per account). An unsigned
+	//32-bit integer key allows (2^31 - 1) items, so (2^31 - 1) / 1530 saves.
+	//if we upgrade to an unsigned 64 bit integer, 6 quadrillion saves, but
+	//in addition to index overhead, we would take 12 more bytes per ring or
+	//mount, 8 more per other equips or pets, and 4 more for other items in
+	//database storage space.
 	public enum ItemType { EQUIP, ITEM, PET, RING, MOUNT }
 
 	public static final byte

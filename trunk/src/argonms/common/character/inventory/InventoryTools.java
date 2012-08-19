@@ -149,7 +149,7 @@ public class InventoryTools {
 		}
 		if (isCashItem(itemid)) {
 			try {
-				item.setUniqueId(UniqueIdGenerator.incrementAndGet());
+				item.setUniqueId(UniqueIdGenerator.getAndIncrement());
 			} catch (Exception e) {
 				LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
 			}
@@ -217,7 +217,7 @@ public class InventoryTools {
 						item = item.clone();
 						if (updateUid) {
 							try {
-								item.setUniqueId(UniqueIdGenerator.incrementAndGet());
+								item.setUniqueId(UniqueIdGenerator.getAndIncrement());
 							} catch (Exception e) {
 								LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
 							}

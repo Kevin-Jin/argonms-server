@@ -30,7 +30,7 @@ import java.sql.SQLException;
  * @author GoldenKevin
  */
 public class UniqueIdGenerator {
-	public static long incrementAndGet() throws Exception {
+	public static long getAndAdd(int delta) throws Exception {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -41,20 +41,25 @@ public class UniqueIdGenerator {
 			ps.executeUpdate();
 			locked = true;
 			ps.close();
-			ps = con.prepareStatement("UPDATE `uniqueid` SET `nextuid` = `nextuid` + 1");
-			ps.executeUpdate();
-			ps.close();
 			ps = con.prepareStatement("SELECT `nextuid` FROM `uniqueid`");
 			rs = ps.executeQuery();
+			long current;
 			if (rs.next()) {
-				return rs.getLong(1);
-			} else {
+				current = rs.getLong(1);
 				rs.close();
 				ps.close();
-				ps = con.prepareStatement("INSERT INTO `uniqueid` (`nextuid`) VALUES (2)");
+				ps = con.prepareStatement("UPDATE `uniqueid` SET `nextuid` = `nextuid` + ?");
+				ps.setInt(1, delta);
 				ps.executeUpdate();
-				return 1;
+			} else {
+				current = 1;
+				rs.close();
+				ps.close();
+				ps = con.prepareStatement("INSERT INTO `uniqueid` (`nextuid`) VALUES (1 + ?)");
+				ps.setInt(1, delta);
+				ps.executeUpdate();
 			}
+			return current;
 		} catch (SQLException e) {
 			throw new Exception("Database access error while acquiring next unique id.", e);
 		} finally {
@@ -72,5 +77,9 @@ public class UniqueIdGenerator {
 				DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 			}
 		}
+	}
+
+	public static long getAndIncrement() throws Exception {
+		return getAndAdd(1);
 	}
 }
