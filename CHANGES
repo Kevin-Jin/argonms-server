@@ -1880,6 +1880,21 @@
 	* Reverse engineered portal blocked packet for Kerning PQ.
 	* Implemented Free Market portals.
 
+2012-08-xx  GoldenKevin  (revision 119)
+
+	* Inventory item loading performance substantially improved for a large
+	database (but will take longer to save and will take more space on disk).
+	Ban checking on login and highest party ID loading on game server
+	initialization marginally improved with larger tables.
+	* A bit more consistency in column definitions in argon.sql. Maximum width
+	of integral datatype is that of the maximum value of the datatype, with
+	space for a negative sign if the datatype is not unsigned, unless we know
+	that the value of that column never exceeds some other width (i.e. 1 for
+	boolean values in tinyint).
+	* UniqueIdGenerator now does postincrement instead of preincrement, so value
+	of `uniqueid`.`nextuid` actually is the next UID. We no longer skips UID 1.
+	* Quest reward items without expirations will not expire immediately.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

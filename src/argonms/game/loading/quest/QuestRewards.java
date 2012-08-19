@@ -139,7 +139,8 @@ public class QuestRewards {
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 		InventorySlot slot = InventoryTools.makeItemWithId(itemId);
 		//period is stored in minutes for quests
-		slot.setExpiration(System.currentTimeMillis() + (period * 1000 * 60));
+		if (period != 0)
+			slot.setExpiration(System.currentTimeMillis() + (period * 1000 * 60));
 		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, slot, quantity, true);
 		short pos;
 		for (Short s : changedSlots.modifiedSlots) {

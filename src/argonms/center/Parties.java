@@ -37,7 +37,9 @@ import java.util.logging.Logger;
 public class Parties {
 	private static final Logger LOG = Logger.getLogger(Parties.class.getName());
 
-	private static int getStartingPartyId(int world) {
+	//TODO: partyid will easily be exhausted. either we have to use 64-bit value
+	//or reuse old partyids (cf. InventorySlot)
+	private static int getStartingPartyId(byte world) {
 		int partyId = -1;
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -45,7 +47,7 @@ public class Parties {
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			ps = con.prepareStatement("SELECT MAX(`partyid`) FROM `parties` WHERE `world` = ?");
-			ps.setInt(1, world);
+			ps.setByte(1, world);
 			rs = ps.executeQuery();
 			if (rs.next())
 				partyId = rs.getInt(1);
@@ -60,7 +62,7 @@ public class Parties {
 	private final AtomicInteger nextPartyId;
 	private final Map<Integer, Party> parties;
 
-	public Parties(int world) {
+	public Parties(byte world) {
 		nextPartyId = new AtomicInteger(getStartingPartyId(world));
 		parties = new ConcurrentHashMap<Integer, Party>();
 	}

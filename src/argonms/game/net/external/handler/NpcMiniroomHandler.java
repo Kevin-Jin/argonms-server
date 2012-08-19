@@ -265,7 +265,7 @@ public class NpcMiniroomHandler {
 					split.setQuantity(quantity);
 					if (item.getUniqueId() != 0) {
 						try {
-							split.setUniqueId(UniqueIdGenerator.incrementAndGet());
+							split.setUniqueId(UniqueIdGenerator.getAndIncrement());
 						} catch (Exception e) {
 							LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
 						}
