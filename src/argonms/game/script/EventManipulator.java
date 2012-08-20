@@ -57,12 +57,12 @@ public class EventManipulator {
 		}
 	}
 
-	public void playerChangedMap(int playerId, int map) {
+	public void playerChangedMap(int playerId, int destination) {
 		Object f = globalScope.get("playerChangedMap", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId, map });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId, destination });
 			} finally {
 				Context.exit();
 			}
@@ -81,20 +81,8 @@ public class EventManipulator {
 		}
 	}
 
-	public void partyDisbanded(int partyId) {
-		Object f = globalScope.get("partyDisbanded", globalScope);
-		if (f != Scriptable.NOT_FOUND) {
-			Context cx = Context.enter();
-			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { partyId });
-			} finally {
-				Context.exit();
-			}
-		}
-	}
-
-	public void partyMemberRemoved(int partyId, int playerId) {
-		Object f = globalScope.get("partyMemberRemoved", globalScope);
+	public void partyMemberDischarged(int partyId, int playerId) {
+		Object f = globalScope.get("partyMemberDischarged", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {

@@ -105,6 +105,7 @@ public class LoginServer implements LocalServer {
 			System.exit(2);
 			return;
 		}
+		wzPath = System.getProperty("argonms.data.dir");
 
 		handler = new ClientListener<LoginClient>(new ClientLoginPacketProcessor(), new ClientFactory<LoginClient>() {
 			@Override
@@ -160,7 +161,6 @@ public class LoginServer implements LocalServer {
 			System.exit(3);
 			return;
 		}
-		wzPath = System.getProperty("argonms.data.dir");
 
 		try {
 			MapleAesOfb.testCipher();

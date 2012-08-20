@@ -115,6 +115,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.CANCEL_ITEM:
 				GameBuffHandler.handleCancelItem(reader, gc);
 				break;
+			case ClientRecvOps.USE_RETURN_SCROLL:
+				InventoryHandler.handleReturnScroll(reader, gc);
+				break;
 			case ClientRecvOps.DISTRIBUTE_AP:
 				StatAllocationHandler.handleApAllocation(reader, gc);
 				break;

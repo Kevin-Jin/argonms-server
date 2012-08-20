@@ -1096,8 +1096,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.CASH, s.shortValue(), inv.get(s.shortValue())));
 			for (Short s : changedSlots.addedOrRemovedSlots)
 				getClient().getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.CASH, s.shortValue()));
-			getClient().getSession().send(GamePackets.writeSelfCharmEffect((short) Math.min(0xFF, InventoryTools.getAmountOfItem(inv, 5130000)), (short) 99));
 			itemCountChanged(5130000);
+			getClient().getSession().send(GamePackets.writeSelfCharmEffect((short) Math.min(0xFF, InventoryTools.getAmountOfItem(inv, 5130000)), (short) 99));
 			lossPercent = 0;
 		} else if (map.getStaticData().reducedExpLoss()) {
 			lossPercent = 1;
@@ -1747,10 +1747,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void setParty(PartyList party) {
 		if (party == null && event != null)
-			if (this.party.getLeader() == getId())
-				event.partyDisbanded(this.party.getId());
-			else
-				event.partyMemberRemoved(this.party.getId(), getId());
+			event.partyMemberDischarged(this.party.getId(), getId());
 		this.party = party;
 	}
 

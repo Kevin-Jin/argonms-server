@@ -101,21 +101,19 @@ public class ScriptParty {
 
 				if (quantity > 0) {
 					Inventory inv = player.getInventory(type);
-					ClientSession<?> ses = player.getClient().getSession();
 					InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(player, itemId, quantity);
+					ClientSession<?> ses = player.getClient().getSession();
 					short pos;
-					InventorySlot slot;
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
-						slot = inv.get(pos);
-						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
 						ses.send(GamePackets.writeInventoryClearSlot(type, pos));
 					}
-					ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
 					player.itemCountChanged(itemId);
+					ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
 				}
 			}
 		} finally {

@@ -47,18 +47,29 @@ function init(attachment) {
 		event.getMap(103000800 - 1 + stage).overridePortal("next00", "party1");
 }
 
-function playerDisconnected(playerId) {
+function removePlayer(playerId, changeMap) {
 	if (party.getLeader() == playerId) {
-		for (let i = 0; i < members.length; i++)
-			if (members[i].getId() != playerId)
+		//boot the entire party (changeMap parameter only applies to member
+		//whose player ID matches playerId parameter, so those who are not the
+		//leader are always booted)
+		for (let i = 0; i < members.length; i++) {
+			//dissociate event before changing map so playerChangedMap is not
+			//called and this method is not called again by the player
+			members[i].setEvent(null);
+			if (changeMap || members[i].getId() != playerId)
 				members[i].changeMap(EXIT_MAP, "st00");
+		}
 		event.destroyEvent();
 	} else {
-		//next login, player will be spawned in exit map anyway, so don't warp
-		//him and have to deal with packets to a disconnected player
 		for (let i = 0; i < members.length; i++) {
 			if (members[i].getId() == playerId) {
+				//dissociate event before changing map so playerChangedMap is
+				//not called and this method is not called again by the player
 				members[i].setEvent(null);
+				if (changeMap)
+					members[i].changeMap(EXIT_MAP, "st00");
+				//collapse the members array so we don't accidentally warp
+				//this member again if the leader leaves later.
 				members.splice(i, 1);
 				break;
 			}
@@ -66,54 +77,31 @@ function playerDisconnected(playerId) {
 	}
 }
 
-function playerChangedMap(playerId, map) {
-	if (map == EXIT_MAP) {
-		if (party.getLeader() == playerId) {
-			//leader has either died and respawned or clicked Nella
-			for (let i = 0; i < members.length; i++)
-				if (members[i].getId() != playerId)
-					members[i].changeMap(EXIT_MAP, "st00");
-			event.destroyEvent();
-		} else {
-			//player left before leader. remove him from members so he doesn't
-			//get warped back to exit map when leader exits
-			for (let i = 0; i < members.length; i++) {
-				if (members[i].getId() == playerId) {
-					members[i].setEvent(null);
-					members.splice(i, 1);
-					break;
-				}
-			}
-		}
-	}
+function playerDisconnected(playerId) {
+	//changeMap is false since all PQ maps force return the player to the exit
+	//map on his next login anyway, and we don't want to deal with sending
+	//change map packets to a disconnected client
+	removePlayer(playerId, false);
 }
 
-function partyDisbanded(partyId) {
-	for (let i = 0; i < members.length; i++)
-		members[i].changeMap(EXIT_MAP, "st00");
-	//assert event.destroyEvent() was already called when
-	//playerChangedMap(leader, EXIT_MAP) was called by Java
+function playerChangedMap(playerId, destination) {
+	//TODO: is it true that even when a non-leader clicks Nella, the entire
+	//party is booted? and that GMS forces party out when only two members
+	//remain alive and online?
+	if (destination == EXIT_MAP)
+		//player died and respawned or clicked Nella to leave PQ
+		//changeMap is false so player doesn't get re-warped to exit map
+		removePlayer(playerId, false);
 }
 
-function partyMemberRemoved(partyId, playerId) {
-	for (let i = 0; i < members.length; i++) {
-		if (members[i].getId() == playerId) {
-			members[i].changeMap(EXIT_MAP, "st00");
-			//assert members[i].setEvent(null) abd members.splice(i, 1) was
-			//already called when playerChangedMap(playerId, EXIT_MAP) was
-			//called by Java
-			break;
-		}
-	}
+function partyMemberDischarged(partyId, playerId) {
+	removePlayer(playerId, true);
 }
 
 function timerExpired(key) {
 	switch (key) {
 		case "kick":
-			for (let i = 0; i < members.length; i++)
-				members[i].changeMap(EXIT_MAP, "st00");
-			//assert event.destroyEvent() was already called when
-			//playerChangedMap(leader, EXIT_MAP) was called by Java
+			removePlayer(party.getLeader(), true);
 			break;
 	}
 }

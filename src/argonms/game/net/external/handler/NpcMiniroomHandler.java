@@ -27,6 +27,7 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -224,16 +225,18 @@ public class NpcMiniroomHandler {
 				p.gainMesos(-keeper.getWithdrawCost(), false);
 				storageInv.remove(invType, slot);
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(destInv, item, item.getQuantity(), false);
+				ClientSession<?> ses = gc.getSession();
+				short pos;
 				for (Short s : changedSlots.modifiedSlots) {
-					short pos = s.shortValue();
-					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
+					pos = s.shortValue();
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
-					short pos = s.shortValue();
-					gc.getSession().send(GamePackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
+					pos = s.shortValue();
+					ses.send(GamePackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
 				}
-				gc.getSession().send(writeStorageWithdrawal(storageInv, invType));
 				p.itemCountChanged(item.getDataId());
+				ses.send(writeStorageWithdrawal(storageInv, invType));
 				break;
 			} case ACT_DEPOSIT_ITEM: {
 				GameCharacter p = gc.getPlayer();

@@ -18,6 +18,7 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.GlobalConstants;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
@@ -25,6 +26,8 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.item.ItemEffectsData;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
@@ -38,7 +41,7 @@ import argonms.game.net.external.GamePackets;
  */
 public class InventoryHandler {
 	public static void handleItemMove(LittleEndianReader packet, GameClient gc) {
-		packet.readInt();
+		/*int time = */packet.readInt();
 		InventoryType type = InventoryType.valueOf(packet.readByte());
 		short src = packet.readShort();
 		short dst = packet.readShort();
@@ -102,6 +105,34 @@ public class InventoryHandler {
 					gc.getSession().send(GamePackets.writeInventoryMoveItemCombineQuantities(type, src, dst, (short) total));
 				}
 			}
+		}
+	}
+
+	public static void handleReturnScroll(LittleEndianReader packet, GameClient gc) {
+		/*int time =*/packet.readInt();
+		short slot = packet.readShort();
+		int itemId = packet.readInt();
+
+		GameCharacter p = gc.getPlayer();
+		Inventory inv = p.getInventory(InventoryType.USE);
+		InventorySlot changed = inv.get(slot);
+		if (changed == null || changed.getDataId() != itemId || changed.getQuantity() < 1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant map return scroll");
+			return;
+		}
+		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
+		if (changed != null)
+			gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
+		else
+			gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, slot));
+		p.itemCountChanged(itemId);
+
+		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
+		if (e.getMoveTo() != 0) {
+			if (e.getMoveTo() == GlobalConstants.NULL_MAP)
+				p.changeMap(p.getMap().getReturnMap());
+			else
+				p.changeMap(e.getMoveTo());
 		}
 	}
 

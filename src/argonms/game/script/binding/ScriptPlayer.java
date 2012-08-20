@@ -64,22 +64,19 @@ public class ScriptPlayer {
 		Inventory.InventoryType type = InventoryTools.getCategory(itemId);
 		Inventory inv = getPlayer().getInventory(type);
 		if (InventoryTools.canFitEntirely(inv, itemId, quantity, true)) {
-			ClientSession<?> ses = getPlayer().getClient().getSession();
 			InventoryTools.UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+			ClientSession<?> ses = getPlayer().getClient().getSession();
 			short pos;
-			InventorySlot slot;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				slot = inv.get(pos);
-				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				slot = inv.get(pos);
-				ses.send(GamePackets.writeInventoryAddSlot(type, pos, slot));
+				ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 			}
-			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 			getPlayer().itemCountChanged(itemId);
+			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 			return true;
 		}
 		return false;
@@ -89,21 +86,19 @@ public class ScriptPlayer {
 		if (InventoryTools.hasItem(getPlayer(), itemId, quantity)) {
 			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
 			Inventory inv = getPlayer().getInventory(type);
-			ClientSession<?> ses = getPlayer().getClient().getSession();
 			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(getPlayer(), itemId, quantity);
+			ClientSession<?> ses = getPlayer().getClient().getSession();
 			short pos;
-			InventorySlot slot;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				slot = inv.get(pos);
-				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
 				ses.send(GamePackets.writeInventoryClearSlot(type, pos));
 			}
-			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
 			getPlayer().itemCountChanged(itemId);
+			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
 			return true;
 		}
 		return false;
@@ -192,6 +187,10 @@ public class ScriptPlayer {
 
 	public short getLuk() {
 		return getPlayer().getLuk();
+	}
+
+	public short getHp() {
+		return getPlayer().getHp();
 	}
 
 	public void increaseMaxHp(short delta) {
