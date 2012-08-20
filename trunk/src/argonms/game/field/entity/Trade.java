@@ -24,6 +24,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
@@ -136,21 +137,19 @@ public class Trade extends Miniroom {
 				InventoryType type = InventoryTools.getCategory(item.getDataId());
 				Inventory inv = to.getInventory(type);
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, item, item.getQuantity(), false);
+				ClientSession<?> ses = to.getClient().getSession();
 				short pos;
-				InventorySlot slot;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					slot = inv.get(pos);
-					to.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					slot = inv.get(pos);
-					to.getClient().getSession().send(GamePackets.writeInventoryAddSlot(type, pos, slot));
+					ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 				}
 				to.itemCountChanged(item.getDataId());
 				if (taxAndShowGain)
-					to.getClient().getSession().send(GamePackets.writeShowItemGain(item.getDataId(), item.getQuantity()));
+					ses.send(GamePackets.writeShowItemGain(item.getDataId(), item.getQuantity()));
 			}
 		}
 	}

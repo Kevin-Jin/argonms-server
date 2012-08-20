@@ -24,6 +24,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -160,7 +161,7 @@ public class CommandProcessor {
 					return;
 				}
 				int itemId;
-				short quantity = 1;
+				int quantity = 1;
 				try {
 					itemId = Integer.parseInt(args[1]);
 					//TODO: check if item is valid. Throw NumberFormatException if not
@@ -171,7 +172,7 @@ public class CommandProcessor {
 				}
 				if (args.length > 2) {
 					try {
-						quantity = Short.parseShort(args[2]);
+						quantity = Integer.parseInt(args[2]);
 					} catch (NumberFormatException e) {
 						resp.printErr(args[2] + " is not a valid item quantity.");
 						resp.printErr(getUsage());
@@ -181,17 +182,15 @@ public class CommandProcessor {
 				InventoryType type = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(type);
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
+				ClientSession<?> ses = p.getClient().getSession();
 				short pos;
-				InventorySlot slot;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					slot = inv.get(pos);
-					p.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					slot = inv.get(pos);
-					p.getClient().getSession().send(GamePackets.writeInventoryAddSlot(type, pos, slot));
+					ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 				}
 				p.itemCountChanged(itemId);
 			}

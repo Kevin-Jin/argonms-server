@@ -61,10 +61,10 @@ public class SkillTools {
 		int itemId = e.getItemConsume();
 		short quantity = e.getItemConsumeCount();
 		if (itemId != 0) {
-			ClientSession<?> ses = p.getClient().getSession();
 			InventoryType type = InventoryTools.getCategory(itemId);
 			Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemId, quantity);
+			ClientSession<?> ses = p.getClient().getSession();
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
@@ -141,9 +141,9 @@ public class SkillTools {
 				}
 			}
 			if (removeItemId != 0) {
-				short pos;
-				ClientSession<?> ses = p.getClient().getSession();
 				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
+				ClientSession<?> ses = p.getClient().getSession();
+				short pos;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
 					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, pos, inv.get(pos)));

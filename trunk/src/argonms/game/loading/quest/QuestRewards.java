@@ -134,7 +134,6 @@ public class QuestRewards {
 	}
 
 	private void giveItem(GameCharacter p, int itemId, short quantity, int period) {
-		ClientSession<?> ses = p.getClient().getSession();
 		InventoryType type = InventoryTools.getCategory(itemId);
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 		InventorySlot slot = InventoryTools.makeItemWithId(itemId);
@@ -142,41 +141,38 @@ public class QuestRewards {
 		if (period != 0)
 			slot.setExpiration(System.currentTimeMillis() + (period * 1000 * 60));
 		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, slot, quantity, true);
+		ClientSession<?> ses = p.getClient().getSession();
 		short pos;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
-			slot = inv.get(pos);
-			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
-			slot = inv.get(pos);
-			ses.send(GamePackets.writeInventoryAddSlot(type, pos, slot));
+			ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 		}
-		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 		p.itemCountChanged(itemId);
+		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 	}
 
 	private void takeItem(GameCharacter p, int itemId, short quantity) {
-		ClientSession<?> ses = p.getClient().getSession();
 		InventoryType type = InventoryTools.getCategory(itemId);
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 		if (quantity == 0)
 			quantity = (short) -InventoryTools.getAmountOfItem(inv, itemId);
 		UpdatedSlots changedSlots = InventoryTools.removeFromInventory(p, itemId, -quantity);
+		ClientSession<?> ses = p.getClient().getSession();
 		short pos;
-		InventorySlot slot;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
-			slot = inv.get(pos);
-			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
 			ses.send(GamePackets.writeInventoryClearSlot(type, pos));
 		}
-		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 		p.itemCountChanged(itemId);
+		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 	}
 
 	//TODO: check if we can fit all items in the player's inventory.

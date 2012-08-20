@@ -26,6 +26,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.ClientSession;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.LockableList;
 import argonms.common.util.collections.LockableMap;
@@ -532,17 +533,15 @@ public class GameMap {
 				destroyEntity(d);
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
 					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty, false);
+					ClientSession<?> ses = p.getClient().getSession();
 					short pos;
-					InventorySlot slot;
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
-						slot = inv.get(pos);
-						p.getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
+						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
-						slot = inv.get(pos);
-						p.getClient().getSession().send(GamePackets.writeInventoryAddSlot(type, pos, slot));
+						ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 					}
 					p.itemCountChanged(itemid);
 				} else {

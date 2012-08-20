@@ -119,8 +119,8 @@ public class GameBuffHandler {
 			gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
 		else
 			gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, slot));
-		ItemTools.useItem(p, itemId);
 		p.itemCountChanged(itemId);
+		ItemTools.useItem(p, itemId);
 	}
 
 	public static void handleCancelSkill(LittleEndianReader packet, GameClient gc) {
