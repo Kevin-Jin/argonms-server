@@ -256,11 +256,11 @@ public class Mob extends AbstractEntity {
 		//copied from AtomicInteger.addAndGet(int). only difference is that we
 		//set the value to the clamped next (we still return the unclamped next)
 		while (true) {
-            int current = i.get();
+			int current = i.get();
 			int next = current + delta;
 			if (i.compareAndSet(current, Math.min(Math.max(next, min), max)))
 				return next;
-        }
+		}
 	}
 
 	/**
@@ -281,14 +281,14 @@ public class Mob extends AbstractEntity {
 	 */
 	private boolean setIfInBounds(AtomicInteger i, int update, int min, int max) {
 		while (true) {
-            int current = i.get();
+			int current = i.get();
 			if (current >= min && current <= max) {
 				if (i.compareAndSet(current, update))
 					return true;
 			} else {
 				return false;
 			}
-        }
+		}
 	}
 
 	public void hurt(GameCharacter p, int damage) {

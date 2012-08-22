@@ -33,9 +33,11 @@ import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.SkillMacro;
 import argonms.game.character.SkillTools;
+import argonms.game.loading.map.MapStats;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.script.EventManipulator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -100,6 +102,24 @@ public class GameEnterHandler {
 		/*player.checkMessenger();
 		player.checkBerserk();
 		player.itemExpireTask();*/
+	}
+
+	public static void handleShipDockedCheck(LittleEndianReader packet, GameClient gc) {
+		int mapId = packet.readInt();
+		WorldChannel cserv = GameServer.getChannel(gc.getChannel());
+		MapStats mapStats = cserv.getMapFactory().getMap(mapId).getStaticData();
+		String script = mapStats.getShipScript();
+		EventManipulator event = cserv.getEventManager().getScriptInterface(script);
+		if (event != null && ((Boolean) event.getVariable(mapStats.getShipKind() + "docked")).booleanValue()) {
+			switch (mapStats.getShipKind()) {
+				case 0:
+					gc.getSession().send(GamePackets.writeShipEffect((short) 1548));
+					break;
+				case 1:
+					gc.getSession().send(GamePackets.writeShipEffect((short) 1034));
+					break;
+			}
+		}
 	}
 
 	private static byte[] writeEnterMap(GameCharacter p) {

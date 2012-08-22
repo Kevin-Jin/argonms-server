@@ -18,7 +18,9 @@
 
 package argonms.game.script.binding;
 
+import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity;
 import argonms.game.net.external.GamePackets;
 
 /**
@@ -56,11 +58,32 @@ public class ScriptField {
 		map.sendToAll(GamePackets.writeTimer(seconds));
 	}
 
+	public void showUndockShip() {
+		map.sendToAll(GamePackets.writeShipEffect((short) 520));
+	}
+
+	public void showBalrogShip() {
+		map.sendToAll(GamePackets.writeShipEffect((short) 1034));
+	}
+
+	public void showDockShip() {
+		map.sendToAll(GamePackets.writeShipEffect((short) 1548));
+	}
+
 	public void overridePortal(String portalName, String script) {
 		map.overridePortal(portalName, script);
 	}
 
 	public void revertPortal(String portalName) {
 		map.revertPortal(portalName);
+	}
+
+	public void transferPlayers(int mapId) {
+		for (MapEntity player : map.getAllEntities(MapEntity.EntityType.PLAYER))
+			((GameCharacter) player).changeMap(mapId);
+	}
+
+	public void resetReactors() {
+		map.respawnReactors();
 	}
 }

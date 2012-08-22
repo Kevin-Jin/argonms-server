@@ -68,6 +68,7 @@ public final class ClientSendOps {
 		MAP_EFFECT = 0x68,
 		GM = 0x6B,
 		CLOCK = 0x6E,
+		SHIP = 0x6F,
 		SHOW_PLAYER = 0x78,
 		REMOVE_PLAYER = 0x79,
 		MAP_CHAT = 0x7A,

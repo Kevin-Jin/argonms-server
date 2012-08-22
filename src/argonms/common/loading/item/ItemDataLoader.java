@@ -22,6 +22,7 @@ import argonms.common.StatEffect;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.DataFileType;
 import argonms.common.util.Rng;
+import argonms.common.util.TimeTool;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -29,7 +30,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 
 //FIXME: Thread safety for concurrent read/writes (if we're not preloading)
 /**
@@ -215,6 +215,7 @@ public abstract class ItemDataLoader {
 	}
 
 	private boolean isHoliday(Calendar now) {
+		//TODO: make a real check
 		return false;
 	}
 
@@ -222,11 +223,11 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		Calendar nowInLa = Calendar.getInstance(TimeZone.getTimeZone("America/Los_Angeles"));
-		int today = nowInLa.get(Calendar.DAY_OF_WEEK);
-		int thisHour = nowInLa.get(Calendar.HOUR_OF_DAY);
+		Calendar now = TimeTool.currentDateTime();
+		int today = now.get(Calendar.DAY_OF_WEEK);
+		int thisHour = now.get(Calendar.HOUR_OF_DAY);
 		for (byte[] t : operatingHours.get(oId))
-			if ((t[0] == today || t[0] == 8 && isHoliday(nowInLa))
+			if ((t[0] == today || t[0] == 8 && isHoliday(now))
 					&& thisHour >= t[1] && thisHour <= t[2])
 				return true;
 		return false;

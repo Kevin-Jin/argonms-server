@@ -26,10 +26,9 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-//TODO: implement events
-/*bm = cm.getEventManager("Boats");
-if (bm == null) {*/
-	cm.sendYesNo("It looks like there's a problem with the boat to Orbis. I could instead warp you straight there as long as you have the original ticket you bought for the trip. Would you like to go straight to Orbis? Strong monsters and a whole new world of adventures await you there.");
+let event = npc.getEvent("ship_ossyria");
+if (event == null) {
+	let selection = npc.askYesNo("It looks like there's a problem with the boat to Orbis. I could instead warp you straight there as long as you have the original ticket you bought for the trip. Would you like to go straight to Orbis? Strong monsters and a whole new world of adventures await you there.");
 	if (selection == 0) {
 		npc.sayNext("You must have some business to take care of here, right?");
 	} else {
@@ -40,7 +39,7 @@ if (bm == null) {*/
 			player.changeMap(200000100);
 		}
 	}
-/*} else if (bm.getProperty("entry").equals("true")) {
+} else if (event.getVariable("board")) {
 	let selection = npc.askYesNo("This will not be a short flight, so if you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the ship?");
 	if (selection == 0) {
 		npc.sayNext("You must have some business to take care of here, right?");
@@ -52,8 +51,8 @@ if (bm == null) {*/
 			player.changeMap(101000301);
 		}
 	}
-} else if (bm.getProperty("entry").equals("false") && bm.getProperty("docked").equals("true")) {
-	cm.sendNext("The ship is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the usher at the ticketing booth.");
+} else if (event.getVariable("0docked")) {
+	npc.sayNext("The ship is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the usher at the ticketing booth.");
 } else {
-	cm.sendNext("We will begin boarding 5 minutes before the takeoff. Please be patient and wait for a few minutes. Be aware that the ship will take off on time, and we stop receiving tickets 1 minute before that, so please make sure to be here on time.");
-}*/
+	npc.sayNext("We will begin boarding 5 minutes before the takeoff. Please be patient and wait for a few minutes. Be aware that the ship will take off on time, and we stop receiving tickets 1 minute before that, so please make sure to be here on time.");
+}

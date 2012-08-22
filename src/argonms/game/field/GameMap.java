@@ -293,6 +293,8 @@ public class GameMap {
 		}
 		for (PlayerSkillSummon summon : p.getAllSummons().values())
 			spawnExistingEntity(summon);
+		if (stats.hasClock())
+			p.getClient().getSession().send(GamePackets.writeClock());
 		if (timeLimitTasks != null) {
 			//TODO: I heard that ScheduledFutures still hold onto strong references
 			//when canceled, so should we just use a WeakReference to player?
@@ -300,10 +302,10 @@ public class GameMap {
 				@Override
 				public void run() {
 					p.changeMap(stats.getForcedReturn());
-					p.getClient().getSession().send(writeShowTimeLimit(0));
+					p.getClient().getSession().send(GamePackets.writeTimer(0));
 				}
 			}, stats.getTimeLimit() * 1000);
-			p.getClient().getSession().send(writeShowTimeLimit(stats.getTimeLimit()));
+			p.getClient().getSession().send(GamePackets.writeTimer(stats.getTimeLimit()));
 			timeLimitTasks.put(p, future);
 		}
 		if (decHpTasks != null) {
@@ -565,6 +567,15 @@ public class GameMap {
 	public void respawnReactor(Reactor r) {
 		r.reset();
 		spawnEntity(r);
+	}
+
+	public void respawnReactors() {
+		for (MapEntity ent : getAllEntities(EntityType.REACTOR)) {
+			Reactor r = (Reactor) ent;
+			if (!r.isAlive())
+				spawnEntity(r);
+			r.reset();
+		}
 	}
 
 	public void respawnMobs() {
@@ -873,14 +884,6 @@ public class GameMap {
 		lew.writeByte(s4); //or is this just 0?
 		lew.writePos(startPos);
 		GamePackets.writeSerializedMovements(lew, moves);
-		return lew.getBytes();
-	}
-
-	private static byte[] writeShowTimeLimit(int seconds) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.CLOCK);
-		lew.writeByte((byte) 2);
-		lew.writeInt(seconds);
 		return lew.getBytes();
 	}
 

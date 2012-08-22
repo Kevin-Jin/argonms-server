@@ -205,6 +205,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.TOUCH_REACTOR:
 				ReactorHandler.handleReactorTouch(reader, gc);
 				break;
+			case ClientRecvOps.ENTERED_SHIP_MAP:
+				GameEnterHandler.handleShipDockedCheck(reader, gc);
+				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				gc.getPlayer().saveCharacter();
 				break;

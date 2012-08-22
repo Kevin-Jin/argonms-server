@@ -225,6 +225,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 	private class VoidHashedWheelFuture extends HashedWheelFuture<Void> {
 		private Runnable expireTask;
+		private Throwable exc;
 
 		public VoidHashedWheelFuture(Runnable task, boolean fixedRate, long submitTime, long delay, long period) {
 			super(submitTime, delay, period, fixedRate);
@@ -233,12 +234,14 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		protected void runExpireTask() {
+			inProgress = true;
 			try {
-				inProgress = true;
 				expireTask.run();
+				exc = null;
+			} catch (Throwable ex) {
+				exc = ex;
+			} finally {
 				inProgress = false;
-			} catch (Exception e) {
-				LOG.log(Level.WARNING, "Uncaught exception from task scheduled in HashedWheelExecutor", e);
 			}
 		}
 
@@ -249,13 +252,15 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		protected Void getResult() throws ExecutionException {
+			if (exc != null)
+				throw new ExecutionException(exc);
 			return null;
 		}
 	}
 
 	private class HashedWheelFutureImpl<V> extends HashedWheelFuture<V> {
 		private Callable<V> expireTask;
-		private Exception exc;
+		private Throwable exc;
 		private V result;
 
 		public HashedWheelFutureImpl(Callable<V> task, long submitTime, long delay, long period) {
@@ -265,13 +270,14 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		protected void runExpireTask() {
+			inProgress = true;
 			try {
-				inProgress = true;
 				result = expireTask.call();
+				exc = null;
+			} catch (Throwable ex) {
+				exc = ex;
+			} finally {
 				inProgress = false;
-				this.exc = null;
-			} catch (Exception ex) {
-				this.exc = ex;
 			}
 		}
 
@@ -290,6 +296,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 	private class HashedWheelFutureKnownResult<V> extends HashedWheelFuture<V> {
 		private Runnable expireTask;
+		private Throwable exc;
 		private V result;
 
 		public HashedWheelFutureKnownResult(Runnable task, V result, long submitTime, long delay, long period) {
@@ -300,12 +307,14 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		protected void runExpireTask() {
+			inProgress = true;
 			try {
-				inProgress = true;
 				expireTask.run();
+				exc = null;
+			} catch (Throwable ex) {
+				exc = ex;
+			} finally {
 				inProgress = false;
-			} catch (Exception e) {
-				LOG.log(Level.WARNING, "Uncaught exception from task scheduled in HashedWheelExecutor", e);
 			}
 		}
 
@@ -316,6 +325,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		protected V getResult() throws ExecutionException {
+			if (exc != null)
+				throw new ExecutionException(exc);
 			return result;
 		}
 	}

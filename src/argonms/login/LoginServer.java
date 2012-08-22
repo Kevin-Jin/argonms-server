@@ -30,6 +30,7 @@ import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
+import argonms.common.util.TimeTool;
 import argonms.login.net.LoginWorld;
 import argonms.login.net.external.ClientLoginPacketProcessor;
 import argonms.login.net.external.LoginClient;
@@ -48,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -85,6 +87,7 @@ public class LoginServer implements LocalServer {
 		String centerIp;
 		int centerPort;
 		String authKey;
+		TimeZone tz;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.login.config.file", "login.properties"));
 			prop.load(fr);
@@ -100,6 +103,9 @@ public class LoginServer implements LocalServer {
 			authKey = prop.getProperty("argonms.login.auth.key");
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.login.usenio"));
 			rankingPeriod = Integer.parseInt(prop.getProperty("argonms.login.ranking.frequency"));
+
+			String temp = prop.getProperty("argonms.login.tz");
+			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load login server properties!", ex);
 			System.exit(2);
@@ -170,6 +176,7 @@ public class LoginServer implements LocalServer {
 			return;
 		}
 		Scheduler.enable(true, true);
+		TimeTool.setInstance(tz);
 
 		lci = new LoginCenterInterface(this);
 		RemoteCenterSession<LoginCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, lci);

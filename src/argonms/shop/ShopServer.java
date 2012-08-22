@@ -32,6 +32,7 @@ import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
+import argonms.common.util.TimeTool;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
@@ -48,6 +49,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -82,6 +84,7 @@ public class ShopServer implements LocalServer {
 		String centerIp;
 		int centerPort;
 		String authKey;
+		TimeZone tz;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.shop.config.file", "shop.properties"));
 			prop.load(fr);
@@ -95,6 +98,9 @@ public class ShopServer implements LocalServer {
 			centerPort = Integer.parseInt(prop.getProperty("argonms.shop.center.port"));
 			authKey = prop.getProperty("argonms.shop.auth.key");
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.shop.usenio"));
+
+			String temp = prop.getProperty("argonms.shop.tz");
+			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load shop server properties!", ex);
 			System.exit(2);
@@ -165,6 +171,7 @@ public class ShopServer implements LocalServer {
 			return;
 		}
 		Scheduler.enable(true, true);
+		TimeTool.setInstance(tz);
 
 		sci = new ShopCenterInterface(this);
 		RemoteCenterSession<ShopCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, sci);

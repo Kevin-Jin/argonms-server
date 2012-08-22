@@ -1917,7 +1917,7 @@
 	* Hands and level field of equips are treated as equals with other equip
 	stats. More consistency among equip field access and mutating.
 
-2012-08-22  GoldenKevin  (revision 121)
+2012-08-22  GoldenKevin  (revision 122)
 
 	* Rewrote EventManipulator. Rather than pass a bunch of IDs to the script,
 	it now instantiates script binding wrappers for the actual entities.
@@ -1929,6 +1929,19 @@
 	* EventManipulator allows access to event variables from Java code without
 	having to deal with JavaScript wrapping.
 	* Enable Rhino optimization of all scripts besides NPC scripts.
+
+2012-08-22  GoldenKevin  (revision 123)
+
+	* Updated supported Kvj format to r32.
+	* Greater flexibility with time zones. Expiration dates, clocks, and
+	miscellaneous in-game output are no longer bound to the server's default
+	time zone. Note that this doesn't affect the output of log messages.
+	* Added script for ship between Ellinia and Orbis. Although it works, I will
+	not enable it by default in game*.properties until I finish implementing all
+	Victoria Island NPCs and then move on to Ossyria.
+	* ScheduledHashWheelExecutor.HashedWheelFuture.get() throws
+	ExecutionException for all submitted tasks that are ended early because of
+	an exception.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

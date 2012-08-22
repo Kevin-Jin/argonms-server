@@ -120,8 +120,40 @@ public class McdbMapDataLoader extends MapDataLoader {
 			stats.setTown();
 		if (rs.getInt(18) != 0)
 			stats.setClock();
-		if (rs.getInt(19) != 0)
-			stats.setShip();
+		if (rs.getInt(19) != 0) {
+			//TODO: hacky
+			switch (mapid) {
+				case 101000300:
+					stats.setShipObj("Map/Obj/vehicle.img/ship/ossyria/99");
+					stats.setShipKind((byte) 0);
+					break;
+				case 200000111:
+					stats.setShipObj("Map/Obj/vehicle.img/ship/ossyria/98");
+					stats.setShipKind((byte) 0);
+					break;
+				case 200000121:
+				case 220000110:
+				case 220000111:
+					stats.setShipObj("Map/Obj/vehicle.img/ship/toy/99");
+					stats.setShipKind((byte) 0);
+					break;
+				case 200000131:
+				case 240000110:
+					stats.setShipObj("Map/Obj/vehicle.img/ship/minar/99");
+					stats.setShipKind((byte) 0);
+					break;
+				case 200000151:
+				case 260000100:
+					stats.setShipObj("Map/Obj/acc8.img/ariant/ship/9");
+					stats.setShipKind((byte) 0);
+					break;
+				case 200090000:
+				case 200090010:
+					stats.setShipObj("Map/Obj/vehicle/ship/ossyria/97");
+					stats.setShipKind((byte) 1);
+					break;
+			}
+		}
 		loadLife(mapid, stats, con);
 		loadReactors(mapid, stats, con);
 		loadFootholds(mapid, stats, con);
