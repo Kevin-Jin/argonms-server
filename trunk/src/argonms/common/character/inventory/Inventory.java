@@ -197,11 +197,11 @@ public class Inventory implements IInventory {
 		//copied from AtomicInteger.addAndGet(int). only difference is that we
 		//set the value to the clamped next and return the clamped next.
 		while (true) {
-            int current = i.get();
+			int current = i.get();
 			int next = Math.min(Math.max(current + delta, min), max);
 			if (i.compareAndSet(current, next))
 				return next;
-        }
+		}
 	}
 
 	public short increaseCapacity(short delta) {

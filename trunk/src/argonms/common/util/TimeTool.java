@@ -30,18 +30,29 @@ public final class TimeTool {
 	 * Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
 	 */
 	private static final long EPOCH_BIAS = 116444736000000000L;
-	private static final int TIME_ZONE_OFFSET;
+	private static TimeTool instance;
+
+	private final int timeZoneOffset;
 	/**
 	 * Some arbitrary date that Wizet made up that is supposed to tell the
 	 * client that an item has no expiration date on it.
 	 * The date itself happens to be midnight January 1, 2079 UTC...
 	 */
-	public static final long NO_EXPIRATION;
+	private final long noExpiration;
+	private final TimeZone tz;
 
-	static {
-		TimeZone tz = Calendar.getInstance().getTimeZone();
-		TIME_ZONE_OFFSET = tz.getRawOffset() + tz.getDSTSavings();
-		NO_EXPIRATION = 3439756800000L - TimeTool.TIME_ZONE_OFFSET;
+	private TimeTool(TimeZone tz) {
+		this.tz = tz;
+		timeZoneOffset = tz.getRawOffset() + tz.getDSTSavings();
+		noExpiration = 3439756800000L - timeZoneOffset;
+	}
+
+	public static void setInstance(TimeZone tz) {
+		instance = new TimeTool(tz);
+	}
+
+	public static long getNoExpirationTimestamp() {
+		return instance.noExpiration;
 	}
 
 	/**
@@ -52,12 +63,12 @@ public final class TimeTool {
 	 * @return FILETIME
 	 */
 	public static long unixToWindowsTime(long unixTime) {
-		return ((unixTime + TIME_ZONE_OFFSET) * 10000 + EPOCH_BIAS);
+		return ((unixTime + instance.timeZoneOffset) * 10000 + EPOCH_BIAS);
 	}
 
 	public static Calendar intDateToCalendar(int idate) {
 		String timeStr = Integer.toString(idate);
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(instance.tz);
 		switch (timeStr.length()) {
 			case 8: //YYYYMMDD
 				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)), Integer.parseInt(timeStr.substring(6, 8)));
@@ -70,5 +81,13 @@ public final class TimeTool {
 				break;
 		}
 		return cal;
+	}
+
+	public static TimeZone getTimeZone() {
+		return instance.tz;
+	}
+
+	public static Calendar currentDateTime() {
+		return Calendar.getInstance(instance.tz);
 	}
 }

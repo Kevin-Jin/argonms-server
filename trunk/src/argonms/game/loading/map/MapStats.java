@@ -36,7 +36,8 @@ public class MapStats {
 	private boolean town;
 	private boolean clock;
 	private boolean everlast;
-	private boolean boat;
+	private String shipScript;
+	private byte shipKind;
 	private int forcedReturn;
 	/**
 	 * 19-bit bit field, with the flags (from most significant to least significant bits):
@@ -107,8 +108,14 @@ public class MapStats {
 		this.clock = true;
 	}
 
-	protected void setShip() {
-		this.boat = true;
+	protected void setShipObj(String shipObj) {
+		int end = shipObj.lastIndexOf('/'); //last part of path is too specific for a script
+		int start = shipObj.lastIndexOf('/', shipObj.lastIndexOf('/', end - 1) - 1) + 1; //use next two elements in path
+		this.shipScript = shipObj.substring(start, end).replaceAll("/", "_");
+	}
+
+	protected void setShipKind(byte kind) {
+		this.shipKind = kind;
 	}
 
 	protected void addReactor(int id, ReactorData rt) {
@@ -179,8 +186,12 @@ public class MapStats {
 		return clock;
 	}
 
-	public boolean hasShip() {
-		return boat;
+	public String getShipScript() {
+		return shipScript;
+	}
+
+	public byte getShipKind() {
+		return shipKind;
 	}
 
 	public Map<Integer, ReactorData> getReactors() {

@@ -21,10 +21,10 @@ package argonms.game.command;
 import argonms.common.UserPrivileges;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
-import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
+import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -39,7 +39,6 @@ import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.text.DateFormat;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -355,10 +354,9 @@ public class CommandProcessor {
 
 				long startMillis = GameServer.getChannel(p.getClient().getChannel()).getTimeStarted();
 				long upTimeMillis = System.currentTimeMillis() - startMillis;
-				Calendar startDate = Calendar.getInstance();
-				startDate.setTimeInMillis(startMillis);
 				DateFormat fmt = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.LONG);
-				resp.printOut("This game server was started on " + fmt.format(startDate.getTime()) + ".");
+				fmt.setTimeZone(TimeTool.getTimeZone());
+				resp.printOut("This game server was started on " + fmt.format(startMillis) + ".");
 
 				long upDays = upTimeMillis / (1000 * 60 * 60 * 24);
 				long upHours = (upTimeMillis % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60);

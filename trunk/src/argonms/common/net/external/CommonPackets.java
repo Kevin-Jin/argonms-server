@@ -69,7 +69,7 @@ public class CommonPackets {
 	 */
 	public static void writeItemExpire(LittleEndianWriter lew, long time, boolean show) {
 		if (!show || time <= 0)
-			time = TimeTool.NO_EXPIRATION;
+			time = TimeTool.getNoExpirationTimestamp();
 		lew.writeLong(TimeTool.unixToWindowsTime(time));
 	}
 

@@ -30,6 +30,7 @@ import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
+import argonms.common.util.TimeTool;
 import argonms.game.character.GameCharacter;
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.mob.MobDataLoader;
@@ -59,6 +60,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -106,6 +108,7 @@ public class GameServer implements LocalServer {
 		int centerPort;
 		String authKey;
 		String[] chList;
+		TimeZone tz;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.game.config.file", "game" + serverId + ".properties"));
 			prop.load(fr);
@@ -129,8 +132,10 @@ public class GameServer implements LocalServer {
 			registry.setBuffsWillCooldown(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablecooltime")));
 			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
 
-			String eventsString = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "");
-			initialEvents = eventsString.isEmpty() ? new String[0] : eventsString.split(",");
+			String temp = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "");
+			initialEvents = temp.isEmpty() ? new String[0] : temp.split(",");
+			temp = prop.getProperty("argonms.game." + serverId + ".tz");
+			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
 			System.exit(2);
@@ -212,6 +217,7 @@ public class GameServer implements LocalServer {
 			return;
 		}
 		Scheduler.enable(true, true);
+		TimeTool.setInstance(tz);
 
 		gci = new GameCenterInterface(serverId, world, this);
 		RemoteCenterSession<GameCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, gci);

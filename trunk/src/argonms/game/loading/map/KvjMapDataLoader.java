@@ -146,7 +146,8 @@ public class KvjMapDataLoader extends MapDataLoader {
 					stats.setClock();
 					break;
 				case BOAT:
-					stats.setShip();
+					stats.setShipObj(reader.readNullTerminatedString());
+					stats.setShipKind(reader.readByte());
 					break;
 				case REACTOR:
 					processReactor(reader, stats);

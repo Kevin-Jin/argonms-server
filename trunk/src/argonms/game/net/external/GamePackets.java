@@ -63,6 +63,7 @@ import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -1772,11 +1773,31 @@ public class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeClock() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		lew.writeShort(ClientSendOps.CLOCK);
+		lew.writeByte((byte) 1);
+
+		Calendar now = TimeTool.currentDateTime();
+		lew.writeByte((byte) now.get(Calendar.HOUR_OF_DAY));
+		lew.writeByte((byte) now.get(Calendar.MINUTE));
+		lew.writeByte((byte) now.get(Calendar.SECOND));
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeTimer(int seconds) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 		lew.writeShort(ClientSendOps.CLOCK);
 		lew.writeByte((byte) 2);
 		lew.writeInt(seconds);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShipEffect(short effect) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.SHIP);
+		lew.writeShort(effect);
 		return lew.getBytes();
 	}
 
