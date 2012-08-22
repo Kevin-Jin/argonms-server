@@ -53,15 +53,22 @@ public class InventoryHandler {
 		if (src < 0 && dst > 0) { //unequip
 			InventoryTools.unequip(p.getInventory(InventoryType.EQUIPPED), p.getInventory(InventoryType.EQUIP), src, dst);
 			gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
-			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false);
+			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false, true);
 			p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
 				gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
-				if (result.length == 2)
+				if (result.length == 0 && p.getInventory(InventoryType.EQUIP).get(src) != null || result.length == 2 && src != result[1]) {
+					//swapped out an equip
+					p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(src), false, true);
+				}
+				if (result.length == 2) {
+					//swapped out an additional equip
 					gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
-				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true);
+					p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(result[1]), false, true);
+				}
+				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true, true);
 				p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 			} else {
 				gc.getSession().send(GamePackets.writeInventoryNoChange());
@@ -175,35 +182,39 @@ public class InventoryHandler {
 			}
 		}
 
-		p.equipChanged(equip, false); //temporarily take equip off
+		p.equipChanged(equip, false, false); //temporarily take equip off
 		//perform scroll effects
 		byte result = InventoryTools.scrollEquip(scroll, equip, useWhiteScroll);
 
-		//remove scrolls
-		scroll = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), scrollSlot, (short) 1);
-		InventorySlot whiteScroll = null;
-		if (useWhiteScroll)
-			whiteScroll = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), whiteScrollSlot, (short) 1);
+		if (result == -1) { //no upgrade slots
+			p.equipChanged(equip, true, true); //put equip back on
 
-		switch (result) {
-			case -2: //curse
+			gc.getSession().send(GamePackets.writeInventoryNoChange());
+			if (legendarySpirit)
+				p.getMap().sendToAll(writeScrollResult(p.getId(), result, false, legendarySpirit));
+		} else {
+			//remove scrolls
+			scroll = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), scrollSlot, (short) 1);
+			InventorySlot whiteScroll = null;
+			if (useWhiteScroll)
+				whiteScroll = InventoryTools.takeFromInventory(p.getInventory(InventoryType.USE), whiteScrollSlot, (short) 1);
+
+			//update equips
+			boolean cursed;
+			if (result == -2) { //cursed
+				result = 0; //indicates general failure
+				cursed = true;
+
 				InventoryTools.takeFromInventory(p.getInventory(!legendarySpirit ? InventoryType.EQUIPPED : InventoryType.EQUIP), equipSlot, (short) 1);
 				equip = null; //leave equip off since we permanantly lost it
-				gc.getSession().send(GamePackets.writeInventoryUpdateEquipFromScroll(scrollSlot, whiteScrollSlot, equipSlot, scroll, whiteScroll, equip));
-				p.getMap().sendToAll(writeScrollResult(p.getId(), (byte) 0, true, legendarySpirit));
-				break;
-			case 0: //fail
-			case 1: //success
-				p.equipChanged(equip, true); //put equip back on
-				gc.getSession().send(GamePackets.writeInventoryUpdateEquipFromScroll(scrollSlot, whiteScrollSlot, equipSlot, scroll, whiteScroll, equip));
-				p.getMap().sendToAll(writeScrollResult(p.getId(), result, false, legendarySpirit));
-				break;
-			case -1: //no upgrade slots
-				p.equipChanged(equip, true); //put equip back on
-				gc.getSession().send(GamePackets.writeInventoryNoChange());
-				if (legendarySpirit)
-					p.getMap().sendToAll(writeScrollResult(p.getId(), result, false, legendarySpirit));
-				break;
+			} else { //success (result == 1) or non-cursed fail (result == 0)
+				cursed = false;
+
+				p.equipChanged(equip, true, true); //put equip back on
+			}
+
+			gc.getSession().send(GamePackets.writeInventoryUpdateEquipFromScroll(scrollSlot, whiteScrollSlot, equipSlot, scroll, whiteScroll, equip));
+			p.getMap().sendToAll(writeScrollResult(p.getId(), result, cursed, legendarySpirit));
 		}
 	}
 

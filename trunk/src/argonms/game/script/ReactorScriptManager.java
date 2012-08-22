@@ -62,7 +62,7 @@ public class ReactorScriptManager {
 			globalScope.put("reactor", globalScope, Context.javaToJS(actions, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
 			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
-			globalScope.put("party", globalScope, Context.javaToJS(new ScriptParty(client.getPlayer().getParty() == null ? null : client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
+			globalScope.put("party", globalScope, Context.javaToJS(client.getPlayer().getParty() == null ? null : new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			cx.evaluateReader(globalScope, reader, "reactors/" + scriptName + ".js", 1, null);
 			reader.close();
 			return true;
