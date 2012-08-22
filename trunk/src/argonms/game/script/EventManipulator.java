@@ -18,6 +18,13 @@
 
 package argonms.game.script;
 
+import argonms.game.character.GameCharacter;
+import argonms.game.field.entity.Mob;
+import argonms.game.script.binding.ScriptField;
+import argonms.game.script.binding.ScriptMob;
+import argonms.game.script.binding.ScriptParty;
+import argonms.game.script.binding.ScriptPlayer;
+import java.util.Map;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
@@ -28,41 +35,50 @@ import org.mozilla.javascript.Scriptable;
  */
 public class EventManipulator {
 	private final Scriptable globalScope;
+	private Map<String, Object> variables;
 
 	public EventManipulator(Scriptable globalScope) {
 		this.globalScope = globalScope;
 	}
 
-	public void playerDied(int playerId) {
+	/*package-private*/ void setVariables(Map<String, Object> variables) {
+		this.variables = variables;
+	}
+
+	public Object getVariable(String key) {
+		return variables.get(key);
+	}
+
+	public void playerDied(GameCharacter p) {
 		Object f = globalScope.get("playerDied", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptPlayer(p), globalScope) });
 			} finally {
 				Context.exit();
 			}
 		}
 	}
 
-	public void playerDisconnected(int playerId) {
+	public void playerDisconnected(GameCharacter p) {
 		Object f = globalScope.get("playerDisconnected", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptPlayer(p), globalScope) });
 			} finally {
 				Context.exit();
 			}
 		}
 	}
 
-	public void playerChangedMap(int playerId, int destination) {
+	public void playerChangedMap(GameCharacter p) {
 		Object f = globalScope.get("playerChangedMap", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { playerId, destination });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptPlayer(p), globalScope), Context.javaToJS(new ScriptField(p.getMap()), globalScope) });
 			} finally {
 				Context.exit();
 			}
@@ -81,48 +97,48 @@ public class EventManipulator {
 		}
 	}
 
-	public void partyMemberDischarged(int partyId, int playerId) {
+	public void partyMemberDischarged(GameCharacter p) {
 		Object f = globalScope.get("partyMemberDischarged", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { partyId, playerId });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptParty(p.getClient().getChannel(), p.getParty(), globalScope), globalScope), Context.javaToJS(new ScriptPlayer(p), globalScope) });
 			} finally {
 				Context.exit();
 			}
 		}
 	}
 
-	public void mobDied(int dataId, int entityId, int mapId) {
+	public void mobDied(Mob m, int mapId) {
 		Object f = globalScope.get("mobDied", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptMob(m, mapId), globalScope) });
 			} finally {
 				Context.exit();
 			}
 		}
 	}
 
-	public void mobSpawned(int dataId, int entityId, int mapId) {
+	public void mobSpawned(Mob m, int mapId) {
 		Object f = globalScope.get("mobSpawned", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptMob(m, mapId), globalScope) });
 			} finally {
 				Context.exit();
 			}
 		}
 	}
 
-	public void friendlyMobHurt(int dataId, int entityId, int mapId, int hp, int maxHp) {
+	public void friendlyMobHurt(Mob m, int mapId) {
 		Object f = globalScope.get("friendlyMobHurt", globalScope);
 		if (f != Scriptable.NOT_FOUND) {
 			Context cx = Context.enter();
 			try {
-				((Function) f).call(cx, globalScope, globalScope, new Object[] { dataId, entityId, mapId, hp, maxHp });
+				((Function) f).call(cx, globalScope, globalScope, new Object[] { Context.javaToJS(new ScriptMob(m, mapId), globalScope) });
 			} finally {
 				Context.exit();
 			}

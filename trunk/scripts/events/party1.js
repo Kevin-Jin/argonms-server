@@ -27,6 +27,7 @@ let EXIT_MAP = 103000890;
 
 let party;
 let members;
+let endTime;
 
 function init(attachment) {
 	party = attachment;
@@ -37,6 +38,7 @@ function init(attachment) {
 
 	event.getMap(103000800).showTimer(30 * 60);
 	event.startTimer("kick", 30 * 60 * 1000);
+	endTime = new Date().getTime() + 30 * 60 * 1000;
 
 	event.setVariable("members", members);
 
@@ -77,25 +79,27 @@ function removePlayer(playerId, changeMap) {
 	}
 }
 
-function playerDisconnected(playerId) {
+function playerDisconnected(player) {
 	//changeMap is false since all PQ maps force return the player to the exit
 	//map on his next login anyway, and we don't want to deal with sending
 	//change map packets to a disconnected client
-	removePlayer(playerId, false);
+	removePlayer(player.getId(), false);
 }
 
-function playerChangedMap(playerId, destination) {
+function playerChangedMap(player, destination) {
 	//TODO: is it true that even when a non-leader clicks Nella, the entire
 	//party is booted? and that GMS forces party out when only two members
 	//remain alive and online?
-	if (destination == EXIT_MAP)
+	if (destination.getId() == EXIT_MAP)
 		//player died and respawned or clicked Nella to leave PQ
 		//changeMap is false so player doesn't get re-warped to exit map
-		removePlayer(playerId, false);
+		removePlayer(player.getId(), false);
+	else
+		player.showTimer((endTime - new Date().getTime()) / 1000);
 }
 
-function partyMemberDischarged(partyId, playerId) {
-	removePlayer(playerId, true);
+function partyMemberDischarged(party, player) {
+	removePlayer(player.getId(), true);
 }
 
 function timerExpired(key) {

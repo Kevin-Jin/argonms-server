@@ -99,16 +99,17 @@ public class NpcScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
+			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			Script script = cx.compileReader(reader, "npcs/" + scriptName + ".js", 1, null);
 			reader.close();
 			if (npc.isPlayerNpc())
 				convoMan = new ScriptPlayerNpc((PlayerNpc) npc, client, globalScope);
 			else
 				convoMan = new ScriptNpc(npcId, client, globalScope);
-			globalScope.put("npc", globalScope, Context.toObject(convoMan, globalScope));
-			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(client.getPlayer()), globalScope));
-			globalScope.put("map", globalScope, Context.toObject(new ScriptField(client.getPlayer().getMap()), globalScope));
-			globalScope.put("party", globalScope, client.getPlayer().getParty() == null ? null : Context.toObject(new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
+			globalScope.put("npc", globalScope, Context.javaToJS(convoMan, globalScope));
+			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("party", globalScope, Context.javaToJS(client.getPlayer().getParty() == null ? null : new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();
@@ -131,13 +132,14 @@ public class NpcScriptManager {
 			Scriptable globalScope = cx.initStandardObjects();
 			cx.setOptimizationLevel(-1); // must use interpreter mode
 			cx.setLanguageVersion(Context.VERSION_1_7);
+			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			Script script = cx.compileReader(reader, "quests/" + scriptName + ".js", 1, null);
 			reader.close();
 			convoMan = new ScriptQuest(npcId, questId, client, globalScope);
-			globalScope.put("npc", globalScope, Context.toObject(convoMan, globalScope));
-			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(client.getPlayer()), globalScope));
-			globalScope.put("map", globalScope, Context.toObject(new ScriptField(client.getPlayer().getMap()), globalScope));
-			globalScope.put("party", globalScope, client.getPlayer().getParty() == null ? null : Context.toObject(new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
+			globalScope.put("npc", globalScope, Context.javaToJS(convoMan, globalScope));
+			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("party", globalScope, Context.javaToJS(client.getPlayer().getParty() == null ? null : new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
 			convoMan.endConversation();

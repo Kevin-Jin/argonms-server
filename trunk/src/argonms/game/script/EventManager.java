@@ -59,14 +59,17 @@ public class EventManager {
 		try {
 			FileReader reader = new FileReader(eventPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(1);
 			cx.setLanguageVersion(Context.VERSION_1_7);
+			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			delegator = new EventManipulator(globalScope);
 			event = new ScriptEvent(scriptName, channel, delegator, globalScope);
+			delegator.setVariables(event.getVariables());
 
 			handlers.put(scriptName, delegator);
 			activatedEvents.put(scriptName, event);
 
-			globalScope.put("event", globalScope, Context.toObject(event, globalScope));
+			globalScope.put("event", globalScope, Context.javaToJS(event, globalScope));
 			cx.evaluateReader(globalScope, reader, "events/" + scriptName + ".js", 1, null);
 			reader.close();
 

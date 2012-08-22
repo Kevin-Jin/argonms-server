@@ -1917,6 +1917,19 @@
 	* Hands and level field of equips are treated as equals with other equip
 	stats. More consistency among equip field access and mutating.
 
+2012-08-22  GoldenKevin  (revision 121)
+
+	* Rewrote EventManipulator. Rather than pass a bunch of IDs to the script,
+	it now instantiates script binding wrappers for the actual entities.
+	* Kerning PQ now retains timer for all stages.
+	* Use Context.javaToJS instead of Context.toObject. Equivalent Java types
+	are now converted to JavaScript primitives instead of being passed as either
+	JavaScript wrapper objects or native JavaScipt objects of Java wrapper
+	objects. Fixes a lot of issues with event variables, booleans, and null.
+	* EventManipulator allows access to event variables from Java code without
+	having to deal with JavaScript wrapping.
+	* Enable Rhino optimization of all scripts besides NPC scripts.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

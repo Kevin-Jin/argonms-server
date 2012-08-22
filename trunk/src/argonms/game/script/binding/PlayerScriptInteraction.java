@@ -47,13 +47,13 @@ public abstract class PlayerScriptInteraction {
 		return client;
 	}
 
-	public Scriptable getEvent(String script) {
+	public Object getEvent(String script) {
 		ScriptEvent event = GameServer.getChannel(client.getChannel()).getEventManager().getRunningScript(script);
-		return event == null ? null : Context.toObject(event, globalScope);
+		return Context.javaToJS(event, globalScope);
 	}
 
-	public Scriptable makeEvent(String script, Object attachment) {
-		return Context.toObject(GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment), globalScope);
+	public Object makeEvent(String script, Object attachment) {
+		return Context.javaToJS(GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment), globalScope);
 	}
 
 	public void sayInChat(String message) {

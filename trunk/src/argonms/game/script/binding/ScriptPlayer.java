@@ -279,4 +279,8 @@ public class ScriptPlayer {
 	public void gainCloseness(short gain) {
 		//TODO: implement pets and pet exp rate?
 	}
+
+	public void showTimer(int seconds) {
+		getPlayer().getClient().getSession().send(GamePackets.writeTimer(seconds));
+	}
 }

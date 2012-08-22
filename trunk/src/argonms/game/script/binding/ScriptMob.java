@@ -18,36 +18,38 @@
 
 package argonms.game.script.binding;
 
-import argonms.game.GameServer;
-import argonms.game.character.PartyList;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
+import argonms.game.field.entity.Mob;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ScriptPartyMember extends ScriptPlayer {
-	private final Scriptable globalScope;
+public class ScriptMob {
+	private Mob m;
+	private int mapId;
 
-	public ScriptPartyMember(PartyList.LocalMember member, Scriptable globalScope) {
-		super(member.getPlayer());
-		this.globalScope = globalScope;
+	public ScriptMob(Mob m, int mapId) {
+		this.m = m;
+		this.mapId = mapId;
 	}
 
-	public byte getChannel() {
-		return getPlayer().getClient().getChannel();
+	public int getDataId() {
+		return m.getDataId();
+	}
+
+	public int getEntityId() {
+		return m.getId();
 	}
 
 	public int getMapId() {
-		return getPlayer().getMapId();
+		return mapId;
 	}
 
-	public void setEvent(ScriptEvent event) {
-		getPlayer().setEvent(event == null ? null : GameServer.getChannel(getChannel()).getEventManager().getScriptInterface(event.getName()));
+	public int getHp() {
+		return m.getHp();
 	}
 
-	public Object getPosition() {
-		return Context.javaToJS(getPlayer().getPosition(), globalScope);
+	public int getMaxHp() {
+		return m.getMaxHp();
 	}
 }
