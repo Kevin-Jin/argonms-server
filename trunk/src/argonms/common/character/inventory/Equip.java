@@ -222,6 +222,10 @@ public class Equip extends InventorySlot implements Cloneable {
 		this.avoid = value;
 	}
 
+	public void setHands(short value) {
+		this.hands = value;
+	}
+
 	public void setSpeed(short value) {
 		this.speed = value;
 	}
@@ -252,6 +256,7 @@ public class Equip extends InventorySlot implements Cloneable {
 		copy.setMdef(getMdef());
 		copy.setAcc(getAcc());
 		copy.setAvoid(getAvoid());
+		copy.setHands(getHands());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 		return copy;

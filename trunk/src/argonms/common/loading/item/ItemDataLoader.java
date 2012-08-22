@@ -21,6 +21,7 @@ package argonms.common.loading.item;
 import argonms.common.StatEffect;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.loading.DataFileType;
+import argonms.common.util.Rng;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -48,6 +49,7 @@ public abstract class ItemDataLoader {
 	protected Map<Integer, List<int[]>> summons;
 	protected Map<Integer, Integer> success;
 	protected Map<Integer, Integer> cursed;
+	protected Set<Integer> recover, randStat, preventSlip, warmSupport;
 	protected List<Integer> cash; //I don't think this is really needed...
 	protected Map<Integer, List<byte[]>> operatingHours;
 	protected List<Integer> useOnPickup;
@@ -77,6 +79,10 @@ public abstract class ItemDataLoader {
 		summons = new HashMap<Integer, List<int[]>>();
 		success = new HashMap<Integer, Integer>();
 		cursed = new HashMap<Integer, Integer>();
+		recover = new HashSet<Integer>();
+		randStat = new HashSet<Integer>();
+		preventSlip = new HashSet<Integer>();
+		warmSupport = new HashSet<Integer>();
 		cash = new ArrayList<Integer>();
 		operatingHours = new HashMap<Integer, List<byte[]>>();
 		useOnPickup = new ArrayList<Integer>();
@@ -173,6 +179,32 @@ public abstract class ItemDataLoader {
 		short[] ret = bonusStats.get(oId);
 		//don't trust the caller not to alter the array for the rest of us...
 		return ret != null ? ret.clone() : null;
+	}
+
+	public boolean makeSuccessChanceResult(int itemId) {
+		Integer prob = success.get(Integer.valueOf(itemId));
+		return prob != null ? (Rng.getGenerator().nextInt(100) < prob.intValue()) : false;
+	}
+
+	public boolean makeCurseChanceResult(int itemId) {
+		Integer prob = cursed.get(Integer.valueOf(itemId));
+		return prob != null ? (Rng.getGenerator().nextInt(100) < prob.intValue()) : false;
+	}
+
+	public boolean isWhiteSlateScroll(int itemId) {
+		return recover.contains(Integer.valueOf(itemId));
+	}
+
+	public boolean isChaosScroll(int itemId) {
+		return randStat.contains(Integer.valueOf(itemId));
+	}
+
+	public boolean isPreventSlipScroll(int itemId) {
+		return preventSlip.contains(Integer.valueOf(itemId));
+	}
+
+	public boolean isWarmSupportScroll(int itemId) {
+		return warmSupport.contains(Integer.valueOf(itemId));
 	}
 
 	public boolean isCashEquip(int itemId) {

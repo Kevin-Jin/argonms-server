@@ -479,6 +479,7 @@ public class InventoryTools {
 			else
 				e = new Equip(itemId);
 			short[] statUps = ItemDataLoader.getInstance().getBonusStats(itemId);
+			e.setUpgradeSlots(ItemDataLoader.getInstance().getUpgradeSlots(itemId));
 			if (statUps != null) {
 				e.setStr(statUps[StatEffect.STR]);
 				e.setDex(statUps[StatEffect.DEX]);
@@ -495,7 +496,6 @@ public class InventoryTools {
 				e.setSpeed(statUps[StatEffect.Speed]);
 				e.setJump(statUps[StatEffect.Jump]);
 			}
-			e.setUpgradeSlots(ItemDataLoader.getInstance().getUpgradeSlots(itemId));
 			equipCache.put(oId, e);
 		}
 		return equipCache.get(oId).clone();
@@ -512,20 +512,125 @@ public class InventoryTools {
 	}
 
 	public static void randomizeStats(Equip e) {
-		e.setStr(makeRandStat(e.getStr(), 5));
-		e.setDex(makeRandStat(e.getDex(), 5));
-		e.setInt(makeRandStat(e.getInt(), 5));
-		e.setLuk(makeRandStat(e.getLuk(), 5));
-		e.setMatk(makeRandStat(e.getMatk(), 5));
-		e.setWatk(makeRandStat(e.getWatk(), 5));
-		e.setAcc(makeRandStat(e.getAcc(), 5));
-		e.setAvoid(makeRandStat(e.getAvoid(), 5));
-		e.setJump(makeRandStat(e.getJump(), 5));
-		e.setSpeed(makeRandStat(e.getSpeed(), 5));
-		e.setWdef(makeRandStat(e.getWdef(), 10));
-		e.setMdef(makeRandStat(e.getMdef(), 10));
+		e.setStr(makeRandStat(e.getStr(), 2));
+		e.setDex(makeRandStat(e.getDex(), 2));
+		e.setInt(makeRandStat(e.getInt(), 2));
+		e.setLuk(makeRandStat(e.getLuk(), 2));
 		e.setHp(makeRandStat(e.getHp(), 10));
 		e.setMp(makeRandStat(e.getMp(), 10));
+		e.setWatk(makeRandStat(e.getWatk(), 10));
+		e.setMatk(makeRandStat(e.getMatk(), 10));
+		e.setWdef(makeRandStat(e.getWdef(), 10));
+		e.setMdef(makeRandStat(e.getMdef(), 10));
+		e.setAcc(makeRandStat(e.getAcc(), 2));
+		e.setAvoid(makeRandStat(e.getAvoid(), 2));
+		e.setHands(makeRandStat(e.getHands(), 2));
+		e.setSpeed(makeRandStat(e.getSpeed(), 4));
+		e.setJump(makeRandStat(e.getJump(), 2));
+	}
+
+	public static byte scrollEquip(InventorySlot scroll, Equip equip, boolean useWhiteScroll) {
+		byte result;
+		ItemDataLoader itemData = ItemDataLoader.getInstance();
+		int scrollItemId = scroll.getDataId();
+		if (itemData.isWhiteSlateScroll(scrollItemId)) {
+			//TODO: add vicious hammer to maxSlots
+			byte maxSlots = itemData.getUpgradeSlots(equip.getDataId());
+			if (maxSlots > equip.getUpgradeSlots() + equip.getLevel()) {
+				if (itemData.makeSuccessChanceResult(scrollItemId)) {
+					equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() + 1));
+					result = 1;
+				} else {
+					if (itemData.makeCurseChanceResult(scrollItemId))
+						result = -2;
+					else
+						result = 0;
+				}
+			} else {
+				result = -1;
+			}
+		} else if (itemData.isChaosScroll(scrollItemId)) {
+			if (equip.getUpgradeSlots() > 0) {
+				if (itemData.makeSuccessChanceResult(scrollItemId)) {
+					byte factor = -1;
+					if (Rng.getGenerator().nextBoolean())
+						factor = 1;
+
+					equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() - 1));
+					equip.setLevel((byte) (equip.getLevel() + 1));
+					equip.setStr((short) (equip.getStr() + 5 * factor));
+					equip.setDex((short) (equip.getDex() + 5 * factor));
+					equip.setInt((short) (equip.getInt() + 5 * factor));
+					equip.setLuk((short) (equip.getLuk() + 5 * factor));
+					equip.setHp((short) (equip.getHp() + 5 * factor));
+					equip.setMp((short) (equip.getMp() + 5 * factor));
+					equip.setWatk((short) (equip.getWatk() + 5 * factor));
+					equip.setMatk((short) (equip.getMatk() + 5 * factor));
+					equip.setWdef((short) (equip.getWdef() + 5 * factor));
+					equip.setMdef((short) (equip.getMdef() + 5 * factor));
+					equip.setAcc((short) (equip.getAcc() + 5 * factor));
+					equip.setAvoid((short) (equip.getAvoid() + 5 * factor));
+					equip.setHands((short) (equip.getHands() + 5 * factor));
+					equip.setSpeed((short) (equip.getSpeed() + 5 * factor));
+					equip.setJump((short) (equip.getJump() + 5 * factor));
+					result = 1;
+				} else {
+					if (!useWhiteScroll)
+						equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() - 1));
+					result = 0;
+				}
+			} else {
+				result = -1;
+			}
+		} else if (itemData.isPreventSlipScroll(scrollItemId)) {
+			if (itemData.makeSuccessChanceResult(scrollItemId)) {
+				equip.setFlagBit(InventorySlot.FLAG_SPIKES, true);
+				result = 1;
+			} else {
+				result = 0;
+			}
+		} else if (itemData.isWarmSupportScroll(scrollItemId)) {
+			if (itemData.makeSuccessChanceResult(scrollItemId)) {
+				equip.setFlagBit(InventorySlot.FLAG_COLD_PROTECTION, true);
+				result = 1;
+			} else {
+				result = 0;
+			}
+		} else {
+			if (equip.getUpgradeSlots() > 0) {
+				if (itemData.makeSuccessChanceResult(scrollItemId)) {
+					equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() - 1));
+					equip.setLevel((byte) (equip.getLevel() + 1));
+					short[] add = itemData.getBonusStats(scrollItemId);
+					equip.setStr((short) (equip.getStr() + add[StatEffect.STR]));
+					equip.setDex((short) (equip.getDex() + add[StatEffect.DEX]));
+					equip.setInt((short) (equip.getInt() + add[StatEffect.INT]));
+					equip.setLuk((short) (equip.getLuk() + add[StatEffect.LUK]));
+					equip.setHp((short) (equip.getHp() + add[StatEffect.MHP]));
+					equip.setMp((short) (equip.getMp() + add[StatEffect.MMP]));
+					equip.setWatk((short) (equip.getWatk() + add[StatEffect.PAD]));
+					equip.setMatk((short) (equip.getMatk() + add[StatEffect.MAD]));
+					equip.setWdef((short) (equip.getWdef() + add[StatEffect.PDD]));
+					equip.setMdef((short) (equip.getMdef() + add[StatEffect.MDD]));
+					equip.setAcc((short) (equip.getAcc() + add[StatEffect.ACC]));
+					equip.setAvoid((short) (equip.getAvoid() + add[StatEffect.EVA]));
+					equip.setSpeed((short) (equip.getSpeed() + add[StatEffect.Speed]));
+					equip.setJump((short) (equip.getJump() + add[StatEffect.Jump]));
+					result = 1;
+				} else {
+					if (itemData.makeCurseChanceResult(scrollItemId)) {
+						result = -2;
+					} else {
+						if (!useWhiteScroll)
+							equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() - 1));
+						result = 0;
+					}
+				}
+			} else {
+				result = -1;
+			}
+		}
+		return result;
 	}
 
 	public static WeaponType getWeaponType(int itemId) {

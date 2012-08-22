@@ -47,22 +47,26 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		SUMMON = 7,
 		SUCCESS = 8,
 		CURSED = 9,
-		CASH = 10,
-		OPERATING_HOURS = 11,
-		SKILL = 12,
-		UNIT_PRICE = 13,
-		REQ_STAT = 14,
-		UPGRADE_SLOTS = 15,
-		SCROLL_REQUIREMENTS = 16,
-		ITEM_EFFECT = 17,
-		TRIGGER_ITEM = 18,
-		MESO_VALUE = 19,
+		RECOVER = 10,
+		RAND_STAT = 11,
+		PREVENT_SLIP = 12,
+		WARM_SUPPORT = 13,
+		CASH = 14,
+		OPERATING_HOURS = 15,
+		SKILL = 16,
+		UNIT_PRICE = 17,
+		REQ_STAT = 18,
+		UPGRADE_SLOTS = 19,
+		SCROLL_REQUIREMENTS = 20,
+		ITEM_EFFECT = 21,
+		TRIGGER_ITEM = 22,
+		MESO_VALUE = 23,
 
-		PET_COMMAND = 20,
-		PET_HUNGER = 21,
-		PET_EVOLVE = 22,
+		PET_COMMAND = 24,
+		PET_HUNGER = 25,
+		PET_EVOLVE = 26,
 
-		TAMING_MOB_ID = 23
+		TAMING_MOB_ID = 27
 	;
 
 	private String dataPath;
@@ -176,6 +180,18 @@ public class KvjItemDataLoader extends ItemDataLoader {
 					break;
 				case CURSED:
 					cursed.put(oId, Integer.valueOf(reader.readInt()));
+					break;
+				case RECOVER:
+					recover.add(oId);
+					break;
+				case RAND_STAT:
+					randStat.add(oId);
+					break;
+				case PREVENT_SLIP:
+					preventSlip.add(oId);
+					break;
+				case WARM_SUPPORT:
+					warmSupport.add(oId);
 					break;
 				case CASH:
 					cash.add(oId);

@@ -287,27 +287,28 @@ public abstract class Player {
 		try {
 			ps = con.prepareStatement(
 					"INSERT INTO `inventoryequipment` ("
-					+ "`inventoryitemid`,`str`,`dex`,`int`,"
-					+ "`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
-					+ "`mdef`,`acc`,`avoid`,`speed`,`jump`,"
-					+ "`upgradeslots`) "
-					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+					+ "`inventoryitemid`,`upgradeslots`,`level`,"
+					+ "`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
+					+ "`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			ps.setInt(1, inventoryKey);
-			ps.setShort(2, equip.getStr());
-			ps.setShort(3, equip.getDex());
-			ps.setShort(4, equip.getInt());
-			ps.setShort(5, equip.getLuk());
-			ps.setShort(6, equip.getHp());
-			ps.setShort(7, equip.getMp());
-			ps.setShort(8, equip.getWatk());
-			ps.setShort(9, equip.getMatk());
-			ps.setShort(10, equip.getWdef());
-			ps.setShort(11, equip.getMdef());
-			ps.setShort(12, equip.getAcc());
-			ps.setShort(13, equip.getAvoid());
-			ps.setShort(14, equip.getSpeed());
-			ps.setShort(15, equip.getJump());
-			ps.setByte(16, equip.getUpgradeSlots());
+			ps.setByte(2, equip.getUpgradeSlots());
+			ps.setByte(3, equip.getLevel());
+			ps.setShort(4, equip.getStr());
+			ps.setShort(5, equip.getDex());
+			ps.setShort(6, equip.getInt());
+			ps.setShort(7, equip.getLuk());
+			ps.setShort(8, equip.getHp());
+			ps.setShort(9, equip.getMp());
+			ps.setShort(10, equip.getWatk());
+			ps.setShort(11, equip.getMatk());
+			ps.setShort(12, equip.getWdef());
+			ps.setShort(13, equip.getMdef());
+			ps.setShort(14, equip.getAcc());
+			ps.setShort(15, equip.getAvoid());
+			ps.setShort(16, equip.getHands());
+			ps.setShort(17, equip.getSpeed());
+			ps.setShort(18, equip.getJump());
 			ps.executeUpdate();
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
@@ -465,21 +466,23 @@ public abstract class Player {
 					ips.setInt(1, inventoryKey);
 					irs = ips.executeQuery();
 					if (irs.next()) {
-						e.setStr(irs.getShort(3));
-						e.setDex(irs.getShort(4));
-						e.setInt(irs.getShort(5));
-						e.setLuk(irs.getShort(6));
-						e.setHp(irs.getShort(7));
-						e.setMp(irs.getShort(8));
-						e.setWatk(irs.getShort(9));
-						e.setMatk(irs.getShort(10));
-						e.setWdef(irs.getShort(11));
-						e.setMdef(irs.getShort(12));
-						e.setAcc(irs.getShort(13));
-						e.setAvoid(irs.getShort(14));
-						e.setSpeed(irs.getShort(15));
-						e.setJump(irs.getShort(16));
-						e.setUpgradeSlots(irs.getByte(17));
+						e.setUpgradeSlots(irs.getByte(3));
+						e.setLevel(irs.getByte(4));
+						e.setStr(irs.getShort(5));
+						e.setDex(irs.getShort(6));
+						e.setInt(irs.getShort(7));
+						e.setLuk(irs.getShort(8));
+						e.setHp(irs.getShort(9));
+						e.setMp(irs.getShort(10));
+						e.setWatk(irs.getShort(11));
+						e.setMatk(irs.getShort(12));
+						e.setWdef(irs.getShort(13));
+						e.setMdef(irs.getShort(14));
+						e.setAcc(irs.getShort(15));
+						e.setAvoid(irs.getShort(16));
+						e.setHands(irs.getShort(17));
+						e.setSpeed(irs.getShort(18));
+						e.setJump(irs.getShort(19));
 					}
 					irs.close();
 					ips.close();

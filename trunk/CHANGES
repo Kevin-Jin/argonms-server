@@ -1909,6 +1909,14 @@
 	* Added a bit of consistency when using InventoryTools.UpdatedSlots and
 	GameCharacter.itemCountChanged(itemId).
 
+2012-08-22  GoldenKevin  (revision 121)
+
+	* Updated supported Kvj format to r31.
+	* Implemented equip scrolling.
+	* InventoryTools.randomizeStats uses more accurate stat ranges.
+	* Hands and level field of equips are treated as equals with other equip
+	stats. More consistency among equip field access and mutating.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
