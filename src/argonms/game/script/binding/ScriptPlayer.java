@@ -20,7 +20,6 @@ package argonms.game.script.binding;
 
 import argonms.common.character.BuddyList;
 import argonms.common.character.inventory.Inventory;
-import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;

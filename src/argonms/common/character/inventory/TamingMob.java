@@ -95,6 +95,7 @@ public class TamingMob extends Equip {
 		copy.setMdef(getMdef());
 		copy.setAcc(getAcc());
 		copy.setAvoid(getAvoid());
+		copy.setHands(getHands());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 

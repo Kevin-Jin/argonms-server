@@ -219,6 +219,14 @@ public class McdbItemDataLoader extends ItemDataLoader {
 				chance = rs.getInt("cursed");
 				if (chance != 0)
 					cursed.put(oId, Integer.valueOf(chance));
+				if (rs.getBoolean("randstat"))
+					randStat.add(oId);
+				if (rs.getBoolean("recover"))
+					recover.add(oId);
+				if (itemid == 2040727) //TODO: hackish
+					preventSlip.add(oId);
+				if (itemid == 2041058) //TODO: hackish
+					warmSupport.add(oId);
 
 				List<Integer> skillIds = new ArrayList<Integer>();
 				try {

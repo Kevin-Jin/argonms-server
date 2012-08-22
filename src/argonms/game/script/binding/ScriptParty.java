@@ -19,7 +19,6 @@
 package argonms.game.script.binding;
 
 import argonms.common.character.inventory.Inventory;
-import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;

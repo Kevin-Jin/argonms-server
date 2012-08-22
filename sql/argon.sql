@@ -172,6 +172,8 @@ DROP TABLE IF EXISTS `inventoryequipment`;
 CREATE TABLE `inventoryequipment` (
   `inventoryequipmentid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` INT(10) UNSIGNED NOT NULL,
+  `upgradeslots` TINYINT(4) NOT NULL,
+  `level` TINYINT(4) NOT NULL,
   `str` SMALLINT(6) NOT NULL,
   `dex` SMALLINT(6) NOT NULL,
   `int` SMALLINT(6) NOT NULL,
@@ -184,9 +186,9 @@ CREATE TABLE `inventoryequipment` (
   `mdef` SMALLINT(6) NOT NULL,
   `acc` SMALLINT(6) NOT NULL,
   `avoid` SMALLINT(6) NOT NULL,
+  `hands` SMALLINT(6) NOT NULL,
   `speed` SMALLINT(6) NOT NULL,
   `jump` SMALLINT(6) NOT NULL,
-  `upgradeslots` TINYINT(4) NOT NULL,
   PRIMARY KEY (`inventoryequipmentid`),
   KEY (`inventoryitemid`),
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE

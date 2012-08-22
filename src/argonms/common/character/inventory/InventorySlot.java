@@ -41,6 +41,14 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 		PET = 3
 	;
 
+	public static final byte
+		FLAG_LOCK = 0x01,
+		FLAG_SPIKES = 0x02,
+		FLAG_COLD_PROTECTION = 0x04,
+		FLAG_TRADE_UNAVAILABLE = 0x08,
+		FLAG_KARMA_SCISSORS = 0x10
+	;
+
 	private int id;
 	private long expire;
 	private long uid;
@@ -90,6 +98,13 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 
 	public void setFlag(short flag) {
 		this.flag = flag;
+	}
+
+	public void setFlagBit(byte bit, boolean value) {
+		if (value)
+			this.flag |= bit;
+		else
+			this.flag &= ~bit;
 	}
 
 	@Override

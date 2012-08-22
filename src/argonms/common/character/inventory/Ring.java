@@ -73,6 +73,7 @@ public class Ring extends Equip implements Cloneable {
 		copy.setMdef(getMdef());
 		copy.setAcc(getAcc());
 		copy.setAvoid(getAvoid());
+		copy.setHands(getHands());
 		copy.setSpeed(getSpeed());
 		copy.setJump(getJump());
 
