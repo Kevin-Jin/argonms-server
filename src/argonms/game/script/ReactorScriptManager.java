@@ -55,12 +55,14 @@ public class ReactorScriptManager {
 		try {
 			FileReader reader = new FileReader(reactorScriptPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(1);
 			cx.setLanguageVersion(Context.VERSION_1_7);
+			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			ScriptReactor actions = new ScriptReactor(reactorId, reactor, client, globalScope);
-			globalScope.put("reactor", globalScope, Context.toObject(actions, globalScope));
-			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(client.getPlayer()), globalScope));
-			globalScope.put("map", globalScope, Context.toObject(new ScriptField(client.getPlayer().getMap()), globalScope));
-			globalScope.put("party", globalScope, client.getPlayer().getParty() == null ? null : Context.toObject(new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
+			globalScope.put("reactor", globalScope, Context.javaToJS(actions, globalScope));
+			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("party", globalScope, Context.javaToJS(new ScriptParty(client.getPlayer().getParty() == null ? null : client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			cx.evaluateReader(globalScope, reader, "reactors/" + scriptName + ".js", 1, null);
 			reader.close();
 			return true;

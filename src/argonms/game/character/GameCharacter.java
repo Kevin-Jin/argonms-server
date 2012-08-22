@@ -1084,7 +1084,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	public void died() {
 		getClient().getSession().send(GamePackets.writeEnableActions());
 		if (event != null)
-			event.playerDied(getId());
+			event.playerDied(this);
 
 		byte lossPercent;
 		Inventory inv = getInventory(InventoryType.CASH);
@@ -1673,8 +1673,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public boolean changeMap(int mapid, byte initialPortal) {
 		leaveMapRoutines();
-		if (event != null)
-			event.playerChangedMap(getId(), mapid);
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
 			map.removePlayer(this);
@@ -1694,6 +1692,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 					party.unlockRead();
 				}
 			}
+			if (event != null)
+				event.playerChangedMap(this);
 			return true;
 		}
 		return false;
@@ -1722,7 +1722,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void prepareChannelChange() {
 		if (event != null)
-			event.playerDisconnected(getId());
+			event.playerDisconnected(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
 		prepareExitChannel(false);
@@ -1730,7 +1730,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void prepareLogOff(boolean quickCleanup) {
 		if (event != null)
-			event.playerDisconnected(getId());
+			event.playerDisconnected(this);
 		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
@@ -1747,7 +1747,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void setParty(PartyList party) {
 		if (party == null && event != null)
-			event.partyMemberDischarged(this.party.getId(), getId());
+			event.partyMemberDischarged(this);
 		this.party = party;
 	}
 

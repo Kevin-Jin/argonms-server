@@ -151,7 +151,7 @@ public class ScriptParty {
 			members = new Object[party.getMembersInLocalChannel().size()];
 			int i = 0;
 			for (PartyList.LocalMember member : party.getMembersInLocalChannel())
-				members[i++] = Context.toObject(new ScriptPartyMember(member, globalScope), globalScope);
+				members[i++] = Context.javaToJS(new ScriptPartyMember(member, globalScope), globalScope);
 		} finally {
 			party.unlockRead();
 		}

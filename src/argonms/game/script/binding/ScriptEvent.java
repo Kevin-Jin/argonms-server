@@ -52,17 +52,20 @@ public class ScriptEvent {
 		return name;
 	}
 
+	public Map<String, Object> getVariables() {
+		return variables;
+	}
+
 	public void setVariable(String key, Object value) {
 		variables.put(key, value);
 	}
 
-	public Scriptable getVariable(String key) {
-		Object value = variables.get(key);
-		return value == null ? null : Context.toObject(value, globalScope);
+	public Object getVariable(String key) {
+		return Context.javaToJS(variables.get(key), globalScope);
 	}
 
-	public Scriptable getMap(int mapId) {
-		return Context.toObject(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId)), globalScope);
+	public Object getMap(int mapId) {
+		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId)), globalScope);
 	}
 
 	public void startTimer(final String key, int millisDelay) {

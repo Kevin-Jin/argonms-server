@@ -52,12 +52,14 @@ public class PortalScriptManager {
 		try {
 			FileReader reader = new FileReader(portalPath + scriptName + ".js");
 			Scriptable globalScope = cx.initStandardObjects();
+			cx.setOptimizationLevel(1);
 			cx.setLanguageVersion(Context.VERSION_1_7);
+			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			ScriptPortal portalManager = new ScriptPortal(p.getClient(), globalScope);
-			globalScope.put("portal", globalScope, Context.toObject(portalManager, globalScope));
-			globalScope.put("player", globalScope, Context.toObject(new ScriptPlayer(p), globalScope));
-			globalScope.put("map", globalScope, Context.toObject(new ScriptField(p.getMap()), globalScope));
-			globalScope.put("party", globalScope, p.getParty() == null ? null : Context.toObject(new ScriptParty(p.getClient().getChannel(), p.getParty(), globalScope), globalScope));
+			globalScope.put("portal", globalScope, Context.javaToJS(portalManager, globalScope));
+			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(p), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(p.getMap()), globalScope));
+			globalScope.put("party", globalScope, Context.javaToJS(new ScriptParty(p.getParty() == null ? null : p.getClient().getChannel(), p.getParty(), globalScope), globalScope));
 			cx.evaluateReader(globalScope, reader, "portals/" + scriptName + ".js", 1, null);
 			reader.close();
 			return portalManager.warped();
