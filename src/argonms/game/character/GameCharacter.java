@@ -643,9 +643,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			p.setPosition(p.map.getPortalPosition(p.savedSpawnPoint));
 
 			p.maxHp = p.baseMaxHp;
-			p.remHp = (short) Math.min(p.remHp, p.maxHp);
 			p.maxMp = p.baseMaxMp;
-			p.remMp = (short) Math.min(p.remMp, p.maxMp);
 
 			p.mesos = rs.getInt(26);
 			p.buddies = new BuddyList(rs.getShort(32));
@@ -676,7 +674,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.close();
 			//inventories should still be safe right now, so no need for synchronization...
 			for (InventorySlot equip : p.getInventory(InventoryType.EQUIPPED).getAll().values())
-				p.equipChanged((Equip) equip, true);
+				p.equipChanged((Equip) equip, true, true);
+
+			p.remHp = (short) Math.min(p.remHp, p.maxHp);
+			p.remMp = (short) Math.min(p.remMp, p.maxMp);
 
 			ps = con.prepareStatement("SELECT `skillid`,`level`,`mastery` "
 					+ "FROM `skills` WHERE `characterid` = ?");
@@ -1362,10 +1363,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return (byte) buddies.getCapacity();
 	}
 
-	//Scrolling equips will screw this up, so remember
-	//to call equipChanged(e, false) before scrolling and
-	//then call equipChanged(e, true) after scrolling
-	public void equipChanged(Equip e, boolean putOn) {
+	public void equipChanged(Equip e, boolean putOn, boolean permanent) {
 		short stat;
 		if (putOn) {
 			stat = e.getHp();
@@ -1396,15 +1394,19 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			if (stat > 0) {
 				addMaxHp -= stat;
 				recalculateMaxHp();
-				if (remHp > maxHp)
+				if (permanent && remHp > maxHp) {
 					remHp = maxHp;
+					getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
+				}
 			}
 			stat = e.getMp();
 			if (stat > 0) {
 				addMaxMp -= stat;
 				recalculateMaxMp();
-				if (remMp > maxMp)
+				if (permanent && remMp > maxMp) {
 					remMp = maxMp;
+					getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.MP, Short.valueOf(remMp)), false));
+				}
 			}
 			addStr -= e.getStr();
 			addDex -= e.getDex();

@@ -94,7 +94,7 @@ public class MaxStatCommandHandlers {
 		synchronized(iv) {
 			for (Entry<Short, InventorySlot> item : iv.entrySet()) {
 				Equip e = (Equip) item.getValue();
-				p.equipChanged(e, false);
+				p.equipChanged(e, false, false);
 				e.setStr(Short.MAX_VALUE);
 				e.setDex(Short.MAX_VALUE);
 				e.setInt(Short.MAX_VALUE);
@@ -110,7 +110,7 @@ public class MaxStatCommandHandlers {
 				e.setHands(Short.MAX_VALUE);
 				e.setSpeed((short) 40);
 				e.setJump((short) 23);
-				p.equipChanged(e, true);
+				p.equipChanged(e, true, true);
 				p.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
 			}
 		}

@@ -768,6 +768,8 @@ public class GamePackets {
 			lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
 			lew.writeByte(InventoryType.EQUIP.byteValue());
 			lew.writeShort(equipPos);
+			if (equipPos < 0)
+				lew.writeBool(true);
 		} else {
 			lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
 			lew.writeByte(InventoryType.EQUIP.byteValue());

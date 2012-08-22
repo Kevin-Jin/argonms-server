@@ -1935,13 +1935,29 @@
 	* Updated supported Kvj format to r32.
 	* Greater flexibility with time zones. Expiration dates, clocks, and
 	miscellaneous in-game output are no longer bound to the server's default
-	time zone. Note that this doesn't affect the output of log messages.
+	time zone. Note that this doesn't affect the output of log messages nor does
+	it affect the time zone of JavaScipt Date objects.
 	* Added script for ship between Ellinia and Orbis. Although it works, I will
 	not enable it by default in game*.properties until I finish implementing all
 	Victoria Island NPCs and then move on to Ossyria.
 	* ScheduledHashWheelExecutor.HashedWheelFuture.get() throws
 	ExecutionException for all submitted tasks that are ended early because of
 	an exception.
+
+2012-08-22  GoldenKevin  (revision 124)
+
+	* Fixed NullPointerException in portal and reactor scripts if player is not
+	a member of a party.
+	* Scrolling equips for HP and MP no longer clips remaining HP and MP to the
+	max HP/MP values that have the equip's bonus HP/MP subtracted from them.
+	* Unequipping an item that has an HP bonus will now update the client's
+	remaining HP bar if remaining HP is clipped.
+	* GameCharacter.equipChanged called for equipped items that are replaced by
+	another equip item of the some category.
+	* Fixed packet for cursed scrolled equips.
+	* Scroll no longer consumed if equip has no upgrade slots.
+	* Fixed player's remaining HP/MP being clipped to base max HP/MP on login.
+	Don't clip remaining HP/MP until after equip max HP/MP bonuses are applied.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
