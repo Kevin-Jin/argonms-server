@@ -23,7 +23,7 @@ package argonms.common.net.internal;
  * server.
  * @author GoldenKevin
  */
-public class CenterRemoteOps {
+public final class CenterRemoteOps {
 	public static final byte
 		AUTH_RESPONSE = 0x00,
 		PING = 0x01,

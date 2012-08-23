@@ -28,8 +28,8 @@ import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.login.BalloonMessage;
 import argonms.login.LoginServer;
-import argonms.login.Message;
 import argonms.login.character.LoginCharacter;
 import argonms.login.net.LoginWorld;
 import argonms.login.net.external.LoginClient;
@@ -310,7 +310,7 @@ public final class WorldlistHandler {
 		lew.writeByte(world);
 		lew.writeLengthPrefixedString(w.getName());
 		lew.writeByte(w.getFlag());
-		lew.writeLengthPrefixedString(w.getMessage());
+		lew.writeLengthPrefixedString(w.getChannelListMessage());
 		lew.writeByte((byte) 100); // rate modifier
 		lew.writeByte((byte) 0); // event xp * 2.6
 		lew.writeByte((byte) 100); // rate modifier
@@ -337,9 +337,9 @@ public final class WorldlistHandler {
 			lew.writeShort(entry.getKey().byteValue());
 		}*/
 
-		List<Message> messages = LoginServer.getInstance().getMessages();
+		List<BalloonMessage> messages = LoginServer.getInstance().getWorldListMessages();
 		lew.writeShort((short) messages.size()); //num of messages
-		for (Message msg : messages) {
+		for (BalloonMessage msg : messages) {
 			lew.writePos(msg.getPosition()); //(0, 0) = on Scania
 			lew.writeLengthPrefixedString(msg.getText());
 		}

@@ -35,6 +35,7 @@ import argonms.login.net.LoginWorld;
 import argonms.login.net.external.ClientLoginPacketProcessor;
 import argonms.login.net.external.LoginClient;
 import argonms.login.net.internal.LoginCenterInterface;
+import java.awt.Point;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -63,13 +64,15 @@ public class LoginServer implements LocalServer {
 
 	private static LoginServer instance;
 
+	private final List<BalloonMessage> worldListMessages;
+	private final Map<Byte, LoginWorld> onlineWorlds;
+	private final Map<Byte, Byte> worldFlags;
+	private final Map<Byte, String> worldMessages;
 	private ClientListener<LoginClient> handler;
 	private LoginCenterInterface lci;
 	private String address;
 	private int port;
 	private boolean usePin;
-	private final List<Message> messages;
-	private final Map<Byte, LoginWorld> onlineWorlds;
 	private boolean preloadAll;
 	private DataFileType wzType;
 	private String wzPath;
@@ -78,8 +81,30 @@ public class LoginServer implements LocalServer {
 	private boolean centerConnected;
 
 	private LoginServer() {
-		messages = new ArrayList<Message>();
+		worldListMessages = new ArrayList<BalloonMessage>();
 		onlineWorlds = new HashMap<Byte, LoginWorld>();
+		worldFlags = new HashMap<Byte, Byte>();
+		worldMessages = new HashMap<Byte, String>();
+	}
+
+	private void parseBalloonMessages(String str) {
+		int x, y;
+		int startIndex, endIndex = 0;
+		do {
+			startIndex = str.indexOf('(', endIndex) + 1;
+			endIndex = str.indexOf(',', startIndex);
+			x = Integer.parseInt(str.substring(startIndex, endIndex).trim());
+			startIndex = endIndex + 1;
+			endIndex = str.indexOf(')', startIndex);
+			y = Integer.parseInt(str.substring(startIndex, endIndex).trim());
+
+			startIndex = str.indexOf(':', endIndex) + 1;
+			endIndex = str.indexOf(',', startIndex);
+			if (endIndex == -1)
+				endIndex = str.length();
+			worldListMessages.add(new BalloonMessage(new Point(x, y), str.substring(startIndex, endIndex).trim()));
+			System.out.println(x + " " + y);
+		} while (endIndex != str.length());
 	}
 
 	public void init() {
@@ -104,7 +129,23 @@ public class LoginServer implements LocalServer {
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.login.usenio"));
 			rankingPeriod = Integer.parseInt(prop.getProperty("argonms.login.ranking.frequency"));
 
-			String temp = prop.getProperty("argonms.login.tz");
+			String temp = prop.getProperty("argonms.login.decoratedWorlds").replaceAll("\\s", "");
+			if (!temp.isEmpty()) {
+				for (String id : temp.split(",")) {
+					Byte world = Byte.valueOf(Byte.parseByte(id));
+					temp = prop.getProperty("argonms.login.world." + id + ".flag");
+					if (temp != null)
+						worldFlags.put(world, Byte.valueOf(Byte.parseByte(temp)));
+					temp = prop.getProperty("argonms.login.world." + id + ".message");
+					if (temp != null)
+						worldMessages.put(world, temp);
+				}
+			}
+			temp = prop.getProperty("argonms.login.balloons").trim();
+			if (!temp.isEmpty())
+				parseBalloonMessages(temp);
+
+			temp = prop.getProperty("argonms.login.tz");
 			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load login server properties!", ex);
@@ -230,10 +271,12 @@ public class LoginServer implements LocalServer {
 	public void gameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {
 		try {
 			byte[] ip = InetAddress.getByName(host).getAddress();
-			LoginWorld w = onlineWorlds.get(Byte.valueOf(world));
+			Byte oWorld = Byte.valueOf(world);
+			LoginWorld w = onlineWorlds.get(oWorld);
 			if (w == null) {
-				w = new LoginWorld(world);
-				onlineWorlds.put(Byte.valueOf(world), w);
+				Byte flag = worldFlags.get(oWorld);
+				w = new LoginWorld(world, flag != null ? flag.byteValue() : 0, worldMessages.get(oWorld));
+				onlineWorlds.put(oWorld, w);
 			}
 			w.addGameServer(ip, ports, serverId);
 			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
@@ -273,8 +316,8 @@ public class LoginServer implements LocalServer {
 		return onlineWorlds.get(Byte.valueOf(world));
 	}
 
-	public List<Message> getMessages() {
-		return Collections.unmodifiableList(messages);
+	public List<BalloonMessage> getWorldListMessages() {
+		return Collections.unmodifiableList(worldListMessages);
 	}
 
 	public static LoginServer getInstance() {
