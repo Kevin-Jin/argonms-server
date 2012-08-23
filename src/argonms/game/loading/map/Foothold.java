@@ -23,7 +23,7 @@ package argonms.game.loading.map;
  * @author GoldenKevin
  */
 public class Foothold implements Comparable<Foothold> {
-	private short id;
+	private final short id;
 	private short x1;
 	private short y1;
 	private short x2;

@@ -41,7 +41,7 @@ import java.util.Random;
  *
  * @author GoldenKevin
  */
-public class MonsterStatusEffectTools {
+public final class MonsterStatusEffectTools {
 	private static byte[] getCastEffect(Mob m, MonsterStatusEffectsData e, Map<MonsterStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
@@ -147,7 +147,8 @@ public class MonsterStatusEffectTools {
 							DiseaseTools.applyDebuff(p, (short) skill.getDataId(), skill.getLevel());
 						return 0;
 				}
-			} case PLAYER_SKILL: {
+			}
+			case PLAYER_SKILL: {
 				int duration;
 				switch (e.getDataId()) {
 					case Skills.BLIND:
@@ -164,9 +165,9 @@ public class MonsterStatusEffectTools {
 						break;
 				}
 				return duration;
-			} default : {
-				return 0;
 			}
+			default:
+				return 0;
 		}
 	}
 
@@ -193,7 +194,8 @@ public class MonsterStatusEffectTools {
 				if (v != null)
 					dispelEffect(m, buff, v);
 				break;
-			} case PLAYER_SKILL: {
+			}
+			case PLAYER_SKILL: {
 				MonsterStatusEffect buff = e.getMonsterEffect();
 				if (buff != null) {
 					MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
@@ -324,5 +326,9 @@ public class MonsterStatusEffectTools {
 			case INERTMOB:
 				break;
 		}
+	}
+
+	private MonsterStatusEffectTools() {
+		//uninstantiable...
 	}
 }

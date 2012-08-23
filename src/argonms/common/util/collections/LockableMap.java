@@ -62,8 +62,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public class LockableMap<K, V> implements Map<K, V> {
-	private Map<K, V> map;
-	private Lock readLock, writeLock;
+	private final Map<K, V> map;
+	private final Lock readLock, writeLock;
 
 	/**
 	 * Create a new instance of <code>LockableMap</code>. The underlying map

@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * @author GoldenKevin
  */
-public class StatAllocationHandler {
+public final class StatAllocationHandler {
 	public static void handleApAllocation(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		/*int time = */packet.readInt();
@@ -112,5 +112,9 @@ public class StatAllocationHandler {
 		} else {
 			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
 		}
+	}
+
+	private StatAllocationHandler() {
+		//uninstantiable...
 	}
 }

@@ -49,7 +49,7 @@ public abstract class InventorySlot implements Comparable<InventorySlot>, Clonea
 		FLAG_KARMA_SCISSORS = 0x10
 	;
 
-	private int id;
+	private final int id;
 	private long expire;
 	private long uid;
 	private String owner;

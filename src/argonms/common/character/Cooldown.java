@@ -26,8 +26,8 @@ import java.util.concurrent.ScheduledFuture;
  * @author GoldenKevin
  */
 public class Cooldown {
-	private long endTime;
-	private ScheduledFuture<?> expiration;
+	private final long endTime;
+	private final ScheduledFuture<?> expiration;
 
 	public Cooldown(int remaining, Runnable expireTask) {
 		this.endTime = System.currentTimeMillis() + remaining;

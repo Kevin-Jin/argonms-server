@@ -42,7 +42,7 @@ import java.util.Set;
  *
  * @author GoldenKevin
  */
-public class InventoryHandler {
+public final class InventoryHandler {
 	public static void handleItemMove(LittleEndianReader packet, GameClient gc) {
 		/*int time = */packet.readInt();
 		InventoryType type = InventoryType.valueOf(packet.readByte());
@@ -272,5 +272,9 @@ public class InventoryHandler {
 		lew.writeBool(legendarySpirit);
 		lew.writeByte((byte) 0);
 		return lew.getBytes();
+	}
+
+	private InventoryHandler() {
+		//uninstantiable...
 	}
 }

@@ -23,7 +23,7 @@ import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.GameChatHandler;
+import argonms.game.net.external.handler.ChatHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,7 +50,7 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	private void serverWideNotice(String message) {
-		byte[] packet = GamePackets.writeServerMessage(GameChatHandler.TextStyle.OK_BOX.byteValue(), message, (byte) -1, true);
+		byte[] packet = GamePackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), message, (byte) -1, true);
 		for (WorldChannel chn : GameServer.getInstance().getChannels().values())
 			for (GameCharacter p : chn.getConnectedPlayers())
 				p.getClient().getSession().send(packet);

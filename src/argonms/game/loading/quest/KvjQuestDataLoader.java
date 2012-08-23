@@ -75,7 +75,7 @@ public class KvjQuestDataLoader extends QuestDataLoader {
 
 	private static final Logger LOG = Logger.getLogger(KvjQuestDataLoader.class.getName());
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjQuestDataLoader(String wzPath) {
 		this.dataPath = wzPath;

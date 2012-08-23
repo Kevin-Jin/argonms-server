@@ -41,7 +41,7 @@ public class PortalScriptManager {
 
 	private static PortalScriptManager singleton;
 
-	private String portalPath;
+	private final String portalPath;
 
 	private PortalScriptManager(String scriptPath) {
 		portalPath = scriptPath + "portals" + GlobalConstants.DIR_DELIMIT;

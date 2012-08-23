@@ -22,7 +22,7 @@ package argonms.game.command;
  *
  * @author GoldenKevin
  */
-public class ParseHelper {
+public final class ParseHelper {
 	public static boolean hasOpt(String[] array, String search) {
 		for (int i = 0; i < array.length; i++)
 			if (array[i].equalsIgnoreCase(search))
@@ -76,5 +76,9 @@ public class ParseHelper {
 		for (int i = start; i < splitted.length; i++)
 			sb.append(splitted[i]).append(' ');
 		return sb.substring(0, sb.length() - 1); //assume we have at least one arg
+	}
+
+	private ParseHelper() {
+		//uninstantiable...
 	}
 }

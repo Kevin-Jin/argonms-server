@@ -37,7 +37,7 @@ public class Reactor extends AbstractEntity {
 		TYPE_ITEM_TRIGGERED = 100
 	;
 
-	private ReactorStats stats;
+	private final ReactorStats stats;
 	private String name;
 	private int delay;
 	private byte state;

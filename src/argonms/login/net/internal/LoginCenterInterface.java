@@ -31,7 +31,7 @@ import argonms.login.LoginServer;
  * @author GoldenKevin
  */
 public class LoginCenterInterface extends RemoteCenterInterface {
-	private LoginServer local;
+	private final LoginServer local;
 
 	public LoginCenterInterface(LoginServer ls) {
 		super(new CenterLoginPacketProcessor(ls));

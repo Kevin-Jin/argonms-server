@@ -39,14 +39,20 @@ import java.util.Random;
  * @author GoldenKevin
  */
 public class MobStats {
-	private int mobid;
+	private final int mobid;
+	private final Map<Element, Byte> elemAttr;
+	private final List<Integer> loseItems;
+	private final List<Integer> summons;
+	private final Map<Byte, Attack> attacks;
+	private final List<Skill> skills;
+	private final Map<String, Integer> delays;
+	private final Map<Integer, Integer> itemDrops;
 	private short level;
 	private int maxHp;
 	private int maxMp;
 	private int pad;
 	private int exp;
 	private boolean undead;
-	private final Map<Element, Byte> elemAttr;
 	private int removeAfter;
 	private boolean hideHp;
 	private boolean hideName;
@@ -54,15 +60,9 @@ public class MobStats {
 	private byte hpTagBgColor;
 	private boolean boss;
 	private int sd;
-	private final List<Integer> loseItems;
 	private boolean invincible;
-	private final List<Integer> summons;
 	private boolean firstAttack;
-	private final Map<Byte, Attack> attacks;
-	private final List<Skill> skills;
 	private int buff;
-	private final Map<String, Integer> delays;
-	private final Map<Integer, Integer> itemDrops;
 	private MesoDropChance mesoDrop;
 
 	protected MobStats(int mobid) {

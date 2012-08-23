@@ -31,8 +31,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public class LockableSet<T> implements Set<T> {
-	private Set<T> set;
-	private Lock readLock, writeLock;
+	private final Set<T> set;
+	private final Lock readLock, writeLock;
 
 	public LockableSet(Set<T> set, ReadWriteLock rwLock) {
 		this.set = set;

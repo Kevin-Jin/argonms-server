@@ -77,7 +77,7 @@ import java.util.TreeMap;
  *
  * @author GoldenKevin
  */
-public class GamePackets {
+public final class GamePackets {
 	private static final Map<ClientUpdateKey, Number> EMPTY_STATUPDATE = Collections.emptyMap();
 
 	/**
@@ -1868,5 +1868,9 @@ public class GamePackets {
 		lew.writeBool(false);
 
 		return lew.getBytes();
+	}
+
+	private GamePackets() {
+		//uninstantiable...
 	}
 }

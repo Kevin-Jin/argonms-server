@@ -28,9 +28,9 @@ import java.util.Set;
  * @author GoldenKevin
  */
 public class ShopWorld {
-	private Map<Byte, byte[]> hosts;
-	private Map<Byte, Integer> channelPorts;
-	private Map<Byte, Set<Byte>> gameToChannelMapping;
+	private final Map<Byte, byte[]> hosts;
+	private final Map<Byte, Integer> channelPorts;
+	private final Map<Byte, Set<Byte>> gameToChannelMapping;
 
 	public ShopWorld() {
 		this.hosts = new HashMap<Byte, byte[]>();

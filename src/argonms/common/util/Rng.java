@@ -24,7 +24,7 @@ import java.util.Random;
  * Provides a central area to acquire a ThreadLocal random number generator.
  * @author GoldenKevin
  */
-public class Rng {
+public final class Rng {
 	//here is what Sun documented in Math.random():
 	//This method is properly synchronized to allow correct use by more than one
 	//thread. However, if many threads need to generate pseudorandom numbers at
@@ -47,5 +47,9 @@ public class Rng {
 
 	public static Random getGenerator() {
 		return GENERATOR.get();
+	}
+
+	private Rng() {
+		//uninstantiable...
 	}
 }

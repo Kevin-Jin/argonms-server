@@ -32,7 +32,7 @@ import argonms.game.net.external.GamePackets;
  *
  * @author GoldenKevin
  */
-public class GameChatHandler {
+public final class ChatHandler {
 	private static final byte
 		COMMAND_FIND = 5,
 		COMMAND_WHISPER = 6
@@ -78,7 +78,8 @@ public class GameChatHandler {
 					gc.getSession().send(writeWhisperOutcome(toFind, false));
 				}
 				break;
-			} case COMMAND_WHISPER: {
+			}
+			case COMMAND_WHISPER: {
 				String recipient = reader.readLengthPrefixedString();
 				String message = reader.readLengthPrefixedString();
 				GameCharacter p = gc.getPlayer();
@@ -222,5 +223,9 @@ public class GameChatHandler {
 		lew.writeBool(success);
 
 		return lew.getBytes();
+	}
+
+	private ChatHandler() {
+		//uninstantiable...
 	}
 }

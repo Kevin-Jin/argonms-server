@@ -31,7 +31,7 @@ import argonms.game.net.external.GamePackets;
  *
  * @author GoldenKevin
  */
-public class PartyListHandler {
+public final class PartyListHandler {
 	public static final byte //party receive op codes
 		CREATE = 0x01,
 		LEAVE = 0x02,
@@ -165,5 +165,9 @@ public class PartyListHandler {
 		lew.writeByte((byte) 0);
 
 		return lew.getBytes();
+	}
+
+	private PartyListHandler() {
+		//uninstantiable...
 	}
 }

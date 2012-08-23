@@ -20,8 +20,8 @@ package argonms.common.net.external;
 
 import argonms.common.GlobalConstants;
 import argonms.common.character.Cooldown;
-import argonms.common.character.Player;
 import argonms.common.character.LoggedInPlayer;
+import argonms.common.character.Player;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.Skills;
@@ -45,7 +45,7 @@ import java.util.TreeMap;
  *
  * @author GoldenKevin
  */
-public class CommonPackets {
+public final class CommonPackets {
 	private static final int[] ROCK_MAPS = { //there has to be exactly 5!
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
@@ -364,4 +364,7 @@ public class CommonPackets {
 		return lew.getBytes();
 	}
 
+	private CommonPackets() {
+		//uninstantiable...
+	}
 }

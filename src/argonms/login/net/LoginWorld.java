@@ -31,11 +31,11 @@ import java.util.TreeMap;
 public class LoginWorld {
 	private static final String[] names = { "Scania", "Bera", "Broa", "Windia", "Khaini", "Bellocan", "Mardia", "Kradia", "Yellonde", "Demethos", "Elnido", "Kastia", "Judis", "Arkenia", "Plana" };
 
-	private String name;
-	private Map<Byte, byte[]> hosts;
-	private Map<Byte, Integer> channelPorts;
-	private TreeMap<Byte, Load> loads; //for convenience methods - not like I really need it sorted...
-	private Map<Byte, Set<Byte>> gameToChannelMapping;
+	private final String name;
+	private final Map<Byte, byte[]> hosts;
+	private final Map<Byte, Integer> channelPorts;
+	private final TreeMap<Byte, Load> loads; //for convenience methods - not like I really need it sorted...
+	private final Map<Byte, Set<Byte>> gameToChannelMapping;
 	private byte flag;
 	private String eventMessage;
 

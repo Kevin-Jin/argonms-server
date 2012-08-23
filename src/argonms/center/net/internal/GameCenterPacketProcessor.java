@@ -49,7 +49,7 @@ import java.util.logging.Logger;
 public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	private static final Logger LOG = Logger.getLogger(GameCenterPacketProcessor.class.getName());
 
-	private CenterGameInterface r;
+	private final CenterGameInterface r;
 
 	public GameCenterPacketProcessor(CenterGameInterface r) {
 		this.r = r;

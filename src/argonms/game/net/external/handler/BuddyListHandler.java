@@ -39,7 +39,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class BuddyListHandler {
+public final class BuddyListHandler {
 	private static final Logger LOG = Logger.getLogger(BuddyListHandler.class.getName());
 
 	public static final byte //buddy list receive op codes
@@ -170,7 +170,8 @@ public class BuddyListHandler {
 					}
 					//apparently they are offline...
 					//intentional fallthrough to inviteOfflinePlayer
-				} default: {
+				}
+				default: {
 					byte result = inviteOfflinePlayer(con, inviteeId, p.getId(), p.getName());
 					if (result == Byte.MAX_VALUE) {
 						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_HALF_OPEN));
@@ -261,5 +262,9 @@ public class BuddyListHandler {
 				processDeleteEntry(packet.readInt(), gc);
 				break;
 		}
+	}
+
+	private BuddyListHandler() {
+		//uninstantiable...
 	}
 }

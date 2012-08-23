@@ -34,8 +34,9 @@ import java.util.TreeMap;
  * @author GoldenKevin
  */
 public class MobSkillEffectsData implements MonsterStatusEffectsData {
-	private short skillid;
-	private byte level;
+	private final short skillid;
+	private final byte level;
+	private final Map<Byte, Integer> summons;
 	private short mpCon;
 	private int duration;
 	private int x;
@@ -49,7 +50,6 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 	private PlayerStatusEffect playerDisease;
 	private short summonLimit;
 	private byte summonEffect;
-	private final Map<Byte, Integer> summons;
 
 	protected MobSkillEffectsData(short skillid, byte level) {
 		this.maxHpPerc = 100;

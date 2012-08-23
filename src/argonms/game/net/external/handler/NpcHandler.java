@@ -32,7 +32,7 @@ import argonms.game.script.binding.ScriptNpc;
  *
  * @author GoldenKevin
  */
-public class GameNpcHandler {
+public final class NpcHandler {
 	public static void handleStartConversation(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		/*Point currentPos = */packet.readPos(); //player's position at time of click
@@ -51,55 +51,57 @@ public class GameNpcHandler {
 		short questId = packet.readShort();
 		GameCharacter player = gc.getPlayer();
 		switch (action) {
-			case 1 : { //start quest
+			case 1: { //start quest
 				int npcId = packet.readInt();
 				/*Point currentPos = */packet.readPos();
-				if (QuestDataLoader.getInstance().canStartQuest(player, questId)) {
+				if (QuestDataLoader.getInstance().canStartQuest(player, questId))
 					player.startQuest(questId, npcId);
-				} else {
+				else
 					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to start quest without meeting requirements");
-				}
 				break;
-			} case 2 : { //complete quest
+			}
+			case 2: { //complete quest
 				int npcId = packet.readInt();
 				/*Point currentPos = */packet.readPos();
 				if (packet.available() >= 4) {
 					int selection = packet.readInt();
-					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
+					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId))
 						player.completeQuest(questId, npcId, selection);
-					} else {
+					else
 						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
-					}
 				} else {
-					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
+					if (QuestDataLoader.getInstance().canCompleteQuest(player, questId))
 						player.completeQuest(questId, npcId, -1);
-					} else {
+					else
 						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
-					}
-				}
-				break;
-			} case 3 : { //forfeit quest
-				player.forfeitQuest(questId);
-				break;
-			} case 4 : { //scripted quest start
-				int npcId = packet.readInt();
-				/*Point currentPos = */packet.readPos();
-				if (QuestDataLoader.getInstance().canStartQuest(player, questId)) {
-					NpcScriptManager.getInstance().runStartQuestScript(npcId, questId, gc);
-				} else {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to start quest without meeting requirements");
-				}
-				break;
-			} case 5 : { //scripted quest completed
-				int npcId = packet.readInt();
-				/*Point currentPos = */packet.readPos();
-				if (QuestDataLoader.getInstance().canCompleteQuest(player, questId)) {
-					NpcScriptManager.getInstance().runCompleteQuestScript(npcId, questId, gc);
-				} else {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
 				}
 				break;
 			}
+			case 3: //forfeit quest
+				player.forfeitQuest(questId);
+				break;
+			case 4: { //scripted quest start
+				int npcId = packet.readInt();
+				/*Point currentPos = */packet.readPos();
+				if (QuestDataLoader.getInstance().canStartQuest(player, questId))
+					NpcScriptManager.getInstance().runStartQuestScript(npcId, questId, gc);
+				else
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to start quest without meeting requirements");
+				break;
+			}
+			case 5: { //scripted quest completed
+				int npcId = packet.readInt();
+				/*Point currentPos = */packet.readPos();
+				if (QuestDataLoader.getInstance().canCompleteQuest(player, questId))
+					NpcScriptManager.getInstance().runCompleteQuestScript(npcId, questId, gc);
+				else
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to complete quest without meeting requirements");
+				break;
+			}
 		}
+	}
+
+	private NpcHandler() {
+		//uninstantiable...
 	}
 }

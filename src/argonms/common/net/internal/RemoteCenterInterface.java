@@ -29,8 +29,8 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
  * @author GoldenKevin
  */
 public abstract class RemoteCenterInterface implements SessionDataModel {
+	private final CenterRemotePacketProcessor pp;
 	private RemoteCenterSession<?> session;
-	private CenterRemotePacketProcessor pp;
 
 	protected RemoteCenterInterface(CenterRemotePacketProcessor pp) {
 		this.pp = pp;

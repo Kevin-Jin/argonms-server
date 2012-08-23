@@ -34,7 +34,7 @@ package argonms.common.net.external;
  * to certain constants that are in written in packets sent to clients
  * @author GoldenKevin
  */
-public class PacketSubHeaders {
+public final class PacketSubHeaders {
 	public static final byte //byte constants
 		STATUS_INFO_INVENTORY = 0,
 		STATUS_INFO_QUEST = 1,
@@ -60,4 +60,8 @@ public class PacketSubHeaders {
 
 	/*public static final short //short constants
 	;*/
+
+	private PacketSubHeaders() {
+		//uninstantiable...
+	}
 }

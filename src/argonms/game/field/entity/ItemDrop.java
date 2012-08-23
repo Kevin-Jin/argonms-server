@@ -53,13 +53,13 @@ public class ItemDrop extends AbstractEntity {
 		DESTROY_ANIMATION_EXPLODE = 4
 	;
 
+	private final byte dropType;
+	private final int id;
+	private InventorySlot item;
 	private byte mod;
-	private byte dropType;
-	private int id;
 	private int mob;
 	private int owner;
 	private Point dropFrom;
-	private InventorySlot item;
 	private boolean gone;
 	private byte petLooter;
 

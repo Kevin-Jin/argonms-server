@@ -43,7 +43,7 @@ import java.util.logging.Logger;
 public class RemoteServerListener implements SessionCreator {
 	private static final Logger LOG = Logger.getLogger(RemoteServerListener.class.getName());
 	private final ExecutorService bossThreadPool, workerThreadPool;
-	private String interServerPassword;
+	private final String interServerPassword;
 	private ServerSocketChannel listener;
 	private final AtomicBoolean closeEventsTriggered;
 

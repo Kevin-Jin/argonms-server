@@ -28,7 +28,7 @@ import argonms.game.net.external.GameClient;
  *
  * @author GoldenKevin
  */
-public class ReactorHandler {
+public final class ReactorHandler {
 	public static void handleReactorTrigger(LittleEndianReader packet, GameClient gc) {
 		int entId = packet.readInt();
 		/*Point currentPos = */packet.readPos();
@@ -50,5 +50,9 @@ public class ReactorHandler {
 			else
 				r.untouched(p);
 		}
+	}
+
+	private ReactorHandler() {
+		//uninstantiable...
 	}
 }

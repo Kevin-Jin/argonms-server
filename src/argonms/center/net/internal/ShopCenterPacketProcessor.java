@@ -28,7 +28,7 @@ import argonms.common.util.input.LittleEndianReader;
  * @author GoldenKevin
  */
 public class ShopCenterPacketProcessor extends RemoteCenterPacketProcessor {
-	private CenterShopInterface r;
+	private final CenterShopInterface r;
 
 	public ShopCenterPacketProcessor(CenterShopInterface r) {
 		this.r = r;

@@ -101,10 +101,10 @@ public class GameMap {
 		this.occupiedChairs = Collections.newSetFromMap(new ConcurrentHashMap<Short, Boolean>());
 		for (SpawnData spawnData : stats.getLife().values()) {
 			switch (spawnData.getType()) {
-				case 'm': {
+				case 'm':
 					addMonsterSpawn(MobDataLoader.getInstance().getMobStats(spawnData.getDataId()), new Point(spawnData.getX(), spawnData.getY()), spawnData.getFoothold(), spawnData.getMobTime());
 					break;
-				} case 'n': {
+				case 'n': {
 					Npc n = new Npc(spawnData.getDataId());
 					n.setFoothold(spawnData.getFoothold());
 					n.setPosition(new Point(spawnData.getX(), spawnData.getY()));

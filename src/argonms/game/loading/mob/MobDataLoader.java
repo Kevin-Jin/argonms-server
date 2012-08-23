@@ -30,7 +30,7 @@ import java.util.Map;
 public abstract class MobDataLoader {
 	private static MobDataLoader instance;
 
-	protected Map<Integer, MobStats> mobStats;
+	protected final Map<Integer, MobStats> mobStats;
 
 	protected MobDataLoader() {
 		mobStats = new HashMap<Integer, MobStats>();

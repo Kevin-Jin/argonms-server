@@ -59,7 +59,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		NO_MESOS = 24
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjMobDataLoader(String wzPath) {
 		this.dataPath = wzPath;

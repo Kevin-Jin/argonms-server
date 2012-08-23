@@ -29,7 +29,7 @@ import java.sql.SQLException;
  *
  * @author GoldenKevin
  */
-public class UniqueIdGenerator {
+public final class UniqueIdGenerator {
 	public static long getAndAdd(int delta) throws Exception {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -81,5 +81,9 @@ public class UniqueIdGenerator {
 
 	public static long getAndIncrement() throws Exception {
 		return getAndAdd(1);
+	}
+
+	private UniqueIdGenerator() {
+		//uninstantiable...
 	}
 }

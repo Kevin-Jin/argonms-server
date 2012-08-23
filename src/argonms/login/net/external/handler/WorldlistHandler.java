@@ -49,7 +49,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class WorldlistHandler {
+public final class WorldlistHandler {
 	private static final Logger LOG = Logger.getLogger(WorldlistHandler.class.getName());
 
 	private static final byte
@@ -380,5 +380,9 @@ public class WorldlistHandler {
 		} else {
 			lew.writeBool(false);
 		}
+	}
+
+	private WorldlistHandler() {
+		//uninstantiable...
 	}
 }

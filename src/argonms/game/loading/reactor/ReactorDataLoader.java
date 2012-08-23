@@ -30,7 +30,7 @@ import java.util.Map;
 public abstract class ReactorDataLoader {
 	private static ReactorDataLoader instance;
 
-	protected Map<Integer, ReactorStats> reactorStats;
+	protected final Map<Integer, ReactorStats> reactorStats;
 
 	protected ReactorDataLoader() {
 		reactorStats = new HashMap<Integer, ReactorStats>();

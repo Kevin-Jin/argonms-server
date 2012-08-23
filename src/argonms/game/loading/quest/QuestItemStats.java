@@ -26,8 +26,8 @@ import argonms.common.util.TimeTool;
  * @author GoldenKevin
  */
 public class QuestItemStats {
-	private int itemId;
-	private short qty;
+	private final int itemId;
+	private final short qty;
 	private int prob;
 	private byte gender;
 	private short job;

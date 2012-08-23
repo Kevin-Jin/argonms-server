@@ -32,7 +32,7 @@ import argonms.game.net.external.GamePackets;
  *
  * @author GoldenKevin
  */
-public class GamePlayerMiscHandler {
+public final class PlayerMiscHandler {
 	private static final int
 		BINDING_CHANGE_KEY_MAPPING = 0,
 		BINDING_CHANGE_AUTO_HP_POT = 1,
@@ -136,21 +136,23 @@ public class GamePlayerMiscHandler {
 					p.bindKey(key, type, action);
 				}
 				break;
-			//TODO: how the heck do you send these bindings to the client?
-			} case BINDING_CHANGE_AUTO_HP_POT: {
+				//TODO: how the heck do you send these bindings to the client?
+			}
+			case BINDING_CHANGE_AUTO_HP_POT: {
 				int itemid = packet.readInt();
 				if (itemid == 0) {
-					//unequip
+					//TODO: unequip
 				} else {
-					//equip
+					//TODO: equip
 				}
 				break;
-			} case BINDING_CHANGE_AUTO_MP_POT: {
+			}
+			case BINDING_CHANGE_AUTO_MP_POT: {
 				int itemid = packet.readInt();
 				if (itemid == 0) {
-					//unequip
+					//TODO: unequip
 				} else {
-					//equip
+					//TODO: equip
 				}
 				break;
 			}
@@ -186,5 +188,9 @@ public class GamePlayerMiscHandler {
 		lew.writeInt(p.getId());
 		lew.writeInt(expression);
 		return lew.getBytes();
+	}
+
+	private PlayerMiscHandler() {
+		//uninstantiable...
 	}
 }

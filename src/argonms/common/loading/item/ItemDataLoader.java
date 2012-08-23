@@ -39,34 +39,34 @@ import java.util.Set;
 public abstract class ItemDataLoader {
 	private static ItemDataLoader instance;
 
-	protected Set<Integer> loaded;
-	protected Map<Integer, Integer> wholePrice;
-	protected Map<Integer, Short> slotMax;
-	protected List<Integer> tradeBlocked;
-	protected List<Integer> onlyOne;
-	protected List<Integer> questItem;
-	protected Map<Integer, short[]> bonusStats;
-	protected Map<Integer, List<int[]>> summons;
-	protected Map<Integer, Integer> success;
-	protected Map<Integer, Integer> cursed;
-	protected Set<Integer> recover, randStat, preventSlip, warmSupport;
-	protected List<Integer> cash; //I don't think this is really needed...
-	protected Map<Integer, List<byte[]>> operatingHours;
-	protected List<Integer> useOnPickup;
-	protected Map<Integer, List<Integer>> skills;
-	protected Map<Integer, Double> unitPrice;
-	protected Map<Integer, short[]> reqStats;
-	protected Map<Integer, List<Integer>> scrollReqs;
-	protected Map<Integer, ItemEffectsData> statEffects;
-	protected Map<Integer, Integer> triggerItem;
-	protected Map<Integer, Byte> tuc;
-	protected Map<Integer, Integer> mesoValue;
+	protected final Set<Integer> loaded;
+	protected final Map<Integer, Integer> wholePrice;
+	protected final Map<Integer, Short> slotMax;
+	protected final List<Integer> tradeBlocked;
+	protected final List<Integer> onlyOne;
+	protected final List<Integer> questItem;
+	protected final Map<Integer, short[]> bonusStats;
+	protected final Map<Integer, List<int[]>> summons;
+	protected final Map<Integer, Integer> success;
+	protected final Map<Integer, Integer> cursed;
+	protected final Set<Integer> recover, randStat, preventSlip, warmSupport;
+	protected final List<Integer> cash; //I don't think this is really needed...
+	protected final Map<Integer, List<byte[]>> operatingHours;
+	protected final List<Integer> useOnPickup;
+	protected final Map<Integer, List<Integer>> skills;
+	protected final Map<Integer, Double> unitPrice;
+	protected final Map<Integer, short[]> reqStats;
+	protected final Map<Integer, List<Integer>> scrollReqs;
+	protected final Map<Integer, ItemEffectsData> statEffects;
+	protected final Map<Integer, Integer> triggerItem;
+	protected final Map<Integer, Byte> tuc;
+	protected final Map<Integer, Integer> mesoValue;
 
-	protected Map<Integer, Map<Byte, int[]>> petCommands;
-	protected Map<Integer, Integer> petHunger;
-	protected Map<Integer, List<int[]>> evolveChoices;
+	protected final Map<Integer, Map<Byte, int[]>> petCommands;
+	protected final Map<Integer, Integer> petHunger;
+	protected final Map<Integer, List<int[]>> evolveChoices;
 
-	protected Map<Integer, Byte> tamingMobIds;
+	protected final Map<Integer, Byte> tamingMobIds;
 
 	protected ItemDataLoader() {
 		loaded = new HashSet<Integer>();

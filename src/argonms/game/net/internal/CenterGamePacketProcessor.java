@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 	private static final Logger LOG = Logger.getLogger(CenterGamePacketProcessor.class.getName());
 
-	private GameServer local;
+	private final GameServer local;
 
 	public CenterGamePacketProcessor(GameServer gs) {
 		local = gs;

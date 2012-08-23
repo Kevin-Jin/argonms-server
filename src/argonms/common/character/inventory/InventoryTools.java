@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class InventoryTools {
+public final class InventoryTools {
 	public enum WeaponClass {
 		ONE_HANDED_MELEE(1),
 		SPEAR_POLEARM	(2),
@@ -303,7 +303,8 @@ public class InventoryTools {
 					}
 				}
 				break;
-			} case -6: { //pants
+			}
+			case -6: { //pants
 				InventorySlot top = equipped.get((short) -5);
 				if (top != null && isOverall(top.getDataId())) {
 					short slot;
@@ -321,7 +322,8 @@ public class InventoryTools {
 					otherChange = new short[] { -5, slot };
 				}
 				break;
-			} case -10: { //shield
+			}
+			case -10: { //shield
 				InventorySlot weapon = equipped.get((short) -11);
 				if (weapon != null && isTwoHanded(weapon.getDataId())) {
 					short slot;
@@ -339,7 +341,8 @@ public class InventoryTools {
 					otherChange = new short[] { -11, slot };
 				}
 				break;
-			} case -11: { //weapon
+			}
+			case -11: { //weapon
 				if (isTwoHanded(toEquip.getDataId())) {
 					InventorySlot shield = equipped.get((short) -10);
 					if (shield != null) {
@@ -882,5 +885,9 @@ public class InventoryTools {
 			modifiedSlots.addAll(other.modifiedSlots);
 			addedOrRemovedSlots.addAll(other.addedOrRemovedSlots);
 		}
+	}
+
+	private InventoryTools() {
+		//uninstantiable...
 	}
 }

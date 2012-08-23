@@ -65,10 +65,10 @@ public class TelnetClient implements SessionDataModel {
 		NEW_ENVIRON = 39
 	;
 
+	private final Set<TelnetOptions> flags;
 	private TelnetSession session;
 	private String username;
 	private State state;
-	private Set<TelnetOptions> flags;
 
 	/* package-private */ TelnetClient() {
 		flags = EnumSet.of(TelnetOptions.ECHO);

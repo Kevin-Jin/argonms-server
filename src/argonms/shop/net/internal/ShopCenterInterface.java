@@ -30,7 +30,7 @@ import argonms.shop.ShopServer;
  * @author GoldenKevin
  */
 public class ShopCenterInterface extends RemoteCenterInterface {
-	private ShopServer local;
+	private final ShopServer local;
 
 	public ShopCenterInterface(ShopServer ss) {
 		super(new CenterShopPacketProcessor(ss));

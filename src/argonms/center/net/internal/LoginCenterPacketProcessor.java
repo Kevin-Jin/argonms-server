@@ -28,7 +28,7 @@ import argonms.common.util.input.LittleEndianReader;
  * @author GoldenKevin
  */
 public class LoginCenterPacketProcessor extends RemoteCenterPacketProcessor {
-	private CenterLoginInterface r;
+	private final CenterLoginInterface r;
 
 	public LoginCenterPacketProcessor(CenterLoginInterface r) {
 		this.r = r;

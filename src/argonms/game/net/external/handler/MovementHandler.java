@@ -53,7 +53,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class GameMovementHandler {
+public final class MovementHandler {
 	public static final byte
 		NORMAL_MOVE = 0,
 		JUMP = 1,
@@ -252,7 +252,8 @@ public class GameMovementHandler {
 					short duration = packet.readShort();
 					res.add(new AbsoluteLifeMovement(command, pos, wobble, foothold, stance, duration));
 					break;
-				} case JUMP:
+				}
+				case JUMP:
 				case JUMP_AND_KNOCKBACK:
 				case FLASH_JUMP:
 				case HORNTAIL_KNOCKBACK:
@@ -263,7 +264,8 @@ public class GameMovementHandler {
 					short foothold = packet.readShort();
 					res.add(new RelativeLifeMovement(command, pos, stance, foothold));
 					break;
-				} case UNK_SKILL:
+				}
+				case UNK_SKILL:
 				case TELEPORT:
 				case ASSAULTER:
 				case ASSASSINATE:
@@ -274,18 +276,21 @@ public class GameMovementHandler {
 					byte stance = packet.readByte();
 					res.add(new TeleportMovement(command, pos, wobble, stance));
 					break;
-				} case EQUIP: {
+				}
+				case EQUIP: {
 					byte count = packet.readByte();
 					res.add(new ChangeEquipMovement(count));
 					break;
-				} case CHAIR: {
+				}
+				case CHAIR: {
 					Point pos = packet.readPos();
 					short foothold = packet.readShort();
 					byte stance = packet.readByte();
 					short duration = packet.readShort();
 					res.add(new ChairMovement(pos, foothold, stance, duration));
 					break;
-				} case JUMP_DOWN: {
+				}
+				case JUMP_DOWN: {
 					Point pos = packet.readPos();
 					Point wobble = packet.readPos();
 					short unk = packet.readShort();
@@ -294,9 +299,9 @@ public class GameMovementHandler {
 					short duration = packet.readShort();
 					res.add(new JumpDownMovement(pos, wobble, unk, foothold, stance, duration));
 					break;
-				} default: {
-					return null;
 				}
+				default:
+					return null;
 			}
 		}
 		return res;
@@ -333,5 +338,9 @@ public class GameMovementHandler {
 		mplew.writeByte(skillLevel);
 
 		return mplew.getBytes();
+	}
+
+	private MovementHandler() {
+		//uninstantiable...
 	}
 }

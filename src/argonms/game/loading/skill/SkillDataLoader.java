@@ -30,8 +30,8 @@ import java.util.Map;
 public abstract class SkillDataLoader {
 	private static SkillDataLoader instance;
 
-	protected Map<Integer, SkillStats> skillStats;
-	protected Map<Short, MobSkillStats> mobSkillStats;
+	protected final Map<Integer, SkillStats> skillStats;
+	protected final Map<Short, MobSkillStats> mobSkillStats;
 
 	protected SkillDataLoader() {
 		skillStats = new HashMap<Integer, SkillStats>();

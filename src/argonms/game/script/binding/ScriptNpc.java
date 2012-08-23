@@ -36,26 +36,14 @@ import org.mozilla.javascript.ContinuationPending;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
-// Limitations:
-//1. While I am able to make intelligent guesses about whether to show the
-//previous button, you're going to have to explicitly state whether to show the
-//button because Rhino doesn't let me process a script line by line so I cannot
-//determine if there is another "say" after the current one. So, be sure that
-//when you want to send consecutive plain ol' says (no menu, yes/no,
-//accept/decline, askText, askNumber, askAvatar, etc.), make them all "sayNext"
-//except for the last one, which should just be "say".
-//2. With my implementation of previous messages, when you revisit a
-//"say"/"sayNext" that has already been executed from the script, it will have
-//the exact same message as when we executed it. If you used a variable in that
-//previous message and you changed that variable between it's first execution
-//and our current revisit, then you'll see the old value of the variable instead
-//of an updated one.
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptNpc extends PlayerScriptInteraction {
 	/* package-private */ static class ScriptInterruptedException extends RuntimeException {
+		private static final long serialVersionUID = -1302552528821402944L;
+
 		private ScriptInterruptedException(int npc, String player) {
 			super("NPC " + npc + " conversation with player " + player + " was interrupted");
 		}

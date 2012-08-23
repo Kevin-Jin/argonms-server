@@ -29,7 +29,7 @@ import argonms.login.net.external.LoginClient;
  *
  * @author GoldenKevin
  */
-public class AuthHandler {
+public final class AuthHandler {
 	private static final byte
 		PIN_ACCEPTED = 0x00,
 		PIN_REGISTER = 0x01,
@@ -148,5 +148,9 @@ public class AuthHandler {
 		lew.writeByte((byte) 0);
 
 		return lew.getBytes();
+	}
+
+	private AuthHandler() {
+		//uninstantiable...
 	}
 }

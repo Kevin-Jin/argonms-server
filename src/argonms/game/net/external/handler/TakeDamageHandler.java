@@ -39,7 +39,7 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class TakeDamageHandler {
+public final class TakeDamageHandler {
 	private static final byte
 		BUMP_DAMAGE = -1, //the kind of damage you take when you run into a mob
 		MAP_DAMAGE = -2 //e.g. vines b/w henesys and ellinia
@@ -257,5 +257,9 @@ public class TakeDamageHandler {
 		public int getDamage() {
 			return damage;
 		}
+	}
+
+	private TakeDamageHandler() {
+		//uninstantiable...
 	}
 }

@@ -28,7 +28,7 @@ import java.util.Arrays;
  *
  * @author GoldenKevin
  */
-public class HashFunctions {
+public final class HashFunctions {
 	public static final Charset ASCII = Charset.forName("US-ASCII");
 
 	private static ThreadLocal<MessageDigest> sha1digest = new ThreadLocal<MessageDigest>() {
@@ -54,10 +54,6 @@ public class HashFunctions {
 			}
 		}
 	};
-
-	private HashFunctions() {
-		
-	}
 
 	private static byte[] hashWithDigest(byte[] in, MessageDigest digester) {
 		digester.update(in, 0, in.length);
@@ -103,5 +99,9 @@ public class HashFunctions {
 
 	public static byte[] makeSaltedSha512Hash(String password, byte[] salt) {
 		return hexSha512(concat(password, salt));
+	}
+
+	private HashFunctions() {
+		//uninstantiable...
 	}
 }

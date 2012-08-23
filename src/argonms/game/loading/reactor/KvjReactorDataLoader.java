@@ -43,7 +43,7 @@ public class KvjReactorDataLoader extends ReactorDataLoader {
 		SCRIPT_NAME = 4
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjReactorDataLoader(String wzPath) {
 		this.dataPath = wzPath;

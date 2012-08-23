@@ -26,7 +26,7 @@ import argonms.game.net.external.GamePackets;
  * @author GoldenKevin
  */
 public class MysticDoor extends AbstractEntity {
-	private boolean townDoor;
+	private final boolean townDoor;
 
 	public MysticDoor(boolean town) {
 		this.townDoor = town;

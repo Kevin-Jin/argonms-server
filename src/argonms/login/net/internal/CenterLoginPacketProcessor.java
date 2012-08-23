@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 public class CenterLoginPacketProcessor extends CenterRemotePacketProcessor {
 	private static final Logger LOG = Logger.getLogger(CenterLoginPacketProcessor.class.getName());
 
-	private LoginServer local;
+	private final LoginServer local;
 
 	public CenterLoginPacketProcessor(LoginServer ls) {
 		local = ls;

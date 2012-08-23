@@ -69,7 +69,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 		TAMING_MOB_ID = 27
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjItemDataLoader(String wzPath) {
 		this.dataPath = wzPath;

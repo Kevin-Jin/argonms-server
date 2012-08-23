@@ -31,10 +31,10 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class PlayerSkillSummon extends AbstractEntity {
-	private byte summonType; //0 = stationary, 1 = follow, 2/4 = only tele follow, 3 = bird follow
-	private int ownerEid;
-	private int skillId;
-	private byte skillLevel;
+	private final byte summonType; //0 = stationary, 1 = follow, 2/4 = only tele follow, 3 = bird follow
+	private final int ownerEid;
+	private final int skillId;
+	private final byte skillLevel;
 	private short remHp;
 
 	public PlayerSkillSummon(GameCharacter p, PlayerSkillEffectsData skill, Point initialPos, byte stance) {

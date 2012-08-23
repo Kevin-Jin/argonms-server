@@ -47,7 +47,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class NpcMiniroomHandler {
+public final class NpcMiniroomHandler {
 	private static final Logger LOG = Logger.getLogger(NpcMiniroomHandler.class.getName());
 
 	private static final byte
@@ -76,7 +76,7 @@ public class NpcMiniroomHandler {
 			return;
 		}
 		switch (packet.readByte()) {
-			case ACT_BUY : {
+			case ACT_BUY: {
 				short position = packet.readShort();
 				int itemId = packet.readInt();
 				short quantity = packet.readShort();
@@ -137,7 +137,8 @@ public class NpcMiniroomHandler {
 					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_INVENTORY_FULL));
 				}
 				break;
-			} case ACT_SELL : {
+			}
+			case ACT_SELL: {
 				short slot = packet.readShort();
 				int itemId = packet.readInt();
 				short quantity = packet.readShort();
@@ -169,7 +170,8 @@ public class NpcMiniroomHandler {
 				p.gainMesos(price, false);
 				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
 				break;
-			} case ACT_RECHARGE : {
+			}
+			case ACT_RECHARGE: {
 				short slot = packet.readShort();
 				GameCharacter p = gc.getPlayer();
 				Inventory inventory = p.getInventory(InventoryType.USE);
@@ -189,7 +191,8 @@ public class NpcMiniroomHandler {
 				gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, item));
 				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
 				break;
-			} case ACT_EXIT_SHOP: {
+			}
+			case ACT_EXIT_SHOP: {
 				gc.setNpcRoom(null);
 				break;
 			}
@@ -238,7 +241,8 @@ public class NpcMiniroomHandler {
 				p.itemCountChanged(item.getDataId());
 				ses.send(writeStorageWithdrawal(storageInv, invType));
 				break;
-			} case ACT_DEPOSIT_ITEM: {
+			}
+			case ACT_DEPOSIT_ITEM: {
 				GameCharacter p = gc.getPlayer();
 				short slot = packet.readShort();
 				int itemId = packet.readInt();
@@ -279,10 +283,12 @@ public class NpcMiniroomHandler {
 				p.itemCountChanged(item.getDataId());
 				gc.getSession().send(writeStorageDeposit(storageInv, invType));
 					break;
-			} case ACT_ARRANGE_ITEMS: {
+			}
+			case ACT_ARRANGE_ITEMS: {
 				//TODO: IMPLEMENT
 				break;
-			} case ACT_MESOS_TRANSFER: {
+			}
+			case ACT_MESOS_TRANSFER: {
 				GameCharacter p = gc.getPlayer();
 				int delta = packet.readInt();
 				if (delta > 0 && delta > storageInv.getMesos() || delta < 0 && -delta > p.getMesos()) {
@@ -299,7 +305,8 @@ public class NpcMiniroomHandler {
 					gc.getSession().send(writeStorageMesoUpdate(storageInv));
 				}
 				break;
-			} case ACT_EXIT_STORAGE: {
+			}
+			case ACT_EXIT_STORAGE: {
 				storageInv.collapse();
 				gc.setNpcRoom(null);
 				break;
@@ -386,5 +393,9 @@ public class NpcMiniroomHandler {
 		lew.writeInt(storage.getMesos());
 
 		return lew.getBytes();
+	}
+
+	private NpcMiniroomHandler() {
+		//uninstantiable...
 	}
 }
