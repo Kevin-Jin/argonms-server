@@ -22,21 +22,30 @@ import argonms.common.GlobalConstants;
 import argonms.common.util.ByteTool;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
+import org.bouncycastle.crypto.BlockCipher;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 /**
  * Provides a class for encrypting MapleStory packets with AES OFB encryption
  * and MapleStory's own in-house encryption.
  *
- * Taken and merged with MapleCustomEncryption from an OdinMS-derived source
- * with some major modifications.
+ * The Bouncy Castle lightweight API is used rather than the Java Cryptography
+ * Extension because, as an Australian project, it is not covered by United
+ * States cryptography export laws and thus does not limit the max key size of
+ * AES encryption, unlike the latter (the AES-256 restriction can be uplifted by
+ * copying the JCE Unlimited Strength Jurisdiction Policy Files to the JRE's
+ * lib/security directory, but it's an inconvenient process and a user may not
+ * have access to the JRE's home directory).
+ *
+ * This class merges the MapleAESOFB and MapleCustomEncryption classes from
+ * OdinMS derived sources, with some extensive modifications.
  *
  * @author Frz, GoldenKevin
- * @version 2.0
+ * @version 3.0
  */
-public final class MapleAesOfb {
-	private static final Logger LOG = Logger.getLogger(MapleAesOfb.class.getName());
+public final class ClientEncryption {
+	private static final Logger LOG = Logger.getLogger(ClientEncryption.class.getName());
 
 	private static final byte[] aesKey = {
 		(byte) 0x13, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00,
@@ -45,46 +54,14 @@ public final class MapleAesOfb {
 		(byte) 0x33, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x52, (byte) 0x00, (byte) 0x00, (byte) 0x00
 	};
 
-	private static final SecretKeySpec sKeySpec;
-	private static final CipherPool aesCiphers;
-
-	private static class CipherThrowablePair {
-		public Cipher cipher;
-		public Exception throwable;
-	}
-
-	private static class CipherPool extends ThreadLocal<CipherThrowablePair> {
+	private static final ThreadLocal<BlockCipher> aesCiphers = new ThreadLocal<BlockCipher>() {
 		@Override
-		public CipherThrowablePair get() {
-			CipherThrowablePair result = new CipherThrowablePair();
-			try {
-				result.cipher = Cipher.getInstance("AES/ECB/NoPadding");
-				result.cipher.init(Cipher.ENCRYPT_MODE, sKeySpec);
-			} catch (Exception ex) {
-				result.throwable = ex;
-			}
-			return result;
+		public BlockCipher get() {
+			AESEngine cipher = new AESEngine();
+			cipher.init(true, new KeyParameter(aesKey));
+			return cipher;
 		}
-
-		public Cipher getCipher() throws Exception {
-			CipherThrowablePair result = get();
-			if (result.throwable != null) {
-				remove();
-				throw result.throwable;
-			}
-			return result.cipher;
-		}
-	}
-
-	static {
-		sKeySpec = new SecretKeySpec(aesKey, "AES");
-		aesCiphers = new CipherPool();
-	}
-
-	public static void testCipher() throws Exception {
-		aesCiphers.getCipher();
-		aesCiphers.remove();
-	}
+	};
 
 	private static final byte[] ivKeys = {
 		(byte) 0xEC, (byte) 0x3F, (byte) 0x77, (byte) 0xA4, (byte) 0x45, (byte) 0xD0, (byte) 0x71, (byte) 0xBF,
@@ -125,13 +102,7 @@ public final class MapleAesOfb {
 		int remaining = data.length;
 		int llength = 0x5B0;
 		int start = 0;
-		Cipher ciph;
-		try {
-			ciph = aesCiphers.getCipher();
-		} catch (Exception ex) {
-			LOG.log(Level.WARNING, "Could not make AES cipher", ex);
-			return;
-		}
+		BlockCipher ciph = aesCiphers.get();
 		while (remaining > 0) {
 			byte[] myIv = ByteTool.multiplyBytes(iv, 4, 4);
 			if (remaining < llength)
@@ -140,7 +111,7 @@ public final class MapleAesOfb {
 				int myIvIndex = x % myIv.length;
 				if (myIvIndex == 0) {
 					try {
-						System.arraycopy(ciph.doFinal(myIv), 0, myIv, 0, myIv.length);
+						ciph.processBlock(myIv, 0, myIv, 0);
 					} catch (Exception ex) {
 						LOG.log(Level.WARNING, "Could not encrypt mvIv", ex);
 					}
@@ -194,9 +165,7 @@ public final class MapleAesOfb {
 				(((packetHeader[1] ^ iv[3]) & 0xFF) == ((GlobalConstants.MAPLE_VERSION & 0xFF) >> 8)));
 	}
 
-	//The below aren't actually AESOFB, they're just MapleStory's custom
-	//encryption routines (that's why we named the class MapleAESOFB, not just
-	//AESOFB!)
+	//The following routines are for MapleStory's custom encryption
 	public static byte[] nextIv(byte[] oldIv) {
 		byte[] newIv = { (byte) 0xF2, (byte) 0x53, (byte) 0x50, (byte) 0xC6 };
 		for (int x = 0; x < oldIv.length; x++) {
@@ -280,7 +249,7 @@ public final class MapleAesOfb {
 		for (int j = 1; j <= 6; j++) {
 			byte remember = 0;
 			byte dataLength = (byte) (data.length & 0xFF);
-			byte nextRemember = 0;
+			byte nextRemember;
 
 			if (j % 2 == 0) {
 				for (int i = 0; i < data.length; i++) {
@@ -314,7 +283,7 @@ public final class MapleAesOfb {
 		return data;
 	}
 
-	private MapleAesOfb() {
+	private ClientEncryption() {
 		//uninstantiable...
 	}
 }
