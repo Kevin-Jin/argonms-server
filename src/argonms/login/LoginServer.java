@@ -25,7 +25,6 @@ import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
-import argonms.common.net.external.MapleAesOfb;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
@@ -103,7 +102,6 @@ public class LoginServer implements LocalServer {
 			if (endIndex == -1)
 				endIndex = str.length();
 			worldListMessages.add(new BalloonMessage(new Point(x, y), str.substring(startIndex, endIndex).trim()));
-			System.out.println(x + " " + y);
 		} while (endIndex != str.length());
 	}
 
@@ -209,13 +207,6 @@ public class LoginServer implements LocalServer {
 			return;
 		}
 
-		try {
-			MapleAesOfb.testCipher();
-		} catch (Exception ex) {
-			LOG.log(Level.SEVERE, "Error initalizing the encryption cipher.  Make sure you're using the Unlimited Strength cryptography jar files.", ex);
-			System.exit(6);
-			return;
-		}
 		Scheduler.enable(true, true);
 		TimeTool.setInstance(tz);
 

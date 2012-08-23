@@ -26,7 +26,6 @@ import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
-import argonms.common.net.external.MapleAesOfb;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
@@ -163,13 +162,6 @@ public class ShopServer implements LocalServer {
 			return;
 		}
 
-		try {
-			MapleAesOfb.testCipher();
-		} catch (Exception ex) {
-			LOG.log(Level.SEVERE, "Error initalizing the encryption cipher.  Make sure you're using the Unlimited Strength cryptography jar files.", ex);
-			System.exit(6);
-			return;
-		}
 		Scheduler.enable(true, true);
 		TimeTool.setInstance(tz);
 

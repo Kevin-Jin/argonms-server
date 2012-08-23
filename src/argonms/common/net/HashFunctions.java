@@ -20,9 +20,10 @@ package argonms.common.net;
 
 import argonms.common.util.Rng;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.SHA1Digest;
+import org.bouncycastle.crypto.digests.SHA512Digest;
 
 /**
  *
@@ -31,33 +32,25 @@ import java.util.Arrays;
 public final class HashFunctions {
 	public static final Charset ASCII = Charset.forName("US-ASCII");
 
-	private static ThreadLocal<MessageDigest> sha1digest = new ThreadLocal<MessageDigest>() {
+	private static ThreadLocal<Digest> sha1digest = new ThreadLocal<Digest>() {
 		@Override
-		public MessageDigest initialValue() {
-			try {
-				return MessageDigest.getInstance("SHA-1");
-			} catch (NoSuchAlgorithmException ex) {
-				//assert false; //should never happen
-				return null;
-			}
+		public Digest initialValue() {
+			return new SHA1Digest();
 		}
 	};
 
-	private static ThreadLocal<MessageDigest> sha512digest = new ThreadLocal<MessageDigest>() {
+	private static ThreadLocal<Digest> sha512digest = new ThreadLocal<Digest>() {
 		@Override
-		public MessageDigest initialValue() {
-			try {
-				return MessageDigest.getInstance("SHA-512");
-			} catch (NoSuchAlgorithmException ex) {
-				//assert false; //should never happen
-				return null;
-			}
+		public Digest initialValue() {
+			return new SHA512Digest();
 		}
 	};
 
-	private static byte[] hashWithDigest(byte[] in, MessageDigest digester) {
+	private static byte[] hashWithDigest(byte[] in, Digest digester) {
+		byte[] out = new byte[digester.getDigestSize()];
 		digester.update(in, 0, in.length);
-		return digester.digest();
+		digester.doFinal(out, 0);
+		return out;
 	}
 
 	private static byte[] hexSha1(byte[] in) {

@@ -18,7 +18,7 @@
 
 @echo off
 @title Center Server Console
-set CLASSPATH=.;dist\argonms.jar;dist\js.jar;dist\mysql-connector-java-bin.jar
+set CLASSPATH=dist\argonms.jar;dist\bcprov-jdk15.jar;dist\js.jar;dist\mysql-connector-java-bin.jar
 java -Xmx600m -Dargonms.center.config.file=center.properties ^
 -Djava.util.logging.config.file=logging.properties ^
 -Dargonms.db.config.file=db.properties ^

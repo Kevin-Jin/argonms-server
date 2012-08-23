@@ -1974,6 +1974,17 @@
 	* Added interface for login server features that have been implemented but
 	unused. The login.properties file customizes these features.
 
+2012-08-23  GoldenKevin  (revision 127)
+
+	* Removed balloon message debug statement in LoginServer.
+	* MapleAesOfb class renamed to ClientEncryption.
+	* Removed current directory from classpath in *.bat and *.sh scripts.
+	* Packaged Bouncy Castle 1.47 provider for JDK 1.5 - JDK 1.7.
+	* Bouncy Castle lightweight API is now used instead of JCE for AES
+	encryption. Removed illegal key size checks in server inits as we are no
+	longer dependent on JCE unlimited strength jurisdiction files.
+	* Use Bouncy Castle instead of JCA for SHA digest in HashFunctions class.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -169,8 +169,8 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 															@Override
 															public void run() {
 																try {
-																	MapleAesOfb.aesCrypt(body, iv);
-																	MapleAesOfb.mapleDecrypt(body);
+																	ClientEncryption.aesCrypt(body, iv);
+																	ClientEncryption.mapleDecrypt(body);
 																	pp.process(new LittleEndianByteArrayReader(body), session.getClient());
 																	session.readDequeued();
 																} catch (Exception ex) {

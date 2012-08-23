@@ -144,17 +144,17 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		sendIvLock.lock();
 		try {
 			iv = sendIv;
-			sendIv = MapleAesOfb.nextIv(iv);
+			sendIv = ClientEncryption.nextIv(iv);
 			queueInsertNo = sendQueue.getNextPush();
 		} finally {
 			sendIvLock.unlock();
 		}
 		byte[] input = new byte[message.length];
 		System.arraycopy(message, 0, input, 0, message.length);
-		byte[] header = MapleAesOfb.makePacketHeader(input.length, iv);
+		byte[] header = ClientEncryption.makePacketHeader(input.length, iv);
 		byte[] output = new byte[header.length + input.length];
-		MapleAesOfb.mapleEncrypt(input);
-		MapleAesOfb.aesCrypt(input, iv);
+		ClientEncryption.mapleEncrypt(input);
+		ClientEncryption.aesCrypt(input, iv);
 		System.arraycopy(header, 0, output, 0, header.length);
 		System.arraycopy(input, 0, output, header.length, input.length);
 		send(queueInsertNo, ByteBuffer.wrap(output));
@@ -312,11 +312,11 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				readBuffer.flip();
 				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
-				if (!MapleAesOfb.checkPacket(message, recvIv)) {
+				if (!ClientEncryption.checkPacket(message, recvIv)) {
 					close("Failed packet test", null);
 					return null;
 				}
-				int length = MapleAesOfb.getPacketLength(message);
+				int length = ClientEncryption.getPacketLength(message);
 
 				readBuffer.clear();
 				if (length > readBuffer.remaining())
@@ -335,7 +335,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				//only be called from the boss thread of ClientListener in the
 				//Selector loop, we don't need recvIv access to be thread-safe.
 				byte[] iv = recvIv;
-				recvIv = MapleAesOfb.nextIv(iv);
+				recvIv = ClientEncryption.nextIv(iv);
 				readBuffer.clear();
 				readBuffer.limit(HEADER_LENGTH);
 				nextMessageType = MessageType.HEADER;
