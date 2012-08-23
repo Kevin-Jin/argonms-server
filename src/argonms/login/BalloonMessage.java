@@ -24,11 +24,11 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class Message {
+public class BalloonMessage {
 	private final Point pos;
 	private final String text;
 
-	public Message(Point pos, String text) {
+	public BalloonMessage(Point pos, String text) {
 		this.pos = pos;
 		this.text = text;
 	}

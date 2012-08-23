@@ -36,19 +36,21 @@ public class LoginWorld {
 	private final Map<Byte, Integer> channelPorts;
 	private final TreeMap<Byte, Load> loads; //for convenience methods - not like I really need it sorted...
 	private final Map<Byte, Set<Byte>> gameToChannelMapping;
-	private byte flag;
-	private String eventMessage;
+	private final byte flag;
+	private final String eventMessage;
 
-	public LoginWorld(String name) {
+	public LoginWorld(String name, byte flag, String message) {
 		this.name = name;
 		this.hosts = new HashMap<Byte, byte[]>();
 		this.channelPorts = new HashMap<Byte, Integer>();
 		this.loads = new TreeMap<Byte, Load>();
 		this.gameToChannelMapping = new HashMap<Byte, Set<Byte>>();
+		this.flag = flag;
+		this.eventMessage = message;
 	}
 
-	public LoginWorld(int worldId) {
-		this(names[worldId]);
+	public LoginWorld(int worldId, byte flag, String message) {
+		this(names[worldId], flag, message);
 	}
 
 	public void addGameServer(byte[] ip, Map<Byte, Integer> ports, byte serverId) {
@@ -126,7 +128,7 @@ public class LoginWorld {
 		return flag;
 	}
 
-	public String getMessage() {
+	public String getChannelListMessage() {
 		return eventMessage;
 	}
 

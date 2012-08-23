@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author GoldenKevin
  */
-public final class Party {
+public class Party {
 	public static final byte OFFLINE_CH = -1;
 
 	public static class Member {

@@ -1968,6 +1968,12 @@
 	* Added final modifier to instance variables where appropriate.
 	* Removed Game prefix from names of game server handler utility classes.
 
+2012-08-23  GoldenKevin  (revision 126)
+
+	* Some cleanup of changes made in the last revision.
+	* Added interface for login server features that have been implemented but
+	unused. The login.properties file customizes these features.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

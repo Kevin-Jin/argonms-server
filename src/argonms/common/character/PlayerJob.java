@@ -81,10 +81,6 @@ public final class PlayerJob {
 		JOB_SUPER_GM = 910
 	;
 
-	private PlayerJob() {
-		
-	}
-
 	public static int getJobPath(short jobid) {
 		return (jobid / 100);
 	}
@@ -115,5 +111,9 @@ public final class PlayerJob {
 
 	public static boolean isModerator(short jobid) {
 		return (getJobPath(jobid) == CLASS_GAMEMASTER);
+	}
+
+	private PlayerJob() {
+		//uninstantiable...
 	}
 }

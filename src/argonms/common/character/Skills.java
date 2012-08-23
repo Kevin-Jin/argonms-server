@@ -257,15 +257,15 @@ public final class Skills {
 		GM_HYPER_BODY = 9101008
 	;
 
-	private Skills() {
-		//uninstantiable...
-	}
-
 	public static boolean isBeginnerSkill(int skillid) {
 		return (skillid / 10000) == 0;
 	}
 
 	public static boolean isFourthJob(int skillid) {
 		return ((skillid / 10000) % 10) == 2;
+	}
+
+	private Skills() {
+		//uninstantiable...
 	}
 }

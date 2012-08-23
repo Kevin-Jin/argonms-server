@@ -30,10 +30,6 @@ public final class ServerType {
 		LOGIN = -1
 	;
 
-	private ServerType() {
-		//uninstantiable...
-	}
-
 	public static boolean isCenter(byte type) {
 		return type == CENTER;
 	}
@@ -60,5 +56,9 @@ public final class ServerType {
 		if (isCenter(serverId))
 			return "Center";
 		return null;
+	}
+
+	private ServerType() {
+		//uninstantiable...
 	}
 }

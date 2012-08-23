@@ -25,7 +25,7 @@ import java.util.TimeZone;
  *
  * @author GoldenKevin
  */
-public final class TimeTool {
+public class TimeTool {
 	/**
 	 * Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
 	 */
