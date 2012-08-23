@@ -28,7 +28,7 @@ import argonms.shop.net.external.ShopClient;
  *
  * @author GoldenKevin
  */
-public class ShopHandler {
+public final class ShopHandler {
 	public static void handlePlayerConnection(LittleEndianReader packet, ShopClient sc) {
 		int cid = packet.readInt();
 		/*Pair<Byte, Boolean> info = ShopServer.getInstance().getChannelInfo(cid);
@@ -75,5 +75,9 @@ public class ShopHandler {
 			c.getSession().write(MaplePacketCreator.enableCSUse3());
 			c.getSession().write(MaplePacketCreator.sendWishList(c.getPlayer().getId(), false));
 		}*/
+	}
+
+	private ShopHandler() {
+		//uninstantiable...
 	}
 }

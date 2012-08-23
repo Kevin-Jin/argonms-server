@@ -40,7 +40,7 @@ import java.util.Map.Entry;
  *
  * @author GoldenKevin
  */
-public class SkillTools {
+public final class SkillTools {
 	//TODO: IMPLEMENT HP/MP stuff for alchemist, heal, chakra
 	private static Map<ClientUpdateKey, Number> skillCastCosts(GameCharacter p, PlayerSkillEffectsData e) {
 		//might as well save ourself some bandwidth and don't send an individual
@@ -237,5 +237,9 @@ public class SkillTools {
 	public static void useAttackSkill(GameCharacter p, int skillId, byte skillLevel) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(skillCastCosts(p, e), false));
+	}
+
+	private SkillTools() {
+		//uninstantiable...
 	}
 }

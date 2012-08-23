@@ -60,7 +60,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @SuppressWarnings("serial")
 public class LockableHashMap<K, V> extends HashMap<K, V> {
-	private Lock readLock, writeLock;
+	private final Lock readLock, writeLock;
 
 	/**
 	 * Create a new instance of <code>LockableHashMap</code>. Automatically

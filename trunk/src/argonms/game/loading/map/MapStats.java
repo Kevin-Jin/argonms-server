@@ -27,12 +27,14 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class MapStats {
-	private int mapid;
-	private Map<Byte, PortalData> portals;
-	private Map<String, AreaData> areas;
+	private final int mapid;
+	private final Map<Byte, PortalData> portals;
+	private final Map<String, AreaData> areas;
+	private final FootholdTree footholds;
+	private final Map<Integer, SpawnData> life;
+	private final Map<Integer, ReactorData> reactors;
 	private int returnMapId;
 	private float monsterRate;
-	private FootholdTree footholds;
 	private boolean town;
 	private boolean clock;
 	private boolean everlast;
@@ -48,8 +50,6 @@ public class MapStats {
 	private int protectItem;
 	private int decHp;
 	private int timeLimit;
-	private Map<Integer, SpawnData> life;
-	private Map<Integer, ReactorData> reactors;
 
 	protected MapStats(int mapid) {
 		this.mapid = mapid;

@@ -300,7 +300,8 @@ public class InterChannelCommunication {
 					peersOnChannel.add(Integer.valueOf(buddy));
 				}
 				break;
-			} case CHAT_TYPE_PARTY: {
+			}
+			case CHAT_TYPE_PARTY: {
 				if (p.getParty() != null) {
 					peerChannels = new HashMap<Byte, List<Integer>>();
 					for (int member : recipients) {
@@ -314,7 +315,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case CHAT_TYPE_GUILD: {
+			}
+			case CHAT_TYPE_GUILD: {
 				if (p.getGuildId() != 0) {
 					peerChannels = new HashMap<Byte, List<Integer>>();
 					for (int member : recipients) {
@@ -1142,17 +1144,20 @@ public class InterChannelCommunication {
 				context.setEnergyCharge(packet.readShort());
 				receivedInboundPlayer(channel, playerId, context);
 				break;
-			} case INBOUND_PLAYER_ACCEPTED: {
+			}
+			case INBOUND_PLAYER_ACCEPTED: {
 				int playerId = packet.readInt();
 				acceptedInboundPlayer(playerId);
 				break;
-			} case PLAYER_SEARCH: {
+			}
+			case PLAYER_SEARCH: {
 				int responseId = packet.readInt();
 				byte fromCh = packet.readByte();
 				String query = packet.readLengthPrefixedString();
 				getCenterComm().getSession().send(writePlayerSearchResponse(responseId, fromCh, playerOnLocal(query) ? self.getChannelId() : 0));
 				break;
-			} case PLAYER_SEARCH_RESPONSE: {
+			}
+			case PLAYER_SEARCH_RESPONSE: {
 				int responseId = packet.readInt();
 				byte value = packet.readByte();
 				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
@@ -1161,7 +1166,8 @@ public class InterChannelCommunication {
 				else
 					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
 				break;
-			} case MULTI_CHAT: {
+			}
+			case MULTI_CHAT: {
 				byte type = packet.readByte();
 				byte amount = packet.readByte();
 				int[] recipients = new int[amount];
@@ -1171,7 +1177,8 @@ public class InterChannelCommunication {
 				String message = packet.readLengthPrefixedString();
 				receivedPrivateChat(type, recipients, name, message);
 				break;
-			} case WHISPER_CHAT: {
+			}
+			case WHISPER_CHAT: {
 				int responseId = packet.readInt();
 				String recipient = packet.readLengthPrefixedString();
 				String sender = packet.readLengthPrefixedString();
@@ -1180,7 +1187,8 @@ public class InterChannelCommunication {
 				boolean result = receivedWhisper(recipient, sender, message, fromCh);
 				getCenterComm().getSession().send(writeWhisperResponse(fromCh, responseId, result));
 				break;
-			} case WHISPER_RESPONSE: {
+			}
+			case WHISPER_RESPONSE: {
 				int responseId = packet.readInt();
 				boolean result = packet.readBool();
 				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
@@ -1189,13 +1197,15 @@ public class InterChannelCommunication {
 				else
 					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
 				break;
-			} case SPOUSE_CHAT: {
+			}
+			case SPOUSE_CHAT: {
 				int recipient = packet.readInt();
 				String name = packet.readLengthPrefixedString();
 				String message = packet.readLengthPrefixedString();
 				receivedSpouseChat(recipient, name, message);
 				break;
-			} case BUDDY_INVITE: {
+			}
+			case BUDDY_INVITE: {
 				int responseId = packet.readInt();
 				byte returnCh = packet.readByte();
 				int recipient = packet.readInt();
@@ -1204,7 +1214,8 @@ public class InterChannelCommunication {
 				byte result = receivedBuddyInvite(recipient, sender, senderName);
 				getCenterComm().getSession().send(writeBuddyInviteResponse(returnCh, responseId, result));
 				break;
-			} case BUDDY_INVITE_RESPONSE: {
+			}
+			case BUDDY_INVITE_RESPONSE: {
 				int responseId = packet.readInt();
 				byte result = packet.readByte();
 				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
@@ -1213,7 +1224,8 @@ public class InterChannelCommunication {
 				else
 					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
 				break;
-			} case BUDDY_ONLINE: {
+			}
+			case BUDDY_ONLINE: {
 				byte channel = packet.readByte();
 				int sender = packet.readInt();
 				byte receiversCount = packet.readByte();
@@ -1222,20 +1234,23 @@ public class InterChannelCommunication {
 					receivers[i] = packet.readInt();
 				receivedBuddyOnline(channel, sender, receivers);
 				break;
-			} case BUDDY_ACCEPTED: {
+			}
+			case BUDDY_ACCEPTED: {
 				byte channel = packet.readByte();
 				int sender = packet.readInt();
 				int receiver = packet.readInt();
 				receivedBuddyAccepted(channel, sender, receiver);
 				break;
-			} case BUDDY_ONLINE_RESPONSE: {
+			}
+			case BUDDY_ONLINE_RESPONSE: {
 				byte channel = packet.readByte();
 				int receiver = packet.readInt();
 				int sender = packet.readInt();
 				boolean notify = packet.readBool();
 				receivedBuddyOnlineResponse(channel, receiver, sender, notify);
 				break;
-			} case BUDDY_OFFLINE: {
+			}
+			case BUDDY_OFFLINE: {
 				int sender = packet.readInt();
 				byte receiversCount = packet.readByte();
 				int[] receivers = new int[receiversCount];
@@ -1243,7 +1258,8 @@ public class InterChannelCommunication {
 					receivers[i] = packet.readInt();
 				receivedBuddyOffline(sender, receivers);
 				break;
-			} case BUDDY_DELETE: {
+			}
+			case BUDDY_DELETE: {
 				int sender = packet.readInt();
 				int receiver = packet.readInt();
 				receivedBuddyDelete(sender, receiver);
@@ -1265,7 +1281,8 @@ public class InterChannelCommunication {
 					leaderPlayer.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
 				}
 				break;
-			} case InterServerPartyOps.DISBAND: {
+			}
+			case InterServerPartyOps.DISBAND: {
 				int partyId = packet.readInt();
 				PartyList party = activeLocalParties.remove(Integer.valueOf(partyId));
 				if (party != null) {
@@ -1280,7 +1297,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.REMOVE_PLAYER: {
+			}
+			case InterServerPartyOps.REMOVE_PLAYER: {
 				int partyId = packet.readInt();
 				int leaverId = packet.readInt();
 				byte leaverCh = packet.readByte();
@@ -1335,7 +1353,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.ADD_PLAYER: {
+			}
+			case InterServerPartyOps.ADD_PLAYER: {
 				int partyId = packet.readInt();
 				int joinerId = packet.readInt();
 				byte joinerCh = packet.readByte();
@@ -1394,13 +1413,15 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.JOIN_ERROR: {
+			}
+			case InterServerPartyOps.JOIN_ERROR: {
 				int joinFailedPlayerId = packet.readInt();
 				GameCharacter joinFailedPlayer = self.getPlayerById(joinFailedPlayerId);
 				if (joinFailedPlayer != null)
 					joinFailedPlayer.getClient().getSession().send(GamePackets.writeSimplePartyListMessage(PartyListHandler.PARTY_FULL));
 				break;
-			} case InterServerPartyOps.CHANGE_LEADER: {
+			}
+			case InterServerPartyOps.CHANGE_LEADER: {
 				int partyId = packet.readInt();
 				int newLeader = packet.readInt();
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
@@ -1415,7 +1436,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.FETCH_LIST: {
+			}
+			case InterServerPartyOps.FETCH_LIST: {
 				int responseId = packet.readInt();
 				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
 				if (response != null) {
@@ -1440,7 +1462,8 @@ public class InterChannelCommunication {
 					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
 				}
 				break;
-			} case InterServerPartyOps.MEMBER_CONNECTED: {
+			}
+			case InterServerPartyOps.MEMBER_CONNECTED: {
 				int partyId = packet.readInt();
 				int entererId = packet.readInt();
 				byte targetCh = packet.readByte();
@@ -1497,7 +1520,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.MEMBER_DISCONNECTED: {
+			}
+			case InterServerPartyOps.MEMBER_DISCONNECTED: {
 				int partyId = packet.readInt();
 				int exiterId = packet.readInt();
 				byte lastCh = packet.readByte();
@@ -1531,7 +1555,8 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
-			} case InterServerPartyOps.MEMBER_STAT_UPDATED: {
+			}
+			case InterServerPartyOps.MEMBER_STAT_UPDATED: {
 				int partyId = packet.readInt();
 				int updatedPlayerId = packet.readInt();
 				byte updatedPlayerCh = packet.readByte();

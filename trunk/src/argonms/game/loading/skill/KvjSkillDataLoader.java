@@ -44,7 +44,7 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		NEXT_LEVEL = 8
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjSkillDataLoader(String wzPath) {
 		this.dataPath = wzPath;

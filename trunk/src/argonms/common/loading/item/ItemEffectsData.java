@@ -36,11 +36,11 @@ public class ItemEffectsData extends BuffsData {
 		CONSUME_ON_PICKUP = (1 << 5)
 	;
 
+	private final List<Integer> petConsumableBy;
 	//use a bitfield on boolean fields to save memory...
 	private byte flags;
 	private short hp, mp, hpR, mpR;
 	private int moveTo;
-	private List<Integer> petConsumableBy;
 
 	protected ItemEffectsData(int itemid) {
 		super(itemid);

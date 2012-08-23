@@ -26,7 +26,7 @@ import argonms.game.loading.skill.SkillDataLoader;
  *
  * @author GoldenKevin
  */
-public class DiseaseTools {
+public final class DiseaseTools {
 	public static void applyDebuff(final GameCharacter p, final short mobSkillId, final byte skillLevel) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
@@ -52,5 +52,9 @@ public class DiseaseTools {
 	public static void cancelDebuff(GameCharacter p, short mobSkillId, byte skillLevel) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
 		StatusEffectTools.dispelEffectsAndShowVisuals(p, e);
+	}
+
+	private DiseaseTools() {
+		//uninstantiable...
 	}
 }

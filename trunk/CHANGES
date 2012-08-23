@@ -1959,6 +1959,15 @@
 	* Fixed player's remaining HP/MP being clipped to base max HP/MP on login.
 	Don't clip remaining HP/MP until after equip max HP/MP bonuses are applied.
 
+2012-08-23  GoldenKevin  (revision 125)
+
+	* Removed unused PartyMemberListener class.
+	* Fixed any unsorted import blocks.
+	* Updated switch-cases to use a consistent formatting style.
+	* Added private constructors and final modifier to utility classes.
+	* Added final modifier to instance variables where appropriate.
+	* Removed Game prefix from names of game server handler utility classes.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

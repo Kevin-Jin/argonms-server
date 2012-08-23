@@ -38,7 +38,7 @@ public class KvjNpcDataLoader extends NpcDataLoader {
 		TRUNK_GET = 3
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjNpcDataLoader(String wzPath) {
 		this.dataPath = wzPath;

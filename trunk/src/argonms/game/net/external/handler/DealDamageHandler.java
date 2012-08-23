@@ -60,7 +60,7 @@ import java.util.Map.Entry;
  *
  * @author GoldenKevin
  */
-public class DealDamageHandler {
+public final class DealDamageHandler {
 	private enum AttackType { MELEE, RANGED, MAGIC, SUMMON, CHARGE }
 
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
@@ -724,5 +724,9 @@ public class DealDamageHandler {
 		public void setWeaponClass(byte value) {
 			weaponClass = WeaponClass.valueOf(value);
 		}
+	}
+
+	private DealDamageHandler() {
+		//uninstantiable...
 	}
 }

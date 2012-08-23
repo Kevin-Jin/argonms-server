@@ -120,18 +120,18 @@ public class CheatTracker {
 		}
 	}
 
-	private RemoteClient client;
+	private final RemoteClient client;
+	private final Lock loadLock;
+	private final Map<String, Long> timeLog;
 	private int totalPoints;
 	private boolean infractionsLoaded;
-	private Lock loadLock;
-	private Map<String, Long> timeLog;
 
 	private CheatTracker(RemoteClient rc) {
 		this.client = rc;
-		this.totalPoints = 0;
-		this.infractionsLoaded = false;
 		this.loadLock = new ReentrantLock();
 		this.timeLog = new ConcurrentHashMap<String, Long>();
+		this.totalPoints = 0;
+		this.infractionsLoaded = false;
 	}
 
 	private long ipBytesToLong(byte[] b) {

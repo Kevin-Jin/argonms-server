@@ -32,9 +32,9 @@ import java.util.Set;
  * @author GoldenKevin
  */
 public class GameCenterInterface extends RemoteCenterInterface {
-	private GameServer local;
-	private byte serverId;
-	private byte world;
+	private final GameServer local;
+	private final byte serverId;
+	private final byte world;
 
 	public GameCenterInterface(byte serverId, byte world, GameServer gs) {
 		super(new CenterGamePacketProcessor(gs));

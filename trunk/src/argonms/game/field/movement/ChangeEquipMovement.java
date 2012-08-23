@@ -19,7 +19,7 @@
 package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
-import argonms.game.net.external.handler.GameMovementHandler;
+import argonms.game.net.external.handler.MovementHandler;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -40,7 +40,7 @@ public class ChangeEquipMovement implements LifeMovementFragment {
 
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(GameMovementHandler.EQUIP);
+		lew.writeByte(MovementHandler.EQUIP);
 		lew.writeByte(count);
 	}
 

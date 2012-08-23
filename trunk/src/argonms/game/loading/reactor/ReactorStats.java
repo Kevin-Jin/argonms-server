@@ -26,9 +26,9 @@ import java.util.Map;
  * @author GoldenKevin
  */
 public class ReactorStats {
-	private int reactorId;
+	private final int reactorId;
+	private final Map<Byte, State> states;
 	private int link;
-	private Map<Byte, State> states;
 	private String action;
 
 	protected ReactorStats(int reactorId) {

@@ -46,7 +46,7 @@ import java.util.Random;
  *
  * @author GoldenKevin
  */
-public class GameEnterHandler {
+public final class EnterHandler {
 	public static void handlePlayerConnection(LittleEndianReader packet, GameClient gc) {
 		int cid = packet.readInt();
 		GameCharacter player = GameCharacter.loadPlayer(gc, cid);
@@ -176,5 +176,9 @@ public class GameEnterHandler {
 		}
 
 		return lew.getBytes();
+	}
+
+	private EnterHandler() {
+		//uninstantiable...
 	}
 }

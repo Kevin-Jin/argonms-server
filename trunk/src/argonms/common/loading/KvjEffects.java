@@ -72,5 +72,6 @@ public final class KvjEffects {
 	;
 
 	private KvjEffects() {
+		//uninstantiable...
 	}
 }

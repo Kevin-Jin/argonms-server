@@ -33,7 +33,7 @@ import java.util.Map;
  *
  * @author GoldenKevin
  */
-public class GameGoToHandler {
+public final class GoToHandler {
 	public static void handleChangeChannel(LittleEndianReader packet, GameClient gc) {
 		byte destCh = (byte) (packet.readByte() + 1);
 		byte curCh = gc.getChannel();
@@ -90,5 +90,9 @@ public class GameGoToHandler {
 
 	public static void handleWarpCs(LittleEndianReader packet, GameClient rc) {
 		
+	}
+
+	private GoToHandler() {
+		//uninstantiable...
 	}
 }

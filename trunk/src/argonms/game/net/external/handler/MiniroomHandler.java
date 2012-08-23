@@ -43,7 +43,7 @@ import argonms.game.net.external.GamePackets;
  *
  * @author GoldenKevin
  */
-public class MiniroomHandler {
+public final class MiniroomHandler {
 	public static void handleAction(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		switch (packet.readByte()) {
@@ -152,7 +152,8 @@ public class MiniroomHandler {
 				room = new Omok(p, text, pwd, subType);
 				p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
-			} case MATCH_CARDS: {
+			}
+			case MATCH_CARDS: {
 				text = packet.readLengthPrefixedString();
 				if (packet.readBool()) //private room
 					pwd = packet.readLengthPrefixedString();
@@ -162,11 +163,13 @@ public class MiniroomHandler {
 				room = new MatchCards(p, text, pwd, subType);
 				p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
-			} case TRADE: {
+			}
+			case TRADE: {
 				room = new Trade(p);
 				//p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
-			} case PLAYER_SHOP: {
+			}
+			case PLAYER_SHOP: {
 				text = packet.readLengthPrefixedString();
 				if (packet.readBool()) //private room
 					pwd = packet.readLengthPrefixedString();
@@ -182,7 +185,8 @@ public class MiniroomHandler {
 				}
 				p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
 				break;
-			} case HIRED_MERCHANT: {
+			}
+			case HIRED_MERCHANT: {
 				text = packet.readLengthPrefixedString();
 				if (packet.readBool()) //private room
 					pwd = packet.readLengthPrefixedString();
@@ -440,5 +444,9 @@ public class MiniroomHandler {
 		lew.writeShort(ClientSendOps.MINIROOM_ACT);
 		lew.writeByte(code);
 		return lew.getBytes();
+	}
+
+	private MiniroomHandler() {
+		//uninstantiable...
 	}
 }

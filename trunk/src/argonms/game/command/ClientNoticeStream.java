@@ -21,7 +21,7 @@ package argonms.game.command;
 import argonms.common.net.external.ClientSession;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.GameChatHandler.TextStyle;
+import argonms.game.net.external.handler.ChatHandler.TextStyle;
 
 /**
  *

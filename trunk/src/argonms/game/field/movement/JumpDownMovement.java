@@ -19,7 +19,7 @@
 package argonms.game.field.movement;
 
 import argonms.common.util.output.LittleEndianWriter;
-import argonms.game.net.external.handler.GameMovementHandler;
+import argonms.game.net.external.handler.MovementHandler;
 import java.awt.Point;
 import java.util.EnumSet;
 import java.util.Set;
@@ -47,7 +47,7 @@ public class JumpDownMovement implements PositionChangedMovementFragment, Footho
 
 	@Override
 	public void serialize(LittleEndianWriter lew) {
-		lew.writeByte(GameMovementHandler.JUMP_DOWN);
+		lew.writeByte(MovementHandler.JUMP_DOWN);
 		lew.writePos(position);
 		lew.writePos(pixelsPerSecond);
 		lew.writeShort(unk);

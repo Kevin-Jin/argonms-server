@@ -28,10 +28,6 @@ package argonms.common.util;
  * @version 1.1
  */
 public final class ByteTool {
-	private ByteTool() {
-		//uninstantiable...
-	}
-
 	/**
 	 * Rotates the bits of <code>in</code> <code>count</code> places to the
 	 * left.
@@ -73,5 +69,9 @@ public final class ByteTool {
 		for (int i = 0; i < mul; i++)
 			System.arraycopy(in, 0, ret, i * count, count);
 		return ret;
+	}
+
+	private ByteTool() {
+		//uninstantiable...
 	}
 }

@@ -325,7 +325,8 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				nextMessageType = MessageType.BODY;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return EMPTY_ARRAY;
-			} case BODY: {
+			}
+			case BODY: {
 				readBuffer.flip();
 				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
@@ -340,9 +341,9 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				nextMessageType = MessageType.HEADER;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return new byte[][] { iv, message };
-			} default: {
-				return null;
 			}
+			default:
+				return null;
 		}
 	}
 

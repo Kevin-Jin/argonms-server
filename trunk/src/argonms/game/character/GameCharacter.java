@@ -65,7 +65,6 @@ import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.script.EventManipulator;
-import argonms.game.script.PartyMemberListener;
 import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
@@ -119,7 +118,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private BuddyList buddies;
 	private int guild;
 	private PartyList party;
-	private final List<PartyMemberListener> subscribers;
 
 	private volatile int mesos;
 	private StorageInventory storage;
@@ -151,7 +149,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private EventManipulator event;
 
 	private GameCharacter () {
-		subscribers = new CopyOnWriteArrayList<PartyMemberListener>();
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();

@@ -27,14 +27,8 @@ package argonms.common.util;
  * @since Revision 206
  * @version 1.2
  */
-public class HexTool {
+public final class HexTool {
 	private static final char[] HEX = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-	/**
-	 * Static class dummy constructor.
-	 */
-	private HexTool() {
-	}
 
 	private static char[] toCharArray(byte byteValue) {
 		return new char[] { HEX[(byteValue & 0xF0) >>> 4], HEX[byteValue & 0x0F] };
@@ -139,5 +133,9 @@ public class HexTool {
 		//return getByteArrayFromHexString(hex, hex.contains(" "));
 		//just perform the same behavior as before...
 		return getByteArrayFromHexString(hex, true);
+	}
+
+	private HexTool() {
+		//uninstantiable...
 	}
 }

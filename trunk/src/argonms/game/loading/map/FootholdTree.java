@@ -28,6 +28,8 @@ import java.util.List;
  * @author Matze
  */
 public class FootholdTree {
+	private static int maxDepth = 8;
+
 	private FootholdTree nw;
 	private FootholdTree ne;
 	private FootholdTree sw;
@@ -36,8 +38,7 @@ public class FootholdTree {
 	private Point p1;
 	private Point p2;
 	private Point center;
-	private int depth = 0;
-	private static int maxDepth = 8;
+	private int depth;
 	private int maxDropX;
 	private int minDropX;
 

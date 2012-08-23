@@ -33,7 +33,7 @@ import java.util.Set;
  *
  * @author GoldenKevin
  */
-public class StatusEffectTools {
+public final class StatusEffectTools {
 	public static final byte
 		LEVEL_UP = 0,
 		PASSIVE_BUFF = 1,
@@ -461,5 +461,9 @@ public class StatusEffectTools {
 			case CURSE:
 				break;
 		}
+	}
+
+	private StatusEffectTools() {
+		//uninstantiable...
 	}
 }

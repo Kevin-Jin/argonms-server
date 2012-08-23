@@ -30,8 +30,8 @@ import java.util.Map;
 public abstract class NpcShopDataLoader {
 	private static NpcShopDataLoader instance;
 
-	protected Map<Integer, NpcShop> loadedShops;
-	protected Map<Integer, Integer> npcToShop;
+	protected final Map<Integer, NpcShop> loadedShops;
+	protected final Map<Integer, Integer> npcToShop;
 
 	protected NpcShopDataLoader() {
 		loadedShops = new HashMap<Integer, NpcShop>();

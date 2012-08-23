@@ -211,7 +211,8 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 				nextMessageType = MessageType.BODY;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return EMPTY_ARRAY;
-			} case BODY: {
+			}
+			case BODY: {
 				readBuffer.flip();
 				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
@@ -220,9 +221,9 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 				nextMessageType = MessageType.HEADER;
 				idleTaskFuture = Scheduler.getWheelTimer().runAfterDelay(idleTask, IDLE_TIME);
 				return message;
-			} default: {
-				return null;
 			}
+			default:
+				return null;
 		}
 	}
 

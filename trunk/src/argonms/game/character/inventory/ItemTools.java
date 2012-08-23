@@ -39,7 +39,7 @@ import java.util.Map;
  *
  * @author GoldenKevin
  */
-public class ItemTools {
+public final class ItemTools {
 	public static short getPersonalSlotMax(GameCharacter p, int itemid) {
 		short max = ItemDataLoader.getInstance().getSlotMax(Integer.valueOf(itemid));
 		int skillId;
@@ -150,5 +150,9 @@ public class ItemTools {
 	public static void cancelBuffItem(GameCharacter p, int itemId) {
 		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
 		StatusEffectTools.dispelEffectsAndShowVisuals(p, e);
+	}
+
+	private ItemTools() {
+		//uninstantiable...
 	}
 }

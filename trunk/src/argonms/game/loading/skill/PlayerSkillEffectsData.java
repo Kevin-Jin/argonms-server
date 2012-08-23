@@ -31,6 +31,7 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEffectsData {
+	private final byte level;
 	private short mpCon;
 	private short hpCon;
 	private int x;
@@ -52,7 +53,6 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 	private short moneyCon;
 	private MonsterStatusEffect monsterDisease;
 	private boolean isFreeze;
-	private byte level;
 	private short hp, mp;
 
 	protected PlayerSkillEffectsData(int skillid, byte level) {

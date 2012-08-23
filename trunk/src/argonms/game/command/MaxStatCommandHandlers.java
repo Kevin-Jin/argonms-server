@@ -36,7 +36,7 @@ import java.util.Map.Entry;
  *
  * @author GoldenKevin
  */
-public class MaxStatCommandHandlers {
+public final class MaxStatCommandHandlers {
 	/**
 	 * All skills as of v0.62 (taken from Skill.wz) - if new skills are added in
 	 * future versions and you wish to upgrade the server's version, you may
@@ -219,5 +219,9 @@ public class MaxStatCommandHandlers {
 			maxEquips(p);
 			maxStats(p, args);
 		}
+	}
+
+	private MaxStatCommandHandlers() {
+		//uninstantiable...
 	}
 }

@@ -38,13 +38,13 @@ public class Mist extends AbstractEntity {
 		SMOKE_SCREEN = 2
 	;
 
-	private int mistType;
-	private int ownerEid;
-	private int skillId;
-	private byte skillLevel;
-	private short skillDelay;
-	private Rectangle box;
-	private short prop;
+	private final int mistType;
+	private final int ownerEid;
+	private final int skillId;
+	private final byte skillLevel;
+	private final short skillDelay;
+	private final Rectangle box;
+	private final short prop;
 
 	public Mist(Rectangle mistPosition, Mob mob, MobSkillEffectsData skill) {
 		this.mistType = MOB_MIST;
@@ -71,6 +71,9 @@ public class Mist extends AbstractEntity {
 				skillDelay = 8;
 				mistType = POISON_MIST;
 				break;
+			default:
+				skillDelay = 0;
+				mistType = MOB_MIST;
 		}
 	}
 

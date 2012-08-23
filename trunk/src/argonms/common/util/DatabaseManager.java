@@ -54,7 +54,7 @@ import java.util.logging.Logger;
  * @author GoldenKevin
  * @version 2.0
  */
-public class DatabaseManager {
+public final class DatabaseManager {
 	public enum DatabaseType { STATE, WZ }
 
 	private final static Logger LOG = Logger.getLogger(DatabaseManager.class.getName());
@@ -282,5 +282,9 @@ public class DatabaseManager {
 		public int totalConnections() {
 			return allConnections.getSizeWhenSafe();
 		}
+	}
+
+	private DatabaseManager() {
+		//uninstantiable...
 	}
 }

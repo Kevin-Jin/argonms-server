@@ -22,7 +22,7 @@ package argonms.game.character;
  *
  * @author GoldenKevin
  */
-public class ExpTables {
+public final class ExpTables {
 	private static int[] playerExp = { 15, 34, 57, 92, 135, 372, 560, 840, 1242,
 		1716, 2360, 3216, 4200, 5460, 7050, 8840, 11040, 13716, 16680, 20216,
 		24402, 28980, 34320, 40512, 47216, 54900, 63666, 73080, 83720, 95700,
@@ -54,5 +54,9 @@ public class ExpTables {
 
 	public static int getForLevel(int level) {
 		return playerExp[level - 1];
+	}
+
+	private ExpTables() {
+		//uninstantiable...
 	}
 }

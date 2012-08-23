@@ -44,6 +44,8 @@ public interface StatusEffectsData {
 	public int getDuration();
 
 	public abstract class BuffsData implements StatusEffectsData {
+		private final int sourceid;
+		protected final Set<PlayerStatusEffect> effects;
 		private int duration;
 		private short watk;
 		private short wdef;
@@ -55,8 +57,6 @@ public interface StatusEffectsData {
 		private short speed;
 		private short jump;
 		private int morph;
-		private int sourceid;
-		protected Set<PlayerStatusEffect> effects;
 
 		public BuffsData(int sourceid) {
 			this.sourceid = sourceid;

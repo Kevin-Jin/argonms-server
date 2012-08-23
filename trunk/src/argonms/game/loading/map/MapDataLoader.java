@@ -30,7 +30,7 @@ import java.util.Map;
 public abstract class MapDataLoader {
 	private static MapDataLoader instance;
 
-	protected Map<Integer, MapStats> mapStats;
+	protected final Map<Integer, MapStats> mapStats;
 
 	protected MapDataLoader() {
 		mapStats = new HashMap<Integer, MapStats>();

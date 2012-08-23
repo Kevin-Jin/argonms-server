@@ -25,8 +25,8 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public class Message {
-	private Point pos;
-	private String text;
+	private final Point pos;
+	private final String text;
 
 	public Message(Point pos, String text) {
 		this.pos = pos;

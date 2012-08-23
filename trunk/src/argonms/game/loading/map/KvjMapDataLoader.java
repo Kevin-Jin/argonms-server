@@ -51,7 +51,7 @@ public class KvjMapDataLoader extends MapDataLoader {
 		PORTAL = 16
 	;
 
-	private String dataPath;
+	private final String dataPath;
 
 	protected KvjMapDataLoader(String wzPath) {
 		this.dataPath = wzPath;

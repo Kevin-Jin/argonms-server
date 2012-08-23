@@ -164,7 +164,7 @@ public class Mob extends AbstractEntity {
 					highestDamage = damage;
 				}
 
-				long exp = (long) stats.getExp() * ((8 * damage / stats.getMaxHp()) + (pd.attackersInclude(killer) ? 2 : 0)) / 10;
+				long exp = stats.getExp() * ((8 * damage / stats.getMaxHp()) + (pd.attackersInclude(killer) ? 2 : 0)) / 10;
 				pd.distributeExp(exp, killer);
 			}
 		} finally {
@@ -622,7 +622,7 @@ public class Mob extends AbstractEntity {
 					attackerParty.unlockRead();
 				}
 				for (GameCharacter member : splitExpMembers) {
-					long exp = (long) share * ((8 * member.getLevel() / totalLevel) + (member == highestDamageAttacker.get() ? 2 : 0)) / 10;
+					long exp = share * ((8 * member.getLevel() / totalLevel) + (member == highestDamageAttacker.get() ? 2 : 0)) / 10;
 					exp *= GameServer.getVariables().getExpRate();
 					//exp = exp * getTauntEffect() / 100;
 					if (membersCount > 1)

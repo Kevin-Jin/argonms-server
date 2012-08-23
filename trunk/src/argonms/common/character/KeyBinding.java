@@ -23,8 +23,8 @@ package argonms.common.character;
  * @author GoldenKevin
  */
 public class KeyBinding {
-	private byte type;
-	private int action;
+	private final byte type;
+	private final int action;
 
 	public KeyBinding(byte type, int action) {
 		this.type = type;

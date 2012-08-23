@@ -35,7 +35,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class PersonalInfoHandler {
+public final class PersonalInfoHandler {
 	private static final byte
 		FAME_OPERATION_RESPONSE_SUCCESS = 0,
 		FAME_OPERATION_RESPONSE_NOT_IN_MAP = 1,
@@ -191,5 +191,9 @@ public class PersonalInfoHandler {
 		lew.writeInt(0); //monster book cover
 
 		return lew.getBytes();
+	}
+
+	private PersonalInfoHandler() {
+		//uninstantiable...
 	}
 }

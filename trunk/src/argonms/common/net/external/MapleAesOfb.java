@@ -35,7 +35,7 @@ import javax.crypto.spec.SecretKeySpec;
  * @author Frz, GoldenKevin
  * @version 2.0
  */
-public class MapleAesOfb {
+public final class MapleAesOfb {
 	private static final Logger LOG = Logger.getLogger(MapleAesOfb.class.getName());
 
 	private static final byte[] aesKey = {
@@ -312,5 +312,9 @@ public class MapleAesOfb {
 			}
 		}
 		return data;
+	}
+
+	private MapleAesOfb() {
+		//uninstantiable...
 	}
 }

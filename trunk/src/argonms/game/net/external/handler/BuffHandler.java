@@ -45,7 +45,7 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class GameBuffHandler {
+public final class BuffHandler {
 	public static void handleUseSkill(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		/*int tickCount = */packet.readInt();
@@ -154,5 +154,9 @@ public class GameBuffHandler {
 		lew.writeInt(mobId);
 		lew.writeByte(success);
 		return lew.getBytes();
+	}
+
+	private BuffHandler() {
+		//uninstantiable...
 	}
 }
