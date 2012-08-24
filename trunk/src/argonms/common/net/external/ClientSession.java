@@ -154,7 +154,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		byte[] header = ClientEncryption.makePacketHeader(input.length, iv);
 		byte[] output = new byte[header.length + input.length];
 		ClientEncryption.mapleEncrypt(input);
-		ClientEncryption.aesCrypt(input, iv);
+		ClientEncryption.aesOfbCrypt(input, iv);
 		System.arraycopy(header, 0, output, 0, header.length);
 		System.arraycopy(input, 0, output, header.length, input.length);
 		send(queueInsertNo, ByteBuffer.wrap(output));

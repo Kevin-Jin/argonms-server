@@ -20,8 +20,6 @@ package argonms.common.net.external;
 
 import argonms.common.GlobalConstants;
 import argonms.common.util.ByteTool;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -45,8 +43,6 @@ import org.bouncycastle.crypto.params.KeyParameter;
  * @version 3.0
  */
 public final class ClientEncryption {
-	private static final Logger LOG = Logger.getLogger(ClientEncryption.class.getName());
-
 	private static final byte[] aesKey = {
 		(byte) 0x13, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x08, (byte) 0x00, (byte) 0x00, (byte) 0x00,
 		(byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xB4, (byte) 0x00, (byte) 0x00, (byte) 0x00,
@@ -98,29 +94,30 @@ public final class ClientEncryption {
 		(byte) 0x3D, (byte) 0xCA, (byte) 0xF4, (byte) 0x05, (byte) 0xC6, (byte) 0xE5, (byte) 0x08, (byte) 0x49
 	};
 
-	public static void aesCrypt(byte[] data, byte[] iv) {
-		int remaining = data.length;
-		int llength = 0x5B0;
-		int start = 0;
+	public static void aesOfbCrypt(byte[] data, byte[] iv) {
+		//Maple's OFB is done in piecemeal every 1460 bytes (I'm guessing it has
+		//to deal with maximum segment size). First piece is only 1456 bytes
+		//because the header, although not encrypted, adds 4 blocks to the first
+		//segment.
 		BlockCipher ciph = aesCiphers.get();
-		while (remaining > 0) {
+		//loops through each 1460 byte piece (with first piece only 1456 bytes)
+		for (
+				int remaining = data.length, offset = 0, pieceSize = Math.min(1456, remaining);
+				remaining > 0;
+				remaining -= pieceSize, offset += pieceSize, pieceSize = Math.min(1460, remaining)) {
 			byte[] myIv = ByteTool.multiplyBytes(iv, 4, 4);
-			if (remaining < llength)
-				llength = remaining;
-			for (int x = 0; x < llength; x++) {
-				int myIvIndex = x % myIv.length;
-				if (myIvIndex == 0) {
-					try {
-						ciph.processBlock(myIv, 0, myIv, 0);
-					} catch (Exception ex) {
-						LOG.log(Level.WARNING, "Could not encrypt mvIv", ex);
-					}
-				}
-				data[x + start] ^= myIv[myIvIndex];
+
+			//OFB (which is just input block XOR'd with encrypted IV and key) each full block (block size is equal to IV size)
+			int fullBlocks = pieceSize / myIv.length;
+			for (int i = 0; i < fullBlocks; i++) {
+				ciph.processBlock(myIv, 0, myIv, 0); //encrypt IV with key and copy output back to IV
+				for (int j = 0; j < myIv.length; j++)
+					data[offset + i * myIv.length + j] ^= myIv[j]; //XOR input block with encrypted IV and key
 			}
-			start += llength;
-			remaining -= llength;
-			llength = 0x5B4;
+			//OFB the final, incomplete block - OFB doesn't need block size aligned input
+			ciph.processBlock(myIv, 0, myIv, 0);
+			for (int i = pieceSize % myIv.length - 1; i >= 0; i--)
+				data[offset + fullBlocks * myIv.length + i] ^= myIv[i];
 		}
 	}
 

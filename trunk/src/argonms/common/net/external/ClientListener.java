@@ -169,7 +169,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 															@Override
 															public void run() {
 																try {
-																	ClientEncryption.aesCrypt(body, iv);
+																	ClientEncryption.aesOfbCrypt(body, iv);
 																	ClientEncryption.mapleDecrypt(body);
 																	pp.process(new LittleEndianByteArrayReader(body), session.getClient());
 																	session.readDequeued();
