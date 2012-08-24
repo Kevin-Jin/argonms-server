@@ -1985,6 +1985,13 @@
 	longer dependent on JCE unlimited strength jurisdiction files.
 	* Use Bouncy Castle instead of JCA for SHA digest in HashFunctions class.
 
+2012-08-24  GoldenKevin  (revision 128)
+
+	* Renamed ClientEncryption.aesCrypt to aesOfbCrypt.
+	* Split a loop of aesOfbCrypt into several loops in order to reduce number
+	of conditional checks and make the routine marginally faster. Also removed
+	unnecessary try-catch block and Logger.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
