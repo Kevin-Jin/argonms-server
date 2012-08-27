@@ -20,6 +20,7 @@ package argonms.game.script.binding;
 
 import argonms.game.GameServer;
 import argonms.game.character.PartyList;
+import java.awt.Rectangle;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
@@ -47,7 +48,7 @@ public class ScriptPartyMember extends ScriptPlayer {
 		getPlayer().setEvent(event == null ? null : GameServer.getChannel(getChannel()).getEventManager().getScriptInterface(event.getName()));
 	}
 
-	public Object getPosition() {
-		return Context.javaToJS(getPlayer().getPosition(), globalScope);
+	public boolean inRectangle(int x, int y, int width, int height) {
+		return new Rectangle(x, y, width, height).contains(getPlayer().getPosition());
 	}
 }

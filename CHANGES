@@ -1992,6 +1992,14 @@
 	of conditional checks and make the routine marginally faster. Also removed
 	unnecessary try-catch block and Logger.
 
+2012-08-27  GoldenKevin  (revision 129)
+
+	* Miscellaneous edits to ClientEncryption. checkPacket is now works properly
+	for MAPLE_VERSIONs greater than 127.
+	* Better understanding of magic numbers in ClientSession.sendInitPacket().
+	* Removed dependency on java.awt.Rectangle in npcs/party1_play.js.
+	* events/ship_ossyria.js spawns Balrog mobs when invasion ships are spawned.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
