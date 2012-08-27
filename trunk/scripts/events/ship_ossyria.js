@@ -110,6 +110,10 @@ function dockInvasion() {
 	event.setVariable("1docked", true);
 	toOrbis.showBalrogShip();
 	toEllinia.showBalrogShip();
+	toOrbis.spawnMob(8150000, 485, -221);
+	toOrbis.spawnMob(8150000, 485, -221);
+	toEllinia.spawnMob(8150000, -590, -221);
+	toEllinia.spawnMob(8150000, -590, -221);
 }
 
 function timerExpired(key) {

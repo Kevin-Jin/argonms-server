@@ -94,28 +94,27 @@ function rectangleStages(event, stage) {
 			[1, 1, 1, 0, 0, 0]
 		]
 	];
-	//TODO: Don't use AWT rectangles.
-	let rects = [
+	let rects = [ //[x, y, width, height]
 		[ //stage 2
-			java.awt.Rectangle(-770, -132, 28, 178),
-			java.awt.Rectangle(-733, -337, 26, 105),
-			java.awt.Rectangle(-601, -328, 29, 105),
-			java.awt.Rectangle(-495, -125, 24, 165)
+			[-770, -132, 28, 178],
+			[-733, -337, 26, 105],
+			[-601, -328, 29, 105],
+			[-495, -125, 24, 165]
 		],
 		[ //stage 3
-			java.awt.Rectangle(608, -180, 140, 50),
-			java.awt.Rectangle(791, -117, 140, 45),
-			java.awt.Rectangle(958, -180, 140, 50),
-			java.awt.Rectangle(876, -238, 140, 45),
-			java.awt.Rectangle(702, -238, 140, 45)
+			[608, -180, 140, 50],
+			[791, -117, 140, 45],
+			[958, -180, 140, 50],
+			[876, -238, 140, 45],
+			[702, -238, 140, 45]
 		],
 		[ //stage 4
-			java.awt.Rectangle(910, -236, 35, 5),
-			java.awt.Rectangle(877, -184, 35, 5),
-			java.awt.Rectangle(946, -184, 35, 5),
-			java.awt.Rectangle(845, -132, 35, 5),
-			java.awt.Rectangle(910, -132, 35, 5),
-			java.awt.Rectangle(981, -132, 35, 5)
+			[910, -236, 35, 5],
+			[877, -184, 35, 5],
+			[946, -184, 35, 5],
+			[845, -132, 35, 5],
+			[910, -132, 35, 5],
+			[981, -132, 35, 5]
 		]
 	];
 	let objsets = [
@@ -143,7 +142,8 @@ function rectangleStages(event, stage) {
 				let members = event.getVariable("members");
 				for (let i = 0; i < members.length; i++) {
 					for (let j = 0; j < objsets[index].length; j++) {
-						if (members[i].getMapId() == map.getId() && rects[index][j].contains(members[i].getPosition())) {
+						let rectangle = rects[index][j];
+						if (members[i].getMapId() == map.getId() && members[i].inRectangle(rectangle[0], rectangle[1], rectangle[2], rectangle[3])) {
 							objsets[index][j]++;
 							totplayers++;
 							break;

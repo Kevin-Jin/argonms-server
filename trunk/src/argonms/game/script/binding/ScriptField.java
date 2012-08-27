@@ -21,7 +21,10 @@ package argonms.game.script.binding;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
+import argonms.game.field.entity.Mob;
+import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.net.external.GamePackets;
+import java.awt.Point;
 
 /**
  *
@@ -85,5 +88,11 @@ public class ScriptField {
 
 	public void resetReactors() {
 		map.respawnReactors();
+	}
+
+	public void spawnMob(int mobId, int x, int y) {
+		Mob mob = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map);
+		mob.setPosition(new Point(x, y));
+		map.spawnMonster(mob);
 	}
 }

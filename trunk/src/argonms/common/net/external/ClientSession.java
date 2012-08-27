@@ -47,6 +47,14 @@ import java.util.logging.Logger;
  * @author GoldenKevin
  */
 public class ClientSession<T extends RemoteClient> implements Session {
+	public static final byte
+		CLIENT_DISTRIBUTION_JAPAN = 3,
+		CLIENT_DISTRIBUTION_TEST = 5,
+		CLIENT_DISTRIBUTION_SEA = 7,
+		CLIENT_DISTRIBUTION_GLOBAL = 8,
+		CLIENT_DISTRIBUTION_BRAZIL = 9
+	;
+
 	private static final Logger LOG = Logger.getLogger(ClientSession.class.getName());
 	private static final int INIT_HEADER_LENGTH = 2;
 	private static final int HEADER_LENGTH = 4;
@@ -259,10 +267,10 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	/* package-private */ void sendInitPacket() {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
 		lew.writeShort(GlobalConstants.MAPLE_VERSION);
-		lew.writeShort((short) 0);
+		lew.writeLengthPrefixedString("");
 		lew.writeBytes(recvIv);
 		lew.writeBytes(sendIv);
-		lew.writeByte((byte) 8);
+		lew.writeByte(CLIENT_DISTRIBUTION_GLOBAL);
 		byte[] body = lew.getBytes();
 
 		ByteBuffer buf = ByteBuffer.allocate(INIT_HEADER_LENGTH + body.length);

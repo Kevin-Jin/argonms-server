@@ -50,7 +50,7 @@ public final class ClientEncryption {
 		(byte) 0x33, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x52, (byte) 0x00, (byte) 0x00, (byte) 0x00
 	};
 
-	private static final ThreadLocal<BlockCipher> aesCiphers = new ThreadLocal<BlockCipher>() {
+	private static final ThreadLocal<BlockCipher> aes256 = new ThreadLocal<BlockCipher>() {
 		@Override
 		public BlockCipher get() {
 			AESEngine cipher = new AESEngine();
@@ -99,7 +99,7 @@ public final class ClientEncryption {
 		//to deal with maximum segment size). First piece is only 1456 bytes
 		//because the header, although not encrypted, adds 4 blocks to the first
 		//segment.
-		BlockCipher ciph = aesCiphers.get();
+		BlockCipher ciph = aes256.get();
 		//loops through each 1460 byte piece (with first piece only 1456 bytes)
 		for (
 				int remaining = data.length, offset = 0, pieceSize = Math.min(1456, remaining);
@@ -129,6 +129,8 @@ public final class ClientEncryption {
 	 * @return The header.
 	 */
 	public static byte[] makePacketHeader(int length, byte[] iv) {
+		//note, this is only valid for server to client packet headers. for
+		//client to server, the MAPLE_VERSION must not be bitwise negated (~)
 		int v = (((iv[3] & 0xFF) << 8) | (iv[2] & 0xFF)) ^ ~GlobalConstants.MAPLE_VERSION; //version
 		int l = v ^ length; //length
 		//write v and l as two 16-bit little-endian integers
@@ -158,8 +160,10 @@ public final class ClientEncryption {
 	 *         <code>false</code> otherwise.
 	 */
 	public static boolean checkPacket(byte[] packetHeader, byte[] iv) {
+		//note, this is only valid for client to server packet headers. for
+		//server to client, the MAPLE_VERSION must be bitwise negated (~)
 		return ((((packetHeader[0] ^ iv[2]) & 0xFF) == (GlobalConstants.MAPLE_VERSION & 0xFF)) &&
-				(((packetHeader[1] ^ iv[3]) & 0xFF) == ((GlobalConstants.MAPLE_VERSION & 0xFF) >> 8)));
+				(((packetHeader[1] ^ iv[3]) & 0xFF) == ((GlobalConstants.MAPLE_VERSION >>> 8) & 0xFF)));
 	}
 
 	//The following routines are for MapleStory's custom encryption
