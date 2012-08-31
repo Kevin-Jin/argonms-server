@@ -412,35 +412,14 @@ public class GameMap {
 		}
 	}
 
-	public void spawnMist(final Mist mist, final int duration) {
+	public void spawnMist(final Mist mist, final int duration, final ScheduledFuture<?> periodicTask) {
 		spawnEntity(mist);
-		Scheduler tMan = Scheduler.getInstance();
-		final ScheduledFuture<?> poisonSchedule;
-		if (mist.getMistType() == Mist.POISON_MIST) {
-			Runnable poisonTask = new Runnable() {
-				@Override
-				public void run() {
-					List<MapEntity> affectedMonsters = getMapEntitiesInRect(mist.getBox(), EnumSet.of(EntityType.MONSTER));
-					for (MapEntity mo : affectedMonsters) {
-						if (mist.shouldHurt()) {
-							Mob monster = (Mob) mo;
-							//TODO: implement poison mist
-							//MonsterStatusEffect poisonEffect = new MonsterStatusEffect(Collections.singletonMap(MonsterStatus.POISON, 1), mist.getSourceSkill(), false);
-							//monster.applyStatus(mist.getOwner(), poisonEffect, true, duration, false);
-						}
-					}
-				}
-			};
-			poisonSchedule = tMan.runRepeatedly(poisonTask, 2000, 2500);
-		} else {
-			poisonSchedule = null;
-		}
-		tMan.runAfterDelay(new Runnable() {
+		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {
 				destroyEntity(mist);
-				if (poisonSchedule != null)
-					poisonSchedule.cancel(false);
+				if (periodicTask != null)
+					periodicTask.cancel(false);
 			}
 		}, duration);
 	}
@@ -762,7 +741,7 @@ public class GameMap {
 		}
 	}
 
-	private List<MapEntity> getMapEntitiesInRect(Rectangle box, Set<EntityType> types) {
+	public List<MapEntity> getMapEntitiesInRect(Rectangle box, Set<EntityType> types) {
 		List<MapEntity> ret = new LinkedList<MapEntity>();
 		for (EntityType type : types) {
 			EntityPool pool = entPools.get(type);

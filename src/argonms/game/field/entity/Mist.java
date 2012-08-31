@@ -46,21 +46,21 @@ public class Mist extends AbstractEntity {
 	private final Rectangle box;
 	private final short prop;
 
-	public Mist(Rectangle mistPosition, Mob mob, MobSkillEffectsData skill) {
+	public Mist(Mob mob, MobSkillEffectsData skill) {
 		this.mistType = MOB_MIST;
 		this.ownerEid = mob.getId();
 		this.skillId = skill.getDataId();
 		this.skillLevel = skill.getLevel();
 		this.skillDelay = 0;
-		this.box = mistPosition;
+		this.box = skill.getBoundingBox(mob.getPosition(), mob.getStance() % 2 != 0);
 		this.prop = skill.getProp();
 	}
 
-	public Mist(Rectangle mistPosition, GameCharacter p, PlayerSkillEffectsData skill) {
+	public Mist(GameCharacter p, PlayerSkillEffectsData skill) {
 		this.ownerEid = p.getId();
 		this.skillId = skill.getDataId();
 		this.skillLevel = skill.getLevel();
-		this.box = mistPosition;
+		this.box = skill.getBoundingBox(p.getPosition(), p.getStance() % 2 != 0);
 		this.prop = skill.getProp();
 		switch (skillId) {
 			case Skills.SMOKESCREEN:
@@ -72,8 +72,9 @@ public class Mist extends AbstractEntity {
 				mistType = POISON_MIST;
 				break;
 			default:
-				skillDelay = 0;
-				mistType = MOB_MIST;
+				skillDelay = -1;
+				mistType = -1;
+				break;
 		}
 	}
 

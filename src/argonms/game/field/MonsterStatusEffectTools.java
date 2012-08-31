@@ -31,7 +31,6 @@ import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -56,22 +55,6 @@ public final class MonsterStatusEffectTools {
 		return GamePackets.writeMonsterCancelStatusEffect(m, EnumSet.of(e.getMonsterEffect()));
 	}
 
-	private static Rectangle calculateBoundingBox(Point posFrom, Point lt, Point rb, boolean facingLeft) {
-		int ltx, lty, rbx, rby;
-		if (facingLeft) {
-			ltx = lt.x + posFrom.x;
-			lty = lt.y + posFrom.y;
-			rbx = rb.x + posFrom.x;
-			rby = rb.y + posFrom.y;
-		} else {
-			ltx = rb.x * -1 + posFrom.x;
-			lty = lt.y + posFrom.y;
-			rbx = lt.x * -1 + posFrom.x;
-			rby = rb.y + posFrom.y;
-		}
-		return new Rectangle(ltx, lty, rbx - ltx, rby - lty);
-	}
-
 	private static int applyEffects(Map<MonsterStatusEffect, Short> updatedStats, Mob m, GameCharacter p, MonsterStatusEffectsData e) {
 		MonsterStatusEffect buff = e.getMonsterEffect();
 		if (buff != null) { //mob buff skill
@@ -85,9 +68,8 @@ public final class MonsterStatusEffectTools {
 				MobSkillEffectsData skill = ((MobSkillEffectsData) e);
 				switch (e.getDataId()) {
 					case MobSkills.MIST:
-						Rectangle bounds = calculateBoundingBox(m.getPosition(), skill.getLt(), skill.getRb(), true);
-						Mist mist = new Mist(bounds, m, skill);
-						p.getMap().spawnMist(mist, skill.getX() * 10);
+						Mist mist = new Mist(m, skill);
+						p.getMap().spawnMist(mist, skill.getX() * 10, null);
 						return e.getDuration();
 					case MobSkills.SUMMON:
 						short limit = skill.getSummonLimit();
@@ -160,6 +142,13 @@ public final class MonsterStatusEffectTools {
 						//freeze skills have weird times...
 						duration = e.getY() * 1000 * 2;
 						break;
+					case Skills.POISON_MIST: {
+						MonsterStatusEffectValues value = applyEffect(m, e, MonsterStatusEffect.POISON);
+						updatedStats.put(MonsterStatusEffect.POISON, Short.valueOf((short) 1));
+						m.addToActiveEffects(MonsterStatusEffect.POISON, value);
+						duration = e.getX() * 1000;
+						break;
+					}
 					default:
 						duration = e.getDuration();
 						break;

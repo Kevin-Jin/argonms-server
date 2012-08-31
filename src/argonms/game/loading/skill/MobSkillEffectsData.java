@@ -24,6 +24,7 @@ import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.util.Rng;
 import argonms.game.field.MobSkills;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -173,12 +174,19 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return y;
 	}
 
-	public Point getLt() {
-		return lt;
-	}
-
-	public Point getRb() {
-		return rb;
+	public Rectangle getBoundingBox(Point posFrom, boolean facingLeft) {
+		int ltx, lty, rbx, rby;
+		if (facingLeft) {
+			ltx = lt.x + posFrom.x;
+			rbx = rb.x + posFrom.x;
+		} else {
+			ltx = -rb.x + posFrom.x;
+			rbx = -lt.x + posFrom.x;
+		}
+		lty = lt.y + posFrom.y;
+		rby = rb.y + posFrom.y;
+		Rectangle bounds = new Rectangle(ltx, lty, rbx - ltx, rby - lty);
+		return bounds;
 	}
 
 	public short getProp() {

@@ -2000,6 +2000,16 @@
 	* Removed dependency on java.awt.Rectangle in npcs/party1_play.js.
 	* events/ship_ossyria.js spawns Balrog mobs when invasion ships are spawned.
 
+2012-08-31  GoldenKevin  (revision 130)
+
+	* Buffs are canceled when a player dies and respawns. Hide no longer
+	glitches in such a scenario.
+	* Eliminated any array copying and division in loops in HexTools methods.
+	* Replaced getLt() and getRb() methods from PlayerSkillEffectsData and
+	MobSkillEffectsData with a getBoundingBox method.
+	* Moved Poison Mist specific routines from GameMap.spawnMist.
+	* Started implementing Poison Mist, but it still does not work correctly.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

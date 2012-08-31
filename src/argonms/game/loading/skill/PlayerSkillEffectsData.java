@@ -25,6 +25,7 @@ import argonms.common.loading.StatusEffectsData.BuffsData;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.util.Rng;
 import java.awt.Point;
+import java.awt.Rectangle;
 
 /**
  *
@@ -441,12 +442,19 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return damage;
 	}
 
-	public Point getLt() {
-		return lt;
-	}
-
-	public Point getRb() {
-		return rb;
+	public Rectangle getBoundingBox(Point posFrom, boolean facingLeft) {
+		int ltx, lty, rbx, rby;
+		if (facingLeft) {
+			ltx = lt.x + posFrom.x;
+			rbx = rb.x + posFrom.x;
+		} else {
+			ltx = -rb.x + posFrom.x;
+			rbx = -lt.x + posFrom.x;
+		}
+		lty = lt.y + posFrom.y;
+		rby = rb.y + posFrom.y;
+		Rectangle bounds = new Rectangle(ltx, lty, rbx - ltx, rby - lty);
+		return bounds;
 	}
 
 	public byte getMobCount() {
