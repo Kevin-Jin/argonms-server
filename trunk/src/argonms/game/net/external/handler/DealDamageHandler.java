@@ -38,9 +38,11 @@ import argonms.game.character.SkillTools;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
+import argonms.game.field.MapEntity;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectTools;
 import argonms.game.field.entity.ItemDrop;
+import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
@@ -50,10 +52,12 @@ import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ScheduledFuture;
 
 //TODO: log any suspicious damages (must calculate max damage first)
 /**
@@ -130,8 +134,25 @@ public final class DealDamageHandler {
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
-		GameCharacter p = gc.getPlayer();
+		final GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
+		final PlayerSkillEffectsData e = attack.getAttackEffect(p);
+		if (e != null) {
+			switch (attack.skill) {
+				case Skills.POISON_MIST:
+					final Mist mist = new Mist(p, e);
+					ScheduledFuture<?> poisonSchedule = Scheduler.getInstance().runRepeatedly(new Runnable() {
+						@Override
+						public void run() {
+							for (MapEntity mo : p.getMap().getMapEntitiesInRect(mist.getBox(), EnumSet.of(EntityType.MONSTER)))
+								if (mist.shouldHurt())
+									MonsterStatusEffectTools.applyEffectsAndShowVisuals((Mob) mo, p, e);
+						}
+					}, 2000, 2500);
+					p.getMap().spawnMist(mist, e.getX() * 1000, poisonSchedule);
+					break;
+			}
+		}
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
 		applyAttack(attack, p);
 	}

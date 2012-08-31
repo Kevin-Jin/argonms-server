@@ -49,4 +49,8 @@ public class PlayerStatusEffectValues {
 	public short getModifier() {
 		return mod;
 	}
+
+	public StatusEffectsData getEffectsData() {
+		return e;
+	}
 }

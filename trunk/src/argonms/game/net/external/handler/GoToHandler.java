@@ -19,15 +19,23 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
+import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
+import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.SkillTools;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.loading.map.PortalData;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -49,10 +57,25 @@ public final class GoToHandler {
 			if (!p.getMap().enterPortal(p, portalName))
 				gc.getSession().send(GamePackets.writeEnableActions());
 		} else if (dest == 0 && !p.isAlive()) { //warp when dead and clicked ok
-			//TODO: cancel all buffs and all that good stuff
 			p.setHp((short) 50);
 			p.setStance((byte) 0);
 			p.changeMap(p.getMap().getReturnMap());
+
+			Set<StatusEffectsData> sources = new HashSet<StatusEffectsData>();
+			//TODO: race condition for p.getAllEffects() if skill expires while
+			//this loop is running
+			for (Map.Entry<PlayerStatusEffect, PlayerStatusEffectValues> effect : p.getAllEffects().entrySet()) {
+				if (effect.getValue().getSourceType() != StatusEffectsData.EffectSource.PLAYER_SKILL || effect.getValue().getSource() != Skills.HIDE) {
+					p.removeFromActiveEffects(effect.getKey());
+					StatusEffectTools.dispelEffect(p, effect.getKey(), effect.getValue());
+					sources.add(effect.getValue().getEffectsData());
+				} else if (!p.isVisible()) {
+					//client cancels all buffs on their side, so recast hide if we were hidden
+					SkillTools.useCastSkill(p, Skills.HIDE, (byte) 1, (byte) -1);
+				}
+			}
+			for (StatusEffectsData e : sources)
+				p.removeCancelEffectTask(e);
 		} else { //client map command
 			if (p.getPrivilegeLevel() <= UserPrivileges.USER || !p.changeMap(dest))
 				gc.getSession().send(GamePackets.writeEnableActions());

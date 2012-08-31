@@ -324,7 +324,7 @@ public final class StatusEffectTools {
 		return new PlayerStatusEffectValues(e, mod);
 	}
 
-	private static void dispelEffect(GameCharacter p, PlayerStatusEffect key, PlayerStatusEffectValues value) {
+	public static void dispelEffect(GameCharacter p, PlayerStatusEffect key, PlayerStatusEffectValues value) {
 		switch (key) {
 			case SUMMON:
 			case PUPPET:
