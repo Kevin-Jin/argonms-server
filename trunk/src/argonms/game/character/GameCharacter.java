@@ -476,6 +476,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private void updateDbQuests(Connection con) throws SQLException {
 		PreparedStatement ps = null, mps = null;
+		ResultSet rs = null;
 		try {
 			ps = con.prepareStatement("DELETE FROM `queststatuses` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
@@ -488,34 +489,34 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(1, getDataId());
 			mps = con.prepareStatement("INSERT INTO `questmobprogress` "
 					+ "(`queststatusid`,`mobid`,`count`) VALUES (?,?,?)");
-			ResultSet rs;
 			for (Entry<Short, QuestEntry> entry : questStatuses.entrySet()) {
 				QuestEntry status = entry.getValue();
 				ps.setShort(2, entry.getKey().shortValue());
 				ps.setByte(3, status.getState());
 				ps.setLong(4, status.getCompletionTime());
-				ps.executeUpdate();
-				int questEntryId;
-				rs = null;
-				try {
+				if (status.getState() == QuestEntry.STATE_STARTED) {
+					ps.executeUpdate();
 					rs = ps.getGeneratedKeys();
-					questEntryId = rs.next() ? rs.getInt(1) : -1;
-				} finally {
-					DatabaseManager.cleanup(DatabaseType.STATE, rs, null, null);
+					int questEntryId = rs.next() ? rs.getInt(1) : -1;
+					rs.close();
+
+					mps.setInt(1, questEntryId);
+					for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
+						mps.setInt(2, mobProgress.getKey().intValue());
+						mps.setShort(3, mobProgress.getValue().shortValue());
+						mps.addBatch();
+					}
+				} else {
+					ps.addBatch();
 				}
-				mps.setInt(1, questEntryId);
-				for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
-					mps.setInt(2, mobProgress.getKey().intValue());
-					mps.setShort(3, mobProgress.getValue().shortValue());
-					mps.addBatch();
-				}
-				mps.executeBatch();
 			}
+			ps.executeBatch();
+			mps.executeBatch();
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save quest states of character " + name, e);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
-			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 		}
 	}
 
@@ -562,6 +563,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			synchronized(famesThisMonth) {
 				for (Entry<Integer, Long> fameEntry : famesThisMonth.entrySet()) {
 					long time = fameEntry.getValue().longValue();
+					//given time >= now - 30 days
 					if (time >= threshold) {
 						ps.setInt(2, fameEntry.getKey().intValue());
 						ps.setLong(3, fameEntry.getValue().longValue());
@@ -727,17 +729,20 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				while (rs.next()) {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);
+					byte state = rs.getByte(3);
 					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
-					mps.setInt(1, questEntryId);
-					mrs = null;
-					try {
-						mrs = mps.executeQuery();
-						while (mrs.next())
-							mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
-					} finally {
-						DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
+					if (state == QuestEntry.STATE_STARTED) {
+						mps.setInt(1, questEntryId);
+						mrs = null;
+						try {
+							mrs = mps.executeQuery();
+							while (mrs.next())
+								mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+						} finally {
+							DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
+						}
 					}
-					QuestEntry status = new QuestEntry(rs.getByte(3), mobProgress);
+					QuestEntry status = new QuestEntry(state, mobProgress);
 					status.setCompletionTime(rs.getLong(4));
 					p.questStatuses.put(Short.valueOf(questId), status);
 					if (status.getState() == QuestEntry.STATE_STARTED) {
@@ -779,25 +784,15 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps = con.prepareStatement("SELECT * FROM `famelog` WHERE `from` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
-			PreparedStatement rfps = null;
 			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
-			try {
-				rfps = con.prepareStatement("DELETE FROM `famelog` WHERE `id` = ?");
-				while (rs.next()) {
-					long time = rs.getLong(4);
-					//given time >= now - 30 days
-					if (time >= threshold) {
-						p.famesThisMonth.put(Integer.valueOf(rs.getInt(3)), Long.valueOf(time));
-						if (time > p.lastFameGiven)
-							p.lastFameGiven = time;
-					} else {
-						rfps.setInt(1, rs.getInt(1));
-						rfps.addBatch();
-					}
+			while (rs.next()) {
+				long time = rs.getLong(4);
+				//given time >= now - 30 days
+				if (time >= threshold) {
+					p.famesThisMonth.put(Integer.valueOf(rs.getInt(3)), Long.valueOf(time));
+					if (time > p.lastFameGiven)
+						p.lastFameGiven = time;
 				}
-				rfps.executeBatch();
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, null, rfps, null);
 			}
 			rs.close();
 			ps.close();
@@ -1966,6 +1961,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		} else {
 			reqMobs = Collections.emptySet();
 		}
+		//TODO: is there really a reason why we keep track of forfeited quests?
+		//can't we just delete the quest status entirely?
 		Short oId = Short.valueOf(questId);
 		QuestEntry newStatus = new QuestEntry(QuestEntry.STATE_NOT_STARTED, reqMobs);
 		QuestEntry status = questStatuses.putIfAbsent(oId, newStatus);
@@ -2168,6 +2165,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			Long lastTime = famesThisMonth.get(Integer.valueOf(receiver));
 			if (lastTime == null)
 				return true;
+			//given time >= now - 30 days
 			if (lastTime.longValue() >= System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30)
 				return false;
 			famesThisMonth.remove(Integer.valueOf(receiver));
