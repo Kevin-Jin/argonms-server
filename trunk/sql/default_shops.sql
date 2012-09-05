@@ -20,7 +20,7 @@
 -- This script needs to be executed only if MCDB is not being used.
 --
 
- DROP TABLE IF EXISTS `shopitems`;
+DROP TABLE IF EXISTS `shopitems`;
 DROP TABLE IF EXISTS `shops`;
 
 CREATE TABLE `shops` (

@@ -282,34 +282,25 @@ public abstract class Player {
 		gm = rs.getByte(33);
 	}
 
-	private void insertEquipIntoDb(Equip equip, int inventoryKey, Connection con) throws SQLException {
-		PreparedStatement ps = null;
-		try {
-			ps = con.prepareStatement("INSERT INTO `inventoryequipment` "
-					+ "(`inventoryitemid`,`upgradeslots`,`level`,`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
-					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-			ps.setInt(1, inventoryKey);
-			ps.setByte(2, equip.getUpgradeSlots());
-			ps.setByte(3, equip.getLevel());
-			ps.setShort(4, equip.getStr());
-			ps.setShort(5, equip.getDex());
-			ps.setShort(6, equip.getInt());
-			ps.setShort(7, equip.getLuk());
-			ps.setShort(8, equip.getHp());
-			ps.setShort(9, equip.getMp());
-			ps.setShort(10, equip.getWatk());
-			ps.setShort(11, equip.getMatk());
-			ps.setShort(12, equip.getWdef());
-			ps.setShort(13, equip.getMdef());
-			ps.setShort(14, equip.getAcc());
-			ps.setShort(15, equip.getAvoid());
-			ps.setShort(16, equip.getHands());
-			ps.setShort(17, equip.getSpeed());
-			ps.setShort(18, equip.getJump());
-			ps.executeUpdate();
-		} finally {
-			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
-		}
+	private void setEquipUpdateVariables(Equip equip, int inventoryKey, PreparedStatement ps) throws SQLException {
+		ps.setInt(1, inventoryKey);
+		ps.setByte(2, equip.getUpgradeSlots());
+		ps.setByte(3, equip.getLevel());
+		ps.setShort(4, equip.getStr());
+		ps.setShort(5, equip.getDex());
+		ps.setShort(6, equip.getInt());
+		ps.setShort(7, equip.getLuk());
+		ps.setShort(8, equip.getHp());
+		ps.setShort(9, equip.getMp());
+		ps.setShort(10, equip.getWatk());
+		ps.setShort(11, equip.getMatk());
+		ps.setShort(12, equip.getWdef());
+		ps.setShort(13, equip.getMdef());
+		ps.setShort(14, equip.getAcc());
+		ps.setShort(15, equip.getAvoid());
+		ps.setShort(16, equip.getHands());
+		ps.setShort(17, equip.getSpeed());
+		ps.setShort(18, equip.getJump());
 	}
 
 	private byte indexOf(Pet search) {
@@ -320,13 +311,16 @@ public abstract class Player {
 	}
 
 	protected void commitInventory(Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
-		PreparedStatement ps = null, rps = null, pps = null, mps = null;
+		PreparedStatement ps = null, eps = null, rps = null, pps = null, mps = null;
 		ResultSet rs = null;
 		try {
 			ps = con.prepareStatement("INSERT INTO `inventoryitems` "
 				+ "(`characterid`,`accountid`,`inventorytype`,`position`,`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 				+ "VALUES (?,?,?,?,?,?,?,?,?)",
 				Statement.RETURN_GENERATED_KEYS);
+			eps = con.prepareStatement("INSERT INTO `inventoryequipment` "
+					+ "(`inventoryitemid`,`upgradeslots`,`level`,`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			rps = con.prepareStatement("INSERT INTO `inventoryrings` "
 					+ "(`inventoryitemid`,`partnerchrid`,`partnerringid`) "
 					+ "VALUES(?,?,?)");
@@ -364,25 +358,43 @@ public abstract class Player {
 						//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
 						//after executeBatch to get generated keys for each item
 						//in iteration order...
-						ps.executeUpdate(); //need the generated keys, so no batch
-						rs = ps.getGeneratedKeys();
-						int inventoryKey = rs.next() ? rs.getInt(1) : -1;
-						rs.close();
 
 						switch (item.getType()) {
-							case RING:
+							case RING: {
 								Ring ring = (Ring) item;
-								insertEquipIntoDb(ring, inventoryKey, con);
+
+								ps.executeUpdate(); //need the generated keys, so no batch
+								rs = ps.getGeneratedKeys();
+								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								rs.close();
+
+								setEquipUpdateVariables(ring, inventoryKey, eps);
+								eps.addBatch();
+
 								rps.setInt(1, inventoryKey);
 								rps.setInt(2, ring.getPartnerCharId());
 								rps.setLong(3, ring.getPartnerRingId());
-								rps.executeUpdate();
+								rps.addBatch();
 								break;
-							case EQUIP:
-								insertEquipIntoDb((Equip) item, inventoryKey, con);
+							}
+							case EQUIP: {
+								ps.executeUpdate(); //need the generated keys, so no batch
+								rs = ps.getGeneratedKeys();
+								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								rs.close();
+
+								setEquipUpdateVariables((Equip) item, inventoryKey, eps);
+								eps.addBatch();
 								break;
-							case PET:
+							}
+							case PET: {
 								Pet pet = (Pet) item;
+
+								ps.executeUpdate(); //need the generated keys, so no batch
+								rs = ps.getGeneratedKeys();
+								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								rs.close();
+
 								pps.setInt(1, inventoryKey);
 								pps.setByte(2, indexOf(pet));
 								pps.setString(3, pet.getName());
@@ -390,25 +402,44 @@ public abstract class Player {
 								pps.setShort(5, pet.getCloseness());
 								pps.setByte(6, pet.getFullness());
 								pps.setBoolean(7, pet.isExpired());
-								pps.executeUpdate();
+								pps.addBatch();
 								break;
-							case MOUNT:
+							}
+							case MOUNT: {
 								TamingMob mount = (TamingMob) item;
-								insertEquipIntoDb(mount, inventoryKey, con);
+
+								ps.executeUpdate(); //need the generated keys, so no batch
+								rs = ps.getGeneratedKeys();
+								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								rs.close();
+
+								setEquipUpdateVariables(mount, inventoryKey, eps);
+								eps.addBatch();
+
 								mps.setInt(1, inventoryKey);
 								mps.setByte(2, mount.getMountLevel());
 								mps.setShort(3, mount.getExp());
 								mps.setByte(4, mount.getTiredness());
-								mps.executeUpdate();
+								mps.addBatch();
+								break;
+							}
+							case ITEM:
+								ps.addBatch();
 								break;
 						}
 					}
 				}
 			}
+			ps.executeBatch();
+			eps.executeBatch();
+			rps.executeBatch();
+			pps.executeBatch();
+			mps.executeBatch();
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, pps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, rps, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, null, eps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
 		}
 	}

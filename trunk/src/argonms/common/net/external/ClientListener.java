@@ -172,9 +172,10 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 																	ClientEncryption.aesOfbCrypt(body, iv);
 																	ClientEncryption.mapleDecrypt(body);
 																	pp.process(new LittleEndianByteArrayReader(body), session.getClient());
-																	session.readDequeued();
 																} catch (Exception ex) {
 																	LOG.log(Level.WARNING, "Uncaught exception while processing packet from client " + session.getAccountName() + " (" + session.getAddress() + ")", ex);
+																} finally {
+																	session.readDequeued();
 																}
 															}
 														});

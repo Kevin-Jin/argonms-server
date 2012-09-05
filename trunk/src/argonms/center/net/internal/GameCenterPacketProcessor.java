@@ -216,8 +216,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
 						for (Party.Member mem : offlineMembers) {
 							ps.setInt(1, mem.getPlayerId());
-							ps.executeUpdate();
+							ps.addBatch();
 						}
+						ps.executeBatch();
 					} catch (SQLException ex) {
 						LOG.log(Level.WARNING, "Could not expel offline members from disbanded party " + partyId, ex);
 					} finally {

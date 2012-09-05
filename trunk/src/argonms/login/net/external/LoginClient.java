@@ -143,9 +143,10 @@ public class LoginClient extends RemoteClient {
 				}
 				if (release) {
 					rbps.setInt(1, rs.getInt(1));
-					rbps.executeUpdate();
+					rbps.addBatch();
 				}
 			}
+			rbps.executeBatch();
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, rbps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);

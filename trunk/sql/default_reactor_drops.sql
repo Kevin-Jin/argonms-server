@@ -21,6 +21,7 @@
 --
 
 DROP TABLE IF EXISTS `reactordrops`;
+
 CREATE TABLE `reactordrops` (
   `reactordropid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `reactorid` INT(11) NOT NULL,
