@@ -792,9 +792,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 							p.lastFameGiven = time;
 					} else {
 						rfps.setInt(1, rs.getInt(1));
-						rfps.executeUpdate();
+						rfps.addBatch();
 					}
 				}
+				rfps.executeBatch();
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, null, rfps, null);
 			}

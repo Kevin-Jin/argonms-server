@@ -2036,6 +2036,14 @@
 	a line. 80 character width is obsolete and broken up strings make less sense
 	after a lot of refactoring.
 
+2012-09-05  GoldenKevin  (revision 132)
+
+	* Fixed formatting of .sql scripts that I missed last revision.
+	* Fixed client never fully dissociating if an exception occurred while
+	processing a packet.
+	* PreparedStatement.executeUpdate() in loops has been replaced with
+	addBatch() and executeBatch() wherever possible.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
