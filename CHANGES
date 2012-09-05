@@ -2010,6 +2010,32 @@
 	* Moved Poison Mist specific routines from GameMap.spawnMist.
 	* Started implementing Poison Mist, but it still does not work correctly.
 
+2012-09-04  GoldenKevin  (revision 131)
+
+	* Rearranged argon.sql to highlight dependence relationships among tables.
+	Previously was inconsistent - most table declarations were in alphabetical
+	order but some were rearranged due to foreign key constraint failures on
+	script execution.
+	* Tables in argon.sql are deleted in the reverse order that they were
+	created to avoid foreign key constraint failures.
+	* Removed all implicit/default modifiers in argon.sql to make the script
+	more concise (i.e. DEFAULT NULL and DEFAULT CHARSET=latin1). Although InnoDB
+	is now default in MySQL 5.5, I want to make sure that the tables support
+	transactions even if the script is executed on a server with an older MySQL,
+	so the engine is still explicit.
+	* Same treatment for argon.sql is given to other files in /trunk/sql/*.sql.
+	default_monster_drops.sql and default_shops.sql files are replaced rather
+	than modified because their diffs would be bigger than the files themselves.
+	* `infractions`.`assignertype` is now NOT NULL.
+	* `inventoryitems`.`uniqueid` no longer unsigned because server does not
+	store 64-bit unsigned unique IDs. `inventoryitems`.`expiredate` and
+	`expiredate` and `receivedate` in `infractions` no longer unsigned because
+	timestamps are stored as 64-bit signed value on the server.
+	* Arbitrary line breaks in queries that strictly adhere to 80 characters per
+	line replaced with ones with looser width limits and group related parts in
+	a line. 80 character width is obsolete and broken up strings make less sense
+	after a lot of refactoring.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

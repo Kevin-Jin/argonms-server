@@ -113,14 +113,13 @@ public class ShopCharacter extends LoggedInPlayer {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`name` FROM `characters` `c` "
-					+ "LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name` "
+					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
-				LOG.log(Level.WARNING, "Client requested to load a non-existant" +
-						" character w/ id {0} (account {1}).",
+				LOG.log(Level.WARNING, "Client requested to load a non-existant character w/ id {0} (account {1}).",
 						new Object[] { id, c.getAccountId() });
 				return null;
 			}
@@ -139,8 +138,8 @@ public class ShopCharacter extends LoggedInPlayer {
 
 			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.getInventories());
 			invUnion.put(InventoryType.CASH_SHOP, p.shopInventory);
-			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ?"
-					+ " AND `inventorytype` <= " + InventoryType.CASH.byteValue()
+			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE "
+					+ "`characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue()
 					+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.byteValue());
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
@@ -154,8 +153,7 @@ public class ShopCharacter extends LoggedInPlayer {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next())
-				p.skills.put(Integer.valueOf(rs.getInt(1)),
-						new SkillEntry(rs.getByte(2), rs.getByte(3)));
+				p.skills.put(Integer.valueOf(rs.getInt(1)), new SkillEntry(rs.getByte(2), rs.getByte(3)));
 			rs.close();
 			ps.close();
 
@@ -168,16 +166,15 @@ public class ShopCharacter extends LoggedInPlayer {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `id`,`questid`,`state`,"
-					+ "`completed` FROM `queststatuses` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("SELECT `id`,`questid`,`state`,`completed` "
+					+ "FROM `queststatuses` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			PreparedStatement mps = null;
 			ResultSet mrs;
 			try {
-				mps = con.prepareStatement("SELECT `mobid`,`count` FROM "
-						+ "`questmobprogress` WHERE `queststatusid` = ?");
+				mps = con.prepareStatement("SELECT `mobid`,`count` "
+						+ "FROM `questmobprogress` WHERE `queststatusid` = ?");
 				while (rs.next()) {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);

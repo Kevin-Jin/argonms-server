@@ -129,22 +129,19 @@ public class LoginCharacter extends Player {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
-				LOG.log(Level.WARNING, "Client requested to load a non-existant" +
-						" character w/ id {0} (account {1}).",
+				LOG.log(Level.WARNING, "Client requested to load a non-existant character w/ id {0} (account {1}).",
 						new Object[] { id, c.getAccountId() });
 				return null;
 			}
 			int accountid = rs.getInt(1);
 			if (accountid != c.getAccountId()) { //we are aware of our accountid
-				LOG.log(Level.WARNING, "Client account {0} is trying to load "
-						+ "character {1} which belongs to account {2}",
+				LOG.log(Level.WARNING, "Client account {0} is trying to load character {1} which belongs to account {2}",
 						new Object[] { c.getAccountId(), id, accountid });
 				return null;
 			}
 			byte world = rs.getByte(2);
 			if (world != c.getWorld()) { //we are aware of our world
-				LOG.log(Level.WARNING, "Client account {0} is trying to load "
-						+ "character {1} on world {2} but exists on world {3}",
+				LOG.log(Level.WARNING, "Client account {0} is trying to load character {1} on world {2} but exists on world {3}",
 						new Object[] { accountid, id, c.getWorld(), world });
 				return null;
 			}
@@ -158,8 +155,8 @@ public class LoginCharacter extends Player {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ? "
-					+ "AND `inventorytype` <= " + InventoryType.CASH.byteValue());
+			ps = con.prepareStatement("SELECT * FROM `inventoryitems` "
+					+ "WHERE `characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue());
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			p.loadInventory(con, rs, p.getInventories());
@@ -173,9 +170,8 @@ public class LoginCharacter extends Player {
 	}
 
 	private void updateDbInventory(Connection con) throws SQLException {
-		String invUpdate = "DELETE FROM `inventoryitems` WHERE "
-				+ "`characterid` = ? AND `inventorytype` <= "
-				+ InventoryType.CASH.byteValue();
+		String invUpdate = "DELETE FROM `inventoryitems` "
+				+ "WHERE `characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue();
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -195,14 +191,13 @@ public class LoginCharacter extends Player {
 	private void updateDbBindings(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `keymaps` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `keymaps` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
-					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `keymaps` "
+					+ "(`characterid`,`key`,`type`,`action`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
 				KeyBinding binding = entry.getValue();
@@ -249,17 +244,13 @@ public class LoginCharacter extends Player {
 		//TODO: get real equipped inventory size?
 		inventories.put(InventoryType.EQUIPPED, equipped);
 		InventoryTools.equip(equipment, equipped,
-				InventoryTools.addToInventory(equipment, top, 1)
-				.addedOrRemovedSlots.get(0).shortValue(), (short) -5);
+				InventoryTools.addToInventory(equipment, top, 1).addedOrRemovedSlots.get(0).shortValue(), (short) -5);
 		InventoryTools.equip(equipment, equipped,
-				InventoryTools.addToInventory(equipment, bottom, 1)
-				.addedOrRemovedSlots.get(0).shortValue(), (short) -6);
+				InventoryTools.addToInventory(equipment, bottom, 1).addedOrRemovedSlots.get(0).shortValue(), (short) -6);
 		InventoryTools.equip(equipment, equipped,
-				InventoryTools.addToInventory(equipment, shoes, 1)
-				.addedOrRemovedSlots.get(0).shortValue(), (short) -7);
+				InventoryTools.addToInventory(equipment, shoes, 1).addedOrRemovedSlots.get(0).shortValue(), (short) -7);
 		InventoryTools.equip(equipment, equipped,
-				InventoryTools.addToInventory(equipment, weapon, 1)
-				.addedOrRemovedSlots.get(0).shortValue(), (short) -11);
+				InventoryTools.addToInventory(equipment, weapon, 1).addedOrRemovedSlots.get(0).shortValue(), (short) -11);
 		InventoryTools.addToInventory(etc, 4161001, 1);
 		p.addInventories(inventories);
 
@@ -276,10 +267,9 @@ public class LoginCharacter extends Player {
 			prevAutoCommit = con.getAutoCommit();
 			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
 			con.setAutoCommit(false);
-			ps = con.prepareStatement("INSERT INTO"
-					+ "`characters`(`accountid`,`world`,`name`,`gender`,`skin`,"
-					+ "`eyes`,`hair`,`str`,`dex`,`int`,`luk`,`gm`) VALUES"
-					+ " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			ps = con.prepareStatement("INSERT INTO `characters` "
+					+ "(`accountid`,`world`,`name`,`gender`,`skin`,`eyes`,`hair`,`str`,`dex`,`int`,`luk`,`gm`) "
+					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1, account.getAccountId());
 			ps.setByte(2, account.getWorld());
@@ -305,8 +295,7 @@ public class LoginCharacter extends Player {
 			con.commit();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not create new character " + name
-					+ " on account" + account.getAccountId()
-					+ ". Rolling back all changes...", ex);
+					+ " on account" + account.getAccountId() + ". Rolling back all changes...", ex);
 			try {
 				con.rollback();
 			} catch (SQLException ex2) {
@@ -317,8 +306,7 @@ public class LoginCharacter extends Player {
 				con.setAutoCommit(prevAutoCommit);
 				con.setTransactionIsolation(prevTransactionIsolation);
 			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not reset Connection config "
-						+ "after creating character " + p.getDataId(), ex);
+				LOG.log(Level.WARNING, "Could not reset Connection config after creating character " + p.getDataId(), ex);
 			}
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}

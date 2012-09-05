@@ -16,19 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+DROP TABLE IF EXISTS `uniqueid`;
+ DROP TABLE IF EXISTS `infractions`;
+  DROP TABLE IF EXISTS `macbans`;
+ DROP TABLE IF EXISTS `bans`;
+  DROP TABLE IF EXISTS `wishlists`;
+  DROP TABLE IF EXISTS `skillmacros`;
+  DROP TABLE IF EXISTS `skills`;
+  DROP TABLE IF EXISTS `parties`;
+  DROP TABLE IF EXISTS `minigamescores`;
+  DROP TABLE IF EXISTS `mapmemory`;
+  DROP TABLE IF EXISTS `keymaps`;
+  DROP TABLE IF EXISTS `famelog`;
+  DROP TABLE IF EXISTS `cooldowns`;
+  DROP TABLE IF EXISTS `buddyentries`;
+   DROP TABLE IF EXISTS `questmobprogress`;
+  DROP TABLE IF EXISTS `queststatuses`;
+   DROP TABLE IF EXISTS `inventoryrings`;
+   DROP TABLE IF EXISTS `inventorypets`;
+   DROP TABLE IF EXISTS `inventorymounts`;
+   DROP TABLE IF EXISTS `inventoryequipment`;
+  DROP TABLE IF EXISTS `inventoryitems`;
+ DROP TABLE IF EXISTS `characters`;
 DROP TABLE IF EXISTS `accounts`;
+
 CREATE TABLE `accounts` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(12) NOT NULL,
   `password` VARBINARY(64) NOT NULL,
-  `salt` BINARY(16) DEFAULT NULL,
-  `pin` CHAR(4) DEFAULT NULL,
+  `salt` BINARY(16),
+  `pin` CHAR(4),
   `gender` TINYINT(2) NOT NULL DEFAULT 10,
-  `birthday` INT(8) DEFAULT NULL,
+  `birthday` INT(8),
   `characters` TINYINT(1) NOT NULL DEFAULT 3,
   `connected` TINYINT(1) NOT NULL DEFAULT 0,
-  `recentmacs` VARBINARY(252) DEFAULT NULL,
-  `recentip` INT(10) UNSIGNED DEFAULT NULL,
+  `recentmacs` VARBINARY(252),
+  `recentip` INT(10) UNSIGNED,
   `storageslots` TINYINT(3) UNSIGNED NOT NULL DEFAULT 4,
   `storagemesos` INT(11) NOT NULL DEFAULT 0,
   `gm` TINYINT(4) NOT NULL DEFAULT 0,
@@ -36,17 +59,6 @@ CREATE TABLE `accounts` (
   KEY (`name`)
 ) ENGINE = InnoDB;
 
-DROP TABLE IF EXISTS `bans`;
-CREATE TABLE `bans` (
-  `banid` INT(11) NOT NULL AUTO_INCREMENT,
-  `accountid` INT(11) NOT NULL,
-  `ip` INT(10) UNSIGNED NOT NULL,
-  PRIMARY KEY (`banid`),
-  KEY (`accountid`),
-  KEY (`ip`)
-) ENGINE = InnoDB;
-
-DROP TABLE IF EXISTS `characters`;
 CREATE TABLE `characters` (
   `accountid` INT(11) NOT NULL,
   `world` TINYINT(2) NOT NULL,
@@ -93,82 +105,28 @@ CREATE TABLE `characters` (
   KEY (`name`),
   KEY (`accountid`),
   CONSTRAINT FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-DROP TABLE IF EXISTS `buddyentries`;
-CREATE TABLE `buddyentries` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `owner` INT(11) NOT NULL,
-  `buddy` INT(11) NOT NULL,
-  `buddyname` VARCHAR(12) NOT NULL,
-  `status` TINYINT(1) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`owner`),
-  KEY (`buddy`),
-  CONSTRAINT FOREIGN KEY (`owner`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `cooldowns`;
-CREATE TABLE `cooldowns` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `characterid` INT(11) NOT NULL,
-  `skillid` INT(11) NOT NULL,
-  `remaining` SMALLINT(6) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`characterid`),
-  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `famelog`;
-CREATE TABLE `famelog` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `from` INT(11) NOT NULL,
-  `to` INT(11) NOT NULL,
-  `millis` BIGINT(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`from`),
-  CONSTRAINT FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `infractions`;
-CREATE TABLE `infractions` (
-  `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `accountid` INT(11) NOT NULL,
-  `characterid` INT(11) DEFAULT NULL,
-  `receivedate` BIGINT(20) UNSIGNED NOT NULL,
-  `expiredate` BIGINT(20) UNSIGNED NOT NULL,
-  `assignertype` ENUM('gm warning','machine detected'),
-  `assignername` VARCHAR(255) NOT NULL,
-  `assignercomment` VARCHAR(255) NOT NULL,
-  `reason` TINYINT(3) NOT NULL,
-  `severity` SMALLINT(6) NOT NULL,
-  `pardoned` TINYINT(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`entryid`),
-  KEY (`accountid`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `inventoryitems`;
 CREATE TABLE `inventoryitems` (
   `inventoryitemid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `characterid` INT(11) DEFAULT NULL,
-  `accountid` INT(11) DEFAULT NULL,
-  `inventorytype` TINYINT(1) DEFAULT NULL,
+  `characterid` INT(11),
+  `accountid` INT(11),
+  `inventorytype` TINYINT(1),
   `position` SMALLINT(6) NOT NULL,
   `itemid` INT(11) NOT NULL,
-  `expiredate` BIGINT(20) UNSIGNED NOT NULL,
-  `uniqueid` BIGINT(20) UNSIGNED NOT NULL,
-  `owner` VARCHAR(12) DEFAULT NULL,
+  `expiredate` BIGINT(20) NOT NULL,
+  `uniqueid` BIGINT(20) NOT NULL,
+  `owner` VARCHAR(12),
   `quantity` SMALLINT(6) NOT NULL,
   PRIMARY KEY (`inventoryitemid`),
   KEY (`characterid`),
   KEY (`accountid`),
   KEY (`characterid`,`inventorytype`),
-  KEY (`accountid`, `inventorytype`),
+  KEY (`accountid`,`inventorytype`),
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
   CONSTRAINT FOREIGN KEY (`accountid`) REFERENCES `accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `inventoryequipment`;
 CREATE TABLE `inventoryequipment` (
   `inventoryequipmentid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` INT(10) UNSIGNED NOT NULL,
@@ -194,7 +152,6 @@ CREATE TABLE `inventoryequipment` (
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `inventorymounts`;
 CREATE TABLE `inventorymounts` (
   `inventorymountid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` INT(10) UNSIGNED NOT NULL,
@@ -206,7 +163,6 @@ CREATE TABLE `inventorymounts` (
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `inventorypets`;
 CREATE TABLE `inventorypets` (
   `inventorypetid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` INT(10) UNSIGNED NOT NULL,
@@ -221,7 +177,6 @@ CREATE TABLE `inventorypets` (
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `inventoryrings`;
 CREATE TABLE `inventoryrings` (
   `inventoryringid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `inventoryitemid` INT(10) UNSIGNED NOT NULL,
@@ -232,7 +187,59 @@ CREATE TABLE `inventoryrings` (
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `keymaps`;
+CREATE TABLE `queststatuses` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` INT(11) NOT NULL,
+  `questid` SMALLINT(6) NOT NULL,
+  `state` TINYINT(1) NOT NULL,
+  `completed` BIGINT(20),
+  PRIMARY KEY (`id`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `questmobprogress` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `queststatusid` INT(11) UNSIGNED NOT NULL,
+  `mobid` INT(11) NOT NULL,
+  `count` SMALLINT(4) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`queststatusid`),
+  CONSTRAINT FOREIGN KEY (`queststatusid`) REFERENCES `queststatuses` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB;
+
+CREATE TABLE `buddyentries` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `owner` INT(11) NOT NULL,
+  `buddy` INT(11) NOT NULL,
+  `buddyname` VARCHAR(12) NOT NULL,
+  `status` TINYINT(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`owner`),
+  KEY (`buddy`),
+  CONSTRAINT FOREIGN KEY (`owner`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `cooldowns` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `characterid` INT(11) NOT NULL,
+  `skillid` INT(11) NOT NULL,
+  `remaining` SMALLINT(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `famelog` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `from` INT(11) NOT NULL,
+  `to` INT(11) NOT NULL,
+  `millis` BIGINT(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`from`),
+  CONSTRAINT FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE `keymaps` (
   `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
@@ -244,17 +251,6 @@ CREATE TABLE `keymaps` (
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `macbans`;
-CREATE TABLE `macbans` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `banid` INT(11) NOT NULL,
-  `mac` BINARY(6) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`banid`),
-  CONSTRAINT FOREIGN KEY (`banid`) REFERENCES `bans` (`banid`) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `mapmemory`;
 CREATE TABLE `mapmemory` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
@@ -265,7 +261,6 @@ CREATE TABLE `mapmemory` (
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `minigamescores`;
 CREATE TABLE `minigamescores` (
   `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
@@ -278,7 +273,6 @@ CREATE TABLE `minigamescores` (
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `parties`;
 CREATE TABLE `parties` (
   `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `world` TINYINT(2) NOT NULL,
@@ -291,30 +285,17 @@ CREATE TABLE `parties` (
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `queststatuses`;
-CREATE TABLE `queststatuses` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+CREATE TABLE `skills` (
+  `entryid` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
-  `questid` SMALLINT(6) NOT NULL,
-  `state` TINYINT(1) NOT NULL,
-  `completed` BIGINT(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
+  `skillid` INT(11) NOT NULL,
+  `level` TINYINT(2) NOT NULL,
+  `mastery` TINYINT(2),
+  PRIMARY KEY (`entryid`),
   KEY (`characterid`),
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `questmobprogress`;
-CREATE TABLE `questmobprogress` (
-  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `queststatusid` INT(11) UNSIGNED NOT NULL,
-  `mobid` INT(11) NOT NULL,
-  `count` SMALLINT(4) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY (`queststatusid`),
-  CONSTRAINT FOREIGN KEY (`queststatusid`) REFERENCES `queststatuses` (`id`) ON DELETE CASCADE
-) ENGINE = InnoDB;
-
-DROP TABLE IF EXISTS `skillmacros`;
 CREATE TABLE `skillmacros` (
   `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
@@ -329,25 +310,6 @@ CREATE TABLE `skillmacros` (
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS `skills`;
-CREATE TABLE `skills` (
-  `entryid` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `characterid` INT(11) NOT NULL,
-  `skillid` INT(11) NOT NULL,
-  `level` TINYINT(2) NOT NULL,
-  `mastery` TINYINT(2) DEFAULT NULL,
-  PRIMARY KEY (`entryid`),
-  KEY (`characterid`),
-  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `uniqueid`;
-CREATE TABLE `uniqueid` (
-  `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`nextuid`)
-) ENGINE=InnoDB;
-
-DROP TABLE IF EXISTS `wishlists`;
 CREATE TABLE `wishlists` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,
@@ -355,6 +317,45 @@ CREATE TABLE `wishlists` (
   PRIMARY KEY (`id`),
   KEY (`characterid`),
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `bans` (
+  `banid` INT(11) NOT NULL AUTO_INCREMENT,
+  `accountid` INT(11) NOT NULL,
+  `ip` INT(10) UNSIGNED NOT NULL,
+  PRIMARY KEY (`banid`),
+  KEY (`accountid`),
+  KEY (`ip`)
+) ENGINE = InnoDB;
+
+CREATE TABLE `macbans` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `banid` INT(11) NOT NULL,
+  `mac` BINARY(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`banid`),
+  CONSTRAINT FOREIGN KEY (`banid`) REFERENCES `bans` (`banid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `infractions` (
+  `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `accountid` INT(11) NOT NULL,
+  `characterid` INT(11),
+  `receivedate` BIGINT(20) NOT NULL,
+  `expiredate` BIGINT(20) NOT NULL,
+  `assignertype` ENUM('gm warning','machine detected') NOT NULL,
+  `assignername` VARCHAR(255) NOT NULL,
+  `assignercomment` VARCHAR(255) NOT NULL,
+  `reason` TINYINT(3) NOT NULL,
+  `severity` SMALLINT(6) NOT NULL,
+  `pardoned` TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`entryid`),
+  KEY (`accountid`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `uniqueid` (
+  `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`nextuid`)
 ) ENGINE=InnoDB;
 
 DROP PROCEDURE IF EXISTS `updateranks`;

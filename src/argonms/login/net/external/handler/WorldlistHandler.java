@@ -65,16 +65,14 @@ public final class WorldlistHandler {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `id` FROM"
-					+ "`characters` WHERE `accountid` = ? AND `world` = ?");
+			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE `accountid` = ? AND `world` = ?");
 			ps.setInt(1, c.getAccountId());
 			ps.setInt(2, c.getWorld());
 			rs = ps.executeQuery();
 			while (rs.next())
 				players.add(LoginCharacter.loadPlayer(c, rs.getInt(1)));
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not load characters of account "
-					+ c.getAccountId(), ex);
+			LOG.log(Level.WARNING, "Could not load characters of account " + c.getAccountId(), ex);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
@@ -178,8 +176,7 @@ public final class WorldlistHandler {
 		//find out if the client's connection timed out and then
 		//updateState(STATUS_NOTLOGGEDIN) if it is.
 		c.setMigratingHost();
-		c.getSession().send(writeServerAddress(w.getHost(c.getChannel()),
-				w.getPort(c.getChannel()), charid));
+		c.getSession().send(writeServerAddress(w.getHost(c.getChannel()), w.getPort(c.getChannel()), charid));
 	}
 
 	public static void handlePickFromAllChars(LittleEndianReader packet, LoginClient lc) {
@@ -252,21 +249,16 @@ public final class WorldlistHandler {
 		if (str + dex + _int + luk != 25 || str < 4 || dex < 4 || _int < 4 || luk < 4)
 			valid = false;
 		if (gender == 0)
-			if ((eyes < 20000 || eyes > 20002) ||
-					(hair != 30000 && hair != 30020 && hair != 30030) ||
-					(top != 1040002 && top != 1040006 && top != 1040010) ||
-					(bottom != 1060006 && bottom != 1060002))
+			if ((eyes < 20000 || eyes > 20002) || (hair != 30000 && hair != 30020 && hair != 30030) ||
+					(top != 1040002 && top != 1040006 && top != 1040010) || (bottom != 1060006 && bottom != 1060002))
 				valid = false;
 		else if (gender == 1)
-			if ((eyes < 21000 || eyes > 21002) ||
-					(hair != 31000 && hair != 31040 && hair != 31050) ||
-					(top != 1041002 && top != 1041006 && top != 1041010 && top != 1041011) ||
-					(bottom != 1061002 && bottom != 1061008))
+			if ((eyes < 21000 || eyes > 21002) || (hair != 31000 && hair != 31040 && hair != 31050) ||
+					(top != 1041002 && top != 1041006 && top != 1041010 && top != 1041011) || (bottom != 1061002 && bottom != 1061008))
 				valid = false;
 		else
 			valid = false;
-		if ((skin < 0 || skin > 3) ||
-				(weapon != 1302000 && weapon != 1322005 && weapon != 1312004) ||
+		if ((skin < 0 || skin > 3) || (weapon != 1302000 && weapon != 1322005 && weapon != 1312004) ||
 				(shoes != 1072001 && shoes != 1072005 && shoes != 1072037 && shoes != 1072038) ||
 				(hairColor != 0 && hairColor != 2 && hairColor != 3 && hairColor != 7))
 			valid = false;
@@ -275,9 +267,8 @@ public final class WorldlistHandler {
 		lew.writeShort(ClientSendOps.CHAR_CREATED);
 		lew.writeBool(!valid);
 		if (valid) {
-			LoginCharacter p = LoginCharacter.saveNewPlayer(lc, name, eyes,
-					hair + hairColor, skin, gender, str, dex, _int, luk,
-					top, bottom, shoes, weapon);
+			LoginCharacter p = LoginCharacter.saveNewPlayer(lc, name,
+					eyes, hair + hairColor, skin, gender, str, dex, _int, luk, top, bottom, shoes, weapon);
 			writeCharEntry(lew, p);
 		} else {
 			CheatTracker.get(lc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to create a stats hacked character (" + name + ")");

@@ -405,11 +405,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			ResultSet rs = null;
 			try {
 				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("SELECT `c`.`id`,`c`.`name`,"
-						+ "`c`.`job`,`c`.`level`,`p`.`leader` FROM "
-						+ "`parties` `p` LEFT JOIN `characters` `c` ON "
-						+ "`c`.`id` = `p`.`characterid` WHERE `p`.`world` = ? "
-						+ "AND `p`.`partyid` = ?");
+				ps = con.prepareStatement("SELECT `c`.`id`,`c`.`name`,`c`.`job`,`c`.`level`,`p`.`leader` "
+						+ "FROM `parties` `p` LEFT JOIN `characters` `c` ON `c`.`id` = `p`.`characterid` "
+						+ "WHERE `p`.`world` = ? AND `p`.`partyid` = ?");
 				ps.setInt(1, r.getWorld());
 				ps.setInt(2, partyId);
 				rs = ps.executeQuery();

@@ -74,9 +74,9 @@ public final class BuddyListHandler {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `a`.`connected` FROM `accounts` "
-					+ "`a` LEFT JOIN `characters` `c` "
-					+ "ON `c`.`accountid` = `a`.`id` WHERE `c`.`id` = ?");
+			ps = con.prepareStatement("SELECT `a`.`connected` "
+					+ "FROM `accounts` `a` LEFT JOIN `characters` `c` ON `c`.`accountid` = `a`.`id` "
+					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, playerId);
 			rs = ps.executeQuery();
 			if (!rs.next())
@@ -96,12 +96,10 @@ public final class BuddyListHandler {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("SELECT (`c`.`buddyslots` <= (SELECT "
-					+ "COUNT(*) FROM `buddyentries` WHERE `owner` = `c`.`id` "
-					+ " AND `status` <> " + STATUS_INVITED + ")) AS `full`, "
-					+ "EXISTS (SELECT * FROM `buddyentries` WHERE `owner` = "
-					+ "`c`.`id` AND `buddy` = ?) AS `onlist` FROM `characters` "
-					+ "`c` WHERE `id` = ?");
+			ps = con.prepareStatement("SELECT "
+					+ "(`c`.`buddyslots` <= (SELECT COUNT(*) FROM `buddyentries` WHERE `owner` = `c`.`id`  AND `status` <> " + STATUS_INVITED + ")) AS `full`,"
+					+ "EXISTS (SELECT * FROM `buddyentries` WHERE `owner` = `c`.`id` AND `buddy` = ?) AS `onlist` "
+					+ "FROM `characters` `c` WHERE `id` = ?");
 			ps.setInt(1, inviter);
 			ps.setInt(2, invitee);
 			rs = ps.executeQuery();
@@ -138,10 +136,9 @@ public final class BuddyListHandler {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `a`.`connected`,`c`.`world`,"
-					+ "`c`.`id`,`c`.`name`,`a`.`gm` FROM `characters` `c` LEFT "
-					+ "JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` WHERE "
-					+ "`c`.`name` = ?");
+			ps = con.prepareStatement("SELECT `a`.`connected`,`c`.`world`,`c`.`id`,`c`.`name`,`a`.`gm` "
+					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
+					+ "WHERE `c`.`name` = ?");
 			ps.setString(1, invitee);
 			rs = ps.executeQuery();
 			if (!rs.next() || rs.getByte(2) != client.getWorld()) {
@@ -210,8 +207,8 @@ public final class BuddyListHandler {
 			PreparedStatement ps = null;
 			try {
 				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("UPDATE `buddyentries` SET `status`="
-						+ STATUS_MUTUAL + " WHERE `owner`=? AND `buddy`=?");
+				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + STATUS_MUTUAL
+						+ " WHERE `owner` = ? AND `buddy` = ?");
 				ps.setInt(1, inviterId);
 				ps.setInt(2, p.getId());
 				ps.executeUpdate();
@@ -236,9 +233,8 @@ public final class BuddyListHandler {
 			PreparedStatement ps = null;
 			try {
 				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` "
-						+ "= " + STATUS_HALF_OPEN + " WHERE `owner` = ? AND "
-						+ "`buddy` = ?");
+				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + STATUS_HALF_OPEN
+						+ " WHERE `owner` = ? AND `buddy` = ?");
 				ps.setInt(1, deletedId);
 				ps.setInt(2, p.getId());
 				ps.executeUpdate();

@@ -164,7 +164,9 @@ public class TelnetClient implements SessionDataModel {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("SELECT `b`.`accountid` FROM `bans` `b` LEFT JOIN `accounts` `a` ON `b`.`accountid` = `a`.`id` WHERE `b`.`accountid` = ? OR `b`.`ip` = `a`.`recentip`");
+			ps = con.prepareStatement("SELECT `b`.`accountid` "
+					+ "FROM `bans` `b` LEFT JOIN `accounts` `a` ON `b`.`accountid` = `a`.`id` "
+					+ "WHERE `b`.`accountid` = ? OR `b`.`ip` = `a`.`recentip`");
 			ps.setInt(1, accountId);
 			rs = ps.executeQuery();
 			//there could be two different bans for the account and the ip address
@@ -180,7 +182,8 @@ public class TelnetClient implements SessionDataModel {
 					//expired, the longest lasting infraction will still remain
 					//the same, and we could just choose the most outstanding
 					//points from the active infractions to send to the client
-					ips = con.prepareStatement("SELECT MAX(`expiredate`) FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
+					ips = con.prepareStatement("SELECT MAX(`expiredate`) FROM `infractions` "
+							+ "WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
 					ips.setInt(1, rs.getInt(1));
 					irs = ips.executeQuery();
 					if (irs.next()) {
