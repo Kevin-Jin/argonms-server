@@ -285,11 +285,8 @@ public abstract class Player {
 	private void insertEquipIntoDb(Equip equip, int inventoryKey, Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement(
-					"INSERT INTO `inventoryequipment` ("
-					+ "`inventoryitemid`,`upgradeslots`,`level`,"
-					+ "`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,"
-					+ "`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
+			ps = con.prepareStatement("INSERT INTO `inventoryequipment` "
+					+ "(`inventoryitemid`,`upgradeslots`,`level`,`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			ps.setInt(1, inventoryKey);
 			ps.setByte(2, equip.getUpgradeSlots());
@@ -327,19 +324,17 @@ public abstract class Player {
 		ResultSet rs = null;
 		try {
 			ps = con.prepareStatement("INSERT INTO `inventoryitems` "
-				+ "(`characterid`,`accountid`,`inventorytype`,`position`,"
-				+ "`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
+				+ "(`characterid`,`accountid`,`inventorytype`,`position`,`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
 				+ "VALUES (?,?,?,?,?,?,?,?,?)",
 				Statement.RETURN_GENERATED_KEYS);
-			rps = con.prepareStatement("INSERT INTO `inventoryrings` ("
-					+ "`inventoryitemid`,`partnerchrid`,`partnerringid`) "
+			rps = con.prepareStatement("INSERT INTO `inventoryrings` "
+					+ "(`inventoryitemid`,`partnerchrid`,`partnerringid`) "
 					+ "VALUES(?,?,?)");
-			pps = con.prepareStatement("INSERT INTO `inventorypets` ("
-					+ "`inventoryitemid`,`position`,`name`,`level`,"
-					+ "`closeness`,`fullness`,`expired`) "
+			pps = con.prepareStatement("INSERT INTO `inventorypets` "
+					+ "(`inventoryitemid`,`position`,`name`,`level`,`closeness`,`fullness`,`expired`) "
 					+ "VALUES (?,?,?,?,?,?,?)");
-			mps = con.prepareStatement("INSERT INTO `inventorymounts` ("
-					+ "`inventoryitemid`,`level`,`exp`,`tiredness`) "
+			mps = con.prepareStatement("INSERT INTO `inventorymounts` "
+					+ "(`inventoryitemid`,`level`,`exp`,`tiredness`) "
 					+ "VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
 			ps.setInt(2, getClient().getAccountId());
@@ -432,9 +427,7 @@ public abstract class Player {
 					Equip e;
 					if (InventoryTools.isRing(itemid)) {
 						e = new Ring(itemid);
-						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventoryrings` WHERE "
-								+ "`inventoryitemid` = ?");
+						ips = con.prepareStatement("SELECT * FROM `inventoryrings` WHERE `inventoryitemid` = ?");
 						ips.setInt(1, inventoryKey);
 						irs = ips.executeQuery();
 						if (irs.next()) {
@@ -445,9 +438,7 @@ public abstract class Player {
 						ips.close();
 					} else if (InventoryTools.isMount(itemid)) {
 						e = new TamingMob(itemid);
-						ips = con.prepareStatement("SELECT * FROM "
-								+ "`inventorymounts` WHERE "
-								+ "`inventoryitemid` = ?");
+						ips = con.prepareStatement("SELECT * FROM `inventorymounts` WHERE `inventoryitemid` = ?");
 						ips.setInt(1, inventoryKey);
 						irs = ips.executeQuery();
 						if (irs.next()) {
@@ -460,9 +451,7 @@ public abstract class Player {
 					} else {
 						e = new Equip(itemid);
 					}
-					ips = con.prepareStatement("SELECT * FROM "
-							+ "`inventoryequipment` WHERE "
-							+ "`inventoryitemid` = ?");
+					ips = con.prepareStatement("SELECT * FROM `inventoryequipment` WHERE `inventoryitemid` = ?");
 					ips.setInt(1, inventoryKey);
 					irs = ips.executeQuery();
 					if (irs.next()) {
@@ -490,9 +479,7 @@ public abstract class Player {
 				} else {
 					if (InventoryTools.isPet(itemid)) {
 						Pet pet = new Pet(itemid);
-						ips = con.prepareStatement("SELECT * "
-								+ "FROM `inventorypets` WHERE "
-								+ "`inventoryitemid` = ?");
+						ips = con.prepareStatement("SELECT * FROM `inventorypets` WHERE `inventoryitemid` = ?");
 						ips.setInt(1, inventoryKey);
 						irs = ips.executeQuery();
 						if (irs.next()) {
@@ -530,15 +517,13 @@ public abstract class Player {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `name` FROM"
-					+ "`characters` WHERE id = ?");
+			ps = con.prepareStatement("SELECT `name` FROM `characters` WHERE id = ?");
 			ps.setInt(1, characterid);
 			rs = ps.executeQuery();
 			if (rs.next())
 				name = rs.getString(1);
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not find name of character "
-					+ characterid, ex);
+			LOG.log(Level.WARNING, "Could not find name of character " + characterid, ex);
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}

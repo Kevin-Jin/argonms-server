@@ -17,10 +17,11 @@
  */
 
 --
--- This SQL needs to be executed only if MCDB is being used.
+-- This script needs to be executed only if MCDB is being used.
 --
 
 DROP TABLE IF EXISTS `npcscriptnames`;
+
 CREATE TABLE `npcscriptnames` (
   `npcid` INT(7) NOT NULL,
   `script` VARCHAR(255) NOT NULL,

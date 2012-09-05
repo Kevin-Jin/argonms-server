@@ -17,10 +17,11 @@
  */
 
 --
--- This SQL needs to be executed only if MCDB is being used.
+-- This script needs to be executed only if MCDB is being used.
 --
 
 DROP TABLE IF EXISTS `reactorscriptnames`;
+
 CREATE TABLE `reactorscriptnames` (
   `reactorid` INT(7) NOT NULL,
   `script` VARCHAR(255) NOT NULL,

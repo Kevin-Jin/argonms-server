@@ -154,7 +154,7 @@ public class CheatTracker {
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			//only get infractions that haven't expired and aren't pardoned yet
-			ps = con.prepareStatement("SELECT `severity` FROM `infractions`"
+			ps = con.prepareStatement("SELECT `severity` FROM `infractions` "
 					+ "WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
 			ps.setInt(1, getAccountId());
 			rs = ps.executeQuery();

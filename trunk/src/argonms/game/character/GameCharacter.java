@@ -196,8 +196,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			//wishlists can't change in game server, so don't bother with them
 			con.commit();
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not save character " + getDataId()
-					+ ". Rolling back all changes...", ex);
+			LOG.log(Level.WARNING, "Could not save character " + getDataId() + ". Rolling back all changes...", ex);
 			try {
 				con.rollback();
 			} catch (SQLException ex2) {
@@ -208,8 +207,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				con.setAutoCommit(prevAutoCommit);
 				con.setTransactionIsolation(prevTransactionIsolation);
 			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not reset Connection config "
-						+ "after saving character " + getDataId(), ex);
+				LOG.log(Level.WARNING, "Could not reset Connection config after saving character " + getDataId(), ex);
 			}
 			DatabaseManager.cleanup(DatabaseType.STATE, null, null, con);
 		}
@@ -218,9 +216,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbAccount(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("UPDATE `accounts` "
-					+ "SET `storageslots` = ?, `storagemesos` = ? "
-					+ "WHERE `id` = ?");
+			ps = con.prepareStatement("UPDATE `accounts` SET `storageslots` = ?, `storagemesos` = ? WHERE `id` = ?");
 			ps.setShort(1, storage.getMaxSlots());
 			ps.setInt(2, storage.getMesos());
 			ps.setInt(3, client.getAccountId());
@@ -235,15 +231,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbStats(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("UPDATE `characters` "
-					+ "SET `accountid` = ?, `world` = ?, `name` = ?, "
-					+ "`gender` = ?, `skin` = ?, `eyes` = ?, `hair` = ?, "
-					+ "`level` = ?, `job` = ?, `str` = ?, `dex` = ?, "
-					+ "`int` = ?, `luk` = ?, `hp` = ?, `maxhp` = ?, `mp` = ?, "
-					+ "`maxmp` = ?, `ap` = ?, `sp` = ?, `exp` = ?, `fame` = ?, "
+			ps = con.prepareStatement("UPDATE `characters` SET "
+					+ "`accountid` = ?, `world` = ?, `name` = ?, `gender` = ?, `skin` = ?, `eyes` = ?, `hair` = ?, "
+					+ "`level` = ?, `job` = ?, `str` = ?, `dex` = ?, `int` = ?, `luk` = ?, "
+					+ "`hp` = ?, `maxhp` = ?, `mp` = ?, `maxmp` = ?, `ap` = ?, `sp` = ?, `exp` = ?, `fame` = ?, "
 					+ "`spouse` = ?, `map` = ?, `spawnpoint` = ?, `mesos` = ?, "
-					+ "`equipslots` = ?, `useslots` = ?, `setupslots` = ?, "
-					+ "`etcslots` = ?, `cashslots` = ?, "
+					+ "`equipslots` = ?, `useslots` = ?, `setupslots` = ?, `etcslots` = ?, `cashslots` = ?, "
 					+ "`buddyslots` = ?, `gm` = ? WHERE `id` = ?");
 			ps.setInt(1, client.getAccountId());
 			ps.setByte(2, client.getWorld());
@@ -280,9 +273,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(33, getDataId());
 			int updateRows = ps.executeUpdate();
 			if (updateRows < 1)
-				LOG.log(Level.WARNING, "Updating a deleted character with name "
-						+ "{0} of account {1}.", new Object[] { name,
-						client.getAccountId() });
+				LOG.log(Level.WARNING, "Updating a deleted character with name {0} of account {1}.",
+						new Object[] { name, client.getAccountId() });
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save stats of character " + name, e);
 		} finally {
@@ -294,14 +286,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `mapmemory` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `mapmemory` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,"
-					+ "`key`,`value`) VALUES (?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,`key`,`value`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<MapMemoryVariable, Integer> entry : rememberedMaps.entrySet()) {
 				ps.setString(2, entry.getKey().toString());
@@ -316,9 +306,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private void updateDbInventory(Connection con) throws SQLException {
 		String invUpdate = "DELETE FROM `inventoryitems` WHERE "
-				+ "`characterid` = ? AND `inventorytype` <= "
-				+ InventoryType.CASH.byteValue() + " OR `accountid` = ? AND "
-				+ "`inventorytype` = " + InventoryType.STORAGE.byteValue();
+				+ "`characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue()
+				+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.byteValue();
 		PreparedStatement ps = null, ips = null;
 		ResultSet rs = null;
 		try {
@@ -342,14 +331,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbSkills(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `skills` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `skills` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `skills` (`characterid`," +
-					"`skillid`,`level`,`mastery`) VALUES (?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `skills` (`characterid`,`skillid`,`level`,`mastery`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Integer, SkillEntry> skill : skillEntries.entrySet()) {
 				SkillEntry skillLevel = skill.getValue();
@@ -369,14 +356,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbCooldowns(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `cooldowns` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `cooldowns` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `cooldowns`" +
-					"(`characterid`,`skillid`,`remaining`) VALUES (?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `cooldowns` (`characterid`,`skillid`,`remaining`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Integer, Cooldown> cooling : cooldowns.entrySet()) {
 				ps.setInt(2, cooling.getKey().intValue());
@@ -394,14 +379,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbBindings(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `keymaps` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `keymaps` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,"
-					+ "`key`,`type`,`action`) VALUES (?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `keymaps` (`characterid`,`key`,`type`,`action`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (Entry<Byte, KeyBinding> entry : bindings.entrySet()) {
 				KeyBinding binding = entry.getValue();
@@ -413,16 +396,15 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.executeBatch();
 			ps.close();
 
-			ps = con.prepareStatement("DELETE FROM `skillmacros` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `skillmacros` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
 			byte position = 0;
 			ps = con.prepareStatement("INSERT INTO `skillmacros` "
-					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,"
-					+ "`skill2`,`skill3`) VALUES (?,?,?,?,?,?,?)");
+					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,`skill2`,`skill3`) "
+					+ "VALUES (?,?,?,?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (SkillMacro macro : skillMacros) {
 				ps.setByte(2, position++);
@@ -444,14 +426,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbBuddies(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `buddyentries` WHERE "
-					+ "`owner` = ?");
+			ps = con.prepareStatement("DELETE FROM `buddyentries` WHERE `owner` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `buddyentries` (`owner`,"
-					+ "`buddy`,`buddyname`,`status`) VALUES (?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `buddyentries` "
+					+ "(`owner`,`buddy`,`buddyname`,`status`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
 			for (BuddyListEntry buddy : buddies.getBuddies()) {
 				ps.setInt(2, buddy.getId());
@@ -474,15 +455,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbParty(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM `parties` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 
 			if (party != null) {
 				ps.close();
-				ps = con.prepareStatement("INSERT INTO `parties` (`world`,"
-						+ "`partyid`,`characterid`,`leader`) VALUES (?,?,?,?)");
+				ps = con.prepareStatement("INSERT INTO `parties` "
+						+ "(`world`,`partyid`,`characterid`,`leader`) VALUES (?,?,?,?)");
 				ps.setByte(1, getClient().getWorld());
 				ps.setInt(2, party.getId());
 				ps.setInt(3, getDataId());
@@ -497,15 +477,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbQuests(Connection con) throws SQLException {
 		PreparedStatement ps = null, mps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM "
-					+ "`queststatuses` WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `queststatuses` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
 
 			ps = con.prepareStatement("INSERT INTO `queststatuses` "
-					+ "(`characterid`,`questid`,`state`,`completed`) VALUES "
-					+ "(?,?,?, ?)",
+					+ "(`characterid`,`questid`,`state`,`completed`) VALUES (?,?,?,?)",
 					Statement.RETURN_GENERATED_KEYS);
 			ps.setInt(1, getDataId());
 			mps = con.prepareStatement("INSERT INTO `questmobprogress` "
@@ -544,8 +522,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private void updateDbMinigameStats(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("DELETE FROM "
-					+ "`minigamescores` WHERE `characterid` = ?");
+			ps = con.prepareStatement("DELETE FROM `minigamescores` WHERE `characterid` = ?");
 			ps.setInt(1, getDataId());
 			ps.executeUpdate();
 			ps.close();
@@ -579,8 +556,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `famelog` (`from`,`to`,"
-					+ "`millis`) VALUES (?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `famelog` (`from`,`to`,`millis`) VALUES (?,?,?)");
 			ps.setInt(1, getDataId());
 			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
 			synchronized(famesThisMonth) {
@@ -607,15 +583,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		ResultSet rs = null, irs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,"
-					+ "`a`.`storageslots`,`a`.`storagemesos` FROM `characters` `c` "
-					+ "LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`storageslots`,`a`.`storagemesos` "
+					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
-				LOG.log(Level.WARNING, "Client requested to load a non-existant" +
-						" character w/ id {0} (account {1}).",
+				LOG.log(Level.WARNING, "Client requested to load a non-existant character w/ id {0} (account {1}).",
 						new Object[] { id, c.getAccountId() });
 				return null;
 			}
@@ -623,8 +597,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			c.setAccountId(accountid); //we aren't aware of our accountid yet
 			byte world = rs.getByte(2);
 			if (world != c.getWorld()) { //we are aware of our world
-				LOG.log(Level.WARNING, "Client account {0} is trying to load "
-						+ "character {1} on world {2} but exists on world {3}",
+				LOG.log(Level.WARNING, "Client account {0} is trying to load character {1} on world {2} but exists on world {3}",
 						new Object[] { accountid, id, c.getWorld(), world });
 				return null;
 			}
@@ -649,8 +622,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `key`,`value` FROM `mapmemory` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("SELECT `key`,`value` FROM `mapmemory` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next())
@@ -660,8 +632,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.getInventories());
 			invUnion.put(InventoryType.STORAGE, p.storage);
-			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE `characterid` = ?"
-					+ " AND `inventorytype` <= " + InventoryType.CASH.byteValue()
+			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE "
+					+ "`characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue()
 					+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.STORAGE.byteValue());
 			ps.setInt(1, id);
 			ps.setInt(2, accountid);
@@ -681,8 +653,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next())
-				p.skillEntries.put(Integer.valueOf(rs.getInt(1)),
-						new SkillEntry(rs.getByte(2), rs.getByte(3)));
+				p.skillEntries.put(Integer.valueOf(rs.getInt(1)), new SkillEntry(rs.getByte(2), rs.getByte(3)));
 			rs.close();
 			ps.close();
 
@@ -708,9 +679,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `name`,`shout`,"
-					+ "`skill1`,`skill2`,`skill3` FROM `skillmacros` "
-					+ "WHERE `characterid` = ? ORDER BY `position`");
+			ps = con.prepareStatement("SELECT `name`,`shout`,`skill1`,`skill2`,`skill3` "
+					+ "FROM `skillmacros` WHERE `characterid` = ? ORDER BY `position`");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next()) {
@@ -721,26 +691,23 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `e`.`buddy` AS `id`, "
-					+ "IF(ISNULL(`c`.`name`), `e`.`buddyname`, `c`.`name`) AS "
-					+ "`name`, `e`.`status` FROM `buddyentries` `e` LEFT JOIN "
-					+ "`characters` `c` ON `c`.`id` = `e`.`buddy` WHERE "
-					+ "`owner` = ?");
+			ps = con.prepareStatement("SELECT `e`.`buddy` AS `id`,"
+					+ "IF(ISNULL(`c`.`name`),`e`.`buddyname`,`c`.`name`) AS `name`,`e`.`status` "
+					+ "FROM `buddyentries` `e` LEFT JOIN `characters` `c` ON `c`.`id` = `e`.`buddy` "
+					+ "WHERE `owner` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				byte status = rs.getByte(3);
 				if (status != BuddyListHandler.STATUS_INVITED)
-					p.buddies.addBuddy(new BuddyListEntry(rs.getInt(1),
-							rs.getString(2), status));
+					p.buddies.addBuddy(new BuddyListEntry(rs.getInt(1), rs.getString(2), status));
 				else
 					p.buddies.addInvite(rs.getInt(1), rs.getString(2));
 			}
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `partyid` FROM `parties` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("SELECT `partyid` FROM `parties` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (rs.next())
@@ -748,16 +715,15 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `id`,`questid`,`state`,"
-					+ "`completed` FROM `queststatuses` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("SELECT `id`,`questid`,`state`,`completed` "
+					+ "FROM `queststatuses` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			PreparedStatement mps = null;
 			ResultSet mrs;
 			try {
-				mps = con.prepareStatement("SELECT `mobid`,`count` FROM "
-						+ "`questmobprogress` WHERE `queststatusid` = ?");
+				mps = con.prepareStatement("SELECT `mobid`,`count` "
+						+ "FROM `questmobprogress` WHERE `queststatusid` = ?");
 				while (rs.next()) {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);
@@ -797,8 +763,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT * FROM `minigamescores` "
-					+ "WHERE `characterid` = ?");
+			ps = con.prepareStatement("SELECT * FROM `minigamescores` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next()) {
@@ -811,15 +776,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT * FROM `famelog` WHERE `from` = "
-					+ "?");
+			ps = con.prepareStatement("SELECT * FROM `famelog` WHERE `from` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			PreparedStatement rfps = null;
 			long threshold = System.currentTimeMillis() - 1000L * 60 * 60 * 24 * 30;
 			try {
-				rfps = con.prepareStatement("DELETE FROM `famelog` WHERE "
-						+ "`id` = ?");
+				rfps = con.prepareStatement("DELETE FROM `famelog` WHERE `id` = ?");
 				while (rs.next()) {
 					long time = rs.getLong(4);
 					//given time >= now - 30 days
@@ -838,8 +801,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `sn` FROM `wishlists` WHERE "
-					+ "`characterid` = ?");
+			ps = con.prepareStatement("SELECT `sn` FROM `wishlists` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next())
@@ -916,20 +878,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			}
 			byte skillLevel;
 			if ((skillLevel = getSkillLevel(Skills.IMPROVED_MAXHP_INCREASE)) != 0)
-				hpInc += SkillDataLoader.getInstance()
-						.getSkill(Skills.IMPROVED_MAXHP_INCREASE)
-						.getLevel(skillLevel)
-						.getX();
+				hpInc += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXHP_INCREASE).getLevel(skillLevel).getX();
 			if ((skillLevel = getSkillLevel(Skills.IMPROVE_MAXHP)) != 0)
-				hpInc += SkillDataLoader.getInstance()
-						.getSkill(Skills.IMPROVE_MAXHP)
-						.getLevel(skillLevel)
-						.getX();
+				hpInc += SkillDataLoader.getInstance().getSkill(Skills.IMPROVE_MAXHP).getLevel(skillLevel).getX();
 			if ((skillLevel = getSkillLevel(Skills.IMPROVED_MAXMP_INCREASE)) != 0)
-				mpInc += SkillDataLoader.getInstance()
-						.getSkill(Skills.IMPROVED_MAXMP_INCREASE)
-						.getLevel(skillLevel)
-						.getX();
+				mpInc += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXMP_INCREASE).getLevel(skillLevel).getX();
 			apInc += 5;
 			exp -= ExpTables.getForLevel(level++);
 			if (singleLevelOnly && exp >= ExpTables.getForLevel(level))
@@ -1323,13 +1276,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public GameMap getReturnMap() {
-		return GameServer.getChannel(client.getChannel())
-				.getMapFactory().getMap(map.getReturnMap());
+		return GameServer.getChannel(client.getChannel()).getMapFactory().getMap(map.getReturnMap());
 	}
 
 	public GameMap getForcedReturnMap() {
-		return GameServer.getChannel(client.getChannel())
-				.getMapFactory().getMap(map.getForcedReturnMap());
+		return GameServer.getChannel(client.getChannel()).getMapFactory().getMap(map.getForcedReturnMap());
 	}
 
 	@Override
@@ -1483,8 +1434,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			if (masterLevel != -1)
 				skillLevel.changeMasterLevel(masterLevel);
 		}
-		getClient().getSession().send(GamePackets.writeUpdateSkillLevel(
-				skill, skillLevel.getLevel(), skillLevel.getMasterLevel()));
+		getClient().getSession().send(GamePackets.writeUpdateSkillLevel(skill, skillLevel.getLevel(), skillLevel.getMasterLevel()));
 	}
 
 	public void addCooldown(final int skill, short time) {
