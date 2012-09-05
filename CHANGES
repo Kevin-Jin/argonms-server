@@ -2044,6 +2044,23 @@
 	* PreparedStatement.executeUpdate() in loops has been replaced with
 	addBatch() and executeBatch() wherever possible.
 
+2012-09-05  GoldenKevin  (revision 133)
+
+	* GameCharacter.updateDbQuests executes mob progress batch once rather than
+	for every quest. Refactored generated keys fetching to remove a try-catch.
+	* GameCharacter.updateDbQuests only inserts mob progress for quests that are
+	still in progress. Server never needs to deal with mob kill count for
+	completed and forfeited quests. Speeds up the insertion of completed and
+	forfeited quests since those can now be batched. GameCharacter.loadPlayer
+	avoids an unnecessary mob progress query for completed quests.
+	* Don't delete expired things from database in GameCharacter.loadPlayer.
+	Defer deletions to when the character is saved. Expired bans are removed for
+	a client after loading them during login only because the login server does
+	not have a central routine for saving client data before control is
+	transferred to the game server.
+	* Fixed infraction spam when changing channels while hide is disabled and
+	is then enabled upon channel enter.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -189,7 +189,7 @@ public final class MovementHandler {
 				player.getClient().getSession().send(GamePackets.writeShowAndControlMonster(monster, true));
 				monster.setControllerHasAggro(true);
 				monster.setControllerKnowsAboutAggro(false);
-			} else {
+			} else if (controller != null) {
 				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to control mob before attacking it");
 				return;
 			}
