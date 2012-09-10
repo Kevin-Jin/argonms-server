@@ -19,6 +19,7 @@
 package argonms.center.net.internal;
 
 import argonms.center.CenterServer;
+import argonms.center.Chatroom;
 import argonms.center.Party;
 import argonms.common.ServerType;
 import argonms.common.character.InterServerPartyOps;
@@ -81,6 +82,21 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				break;
 			case RemoteCenterOps.PARTY_SYNCHRONIZATION:
 				processPartySynchronization(packet);
+				break;
+			case RemoteCenterOps.CREATE_CHATROOM:
+				processCreateChatroom(packet);
+				break;
+			case RemoteCenterOps.JOIN_CHATROOM:
+				processJoinChatroom(packet);
+				break;
+			case RemoteCenterOps.LEAVE_CHATROOM:
+				processCloseChatroom(packet);
+				break;
+			case RemoteCenterOps.UPDATE_CHATROOM_AVATAR_CHANNEL:
+				processUpdateChatroomPlayerChannel(packet);
+				break;
+			case RemoteCenterOps.UPDATE_CHATROOM_AVATAR_LOOK:
+				processUpdateChatroomPlayerLook(packet);
 				break;
 		}
 	}
@@ -428,30 +444,26 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		}
 		party.lockRead();
 		try {
-			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-				if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(responseCh))) {
-					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-					lew.writeByte(responseCh);
-					lew.writeByte(InterServerPartyOps.FETCH_LIST);
-					lew.writeInt(responseId);
-					lew.writeInt(party.getLeader());
-					Collection<Party.Member> members = party.getAllMembers();
-					lew.writeByte((byte) (members.size() - 1));
-					for (Party.Member member : members) {
-						if (member.getPlayerId() != excludePlayerId) {
-							lew.writeInt(member.getPlayerId());
-							lew.writeByte(member.getChannel());
-							if (member.getChannel() != responseCh) {
-								lew.writeLengthPrefixedString(member.getName());
-								lew.writeShort(member.getJob());
-								lew.writeShort(member.getLevel());
-							}
-						}
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+			lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+			lew.writeByte(responseCh);
+			lew.writeByte(InterServerPartyOps.FETCH_LIST);
+			lew.writeInt(responseId);
+			lew.writeInt(party.getLeader());
+			Collection<Party.Member> members = party.getAllMembers();
+			lew.writeByte((byte) (members.size() - 1));
+			for (Party.Member member : members) {
+				if (member.getPlayerId() != excludePlayerId) {
+					lew.writeInt(member.getPlayerId());
+					lew.writeByte(member.getChannel());
+					if (member.getChannel() != responseCh) {
+						lew.writeLengthPrefixedString(member.getName());
+						lew.writeShort(member.getJob());
+						lew.writeShort(member.getLevel());
 					}
-					cgi.getSession().send(lew.getBytes());
 				}
 			}
+			r.getSession().send(lew.getBytes());
 		} finally {
 			party.unlockRead();
 		}
@@ -569,6 +581,372 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			} finally {
 				party.unlockRead();
 			}
+		}
+	}
+
+	private void processCreateChatroom(LittleEndianReader packet) {
+		int creatorId = packet.readInt();
+		Map<Short, Integer> equips = new HashMap<Short, Integer>();
+		for (byte i = packet.readByte(); i > 0; i--) {
+			short slot = packet.readShort();
+			int itemId = packet.readInt();
+			equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+		}
+		byte gender = packet.readByte();
+		byte skin = packet.readByte();
+		int eyes = packet.readInt();
+		int hair = packet.readInt();
+		String creatorName = packet.readLengthPrefixedString();
+		byte creatorCh = packet.readByte();
+		int roomId = CenterServer.getInstance().getChatroomDb(r.getWorld()).makeNewRoom(new Chatroom.Avatar(creatorId, gender, skin, eyes, hair, equips, creatorName, creatorCh));
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeByte(CenterRemoteOps.CHATROOM_CREATED);
+		lew.writeByte(creatorCh);
+		lew.writeInt(roomId);
+		lew.writeInt(creatorId);
+		r.getSession().send(lew.getBytes());
+	}
+
+	private void processJoinChatroom(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int joinerId = packet.readInt();
+		Map<Short, Integer> equips = new HashMap<Short, Integer>();
+		for (byte i = packet.readByte(); i > 0; i--) {
+			short slot = packet.readShort();
+			int itemId = packet.readInt();
+			equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+		}
+		byte gender = packet.readByte();
+		byte skin = packet.readByte();
+		int eyes = packet.readInt();
+		int hair = packet.readInt();
+		String joinerName = packet.readLengthPrefixedString();
+		byte joinerCh = packet.readByte();
+		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		if (room == null)
+			return;
+
+		boolean sendAvatars;
+		byte position;
+		room.lockWrite();
+		try {
+			sendAvatars = !room.allChannels().contains(Byte.valueOf(joinerCh));
+			position = room.addPlayer(new Chatroom.Avatar(joinerId, gender, skin, eyes, hair, equips, joinerName, joinerCh));
+		} finally {
+			room.unlockWrite();
+		}
+		sendAvatars &= position != -1;
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeByte(CenterRemoteOps.CHATROOM_ROOM_CHANGED);
+		lew.writeByte(joinerCh);
+		lew.writeInt(roomId);
+		lew.writeInt(joinerId);
+		lew.writeByte(position);
+		lew.writeBool(true);
+		//TODO: race condition - game server side could be in the process of
+		//removing an avatar in joinerCh while center server side still has
+		//joinerCh in room.allChannels(), and when game server receives this
+		//packet, it's missing the avatars from other channels because this
+		//portion wasn't sent.
+		if (sendAvatars) {
+			room.lockRead();
+			try {
+				for (byte i = 0; i < 3; i++) {
+					Chatroom.Avatar a = room.getPlayer(i);
+					if (position != i && a != null) {
+						lew.writeByte(a.getChannel());
+						lew.writeInt(a.getPlayerId());
+						lew.writeByte((byte) a.getEquips().size());
+						for (Map.Entry<Short, Integer> entry : a.getEquips().entrySet()) {
+							lew.writeShort(entry.getKey().shortValue());
+							lew.writeInt(entry.getValue().intValue());
+						}
+						lew.writeByte(a.getGender());
+						lew.writeByte(a.getSkin());
+						lew.writeInt(a.getEyes());
+						lew.writeInt(a.getHair());
+						lew.writeLengthPrefixedString(a.getName());
+					} else {
+						lew.writeByte((byte) 0);
+					}
+				}
+			} finally {
+				room.unlockRead();
+			}
+		}
+		r.getSession().send(lew.getBytes());
+
+		if (position == -1)
+			return;
+
+		room.lockRead();
+		try {
+			for (Byte channel : room.allChannels()) {
+				if (channel.byteValue() == joinerCh)
+					continue;
+
+				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					//notify other party members
+					lew = new LittleEndianByteArrayWriter(25 + joinerName.length() + 6 * equips.size());
+					lew.writeByte(CenterRemoteOps.CHATROOM_SLOT_CHANGED);
+					lew.writeByte(channel.byteValue());
+					lew.writeInt(roomId);
+					lew.writeByte(position);
+					lew.writeInt(joinerId);
+					lew.writeByte(joinerCh);
+					lew.writeByte((byte) equips.size());
+					for (Map.Entry<Short, Integer> entry : equips.entrySet()) {
+						lew.writeShort(entry.getKey().shortValue());
+						lew.writeInt(entry.getValue().intValue());
+					}
+					lew.writeByte(gender);
+					lew.writeByte(skin);
+					lew.writeInt(eyes);
+					lew.writeInt(hair);
+					lew.writeLengthPrefixedString(joinerName);
+
+					cgi.getSession().send(lew.getBytes());
+				}
+			}
+		} finally {
+			room.unlockRead();
+		}
+	}
+
+	private void processCloseChatroom(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int playerId = packet.readInt();
+		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		if (room == null)
+			return;
+
+		byte pos;
+		room.lockRead();
+		try {
+			pos = room.positionOf(playerId);
+		} finally {
+			room.unlockRead();
+		}
+		if (pos == -1)
+			return;
+
+		Chatroom.Avatar leaver;
+		room.lockWrite();
+		try {
+			leaver = room.removePlayer(pos);
+		} finally {
+			room.unlockWrite();
+		}
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeByte(CenterRemoteOps.CHATROOM_ROOM_CHANGED);
+		lew.writeByte(leaver.getChannel());
+		lew.writeInt(0);
+		lew.writeInt(leaver.getPlayerId());
+		lew.writeByte(pos);
+		r.getSession().send(lew.getBytes());
+
+		boolean empty;
+		room.lockRead();
+		try {
+			for (Byte channel : room.allChannels()) {
+				if (channel.byteValue() == leaver.getChannel())
+					continue;
+
+				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					//notify other chatroom members
+					lew = new LittleEndianByteArrayWriter(11);
+					lew.writeByte(CenterRemoteOps.CHATROOM_SLOT_CHANGED);
+					lew.writeByte(channel.byteValue());
+					lew.writeInt(roomId);
+					lew.writeByte(pos);
+					lew.writeInt(0);
+
+					cgi.getSession().send(lew.getBytes());
+				}
+			}
+			empty = room.isEmpty();
+		} finally {
+			room.unlockRead();
+		}
+		if (empty)
+			CenterServer.getInstance().getChatroomDb(r.getWorld()).remove(roomId);
+	}
+
+	private void processUpdateChatroomPlayerChannel(LittleEndianReader packet) {
+		int playerId = packet.readInt();
+		int roomId = packet.readInt();
+		byte newChannel = packet.readByte();
+		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		if (room == null)
+			return;
+
+		byte pos;
+		room.lockRead();
+		try {
+			pos = room.positionOf(playerId);
+		} finally {
+			room.unlockRead();
+		}
+		if (pos == -1)
+			return;
+
+		boolean sendAvatars;
+		Chatroom.Avatar a;
+		room.lockWrite();
+		try {
+			sendAvatars = !room.allChannels().contains(Byte.valueOf(newChannel));
+			a = room.getPlayer(pos);
+			a = new Chatroom.Avatar(a, newChannel);
+			room.setPlayer(pos, a);
+		} finally {
+			room.unlockWrite();
+		}
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeByte(CenterRemoteOps.CHATROOM_ROOM_CHANGED);
+		lew.writeByte(newChannel);
+		lew.writeInt(roomId);
+		lew.writeInt(playerId);
+		lew.writeByte(pos);
+		lew.writeBool(false);
+		if (sendAvatars) {
+			room.lockRead();
+			try {
+				for (byte i = 0; i < 3; i++) {
+					Chatroom.Avatar b = room.getPlayer(i);
+					if (pos != i && b != null) {
+						lew.writeByte(b.getChannel());
+						lew.writeInt(b.getPlayerId());
+						lew.writeByte((byte) b.getEquips().size());
+						for (Map.Entry<Short, Integer> entry : b.getEquips().entrySet()) {
+							lew.writeShort(entry.getKey().shortValue());
+							lew.writeInt(entry.getValue().intValue());
+						}
+						lew.writeByte(b.getGender());
+						lew.writeByte(b.getSkin());
+						lew.writeInt(b.getEyes());
+						lew.writeInt(b.getHair());
+						lew.writeLengthPrefixedString(b.getName());
+					} else {
+						lew.writeByte((byte) 0);
+					}
+				}
+			} finally {
+				room.unlockRead();
+			}
+		}
+		r.getSession().send(lew.getBytes());
+
+		room.lockRead();
+		try {
+			for (Byte channel : room.allChannels()) {
+				if (channel.byteValue() == newChannel)
+					continue;
+
+				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					//notify other chatroom members
+					lew = new LittleEndianByteArrayWriter(25 + a.getName().length() + 6 * a.getEquips().size());
+					lew.writeByte(CenterRemoteOps.CHATROOM_SLOT_CHANGED);
+					lew.writeByte(channel.byteValue());
+					lew.writeInt(roomId);
+					lew.writeByte(pos);
+					lew.writeInt(playerId);
+					lew.writeByte(newChannel);
+					lew.writeByte((byte) a.getEquips().size());
+					for (Map.Entry<Short, Integer> entry : a.getEquips().entrySet()) {
+						lew.writeShort(entry.getKey().shortValue());
+						lew.writeInt(entry.getValue().intValue());
+					}
+					lew.writeByte(a.getGender());
+					lew.writeByte(a.getSkin());
+					lew.writeInt(a.getEyes());
+					lew.writeInt(a.getHair());
+					lew.writeLengthPrefixedString(a.getName());
+
+					cgi.getSession().send(lew.getBytes());
+				}
+			}
+		} finally {
+			room.unlockRead();
+		}
+	}
+
+	private void processUpdateChatroomPlayerLook(LittleEndianReader packet) {
+		int playerId = packet.readInt();
+		int roomId = packet.readInt();
+		Map<Short, Integer> equips = new HashMap<Short, Integer>();
+		for (byte i = packet.readByte(); i > 0; i--) {
+			short slot = packet.readShort();
+			int itemId = packet.readInt();
+			equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+		}
+		byte skin = packet.readByte();
+		int eyes = packet.readInt();
+		int hair = packet.readInt();
+		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		if (room == null)
+			return;
+
+		byte pos;
+		room.lockRead();
+		try {
+			pos = room.positionOf(playerId);
+		} finally {
+			room.unlockRead();
+		}
+		if (pos == -1)
+			return;
+
+		Chatroom.Avatar a;
+		room.lockWrite();
+		try {
+			a = room.getPlayer(pos);
+			a = new Chatroom.Avatar(a, equips, skin, eyes, hair);
+			room.setPlayer(pos, a);
+		} finally {
+			room.unlockWrite();
+		}
+
+		room.lockRead();
+		try {
+			for (Byte channel : room.allChannels()) {
+				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(25 + a.getName().length() + 6 * a.getEquips().size());
+					lew.writeByte(CenterRemoteOps.CHATROOM_SLOT_CHANGED);
+					lew.writeByte(channel.byteValue());
+					lew.writeInt(roomId);
+					lew.writeByte(pos);
+					lew.writeInt(playerId);
+					lew.writeByte(a.getChannel());
+					lew.writeByte((byte) a.getEquips().size());
+					for (Map.Entry<Short, Integer> entry : a.getEquips().entrySet()) {
+						lew.writeShort(entry.getKey().shortValue());
+						lew.writeInt(entry.getValue().intValue());
+					}
+					lew.writeByte(a.getGender());
+					lew.writeByte(a.getSkin());
+					lew.writeInt(a.getEyes());
+					lew.writeInt(a.getHair());
+					lew.writeLengthPrefixedString(a.getName());
+
+					cgi.getSession().send(lew.getBytes());
+				}
+			}
+		} finally {
+			room.unlockRead();
 		}
 	}
 }

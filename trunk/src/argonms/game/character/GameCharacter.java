@@ -140,6 +140,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, AtomicInteger>> minigameStats;
+	private Chatroom chatroom;
 
 	private volatile long lastFameGiven;
 	private final Map<Integer, Long> famesThisMonth;
@@ -940,19 +941,28 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public void setHair(short newHair) {
 		super.setHair(newHair);
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HAIR, Short.valueOf(hair)), false));
+		if (chatroom != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
 	public void setSkin(byte newSkin) {
 		super.setSkin(newSkin);
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.SKIN, Byte.valueOf(skin)), false));
+		if (chatroom != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
 	public void setEyes(short newEyes) {
 		super.setEyes(newEyes);
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FACE, Short.valueOf(eyes)), false));
+		if (chatroom != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
@@ -1670,6 +1680,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			event.playerDisconnected(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
+		if (chatroom != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().chatroomPlayerChangingChannels(getId(), chatroom);
 		prepareExitChannel(false);
 	}
 
@@ -1679,6 +1691,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
+		if (chatroom != null)
+			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendLeaveChatroom(this, chatroom);
 		prepareExitChannel(quickCleanup);
 	}
 
@@ -1726,6 +1740,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void setMiniRoom(Miniroom room) {
 		this.miniroom = room;
+	}
+
+	public Chatroom getChatRoom() {
+		return chatroom;
+	}
+
+	public void setChatRoom(Chatroom room) {
+		this.chatroom = room;
 	}
 
 	public void disconnect() {

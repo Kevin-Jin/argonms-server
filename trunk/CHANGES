@@ -2061,6 +2061,13 @@
 	* Fixed infraction spam when changing channels while hide is disabled and
 	is then enabled upon channel enter.
 
+2012-09-10  GoldenKevin  (revision 134)
+
+	* Removed a conditional in GameMap.spawnEntity and spawnExistingEntity.
+	* Map players now see when a player updates his skin color, hair, face.
+	* Simplified GameCenterPacketProcessor.processPartyFetchList.
+	* Full support of Maple Messenger chat rooms.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

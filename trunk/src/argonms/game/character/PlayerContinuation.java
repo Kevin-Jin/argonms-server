@@ -21,6 +21,7 @@ package argonms.game.character;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.util.Scheduler;
+import argonms.game.GameServer;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
@@ -45,6 +46,7 @@ public class PlayerContinuation {
 	private final Map<Short, MobSkillState> activeDebuffs;
 	private final Map<Integer, PlayerSkillSummon> activeSummons;
 	private short energyCharge;
+	private int chatroomId;
 
 	public PlayerContinuation(GameCharacter p) {
 		activeItems = p.activeItemsList();
@@ -52,6 +54,8 @@ public class PlayerContinuation {
 		activeDebuffs = p.activeMobSkillsList();
 		activeSummons = p.getAllSummons();
 		energyCharge = p.getEnergyCharge();
+		if (p.getChatRoom() != null)
+			chatroomId = p.getChatRoom().getRoomId();
 	}
 
 	public PlayerContinuation() {
@@ -81,6 +85,10 @@ public class PlayerContinuation {
 		return energyCharge;
 	}
 
+	public int getChatroomId() {
+		return chatroomId;
+	}
+
 	public void addItemBuff(int itemId, long endTime) {
 		activeItems.put(Integer.valueOf(itemId), new ItemState(endTime));
 	}
@@ -95,12 +103,15 @@ public class PlayerContinuation {
 
 	public void addActiveSummon(int skillId, int pId, Point pos, byte stance) {
 		activeSummons.put(Integer.valueOf(skillId), new PlayerSkillSummon(pId,
-				skillId, activeSkills.get(Integer.valueOf(skillId)).level,
-				pos, stance));
+				skillId, activeSkills.get(Integer.valueOf(skillId)).level, pos, stance));
 	}
 
 	public void setEnergyCharge(short val) {
 		energyCharge = val;
+	}
+
+	public void setChatroomId(int roomId) {
+		chatroomId = roomId;
 	}
 
 	public void applyTo(final GameCharacter p) {
@@ -142,5 +153,7 @@ public class PlayerContinuation {
 			p.resetEnergyCharge();
 			p.addToEnergyCharge(energyCharge);
 		}
+		if (chatroomId != 0)
+			GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerChangedChannels(p, chatroomId);
 	}
 }

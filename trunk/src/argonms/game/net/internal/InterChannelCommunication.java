@@ -21,6 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.InterServerPartyOps;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -30,6 +31,7 @@ import argonms.game.GameServer;
 import argonms.game.character.BuffState.ItemState;
 import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.character.BuffState.SkillState;
+import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
@@ -42,6 +44,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +73,7 @@ import java.util.logging.Logger;
 public class InterChannelCommunication {
 	private static final Logger LOG = Logger.getLogger(InterChannelCommunication.class.getName());
 
-	private static final byte //network opcodes (for remote server communications)
+	private static final byte //interchannel opcodes
 		INBOUND_PLAYER = 1,
 		INBOUND_PLAYER_ACCEPTED = 2,
 		PLAYER_SEARCH = 3,
@@ -85,7 +88,11 @@ public class InterChannelCommunication {
 		BUDDY_ACCEPTED = 12,
 		BUDDY_ONLINE_RESPONSE = 13,
 		BUDDY_OFFLINE = 14,
-		BUDDY_DELETE = 15
+		BUDDY_DELETE = 15,
+		CHATROOM_INVITE = 16,
+		CHATROOM_INVITE_RESPONSE = 17,
+		CHATROOM_DECLINE = 18,
+		CHATROOM_TEXT = 19
 	;
 
 	private static final byte //private chat types
@@ -160,6 +167,7 @@ public class InterChannelCommunication {
 	private final Map<Integer, ResponseFuture> responseListeners;
 
 	private final ConcurrentMap<Integer, PartyList> activeLocalParties;
+	private final ConcurrentMap<Integer, Chatroom> localChatRooms;
 
 	public InterChannelCommunication(byte[] local, WorldChannel channel) {
 		this.localChannels = local;
@@ -173,6 +181,7 @@ public class InterChannelCommunication {
 		nextResponseId = new AtomicInteger(0);
 		responseListeners = new ConcurrentHashMap<Integer, ResponseFuture>();
 		activeLocalParties = new ConcurrentHashMap<Integer, PartyList>();
+		localChatRooms = new ConcurrentHashMap<Integer, Chatroom>();
 	}
 
 	public void addRemoteChannels(byte[] host, Map<Byte, Integer> ports) {
@@ -642,6 +651,113 @@ public class InterChannelCommunication {
 			getCenterComm().getSession().send(writePartyMemberUpdatedStat(self.getChannelId(), p.getId(), p.getParty().getId(), false, p.getJob()));
 	}
 
+	public void sendMakeChatroom(GameCharacter p) {
+		getCenterComm().getSession().send(writeMakeChatroom(p));
+	}
+
+	public void sendJoinChatroom(GameCharacter p, int roomId) {
+		getCenterComm().getSession().send(writeJoinChatroom(p, roomId));
+	}
+
+	public void sendLeaveChatroom(GameCharacter p, Chatroom room) {
+		getCenterComm().getSession().send(writeLeaveChatroom(p.getId(), room.getRoomId()));
+	}
+
+	public boolean sendChatroomInvite(String inviter, int roomId, String invitee) {
+		byte channel = GameServer.getInstance().channelOfPlayer(invitee);
+		if (channel != -1) //invitee could be on local process
+			return GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomInvite(invitee, roomId, inviter);
+		boolean readUnlocked = false;
+		readLock.lock();
+		try {
+			int networkPeers = remoteChannelPorts.size();
+			if (networkPeers != 0) {
+				int responseId = nextResponseId.getAndIncrement();
+				ResponseFuture response = new ResponseFuture(networkPeers);
+				responseListeners.put(Integer.valueOf(responseId), response);
+				for (Byte ch : remoteChannelPorts.keySet()) //invitee could be on another process
+					getCenterComm().getSession().send(writeChatroomInvite(ch.byteValue(), self.getChannelId(), responseId, invitee, roomId, inviter));
+				readLock.unlock();
+				readUnlocked = true;
+				try {
+					Object[] array = response.get(2, TimeUnit.SECONDS);
+					for (Object o : array)
+						if (((Boolean) o).booleanValue())
+							return true;
+					return false;
+				} catch (InterruptedException ex) {
+					//propagate the interrupted status further up to our worker
+					//executor service and see if they care - we don't care about it
+					Thread.currentThread().interrupt();
+					return false;
+				} catch (TimeoutException ex) {
+					LOG.log(Level.FINE, "Chatroom invite timeout", ex);
+					return false;
+				} catch (CancellationException ex) {
+					return false;
+				} finally {
+					responseListeners.remove(Integer.valueOf(responseId));
+				}
+			} else {
+				return false;
+			}
+		} finally {
+			if (!readUnlocked)
+				readLock.unlock();
+		}
+	}
+
+	public void sendChatroomDecline(String invitee, String inviter) {
+		byte channel = GameServer.getInstance().channelOfPlayer(inviter);
+		if (channel != -1) { //local process
+			GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomDecline(inviter, invitee);
+			return;
+		}
+		for (Byte ch : remoteChannelPorts.keySet()) //another process
+			getCenterComm().getSession().send(writeChatroomDecline(ch.byteValue(), inviter, invitee));
+	}
+
+	public void sendChatroomText(String text, Chatroom room, int senderPlayerId) {
+		Set<Byte> channels;
+		room.lockRead();
+		try {
+			channels = room.allChannels();
+		} finally {
+			room.unlockRead();
+		}
+		if (channels.contains(Byte.valueOf(self.getChannelId())))
+			receivedChatroomText(text, room.getRoomId(), senderPlayerId); //players on current channel
+		for (int i = 0; i < localChannels.length; i++) //players on local process
+			if (channels.contains(Byte.valueOf(localChannels[i])))
+				GameServer.getChannel(localChannels[i]).getInterChannelInterface().receivedChatroomText(text, room.getRoomId(), senderPlayerId);
+		for (Byte ch : remoteChannelPorts.keySet()) //players on other processes
+			if (channels.contains(ch))
+				getCenterComm().getSession().send(writeChatroomText(ch.byteValue(), text, room.getRoomId(), senderPlayerId));
+	}
+
+	public void chatroomPlayerChangingChannels(int playerId, Chatroom room) {
+		Set<Byte> others;
+		room.lockRead();
+		try {
+			others = room.localChannelSlots();
+			others.remove(Byte.valueOf(room.positionOf(playerId)));
+		} finally {
+			room.unlockRead();
+		}
+		//if there are no other players in the chatroom on the
+		//channel, delete the chatroom from our cache
+		if (others.isEmpty())
+			localChatRooms.remove(Integer.valueOf(room.getRoomId()));
+	}
+
+	public void sendChatroomPlayerChangedChannels(GameCharacter p, int roomId) {
+		getCenterComm().getSession().send(writeChatroomPlayerChangedChannels(p.getId(), roomId, self.getChannelId()));
+	}
+
+	public void sendChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
+		getCenterComm().getSession().send(writeChatroomPlayerLookUpdate(p, roomId));
+	}
+
 	public void receivedInboundPlayer(byte fromCh, int playerId, PlayerContinuation context) {
 		self.storePlayerBuffs(playerId, context);
 
@@ -819,6 +935,39 @@ public class InterChannelCommunication {
 		}
 	}
 
+	private boolean receivedChatroomInvite(String invitee, int roomId, String inviter) {
+		GameCharacter p = self.getPlayerByName(invitee);
+		if (p != null) {
+			p.getClient().getSession().send(GamePackets.writeChatroomInvite(inviter, roomId));
+			return true;
+		}
+		return false;
+	}
+
+	private void receivedChatroomDecline(String inviter, String invitee) {
+		GameCharacter p = self.getPlayerByName(inviter);
+		if (p != null)
+			p.getClient().getSession().send(GamePackets.writeChatroomInviteResponse(Chatroom.ACT_DECLINE, invitee, false));
+	}
+
+	private void receivedChatroomText(String text, int roomId, int sender) {
+		Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
+		if (room == null)
+			return;
+
+		room.lockRead();
+		try {
+			for (Byte pos : room.localChannelSlots()) {
+				int playerId = room.getAvatar(pos.byteValue()).getPlayerId();
+				GameCharacter p = self.getPlayerById(playerId);
+				if (playerId != sender && p != null)
+					p.getClient().getSession().send(GamePackets.writeChatroomText(text));
+			}
+		} finally {
+			room.unlockRead();
+		}
+	}
+
 	private static void writeHeader(LittleEndianWriter lew, byte channel) {
 		lew.writeByte(RemoteCenterOps.INTER_CHANNEL);
 		lew.writeByte(channel);
@@ -861,6 +1010,7 @@ public class InterChannelCommunication {
 			lew.writeByte(summonState.getStance());
 		}
 		lew.writeShort(context.getEnergyCharge());
+		lew.writeInt(context.getChatroomId());
 		return lew.getBytes();
 	}
 
@@ -1123,6 +1273,114 @@ public class InterChannelCommunication {
 		return lew.getBytes();
 	}
 
+	private static void writeChatroomAvatar(LittleEndianWriter lew, GameCharacter p, Map<Short, Integer> equips) {
+		lew.writeInt(p.getId());
+		lew.writeByte((byte) equips.size());
+		for (Map.Entry<Short, Integer> entry : equips.entrySet()) {
+			lew.writeShort(entry.getKey().shortValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte(p.getGender());
+		lew.writeByte(p.getSkinColor());
+		lew.writeInt(p.getEyes());
+		lew.writeInt(p.getHair());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeByte(p.getClient().getChannel());
+	}
+
+	private static byte[] writeMakeChatroom(GameCharacter creator) {
+		Map<Short, Integer> equips = creator.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(19 + creator.getName().length() + equips.size() * 6);
+		lew.writeByte(RemoteCenterOps.CREATE_CHATROOM);
+		writeChatroomAvatar(lew, creator, equips);
+		
+		return lew.getBytes();
+	}
+
+	private static byte[] writeJoinChatroom(GameCharacter p, int roomId) {
+		Map<Short, Integer> equips = p.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(23 + p.getName().length() + equips.size() * 6);
+		lew.writeByte(RemoteCenterOps.JOIN_CHATROOM);
+		lew.writeInt(roomId);
+		writeChatroomAvatar(lew, p, equips);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeLeaveChatroom(int playerId, int roomId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		lew.writeByte(RemoteCenterOps.LEAVE_CHATROOM);
+		lew.writeInt(roomId);
+		lew.writeInt(playerId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeChatroomInvite(byte dest, byte src, int responseId, String invitee, int roomId, String inviter) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11 + invitee.length() + inviter.length());
+		writeHeader(lew, dest);
+		lew.writeByte(CHATROOM_INVITE);
+		lew.writeLengthPrefixedString(invitee);
+		lew.writeInt(roomId);
+		lew.writeLengthPrefixedString(inviter);
+		lew.writeInt(responseId);
+		lew.writeByte(src);
+		return lew.getBytes();
+	}
+
+	private byte[] writeChatroomInviteResponse(byte channel, int responseId, boolean result) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+		writeHeader(lew, channel);
+		lew.writeByte(CHATROOM_INVITE_RESPONSE);
+		lew.writeInt(responseId);
+		lew.writeBool(result);
+		return lew.getBytes();
+	}
+
+	private byte[] writeChatroomDecline(byte channel, String inviter, String invitee) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + inviter.length() + invitee.length());
+		writeHeader(lew, channel);
+		lew.writeByte(CHATROOM_DECLINE);
+		lew.writeLengthPrefixedString(inviter);
+		lew.writeLengthPrefixedString(invitee);
+		return lew.getBytes();
+	}
+
+	private byte[] writeChatroomText(byte channel, String text, int roomId, int sender) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + text.length());
+		writeHeader(lew, channel);
+		lew.writeByte(CHATROOM_TEXT);
+		lew.writeLengthPrefixedString(text);
+		lew.writeInt(roomId);
+		lew.writeInt(sender);
+		return lew.getBytes();
+	}
+
+	private byte[] writeChatroomPlayerChangedChannels(int playerId, int roomId, byte dest) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		lew.writeByte(RemoteCenterOps.UPDATE_CHATROOM_AVATAR_CHANNEL);
+		lew.writeInt(playerId);
+		lew.writeInt(roomId);
+		lew.writeByte(dest);
+		return lew.getBytes();
+	}
+
+	private byte[] writeChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
+		Map<Short, Integer> equips = p.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(19 + 6 * equips.size());
+		lew.writeByte(RemoteCenterOps.UPDATE_CHATROOM_AVATAR_LOOK);
+		lew.writeInt(p.getId());
+		lew.writeInt(roomId);
+		lew.writeByte((byte) equips.size());
+		for (Map.Entry<Short, Integer> entry : equips.entrySet()) {
+			lew.writeShort(entry.getKey().shortValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte(p.getSkinColor());
+		lew.writeInt(p.getEyes());
+		lew.writeInt(p.getHair());
+		return lew.getBytes();
+	}
+
 	public void receivedPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case INBOUND_PLAYER: {
@@ -1142,6 +1400,7 @@ public class InterChannelCommunication {
 				for (int i = 0; i < count; i++)
 					context.addActiveSummon(packet.readInt(), playerId, packet.readPos(), packet.readByte());
 				context.setEnergyCharge(packet.readShort());
+				context.setChatroomId(packet.readInt());
 				receivedInboundPlayer(channel, playerId, context);
 				break;
 			}
@@ -1263,6 +1522,39 @@ public class InterChannelCommunication {
 				int sender = packet.readInt();
 				int receiver = packet.readInt();
 				receivedBuddyDelete(sender, receiver);
+				break;
+			}
+			case CHATROOM_INVITE: {
+				String invitee = packet.readLengthPrefixedString();
+				int roomId = packet.readInt();
+				String inviter = packet.readLengthPrefixedString();
+				int responseId = packet.readInt();
+				byte returnCh = packet.readByte();
+				boolean result = receivedChatroomInvite(invitee, roomId, inviter);
+				getCenterComm().getSession().send(writeChatroomInviteResponse(returnCh, responseId, result));
+				break;
+			}
+			case CHATROOM_INVITE_RESPONSE: {
+				int responseId = packet.readInt();
+				boolean result = packet.readBool();
+				ResponseFuture response = responseListeners.get(Integer.valueOf(responseId));
+				if (response != null)
+					response.set(Boolean.valueOf(result));
+				else
+					LOG.log(Level.FINE, "Received inter channel intercourse response {0} on channel {1} after Future timed out.", new Object[] { responseId, self.getChannelId()});
+				break;
+			}
+			case CHATROOM_DECLINE: {
+				String inviter = packet.readLengthPrefixedString();
+				String invitee = packet.readLengthPrefixedString();
+				receivedChatroomDecline(inviter, invitee);
+				break;
+			}
+			case CHATROOM_TEXT: {
+				String text = packet.readLengthPrefixedString();
+				int roomId = packet.readInt();
+				int senderId = packet.readInt();
+				receivedChatroomText(text, roomId, senderId);
 				break;
 			}
 		}
@@ -1580,6 +1872,220 @@ public class InterChannelCommunication {
 					}
 				}
 				break;
+			}
+		}
+	}
+
+	public void receivedChatroomCreated(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int creatorId = packet.readInt();
+		GameCharacter p = self.getPlayerById(creatorId);
+		if (p != null) {
+			Chatroom room = new Chatroom(roomId, p);
+			localChatRooms.put(Integer.valueOf(roomId), room);
+			p.setChatRoom(room);
+		}
+	}
+
+	public void receivedChatroomAssignment(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int playerId = packet.readInt();
+		byte position = packet.readByte();
+		GameCharacter p = self.getPlayerById(playerId);
+		if (roomId != 0) {
+			//this will be false if joiner was in the room before and just changed channels.
+			boolean firstTime = packet.readBool();
+			if (position == -1)
+				return; //room is full
+
+			Set<Byte> existingLocalSlots;
+			Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
+			if (room == null) { //first on this channel to join the chat room
+				room = new Chatroom(roomId);
+				for (byte pos = 0; pos < 3; pos++) {
+					byte channel = packet.readByte();
+					if (channel == 0)
+						continue;
+
+					int avatarPlayerId = packet.readInt();
+					Map<Short, Integer> equips = new HashMap<Short, Integer>();
+					for (byte i = packet.readByte(); i > 0; i--) {
+						short slot = packet.readShort();
+						int itemId = packet.readInt();
+						equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+					}
+					byte gender = packet.readByte();
+					byte skin = packet.readByte();
+					int eyes = packet.readInt();
+					int hair = packet.readInt();
+					String name = packet.readLengthPrefixedString();
+					room.setAvatar(pos, new Chatroom.Avatar(avatarPlayerId, gender, skin, eyes, hair, equips, name, channel), false);
+				}
+				//defer adding Chatroom to cache until after initialization to
+				//avoid write locking for room.setAvatar above
+				localChatRooms.put(Integer.valueOf(roomId), room);
+				existingLocalSlots = Collections.emptySet();
+			} else {
+				room.lockRead();
+				try {
+					existingLocalSlots = room.localChannelSlots();
+				} finally {
+					room.unlockRead();
+				}
+			}
+			Chatroom.Avatar a = new Chatroom.Avatar(p);
+			room.lockWrite();
+			try {
+				room.setAvatar(position, a, true);
+			} finally {
+				room.unlockWrite();
+			}
+			p.setChatRoom(room);
+
+			//Center server will not send us a CHATROOM_SLOT_CHANGED if the
+			//joiner is on the same channel as us, to save bandwidth.
+			//so send joiner's avatar to any other player in the chatroom on
+			//the channel
+			byte[] message = GamePackets.writeChatroomAvatar(firstTime ? Chatroom.ACT_OPEN : Chatroom.ACT_REFRESH_AVATAR, position, a, firstTime);
+			room.lockRead();
+			try {
+				for (Byte pos : existingLocalSlots) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+
+			if (firstTime) {
+				//send other avatars to joiner
+				p.getClient().getSession().send(GamePackets.writeChatroomJoin(position));
+				room.lockRead();
+				try {
+					for (byte pos = 0; pos < 3; pos++) {
+						a = room.getAvatar(pos);
+						if (position != pos && a != null)
+							p.getClient().getSession().send(GamePackets.writeChatroomAvatar(Chatroom.ACT_OPEN, pos, a, false));
+					}
+				} finally {
+					room.unlockRead();
+				}
+			} else {
+				//client doesn't update avatar tooltip for its own player
+				//after it changes channels...
+				p.getClient().getSession().send(GamePackets.writeChatroomAvatar(Chatroom.ACT_REFRESH_AVATAR, position, a, false));
+			}
+		} else { //left room
+			if (p == null)
+				return;
+
+			Chatroom room = p.getChatRoom();
+			p.setChatRoom(null);
+			if (room == null)
+				return;
+
+			room.lockWrite();
+			try {
+				room.setAvatar(position, null, true);
+			} finally {
+				room.unlockWrite();
+			}
+
+			//Center server will not send us a CHATROOM_SLOT_CHANGED if the
+			//leaver is on the same channel as us, to save bandwidth.
+			//so notify any other player in the chatroom on the channel
+			//that the slot is now unoccupied.
+			byte[] message = GamePackets.writeChatroomClear(position);
+			room.lockRead();
+			try {
+				for (Byte pos : room.localChannelSlots()) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+			//if there are no other players in the chatroom on the
+			//channel, delete the chatroom from our cache
+			room.lockRead();
+			try {
+				if (room.localChannelSlots().isEmpty())
+					localChatRooms.remove(Integer.valueOf(room.getRoomId()));
+			} finally {
+				room.unlockRead();
+			}
+		}
+	}
+
+	public void receivedChatroomAvatarChanged(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		byte position = packet.readByte();
+		int playerId = packet.readInt();
+		Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
+		if (room == null)
+			return;
+		if (playerId != 0) {
+			byte channel = packet.readByte();
+			Map<Short, Integer> equips = new HashMap<Short, Integer>();
+			for (byte i = packet.readByte(); i > 0; i--) {
+				short slot = packet.readShort();
+				int itemId = packet.readInt();
+				equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+			}
+			byte gender = packet.readByte();
+			byte skin = packet.readByte();
+			int eyes = packet.readInt();
+			int hair = packet.readInt();
+			String name = packet.readLengthPrefixedString();
+			byte[] message;
+			Set<Byte> slotsToNotify;
+
+			room.lockWrite();
+			try {
+				Chatroom.Avatar a = room.getAvatar(position);
+				boolean firstTime = (a == null);
+				assert firstTime || a.getPlayerId() == playerId;
+				a = new Chatroom.Avatar(playerId, gender, skin, eyes, hair, equips, name, channel);
+				message = GamePackets.writeChatroomAvatar(firstTime ? Chatroom.ACT_OPEN : Chatroom.ACT_REFRESH_AVATAR, position, a, firstTime);
+				//Chatroom.Avatar is immutable...
+				room.setAvatar(position, a, channel == self.getChannelId());
+				slotsToNotify = room.localChannelSlots();
+			} finally {
+				room.unlockWrite();
+			}
+
+			slotsToNotify.remove(Byte.valueOf(position));
+			room.lockRead();
+			try {
+				for (Byte pos : slotsToNotify) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+		} else { //remove slot
+			room.lockWrite();
+			try {
+				room.setAvatar(position, null, false);
+			} finally {
+				room.unlockWrite();
+			}
+
+			byte[] message = GamePackets.writeChatroomClear(position);
+			room.lockRead();
+			try {
+				for (Byte pos : room.localChannelSlots()) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+				assert !room.localChannelSlots().isEmpty();
+			} finally {
+				room.unlockRead();
 			}
 		}
 	}
