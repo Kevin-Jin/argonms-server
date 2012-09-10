@@ -356,6 +356,13 @@ public class GameServer implements LocalServer {
 		return -1;
 	}
 
+	public byte channelOfPlayer(String characterName) {
+		for (Entry<Byte, WorldChannel> entry : channels.entrySet())
+			if (entry.getValue().getPlayerByName(characterName) != null)
+				return entry.getKey().byteValue();
+		return -1;
+	}
+
 	public GameRegistry getRegistry() {
 		return registry;
 	}

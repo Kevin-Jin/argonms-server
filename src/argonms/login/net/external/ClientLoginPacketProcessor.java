@@ -94,6 +94,11 @@ public class ClientLoginPacketProcessor extends ClientPacketProcessor<LoginClien
 			case ClientRecvOps.RELOG:
 				WorldlistHandler.backToLogin(reader, lc);
 				break;
+			case ClientRecvOps.MESSENGER_ACT:
+				//no-op: player logged off before closing messenger. we already
+				//handled the clean up on game server side, but there is no way
+				//the server can make the client close the messenger window.
+				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				//no-op
 				break;

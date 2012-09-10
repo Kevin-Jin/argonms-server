@@ -76,6 +76,15 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.PARTY_SYNCHRONIZATION:
 				processPartySynchronization(packet);
 				break;
+			case CenterRemoteOps.CHATROOM_CREATED:
+				processChatroomCreated(packet);
+				break;
+			case CenterRemoteOps.CHATROOM_ROOM_CHANGED:
+				processAssignChatroom(packet);
+				break;
+			case CenterRemoteOps.CHATROOM_SLOT_CHANGED:
+				processChatroomAvatar(packet);
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
 				break;
@@ -130,5 +139,20 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 	private void processPartySynchronization(LittleEndianReader packet) {
 		byte channel = packet.readByte();
 		GameServer.getChannel(channel).getInterChannelInterface().receivedPartyPacket(packet);
+	}
+
+	private void processChatroomCreated(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomCreated(packet);
+	}
+
+	private void processAssignChatroom(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomAssignment(packet);
+	}
+
+	private void processChatroomAvatar(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomAvatarChanged(packet);
 	}
 }

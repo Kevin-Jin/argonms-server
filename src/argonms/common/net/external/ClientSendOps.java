@@ -129,6 +129,7 @@ public final class ClientSendOps {
 		NPC_SHOP = 0xEE,
 		CONFIRM_SHOP_TRANSACTION = 0xEF,
 		NPC_STORAGE = 0xF0,
+		MESSENGER_ACT = 0xF4,
 		MINIROOM_ACT = 0xF5,
 		KEYMAP = 0x107
 	;

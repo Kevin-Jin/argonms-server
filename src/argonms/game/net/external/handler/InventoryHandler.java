@@ -31,6 +31,7 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.ItemDrop;
@@ -55,6 +56,8 @@ public final class InventoryHandler {
 			gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
 			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false, true);
 			p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
+			if (p.getChatRoom() != null)
+				GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
@@ -70,6 +73,8 @@ public final class InventoryHandler {
 				}
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true, true);
 				p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
+				if (p.getChatRoom() != null)
+					GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
 			} else {
 				gc.getSession().send(GamePackets.writeInventoryNoChange());
 			}

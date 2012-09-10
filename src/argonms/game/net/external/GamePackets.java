@@ -37,6 +37,7 @@ import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.character.Chatroom;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
@@ -1814,6 +1815,64 @@ public final class GamePackets {
 		lew.writeByte(room.getMaxPlayers());
 		if (room.getMiniroomType() != MiniroomType.HIRED_MERCHANT)
 			lew.writeBool(room.gameInProgress());
+	}
+
+	public static byte[] writeChatroomAvatar(byte op, byte position, Chatroom.Avatar avatar, boolean entered) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(Chatroom.ACT_OPEN);
+		lew.writeByte(position);
+		CommonPackets.writeAvatar(lew, avatar.getGender(), avatar.getSkin(), avatar.getEyes(), true, avatar.getHair(), avatar.getEquips(), new Pet[3]);
+		lew.writeLengthPrefixedString(avatar.getName());
+		lew.writeByte((byte) (avatar.getChannel() - 1));
+		lew.writeBool(entered);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChatroomJoin(byte position) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(Chatroom.ACT_JOIN);
+		lew.writeByte(position);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChatroomClear(byte position) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(Chatroom.ACT_EXIT);
+		lew.writeByte(position);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChatroomInvite(String from, int roomId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11 + from.length());
+
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(Chatroom.ACT_INVITE);
+		lew.writeLengthPrefixedString(from);
+		lew.writeByte((byte) 0);
+		lew.writeInt(roomId);
+		lew.writeByte((byte) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChatroomInviteResponse(byte op, String invitee, boolean joined) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6 + invitee.length());
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(op);
+		lew.writeLengthPrefixedString(invitee);
+		lew.writeBool(joined);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChatroomText(String text) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + text.length());
+		lew.writeShort(ClientSendOps.MESSENGER_ACT);
+		lew.writeByte(Chatroom.ACT_CHAT);
+		lew.writeLengthPrefixedString(text);
+		return lew.getBytes();
 	}
 
 	/*public static byte[] writeEnterCs(Player p) {

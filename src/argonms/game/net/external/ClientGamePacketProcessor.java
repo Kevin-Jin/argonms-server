@@ -166,6 +166,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.SPOUSECHAT:
 				ChatHandler.handleSpouseChat(reader, gc);
 				break;
+			case ClientRecvOps.MESSENGER_ACT:
+				MessengerHandler.handleAction(reader, gc);
+				break;
 			case ClientRecvOps.MINIROOM_ACT:
 				MiniroomHandler.handleAction(reader, gc);
 				break;

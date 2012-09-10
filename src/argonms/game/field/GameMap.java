@@ -235,7 +235,7 @@ public class GameMap {
 		}
 	}
 
-	private void spawnEntityInternal(MapEntity ent, boolean newSpawn) {
+	private void addEntity(MapEntity ent) {
 		EntityPool pool = entPools.get(ent.getEntityType());
 		pool.lockWrite();
 		try {
@@ -244,16 +244,18 @@ public class GameMap {
 		} finally {
 			pool.unlockWrite();
 		}
-		if (ent.isVisible())
-			sendToAll(newSpawn ? ent.getShowNewSpawnMessage() : ent.getShowExistingSpawnMessage());
 	}
 
 	public final void spawnEntity(MapEntity ent) {
-		spawnEntityInternal(ent, true);
+		addEntity(ent);
+		if (ent.isVisible())
+			sendToAll(ent.getShowNewSpawnMessage());
 	}
 
 	public void spawnExistingEntity(MapEntity ent) {
-		spawnEntityInternal(ent, false);
+		addEntity(ent);
+		if (ent.isVisible())
+			sendToAll(ent.getShowExistingSpawnMessage());
 	}
 
 	private void sendEntityData(MapEntity ent, GameCharacter p) {
