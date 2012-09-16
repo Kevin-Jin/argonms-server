@@ -90,7 +90,9 @@ public class WorldChannel {
 		Scheduler.getInstance().runRepeatedly(new Runnable() {
 			@Override
 			public void run() {
-				for (GameMap map : mapFactory.getMaps().values())
+				for (GameMap map : mapFactory.getMaps())
+					map.respawnMobs();
+				for (GameMap map : mapFactory.getInstanceMaps())
 					map.respawnMobs();
 			}
 		}, 0, 10000);

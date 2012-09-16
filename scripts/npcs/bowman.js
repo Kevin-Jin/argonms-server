@@ -25,6 +25,8 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
+//TODO: third job chat from http://trac.assembla.com/DelphiMS/browser/bin/Scripts/NPC/bowman.ds
+//need to implement player variables.
 if (player.getJob() == 0) {
 	npc.sayNext("So you want to become the Bowman??? Well...you need to meet some requirements to do so...at least #bLevel10, and 25 of DEX#k. Let's see...hmm...");
 	if (player.getLevel() >= 10 && player.getDex() >= 25) {

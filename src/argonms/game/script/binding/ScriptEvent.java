@@ -68,6 +68,14 @@ public class ScriptEvent {
 		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId)), globalScope);
 	}
 
+	public Object makeMap(int id) {
+		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().makeInstanceMap(id)), globalScope);
+	}
+
+	public void destroyMap(ScriptField map) {
+		GameServer.getChannel(channel).getMapFactory().destroyInstanceMap(map.getMap());
+	}
+
 	public void startTimer(final String key, int millisDelay) {
 		timers.put(key, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override

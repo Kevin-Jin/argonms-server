@@ -34,7 +34,9 @@ if (player.hasItem(4031011, 1) && player.hasItem(4031013, 0)) {
 		npc.sayNext("You don't seem too prepared for this. Find me when you ARE ready. There are neither portals or stores inside, so you better get 100% ready for it.");
 	} else if (selection == 1) {
 		npc.sayNext("Alright! I'll let you in! Defeat the monster inside to earn 30 Dark Marble and then talk to my colleague inside; he'll give you #b#t4031012##k as a proof that you've passed the test. Best of luck to you.");
-		player.changeMap(108000401);
+		//create an event. the playerDisconnected and playerChangedMap handlers
+		//make it easier to destroy the instance map when it is no longer needed
+		npc.makeEvent("change_job", [player, 108000401]);
 	}
 } else if (player.hasItem(4031011, 1) && player.hasItem(4031013, 1)) {
 	let selection = npc.askYesNo("So you've given up in the middle of this before. Don't worry about it, because you can always retake the test. Now...do you want to go back in and try again?");
@@ -43,7 +45,9 @@ if (player.hasItem(4031011, 1) && player.hasItem(4031013, 0)) {
 	} else if (selection == 1) {
 		npc.sayNext("Alright! I'll let you in! Sorry to say this, but I have to take away all your marbles beforehand. Defeat the monsters inside, collect 30 Dark Marbles, then strike up a conversation with a colleague of mine inside. He'll give you the #b#t4031013##k, the proof that you've passed the test. Best of luck to you.");
 		player.loseItem(4031013);
-		player.changeMap(108000401);
+		//create an event. the playerDisconnected and playerChangedMap handlers
+		//make it easier to destroy the instance map when it is no longer needed
+		npc.makeEvent("change_job", [player, 108000401]);
 	}
 } else if (player.getJob() == 400 && player.getLevel() >= 30) {
 	npc.sayNext("Do you want to be a stronger thief? Let me take care of that for you, then. You look definitely qualified for it. For now, go see #b#p1052001##k of Kerning City first.");

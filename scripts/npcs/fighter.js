@@ -25,6 +25,8 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
+//TODO: third job chat from http://trac.assembla.com/DelphiMS/browser/bin/Scripts/NPC/fighter.ds
+//need to implement player variables.
 if (player.getJob() == 0) {
 	npc.sayNext("Do you wish to be a Warrior? You need to meet some criteria in order to do so. #bYou need to be at least in Level 10#k. Let's see...");
 	if (player.getLevel() >= 10) {

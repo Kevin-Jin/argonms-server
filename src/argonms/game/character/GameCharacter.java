@@ -1610,10 +1610,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		mapChair = chairId;
 	}
 
-	public boolean changeMap(int mapid) {
-		return changeMap(mapid, (byte) 0);
-	}
-
 	public void leaveMapRoutines() {
 		if (miniroom != null) {
 			miniroom.leaveRoom(this);
@@ -1626,32 +1622,40 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			SkillTools.cancelBuffSkill(this, v.getSource());
 	}
 
-	public boolean changeMap(int mapid, byte initialPortal) {
+	public void changeMap(GameMap goTo, byte initialPortal) {
 		leaveMapRoutines();
+		map.removePlayer(this);
+		map = goTo;
+		setPosition(map.getPortalPosition(initialPortal));
+		setFoothold((short) 0);
+		client.getSession().send(GamePackets.writeChangeMap(goTo.getDataId(), initialPortal, this));
+		if (!isVisible())
+			getClient().getSession().send(GamePackets.writeShowHide());
+		map.spawnPlayer(this);
+		if (party != null) {
+			party.lockRead();
+			try {
+				for (PartyList.LocalMember member : party.getMembersInLocalChannel())
+					member.getPlayer().getClient().getSession().send(GamePackets.writePartyList(member.getPlayer().getParty()));
+			} finally {
+				party.unlockRead();
+			}
+		}
+		if (event != null)
+			event.playerChangedMap(this);
+	}
+
+	public boolean changeMap(int mapid, byte initialPortal) {
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
-			map.removePlayer(this);
-			map = goTo;
-			setPosition(map.getPortalPosition(initialPortal));
-			setFoothold((short) 0);
-			client.getSession().send(GamePackets.writeChangeMap(mapid, initialPortal, this));
-			if (!isVisible())
-				getClient().getSession().send(GamePackets.writeShowHide());
-			map.spawnPlayer(this);
-			if (party != null) {
-				party.lockRead();
-				try {
-					for (PartyList.LocalMember member : party.getMembersInLocalChannel())
-						member.getPlayer().getClient().getSession().send(GamePackets.writePartyList(member.getPlayer().getParty()));
-				} finally {
-					party.unlockRead();
-				}
-			}
-			if (event != null)
-				event.playerChangedMap(this);
+			changeMap(goTo, initialPortal);
 			return true;
 		}
 		return false;
+	}
+
+	public boolean changeMap(int mapid) {
+		return changeMap(mapid, (byte) 0);
 	}
 
 	private void prepareExitChannel(boolean quickCleanup) {

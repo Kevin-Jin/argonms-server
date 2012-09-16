@@ -136,6 +136,10 @@ public class ScriptPlayer {
 		changeMap(mapId, GameServer.getChannel(getPlayer().getClient().getChannel()).getMapFactory().getMap(mapId).getPortalIdByName(portal));
 	}
 
+	public void changeMap(ScriptField map) {
+		getPlayer().changeMap(map.getMap(), (byte) 0);
+	}
+
 	public short getLevel() {
 		return getPlayer().getLevel();
 	}
@@ -278,6 +282,10 @@ public class ScriptPlayer {
 
 	public void gainCloseness(short gain) {
 		//TODO: implement pets and pet exp rate?
+	}
+
+	public void setEvent(ScriptEvent event) {
+		getPlayer().setEvent(event == null ? null : GameServer.getChannel(getPlayer().getClient().getChannel()).getEventManager().getScriptInterface(event.getName()));
 	}
 
 	public void showTimer(int seconds) {

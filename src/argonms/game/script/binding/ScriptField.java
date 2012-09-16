@@ -37,6 +37,10 @@ public class ScriptField {
 		this.map = map;
 	}
 
+	protected GameMap getMap() {
+		return map;
+	}
+
 	public int getId() {
 		return map.getDataId();
 	}
