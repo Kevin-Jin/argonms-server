@@ -16,33 +16,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.script.binding;
-
-import argonms.game.character.PartyList;
-import java.awt.Rectangle;
-import org.mozilla.javascript.Scriptable;
-
 /**
+ * Logic for managing an instance map for 2nd job advancement challenges
+ * (besides pirates).
  *
  * @author GoldenKevin
  */
-public class ScriptPartyMember extends ScriptPlayer {
-	private final Scriptable globalScope;
 
-	public ScriptPartyMember(PartyList.LocalMember member, Scriptable globalScope) {
-		super(member.getPlayer());
-		this.globalScope = globalScope;
-	}
+let player, map;
 
-	public byte getChannel() {
-		return getPlayer().getClient().getChannel();
-	}
+function init(attachment) {
+	let destination;
+	[player, destination] = attachment;
 
-	public int getMapId() {
-		return getPlayer().getMapId();
-	}
+	//create a new instance of the map so we don't have to deal with multiple
+	//players in the channel trying to complete the same challenge.
+	map = event.makeMap(destination);
+	player.changeMap(map);
 
-	public boolean inRectangle(int x, int y, int width, int height) {
-		return new Rectangle(x, y, width, height).contains(getPlayer().getPosition());
-	}
+	player.setEvent(event);
+}
+
+function playerDisconnected(player) {
+	event.destroyEvent();
+}
+
+function playerChangedMap(player, destination) {
+	event.destroyEvent();
+}
+
+function deinit() {
+	player.setEvent(null);
+
+	event.destroyMap(map);
 }

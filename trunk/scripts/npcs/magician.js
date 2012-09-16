@@ -25,6 +25,8 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
+//TODO: third job chat from http://trac.assembla.com/DelphiMS/browser/bin/Scripts/NPC/magician.ds
+//need to implement player variables.
 if (player.getJob() == 0) {
 	npc.sayNext("Do you want to be a Magician? You need to meet some requirements in order to do so. You need to be at least at #bLevel 8#k. Let's see if you have what it takes to become a Magician...");
 	if (player.getLevel() >= 8) {

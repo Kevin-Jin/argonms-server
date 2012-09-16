@@ -20,39 +20,66 @@ package argonms.game.field;
 
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.map.MapStats;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  *
  * @author GoldenKevin
  */
 public class MapFactory {
-	private Map<Integer, GameMap> maps;
+	private ConcurrentMap<Integer, GameMap> maps;
+	private Set<GameMap> instanceMaps;
 
 	public MapFactory() {
-		//TODO: thread safety
-		this.maps = new HashMap<Integer, GameMap>();
+		maps = new ConcurrentHashMap<Integer, GameMap>();
+		instanceMaps = Collections.newSetFromMap(new ConcurrentHashMap<GameMap, Boolean>());
+	}
+
+	private GameMap newMap(int mapId) {
+		MapStats stats = MapDataLoader.getInstance().getMapStats(mapId);
+		if (stats == null)
+			return null;
+		else
+			return new GameMap(stats);
 	}
 
 	public GameMap getMap(int mapid) {
 		Integer oId = Integer.valueOf(mapid);
-		if (!maps.containsKey(oId)) {
-			MapStats stats = MapDataLoader.getInstance().getMapStats(mapid);
-			if (stats == null)
-				maps.put(oId, null);
-			else
-				maps.put(oId, new GameMap(stats));
+		GameMap map = maps.get(oId);
+		if (map == null) {
+			map = newMap(mapid);
+			GameMap existing = maps.putIfAbsent(oId, map);
+			if (existing != null)
+				//some other thread was loading the same map and beat us in
+				//instantiating it. no big deal, just use their instance instead
+				map = existing;
 		}
-		return maps.get(oId);
+		return map;
+	}
+
+	public GameMap makeInstanceMap(int mapId) {
+		GameMap map = newMap(mapId);
+		instanceMaps.add(map);
+		return map;
+	}
+
+	public void destroyInstanceMap(GameMap map) {
+		instanceMaps.remove(map);
 	}
 
 	public void clear() {
 		maps.clear();
 	}
 
-	public Map<Integer, GameMap> getMaps() {
-		return Collections.unmodifiableMap(maps);
+	public Collection<GameMap> getMaps() {
+		return Collections.unmodifiableCollection(maps.values());
+	}
+
+	public Set<GameMap> getInstanceMaps() {
+		return Collections.unmodifiableSet(instanceMaps);
 	}
 }

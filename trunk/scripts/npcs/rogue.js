@@ -25,6 +25,8 @@
  * @author GoldenKevin (content from Vana r3171)
  */
 
+//TODO: third job chat from http://trac.assembla.com/DelphiMS/browser/bin/Scripts/NPC/rogue.ds
+//need to implement player variables.
 if (player.isQuestStarted(6141)) {
 	let selection = npc.askYesNo("Would you like to go to the training ground?");
 	if (selection == 0) {
