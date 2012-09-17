@@ -2095,6 +2095,11 @@
 	* Added NimaKIN and KIN NPCs.
 	* Fixed any possibility of client crash when choosing new eyes or hair.
 
+2012-09-17  GoldenKevin  (revision 138)
+
+	* Added remaining Nautilus Harbor NPCs to complete Victoria Island NPC
+	scripts.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
