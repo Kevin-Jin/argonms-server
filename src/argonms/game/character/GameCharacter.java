@@ -2152,9 +2152,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * requirements and can be completed right now.
 	 */
 	public boolean isQuestActive(short questId) {
-		QuestEntry status = questStatuses.get(Short.valueOf(questId));
-		return status != null && status.getState() == QuestEntry.STATE_STARTED
-				&& !QuestDataLoader.getInstance().canCompleteQuest(this, questId);
+		return isQuestStarted(questId) && !QuestDataLoader.getInstance().canCompleteQuest(this, questId);
 	}
 
 	public boolean isQuestCompleted(short questId) {
