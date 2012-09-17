@@ -33,16 +33,9 @@ function getStyleChoices(gender, currentHair) {
 	else if (gender == 1)
 		styles = [31050, 31040, 31000, 31060, 31090, 31020, 31130, 31120, 31140, 31330, 31010];
 	for (let i = 0; i < styles.length; i++)
-		styles[i] += color; //hair style choice colors are current hair color
+		if (npc.isHairValid(styles[i] + color)) //prefer current hair color
+			styles[i] += color;
 	return styles;
-}
-
-function getColorChoices(currentHair) {
-	let style = currentHair - currentHair % 10;
-	let colors = new Array(8);
-	for (let i = 0; i < 8; i++)
-		colors[i] = style + i; //hair color choices use current hair style
-	return colors;
 }
 
 let selection = npc.askMenu("Hello! I'm Don Giovanni, head of the beauty salon! If you have either #b#t5150003##k, #b#t5151003##k or #b#t5420003##k, why don't you let me take care of the rest? Decide what you want to do with your hair...\r\n#b"
@@ -62,7 +55,7 @@ switch (selection) {
 		styleChange = true;
 		break;
 	case 1:
-		hairs = getColorChoices(player.getHair());
+		hairs = npc.getAllHairColors();
 		selection = npc.askAvatar("I can totally change your haircolor and make it look so good. Why don't you change it up a bit? With #b#t5151003##k I'll change it for you. Choose the one to your liking.", hairs);
 		item = 5151003;
 		take = true;

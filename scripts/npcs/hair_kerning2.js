@@ -32,12 +32,15 @@ function getRandomStyle(gender, currentHair) {
 		styles = [30130, 30350, 30190, 30110, 30180, 30050, 30040, 30160, 30770, 30620, 30550, 30520];
 	else if (gender == 1)
 		styles = [31060, 31090, 31020, 31130, 31120, 31140, 31330, 31010, 31520, 31440, 31750, 31620];
-	return styles[Math.floor(Math.random() * styles.length)] + color;
+	let style = styles[Math.floor(Math.random() * styles.length)];
+	if (npc.isHairValid(style + color)) //prefer current hair color
+		style += color;
+	return style;
 }
 
-function getRandomColor(currentHair) {
-	let style = currentHair - currentHair % 10;
-	return style + Math.floor(Math.random() * 8);
+function getRandomColor() {
+	let array = npc.getAllHairColors();
+	return array[Math.floor(Math.random() * array.length)];
 }
 
 let selection = npc.askMenu("I'm Andre, Don's assistant. Everyone calls me Andre, though. If you have a #b#t5150011##k or a #b#t5151002##k, please let me change your hairdo!\r\n"
@@ -52,7 +55,7 @@ if (selection == 0) {
 } else if (selection == 1) {
 	item = 5151002;
 	selection = npc.askYesNo("If you use a regular coupon your hair will change RANDOMLY. Do you still want to use #b#t5151002##k and change it up?");
-	hair = getRandomColor(player.getHair());
+	hair = getRandomColor();
 }
 if (selection == 1) {
 	if (player.hasItem(item, 1)) {
