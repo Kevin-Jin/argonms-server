@@ -223,10 +223,11 @@ public class InterChannelCommunication {
 
 	public Pair<byte[], Integer> getChannelHost(byte ch) throws UnknownHostException {
 		for (int i = 0; i < localChannels.length; i++) {
-			if (ch == localChannels[i]) {
-				byte[] address = InetAddress.getByName(GameServer.getInstance().getExternalIp()).getAddress();
-				return new Pair<byte[], Integer>(address, Integer.valueOf(GameServer.getChannel(ch).getPort()));
-			}
+			if (ch != localChannels[i])
+				continue;
+
+			byte[] address = InetAddress.getByName(GameServer.getInstance().getExternalIp()).getAddress();
+			return new Pair<byte[], Integer>(address, Integer.valueOf(GameServer.getChannel(ch).getPort()));
 		}
 		readLock.lock();
 		try {
@@ -239,10 +240,11 @@ public class InterChannelCommunication {
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
 		for (int i = 0; i < localChannels.length; i++) {
-			if (destCh == localChannels[i]) {
-				GameServer.getChannel(destCh).getInterChannelInterface().receivedInboundPlayer(self.getChannelId(), p.getId(), new PlayerContinuation(p));
-				return;
-			}
+			if (destCh != localChannels[i])
+				continue;
+
+			GameServer.getChannel(destCh).getInterChannelInterface().receivedInboundPlayer(self.getChannelId(), p.getId(), new PlayerContinuation(p));
+			return;
 		}
 		getCenterComm().getSession().send(writePlayerContext(destCh, self.getChannelId(), p.getId(), new PlayerContinuation(p)));
 	}
@@ -257,37 +259,40 @@ public class InterChannelCommunication {
 		readLock.lock();
 		try {
 			int networkPeers = remoteChannelPorts.size();
-			if (networkPeers != 0) {
-				int responseId = nextResponseId.getAndIncrement();
-				ResponseFuture response = new ResponseFuture(networkPeers);
-				responseListeners.put(Integer.valueOf(responseId), response);
-				for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
-					getCenterComm().getSession().send(writePlayerSearch(ch.byteValue(), responseId, self.getChannelId(), name));
-				readLock.unlock();
-				readUnlocked = true;
-				try {
-					byte result;
-					Object[] array = response.get(2, TimeUnit.SECONDS);
-					for (Object o : array)
-						if ((result = ((Byte) o).byteValue()) != 0)
-							return result;
-				} catch (InterruptedException ex) {
-					//propagate the interrupted status further up to our worker
-					//executor service and see if they care - we don't care about it
-					Thread.currentThread().interrupt();
-				} catch (TimeoutException ex) {
-					LOG.log(Level.FINE, "Player search timeout", ex);
-				} catch (CancellationException ex) {
+			if (networkPeers == 0)
+				return 0;
 
-				} finally {
-					responseListeners.remove(Integer.valueOf(responseId));
-				}
+			int responseId = nextResponseId.getAndIncrement();
+			ResponseFuture response = new ResponseFuture(networkPeers);
+			responseListeners.put(Integer.valueOf(responseId), response);
+			for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
+				getCenterComm().getSession().send(writePlayerSearch(ch.byteValue(), responseId, self.getChannelId(), name));
+			readLock.unlock();
+			readUnlocked = true;
+			try {
+				byte result;
+				Object[] array = response.get(2, TimeUnit.SECONDS);
+				for (Object o : array)
+					if ((result = ((Byte) o).byteValue()) != 0)
+						return result;
+				return 0;
+			} catch (InterruptedException ex) {
+				//propagate the interrupted status further up to our worker
+				//executor service and see if they care - we don't care about it
+				Thread.currentThread().interrupt();
+				return 0;
+			} catch (TimeoutException ex) {
+				LOG.log(Level.FINE, "Player search timeout", ex);
+				return 0;
+			} catch (CancellationException ex) {
+				return 0;
+			} finally {
+				responseListeners.remove(Integer.valueOf(responseId));
 			}
 		} finally {
 			if (!readUnlocked)
 				readLock.unlock();
 		}
-		return 0;
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
@@ -311,68 +316,70 @@ public class InterChannelCommunication {
 				break;
 			}
 			case CHAT_TYPE_PARTY: {
-				if (p.getParty() != null) {
-					peerChannels = new HashMap<Byte, List<Integer>>();
-					for (int member : recipients) {
-						Byte ch = Byte.valueOf((byte) 0);
-						List<Integer> peersOnChannel = peerChannels.get(ch);
-						if (peersOnChannel == null) {
-							peersOnChannel = new ArrayList<Integer>();
-							peerChannels.put(ch, peersOnChannel);
-						}
-						peersOnChannel.add(Integer.valueOf(member));
+				if (p.getParty() == null)
+					return;
+
+				peerChannels = new HashMap<Byte, List<Integer>>();
+				for (int member : recipients) {
+					Byte ch = Byte.valueOf((byte) 0);
+					List<Integer> peersOnChannel = peerChannels.get(ch);
+					if (peersOnChannel == null) {
+						peersOnChannel = new ArrayList<Integer>();
+						peerChannels.put(ch, peersOnChannel);
 					}
+					peersOnChannel.add(Integer.valueOf(member));
 				}
 				break;
 			}
 			case CHAT_TYPE_GUILD: {
-				if (p.getGuildId() != 0) {
-					peerChannels = new HashMap<Byte, List<Integer>>();
-					for (int member : recipients) {
-						Byte ch = Byte.valueOf((byte) 0);
-						List<Integer> peersOnChannel = peerChannels.get(ch);
-						if (peersOnChannel == null) {
-							peersOnChannel = new ArrayList<Integer>();
-							peerChannels.put(ch, peersOnChannel);
-						}
-						peersOnChannel.add(Integer.valueOf(member));
+				if (p.getGuildId() == 0)
+					return;
+
+				peerChannels = new HashMap<Byte, List<Integer>>();
+				for (int member : recipients) {
+					Byte ch = Byte.valueOf((byte) 0);
+					List<Integer> peersOnChannel = peerChannels.get(ch);
+					if (peersOnChannel == null) {
+						peersOnChannel = new ArrayList<Integer>();
+						peerChannels.put(ch, peersOnChannel);
 					}
+					peersOnChannel.add(Integer.valueOf(member));
 				}
 				break;
 			}
 		}
-		if (peerChannels != null) {
-			for (Entry<Byte, List<Integer>> entry : peerChannels.entrySet()) {
-				byte knownCh = entry.getKey().byteValue();
-				int i = 0;
-				recipients = new int[entry.getValue().size()];
-				for (Integer recipient : entry.getValue())
-					recipients[i++] = recipient.intValue();
-				if (knownCh != 0) {
-					boolean local = false;
-					if (knownCh == self.getChannelId()) {
-						local = true;
-						receivedPrivateChat(type, recipients, name, message);
-					}
-					for (i = 0; i < localChannels.length && !local; i++) {
-						if (knownCh == localChannels[i]) {
-							local = true;
-							GameServer.getChannel(knownCh).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
-						}
-					}
-					if (!local)
-						getCenterComm().getSession().send(writePrivateChatMessage(knownCh, type, recipients, name, message));
-				} else { //channel unknown
-					receivedPrivateChat(type, recipients, name, message); //recipients on same channel
-					for (byte ch : localChannels) //recipients on same process
-						GameServer.getChannel(ch).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
-					readLock.lock();
-					try {
-						for (Byte ch : remoteChannelPorts.keySet()) //recipients on another process
-							getCenterComm().getSession().send(writePrivateChatMessage(ch.byteValue(), type, recipients, name, message));
-					} finally {
-						readLock.unlock();
-					}
+
+		for (Entry<Byte, List<Integer>> entry : peerChannels.entrySet()) {
+			byte knownCh = entry.getKey().byteValue();
+			int i = 0;
+			recipients = new int[entry.getValue().size()];
+			for (Integer recipient : entry.getValue())
+				recipients[i++] = recipient.intValue();
+			if (knownCh != 0) {
+				boolean local = false;
+				if (knownCh == self.getChannelId()) {
+					local = true;
+					receivedPrivateChat(type, recipients, name, message);
+				}
+				for (i = 0; i < localChannels.length && !local; i++) {
+					if (knownCh != localChannels[i])
+						continue;
+
+					local = true;
+					GameServer.getChannel(knownCh).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
+				}
+				if (!local)
+					getCenterComm().getSession().send(writePrivateChatMessage(knownCh, type, recipients, name, message));
+			} else { //channel unknown
+				receivedPrivateChat(type, recipients, name, message); //recipients on same channel
+				for (byte ch : localChannels) //recipients on same process
+					GameServer.getChannel(ch).getInterChannelInterface().receivedPrivateChat(type, recipients, name, message);
+				readLock.lock();
+				try {
+					for (Byte ch : remoteChannelPorts.keySet()) //recipients on another process
+						getCenterComm().getSession().send(writePrivateChatMessage(ch.byteValue(), type, recipients, name, message));
+				} finally {
+					readLock.unlock();
 				}
 			}
 		}
@@ -388,55 +395,59 @@ public class InterChannelCommunication {
 		readLock.lock();
 		try {
 			int networkPeers = remoteChannelPorts.size();
-			if (networkPeers != 0) {
-				int responseId = nextResponseId.getAndIncrement();
-				ResponseFuture response = new ResponseFuture(networkPeers);
-				responseListeners.put(Integer.valueOf(responseId), response);
-				for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
-					getCenterComm().getSession().send(writeWhisperMessage(ch.byteValue(), responseId, recipient, p.getName(), message, self.getChannelId()));
-				readLock.unlock();
-				readUnlocked = true;
-				try {
-					Object[] array = response.get(2, TimeUnit.SECONDS);
-					for (Object o : array)
-						if (((Boolean) o).booleanValue())
-							return true;
-				} catch (InterruptedException ex) {
-					//propagate the interrupted status further up to our worker
-					//executor service and see if they care - we don't care about it
-					Thread.currentThread().interrupt();
-				} catch (TimeoutException ex) {
-					LOG.log(Level.FINE, "Whisper timeout", ex);
-				} catch (CancellationException ex) {
-					
-				} finally {
-					responseListeners.remove(Integer.valueOf(responseId));
-				}
+			if (networkPeers == 0)
+				return false;
+
+			int responseId = nextResponseId.getAndIncrement();
+			ResponseFuture response = new ResponseFuture(networkPeers);
+			responseListeners.put(Integer.valueOf(responseId), response);
+			for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
+				getCenterComm().getSession().send(writeWhisperMessage(ch.byteValue(), responseId, recipient, p.getName(), message, self.getChannelId()));
+			readLock.unlock();
+			readUnlocked = true;
+			try {
+				Object[] array = response.get(2, TimeUnit.SECONDS);
+				for (Object o : array)
+					if (((Boolean) o).booleanValue())
+						return true;
+				return false;
+			} catch (InterruptedException ex) {
+				//propagate the interrupted status further up to our worker
+				//executor service and see if they care - we don't care about it
+				Thread.currentThread().interrupt();
+				return false;
+			} catch (TimeoutException ex) {
+				LOG.log(Level.FINE, "Whisper timeout", ex);
+				return false;
+			} catch (CancellationException ex) {
+				return false;
+			} finally {
+				responseListeners.remove(Integer.valueOf(responseId));
 			}
 		} finally {
 			if (!readUnlocked)
 				readLock.unlock();
 		}
-		return false;
 	}
 
 	public void sendSpouseChat(String spouse, GameCharacter p, String message) {
 		//perhaps we should compare spouse's name with p.getSpouseId()?
 		String name = p.getName();
 		int recipient = p.getSpouseId();
-		if (recipient != 0) {
-			if (receivedSpouseChat(recipient, name, message)) //recipient could be on same channel
+		if (recipient == 0)
+			return;
+
+		if (receivedSpouseChat(recipient, name, message)) //recipient could be on same channel
+			return;
+		for (byte ch : localChannels) //recipient could be on same process
+			if (GameServer.getChannel(ch).getInterChannelInterface().receivedSpouseChat(recipient, name, message))
 				return;
-			for (byte ch : localChannels) //recipient could be on same process
-				if (GameServer.getChannel(ch).getInterChannelInterface().receivedSpouseChat(recipient, name, message))
-					return;
-			readLock.lock();
-			try {
-				for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
-					getCenterComm().getSession().send(writeSpouseChatMessage(ch.byteValue(), recipient, name, message));
-			} finally {
-				readLock.unlock();
-			}
+		readLock.lock();
+		try {
+			for (Byte ch : remoteChannelPorts.keySet()) //recipient could be on another process
+				getCenterComm().getSession().send(writeSpouseChatMessage(ch.byteValue(), recipient, name, message));
+		} finally {
+			readLock.unlock();
 		}
 	}
 
@@ -451,32 +462,33 @@ public class InterChannelCommunication {
 		readLock.lock();
 		try {
 			int networkPeers = remoteChannelPorts.size();
-			if (networkPeers != 0) {
-				int responseId = nextResponseId.getAndIncrement();
-				ResponseFuture response = new ResponseFuture(networkPeers);
-				responseListeners.put(Integer.valueOf(responseId), response);
-				for (Byte ch : remoteChannelPorts.keySet()) //invitee could be on another process
-					getCenterComm().getSession().send(writeBuddyInvite(ch.byteValue(), self.getChannelId(), responseId, inviteeId, inviter.getId(), inviter.getName()));
-				readLock.unlock();
-				readUnlocked = true;
-				try {
-					Object[] array = response.get(2, TimeUnit.SECONDS);
-					for (Object o : array)
-						if ((result = ((Byte) o).byteValue()) != -1)
-							return result;
-				} catch (InterruptedException ex) {
-					result = -1;
-					//propagate the interrupted status further up to our worker
-					//executor service and see if they care - we don't care about it
-					Thread.currentThread().interrupt();
-				} catch (TimeoutException ex) {
-					LOG.log(Level.FINE, "Buddy invite timeout", ex);
-					result = -1;
-				} catch (CancellationException ex) {
-					result = -1;
-				} finally {
-					responseListeners.remove(Integer.valueOf(responseId));
-				}
+			if (networkPeers == 0)
+				return result;
+
+			int responseId = nextResponseId.getAndIncrement();
+			ResponseFuture response = new ResponseFuture(networkPeers);
+			responseListeners.put(Integer.valueOf(responseId), response);
+			for (Byte ch : remoteChannelPorts.keySet()) //invitee could be on another process
+				getCenterComm().getSession().send(writeBuddyInvite(ch.byteValue(), self.getChannelId(), responseId, inviteeId, inviter.getId(), inviter.getName()));
+			readLock.unlock();
+			readUnlocked = true;
+			try {
+				Object[] array = response.get(2, TimeUnit.SECONDS);
+				for (Object o : array)
+					if ((result = ((Byte) o).byteValue()) != -1)
+						return result;
+			} catch (InterruptedException ex) {
+				result = -1;
+				//propagate the interrupted status further up to our worker
+				//executor service and see if they care - we don't care about it
+				Thread.currentThread().interrupt();
+			} catch (TimeoutException ex) {
+				LOG.log(Level.FINE, "Buddy invite timeout", ex);
+				result = -1;
+			} catch (CancellationException ex) {
+				result = -1;
+			} finally {
+				responseListeners.remove(Integer.valueOf(responseId));
 			}
 		} finally {
 			if (!readUnlocked)
@@ -522,15 +534,16 @@ public class InterChannelCommunication {
 			return;
 		Map<Byte, List<Integer>> buddyChannels = new HashMap<Byte, List<Integer>>();
 		for (BuddyListEntry buddy : buddies) {
-			if (buddy.getChannel() != 0) {
-				Byte ch = Byte.valueOf(buddy.getChannel());
-				List<Integer> buddiesOnChannel = buddyChannels.get(ch);
-				if (buddiesOnChannel == null) {
-					buddiesOnChannel = new ArrayList<Integer>();
-					buddyChannels.put(ch, buddiesOnChannel);
-				}
-				buddiesOnChannel.add(Integer.valueOf(buddy.getId()));
+			if (buddy.getChannel() == 0)
+				continue;
+
+			Byte ch = Byte.valueOf(buddy.getChannel());
+			List<Integer> buddiesOnChannel = buddyChannels.get(ch);
+			if (buddiesOnChannel == null) {
+				buddiesOnChannel = new ArrayList<Integer>();
+				buddyChannels.put(ch, buddiesOnChannel);
 			}
+			buddiesOnChannel.add(Integer.valueOf(buddy.getId()));
 		}
 		for (Entry<Byte, List<Integer>> entry : buddyChannels.entrySet()) {
 			byte ch = entry.getKey().byteValue();
@@ -544,10 +557,11 @@ public class InterChannelCommunication {
 				receivedBuddyOffline(p.getId(), recipients);
 			}
 			for (i = 0; i < localChannels.length && !local; i++) {
-				if (ch == localChannels[i]) {
-					local = true;
-					GameServer.getChannel(ch).getInterChannelInterface().receivedBuddyOffline(p.getId(), recipients);
-				}
+				if (ch != localChannels[i])
+					continue;
+
+				local = true;
+				GameServer.getChannel(ch).getInterChannelInterface().receivedBuddyOffline(p.getId(), recipients);
 			}
 			if (!local)
 				getCenterComm().getSession().send(writeBuddyOfflineNotification(ch, p.getId(), recipients));
@@ -560,10 +574,11 @@ public class InterChannelCommunication {
 			return;
 		}
 		for (int i = 0; i < localChannels.length; i++) {
-			if (channel == localChannels[i]) {
-				GameServer.getChannel(channel).getInterChannelInterface().receivedBuddyDelete(p.getId(), recipient);
-				return;
-			}
+			if (channel != localChannels[i])
+				continue;
+
+			GameServer.getChannel(channel).getInterChannelInterface().receivedBuddyDelete(p.getId(), recipient);
+			return;
 		}
 		getCenterComm().getSession().send(writeBuddyDelete(channel, p.getId(), recipient));
 	}
@@ -671,35 +686,34 @@ public class InterChannelCommunication {
 		readLock.lock();
 		try {
 			int networkPeers = remoteChannelPorts.size();
-			if (networkPeers != 0) {
-				int responseId = nextResponseId.getAndIncrement();
-				ResponseFuture response = new ResponseFuture(networkPeers);
-				responseListeners.put(Integer.valueOf(responseId), response);
-				for (Byte ch : remoteChannelPorts.keySet()) //invitee could be on another process
-					getCenterComm().getSession().send(writeChatroomInvite(ch.byteValue(), self.getChannelId(), responseId, invitee, roomId, inviter));
-				readLock.unlock();
-				readUnlocked = true;
-				try {
-					Object[] array = response.get(2, TimeUnit.SECONDS);
-					for (Object o : array)
-						if (((Boolean) o).booleanValue())
-							return true;
-					return false;
-				} catch (InterruptedException ex) {
-					//propagate the interrupted status further up to our worker
-					//executor service and see if they care - we don't care about it
-					Thread.currentThread().interrupt();
-					return false;
-				} catch (TimeoutException ex) {
-					LOG.log(Level.FINE, "Chatroom invite timeout", ex);
-					return false;
-				} catch (CancellationException ex) {
-					return false;
-				} finally {
-					responseListeners.remove(Integer.valueOf(responseId));
-				}
-			} else {
+			if (networkPeers == 0)
 				return false;
+
+			int responseId = nextResponseId.getAndIncrement();
+			ResponseFuture response = new ResponseFuture(networkPeers);
+			responseListeners.put(Integer.valueOf(responseId), response);
+			for (Byte ch : remoteChannelPorts.keySet()) //invitee could be on another process
+				getCenterComm().getSession().send(writeChatroomInvite(ch.byteValue(), self.getChannelId(), responseId, invitee, roomId, inviter));
+			readLock.unlock();
+			readUnlocked = true;
+			try {
+				Object[] array = response.get(2, TimeUnit.SECONDS);
+				for (Object o : array)
+					if (((Boolean) o).booleanValue())
+						return true;
+				return false;
+			} catch (InterruptedException ex) {
+				//propagate the interrupted status further up to our worker
+				//executor service and see if they care - we don't care about it
+				Thread.currentThread().interrupt();
+				return false;
+			} catch (TimeoutException ex) {
+				LOG.log(Level.FINE, "Chatroom invite timeout", ex);
+				return false;
+			} catch (CancellationException ex) {
+				return false;
+			} finally {
+				responseListeners.remove(Integer.valueOf(responseId));
 			}
 		} finally {
 			if (!readUnlocked)
@@ -762,10 +776,11 @@ public class InterChannelCommunication {
 		self.storePlayerBuffs(playerId, context);
 
 		for (int i = 0; i < localChannels.length; i++) {
-			if (fromCh == localChannels[i]) {
-				GameServer.getChannel(fromCh).getInterChannelInterface().acceptedInboundPlayer(playerId);
-				return;
-			}
+			if (fromCh != localChannels[i])
+				continue;
+
+			GameServer.getChannel(fromCh).getInterChannelInterface().acceptedInboundPlayer(playerId);
+			return;
 		}
 		getCenterComm().getSession().send(writePlayerContextAccepted(fromCh, playerId));
 	}
@@ -789,20 +804,20 @@ public class InterChannelCommunication {
 
 	private boolean receivedWhisper(String recipient, String name, String message, byte fromCh) {
 		GameCharacter p = self.getPlayerByName(recipient);
-		if (p != null) {
-			p.getClient().getSession().send(GamePackets.writeWhisperMessage(name, message, fromCh));
-			return true;
-		}
-		return false;
+		if (p == null)
+			return false;
+
+		p.getClient().getSession().send(GamePackets.writeWhisperMessage(name, message, fromCh));
+		return true;
 	}
 
 	private boolean receivedSpouseChat(int recipient, String name, String message) {
 		GameCharacter p = self.getPlayerById(recipient);
-		if (p != null) {
-			p.getClient().getSession().send(GamePackets.writeSpouseChatMessage(name, message));
-			return true;
-		}
-		return false;
+		if (p == null)
+			return false;
+
+		p.getClient().getSession().send(GamePackets.writeSpouseChatMessage(name, message));
+		return true;
 	}
 
 	/**
@@ -814,134 +829,143 @@ public class InterChannelCommunication {
 	 */
 	private byte receivedBuddyInvite(int invitee, int inviter, String inviterName) {
 		GameCharacter p = self.getPlayerById(invitee);
-		if (p != null) {
-			BuddyList bList = p.getBuddyList();
-			if (bList.isFull())
-				return BuddyListHandler.THEIR_LIST_FULL;
-			if (bList.getBuddy(inviter) != null)
-				return BuddyListHandler.ALREADY_ON_LIST;
-			bList.addInvite(inviter, inviterName);
-			p.getClient().getSession().send(GamePackets.writeBuddyInvite(inviter, inviterName));
-			return Byte.MAX_VALUE;
-		}
-		return -1;
+		if (p == null)
+			return -1;
+
+		BuddyList bList = p.getBuddyList();
+		if (bList.isFull())
+			return BuddyListHandler.THEIR_LIST_FULL;
+		if (bList.getBuddy(inviter) != null)
+			return BuddyListHandler.ALREADY_ON_LIST;
+		bList.addInvite(inviter, inviterName);
+		p.getClient().getSession().send(GamePackets.writeBuddyInvite(inviter, inviterName));
+		return Byte.MAX_VALUE;
 	}
 
 	private int receivedBuddyOnline(byte fromCh, int sender, int[] receivers) {
 		int received = 0;
 		for (int receiver : receivers) {
 			GameCharacter p = self.getPlayerById(receiver);
-			if (p != null) {
-				BuddyList bList = p.getBuddyList();
-				BuddyListEntry entry = bList.getBuddy(sender);
-				//in case we deleted the entry in the meantime...
-				if (entry != null) {
-					entry.setChannel(fromCh);
-					p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
-					p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
-					boolean local = false;
-					if (fromCh == self.getChannelId()) {
-						local = true;
-						receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
-					}
-					for (int i = 0; i < localChannels.length && !local; i++) {
-						if (fromCh == localChannels[i]) {
-							local = true;
-							GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
-						}
-					}
-					if (!local)
-						getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, false));
-				}
-				received++;
+			if (p == null)
+				continue;
+
+			received++;
+			BuddyList bList = p.getBuddyList();
+			BuddyListEntry entry = bList.getBuddy(sender);
+			//in case we deleted the entry in the meantime...
+			if (entry == null)
+				continue;
+
+			entry.setChannel(fromCh);
+			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+			boolean local = false;
+			if (fromCh == self.getChannelId()) {
+				local = true;
+				receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
 			}
+			for (int i = 0; i < localChannels.length && !local; i++) {
+				if (fromCh == localChannels[i]) {
+					local = true;
+					GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, false);
+				}
+			}
+			if (!local)
+				getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, false));
 		}
 		return received;
 	}
 
 	private boolean receivedBuddyAccepted(byte fromCh, int sender, int receiver) {
 		GameCharacter p = self.getPlayerById(receiver);
-		if (p != null) {
-			BuddyList bList = p.getBuddyList();
-			BuddyListEntry entry = bList.getBuddy(sender);
-			//in case we deleted the entry in the meantime...
-			if (entry != null) {
-				entry.setChannel(fromCh);
-				entry.setStatus(BuddyListHandler.STATUS_MUTUAL);
-				p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
-				p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
-				boolean local = false;
-				if (fromCh == self.getChannelId()) {
-					local = true;
-					receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, true);
-				}
-				for (int i = 0; i < localChannels.length && !local; i++) {
-					if (fromCh == localChannels[i]) {
-						local = true;
-						GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, true);
-					}
-				}
-				if (!local)
-					getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, true));
-			}
+		if (p == null)
+			return false;
+
+		BuddyList bList = p.getBuddyList();
+		BuddyListEntry entry = bList.getBuddy(sender);
+		//in case we deleted the entry in the meantime...
+		if (entry == null)
 			return true;
+
+		entry.setChannel(fromCh);
+		entry.setStatus(BuddyListHandler.STATUS_MUTUAL);
+		p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+		boolean local = false;
+		if (fromCh == self.getChannelId()) {
+			local = true;
+			receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, true);
 		}
-		return false;
+		for (int i = 0; i < localChannels.length && !local; i++) {
+			if (fromCh != localChannels[i])
+				continue;
+
+			local = true;
+			GameServer.getChannel(fromCh).getInterChannelInterface().receivedBuddyOnlineResponse(self.getChannelId(), sender, receiver, true);
+		}
+		if (!local)
+			getCenterComm().getSession().send(writeBuddyOnlineResponse(fromCh, self.getChannelId(), sender, receiver, true));
+		return true;
 	}
 
 	private void receivedBuddyOnlineResponse(byte srcCh, int receiver, int sender, boolean notify) {
 		GameCharacter p = self.getPlayerById(receiver);
 		//in case we logged off or something like that?
-		if (p != null) {
-			BuddyList bList = p.getBuddyList();
-			BuddyListEntry entry = bList.getBuddy(sender);
-			//in case we deleted the entry in the meantime...
-			if (entry != null) {
-				entry.setChannel(srcCh);
-				if (notify)
-					p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
-				p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
-			}
-		}
+		if (p == null)
+			return;
+
+		BuddyList bList = p.getBuddyList();
+		BuddyListEntry entry = bList.getBuddy(sender);
+		//in case we deleted the entry in the meantime...
+		if (entry == null)
+			return;
+
+		entry.setChannel(srcCh);
+		if (notify)
+			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
 	}
 
 	private void receivedBuddyOffline(int sender, int[] receivers) {
 		for (int receiver : receivers) {
 			GameCharacter p = self.getPlayerById(receiver);
 			//in case we logged off or something like that?
-			if (p != null) {
-				BuddyList bList = p.getBuddyList();
-				BuddyListEntry entry = bList.getBuddy(sender);
-				//in case we deleted the entry in the meantime...
-				if (entry != null) {
-					entry.setChannel((byte) 0);
-					p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
-				}
-			}
+			if (p == null)
+				continue;
+
+			BuddyList bList = p.getBuddyList();
+			BuddyListEntry entry = bList.getBuddy(sender);
+			//in case we deleted the entry in the meantime...
+			if (entry == null)
+				continue;
+
+			entry.setChannel((byte) 0);
+			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 		}
 	}
 
 	private void receivedBuddyDelete(int sender, int receiver) {
 		GameCharacter p = self.getPlayerById(receiver);
 		//in case we logged off or something like that?
-		if (p != null) {
-			BuddyList bList = p.getBuddyList();
-			BuddyListEntry entry = bList.getBuddy(sender);
-			//in case we deleted the entry in the meantime...
-			if (entry != null) {
-				entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
-				p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
-			}
-		}
+		if (p == null)
+			return;
+
+		BuddyList bList = p.getBuddyList();
+		BuddyListEntry entry = bList.getBuddy(sender);
+		//in case we deleted the entry in the meantime...
+		if (entry == null)
+			return;
+
+		entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 	}
 
 	private boolean receivedChatroomInvite(String invitee, int roomId, String inviter) {
 		GameCharacter p = self.getPlayerByName(invitee);
-		if (p != null) {
-			p.getClient().getSession().send(GamePackets.writeChatroomInvite(inviter, roomId));
-			return true;
-		}
-		return false;
+		if (p == null)
+			return false;
+		p.getClient().getSession().send(GamePackets.writeChatroomInvite(inviter, roomId));
+		return true;
 	}
 
 	private void receivedChatroomDecline(String inviter, String invitee) {
@@ -1566,27 +1590,29 @@ public class InterChannelCommunication {
 				int partyId = packet.readInt();
 				int leaderId = packet.readInt();
 				GameCharacter leaderPlayer = self.getPlayerById(leaderId);
-				if (leaderPlayer != null) {
-					PartyList party = new PartyList(partyId, leaderPlayer, true, true);
-					activeLocalParties.put(Integer.valueOf(partyId), party);
-					leaderPlayer.setParty(party);
-					leaderPlayer.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
-				}
+				if (leaderPlayer == null)
+					return;
+
+				PartyList party = new PartyList(partyId, leaderPlayer, true, true);
+				activeLocalParties.put(Integer.valueOf(partyId), party);
+				leaderPlayer.setParty(party);
+				leaderPlayer.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
 				break;
 			}
 			case InterServerPartyOps.DISBAND: {
 				int partyId = packet.readInt();
 				PartyList party = activeLocalParties.remove(Integer.valueOf(partyId));
-				if (party != null) {
-					party.lockRead();
-					try {
-						for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
-							mem.getPlayer().setParty(null);
-							mem.getPlayer().getClient().getSession().send(GamePackets.writePartyDisbanded(party.getId(), party.getLeader()));
-						}
-					} finally {
-						party.unlockRead();
+				if (party == null)
+					return;
+
+				party.lockRead();
+				try {
+					for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+						mem.getPlayer().setParty(null);
+						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyDisbanded(party.getId(), party.getLeader()));
 					}
+				} finally {
+					party.unlockRead();
 				}
 				break;
 			}
@@ -1598,50 +1624,51 @@ public class InterChannelCommunication {
 				//TODO: not safe for activeLocalParties when members
 				//concurrently join or leave party, or enter or exit channel
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
-				if (party != null) {
-					boolean removeParty = false;
-					String leaverName;
-					party.lockWrite();
-					try {
-						if (self.getChannelId() == leaverCh) {
-							GameCharacter leavingPlayer = self.getPlayerById(leaverId);
-							leaverName = leavingPlayer.getName();
-							party.removePlayer(leavingPlayer);
-							removeParty = party.getMembersInLocalChannel().isEmpty();
+				if (party == null)
+					return;
 
-							leavingPlayer.setParty(null);
-							leavingPlayer.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+				boolean removeParty = false;
+				String leaverName;
+				party.lockWrite();
+				try {
+					if (self.getChannelId() == leaverCh) {
+						GameCharacter leavingPlayer = self.getPlayerById(leaverId);
+						leaverName = leavingPlayer.getName();
+						party.removePlayer(leavingPlayer);
+						removeParty = party.getMembersInLocalChannel().isEmpty();
 
-							//GameCenterPacketProcessor.processPartyMemberLeft
-							//has an explanation for this
-							if (removeParty) {
-								boolean save;
-								party.lockRead();
-								try {
-									save = party.allOffline();
-								} finally {
-									party.unlockRead();
-								}
-								if (save)
-									leavingPlayer.saveCharacter();
+						leavingPlayer.setParty(null);
+						leavingPlayer.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+
+						//GameCenterPacketProcessor.processPartyMemberLeft
+						//has an explanation for this
+						if (removeParty) {
+							boolean save;
+							party.lockRead();
+							try {
+								save = party.allOffline();
+							} finally {
+								party.unlockRead();
 							}
-						} else {
-							leaverName = packet.readLengthPrefixedString();
-							party.removePlayer(leaverCh, leaverId);
+							if (save)
+								leavingPlayer.saveCharacter();
 						}
-					} finally {
-						party.unlockWrite();
-					}
-					if (removeParty) {
-						activeLocalParties.remove(Integer.valueOf(partyId));
 					} else {
-						party.lockRead();
-						try {
-							for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
-								mem.getPlayer().getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
-						} finally {
-							party.unlockRead();
-						}
+						leaverName = packet.readLengthPrefixedString();
+						party.removePlayer(leaverCh, leaverId);
+					}
+				} finally {
+					party.unlockWrite();
+				}
+				if (removeParty) {
+					activeLocalParties.remove(Integer.valueOf(partyId));
+				} else {
+					party.lockRead();
+					try {
+						for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
+							mem.getPlayer().getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+					} finally {
+						party.unlockRead();
 					}
 				}
 				break;
@@ -1717,15 +1744,16 @@ public class InterChannelCommunication {
 				int partyId = packet.readInt();
 				int newLeader = packet.readInt();
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
-				if (party != null) {
-					party.setLeader(newLeader);
-					party.lockRead();
-					try {
-						for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
-							mem.getPlayer().getClient().getSession().send(GamePackets.writePartyChangeLeader(newLeader, false));
-					} finally {
-						party.unlockRead();
-					}
+				if (party == null)
+					return;
+
+				party.setLeader(newLeader);
+				party.lockRead();
+				try {
+					for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
+						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyChangeLeader(newLeader, false));
+				} finally {
+					party.unlockRead();
 				}
 				break;
 			}
@@ -1821,29 +1849,30 @@ public class InterChannelCommunication {
 				//TODO: not safe for activeLocalParties when members
 				//concurrently join or leave party, or enter or exit channel
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
-				if (party != null) {
-					boolean removeParty = false;
-					party.lockWrite();
-					try {
-						if (lastCh == self.getChannelId()) {
-							party.memberDisconnected(self.getPlayerById(exiterId));
-							removeParty = party.getMembersInLocalChannel().isEmpty();
-						} else {
-							party.memberDisconnected(lastCh, exiterId);
-						}
-					} finally {
-						party.unlockWrite();
+				if (party == null)
+					return;
+
+				boolean removeParty = false;
+				party.lockWrite();
+				try {
+					if (lastCh == self.getChannelId()) {
+						party.memberDisconnected(self.getPlayerById(exiterId));
+						removeParty = party.getMembersInLocalChannel().isEmpty();
+					} else {
+						party.memberDisconnected(lastCh, exiterId);
 					}
-					if (removeParty) {
-						activeLocalParties.remove(Integer.valueOf(partyId));
-					} else if (loggingOff) {
-						party.lockRead();
-						try {
-							for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
-								mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
-						} finally {
-							party.unlockRead();
-						}
+				} finally {
+					party.unlockWrite();
+				}
+				if (removeParty) {
+					activeLocalParties.remove(Integer.valueOf(partyId));
+				} else if (loggingOff) {
+					party.lockRead();
+					try {
+						for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
+							mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
+					} finally {
+						party.unlockRead();
 					}
 				}
 				break;
@@ -1853,23 +1882,24 @@ public class InterChannelCommunication {
 				int updatedPlayerId = packet.readInt();
 				byte updatedPlayerCh = packet.readByte();
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
-				if (party != null) {
-					party.lockRead();
-					try {
-						if (updatedPlayerCh != self.getChannelId()) {
-							boolean levelUpdated = packet.readBool();
-							short newValue = packet.readShort();
-							PartyList.RemoteMember member = party.getMember(updatedPlayerCh, updatedPlayerId);
-							if (levelUpdated)
-								member.setLevel(newValue);
-							else
-								member.setJob(newValue);
-						}
-						for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
-							mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
-					} finally {
-						party.unlockRead();
+				if (party == null)
+					return;
+
+				party.lockRead();
+				try {
+					if (updatedPlayerCh != self.getChannelId()) {
+						boolean levelUpdated = packet.readBool();
+						short newValue = packet.readShort();
+						PartyList.RemoteMember member = party.getMember(updatedPlayerCh, updatedPlayerId);
+						if (levelUpdated)
+							member.setLevel(newValue);
+						else
+							member.setJob(newValue);
 					}
+					for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
+						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
+				} finally {
+					party.unlockRead();
 				}
 				break;
 			}
@@ -1880,11 +1910,12 @@ public class InterChannelCommunication {
 		int roomId = packet.readInt();
 		int creatorId = packet.readInt();
 		GameCharacter p = self.getPlayerById(creatorId);
-		if (p != null) {
-			Chatroom room = new Chatroom(roomId, p);
-			localChatRooms.put(Integer.valueOf(roomId), room);
-			p.setChatRoom(room);
-		}
+		if (p == null)
+			return;
+
+		Chatroom room = new Chatroom(roomId, p);
+		localChatRooms.put(Integer.valueOf(roomId), room);
+		p.setChatRoom(room);
 	}
 
 	public void receivedChatroomAssignment(LittleEndianReader packet) {

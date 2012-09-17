@@ -2076,6 +2076,16 @@
 	* Each player doing a 2nd job advancement challenge now gets his own
 	instance of the map. events/change_job.js handles this for us.
 
+2012-09-xx  GoldenKevin  (revision 136)
+
+	* Refactoring to reduce nesting in InterChannelCommunication and
+	GameCenterPacketProcessor. Only methods in that class get large enough that
+	early out (return in methods, continue in loops) can significantly reduce
+	the maximum level of indentation compared to single-entry single-exit.
+	* Calls to CenterServer.getAllServersOfWorld in GameCenterPacketProcessor
+	moved to outer loop whenever applicable because repeatedly calling that in
+	an inner loop is more expensive than getting the other Collection.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
