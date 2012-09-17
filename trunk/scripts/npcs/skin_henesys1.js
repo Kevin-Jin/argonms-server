@@ -25,7 +25,7 @@
  * @author GoldenKevin (content from Vana r2111)
  */
 
-let skinColorChoices = [0, 1, 2, 3, 4];
+let skinColorChoices = npc.getAllSkinColors();
 
 npc.sayNext("Well, hello! Welcome to the Henesys Skin-Care! Would you like to have a firm, tight, healthy looking skin like mine?  With #b#t5153000##k, you can let us take care of the rest and have the kind of skin you've always wanted~!");
 let selection = npc.askAvatar("With our specialized machine, you can see yourself after the treatment in advance. What kind of skin-treatment would you like to do? Choose the style of your liking...", skinColorChoices);

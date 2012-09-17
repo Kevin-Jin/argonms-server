@@ -113,7 +113,7 @@ public class KvjItemDataLoader extends ItemDataLoader {
 			root = new File(dataPath + "Character.wz");
 			for (String cat : root.list()) {
 				File catFolder = new File(root.getAbsolutePath() + File.separatorChar + cat);
-				if (!cat.equals("Afterimage") && !cat.equals("Face") && !cat.equals("Hair")) {
+				if (!cat.equals("Afterimage") && !cat.equals("Face.kvj") && !cat.equals("Hair.kvj")) {
 					for (String kvj : catFolder.list()) {
 						int itemid = Integer.parseInt(kvj.substring(0, kvj.lastIndexOf(".img.kvj")));
 						doWork(itemid, new LittleEndianByteArrayReader(new File(catFolder.getAbsolutePath() + File.separatorChar + kvj)));

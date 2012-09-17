@@ -31,6 +31,7 @@ import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
 import argonms.common.util.TimeTool;
 import argonms.game.character.GameCharacter;
+import argonms.game.loading.beauty.BeautyDataLoader;
 import argonms.game.loading.map.MapDataLoader;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.npc.NpcDataLoader;
@@ -223,6 +224,7 @@ public class GameServer implements LocalServer {
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
 		StringDataLoader.setInstance(wzType, wzPath);
 		QuestDataLoader.setInstance(wzType, wzPath);
+		BeautyDataLoader.setInstance(wzType, wzPath);
 		SkillDataLoader.setInstance(wzType, wzPath);
 		ReactorDataLoader.setInstance(wzType, wzPath);
 		MobDataLoader.setInstance(wzType, wzPath);
@@ -240,6 +242,9 @@ public class GameServer implements LocalServer {
 		System.out.println("\tDone!");
 		System.out.print("Loading Quest data...");
 		QuestDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
+		System.out.print("Loading Beauty data...");
+		BeautyDataLoader.getInstance().loadAll();
 		System.out.println("\tDone!");
 		if (preloadAll) {
 			System.out.print("Loading Skill data...");

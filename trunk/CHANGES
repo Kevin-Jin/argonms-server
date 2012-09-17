@@ -2076,7 +2076,7 @@
 	* Each player doing a 2nd job advancement challenge now gets his own
 	instance of the map. events/change_job.js handles this for us.
 
-2012-09-xx  GoldenKevin  (revision 136)
+2012-09-16  GoldenKevin  (revision 136)
 
 	* Refactoring to reduce nesting in InterChannelCommunication and
 	GameCenterPacketProcessor. Only methods in that class get large enough that
@@ -2085,6 +2085,15 @@
 	* Calls to CenterServer.getAllServersOfWorld in GameCenterPacketProcessor
 	moved to outer loop whenever applicable because repeatedly calling that in
 	an inner loop is more expensive than getting the other Collection.
+
+2012-09-17  GoldenKevin  (revision 137)
+
+	* Support for the newest Kvj format.
+	* Stubs for remaining Henesys area NPCs.
+	* Stubs for several event NPCs.
+	* Added Florina Beach NPC.
+	* Added NimaKIN and KIN NPCs.
+	* Fixed any possibility of client crash when choosing new eyes or hair.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

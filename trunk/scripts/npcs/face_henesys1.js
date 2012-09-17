@@ -33,7 +33,8 @@ function getStyleChoices(gender, currentFace) {
 	else if (gender == 1)
 		styles = [21000, 21001, 21002, 21003, 21004, 21005, 21006, 21007, 21008, 21012, 21014];
 	for (let i = 0; i < styles.length; i++)
-		styles[i] += color; //eye style choice colors are current eye color
+		if (npc.isFaceValid(styles[i] + color)) //prefer current eye color
+			styles[i] += color;
 	return styles;
 }
 

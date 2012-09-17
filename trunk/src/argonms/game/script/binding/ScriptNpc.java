@@ -22,18 +22,24 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.loading.beauty.BeautyDataLoader;
 import argonms.game.loading.npc.NpcDataLoader;
 import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContinuationPending;
 import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 
 /**
@@ -415,6 +421,128 @@ public class ScriptNpc extends PlayerScriptInteraction {
 
 	public int getNpcId() {
 		return npcId;
+	}
+
+	public Object getAllSkinColors() {
+		return Context.javaToJS(new NativeArray(new Byte[] { 0, 1, 2, 3, 4 }), globalScope);
+	}
+
+	public Object getAllEyeStyles() {
+		//this method's pretty expensive with all the copying, but it should
+		//only be called by KIN in the GM map, so it's not going to be used often
+		Set<Short> faces = null;
+		if (getClient().getPlayer().getGender() == 0)
+			faces = BeautyDataLoader.getInstance().getMaleFaces();
+		else if (getClient().getPlayer().getGender() == 1)
+			faces = BeautyDataLoader.getInstance().getFemaleFaces();
+
+		short currentEyes = getClient().getPlayer().getEyes();
+		short color = (short) (currentEyes % 1000 - (currentEyes % 100));
+		//we need a Set first so we don't have duplicate styles when getting rid
+		//of the color digit. Needs to be LinkedHashSet so iteration order is
+		//insertion order, which is natural order because faces is a SortedSet's
+		//head/tail set.
+		Set<Short> styles = new LinkedHashSet<Short>();
+		for (Short s : faces) {
+			short style = (short) (s.shortValue() - s.shortValue() % 1000 + s.shortValue() % 100);
+			Short eyes = Short.valueOf((short) (style + color));
+			//some eyes don't allow certain colors, and will crash the client if
+			//you try to force one - check if our current eye color is allowed
+			if (faces.contains(eyes))
+				styles.add(eyes);
+			else
+				styles.add(Short.valueOf(style));
+		}
+
+		return Context.javaToJS(new NativeArray(styles.toArray(new Short[styles.size()])), globalScope);
+	}
+
+	public boolean isFaceValid(short face) {
+		if (getClient().getPlayer().getGender() == 0)
+			BeautyDataLoader.getInstance().getMaleFaces().contains(Short.valueOf(face));
+		else if (getClient().getPlayer().getGender() == 1)
+			BeautyDataLoader.getInstance().getFemaleFaces().contains(Short.valueOf(face));
+		return false;
+	}
+
+	public Object getAllEyeColors() {
+		Set<Short> faces = null;
+		if (getClient().getPlayer().getGender() == 0)
+			faces = BeautyDataLoader.getInstance().getMaleFaces();
+		else if (getClient().getPlayer().getGender() == 1)
+			faces = BeautyDataLoader.getInstance().getFemaleFaces();
+
+		short currentEyes = getClient().getPlayer().getEyes();
+		short style = (short) (currentEyes - currentEyes % 1000 + currentEyes % 100);
+		List<Short> colors = new ArrayList<Short>();
+		for (short i = 0; i < 10; i++) {
+			Short eyes = Short.valueOf((short) (style + i * 100));
+			//some eyes don't allow certain colors, and will crash the client if
+			//you try to force one
+			if (faces.contains(eyes))
+				colors.add(eyes);
+		}
+
+		return Context.javaToJS(new NativeArray(colors.toArray(new Short[colors.size()])), globalScope);
+	}
+
+	public Object getAllHairStyles() {
+		//this method's pretty expensive with all the copying, but it should
+		//only be called by KIN in the GM map, so it's not going to be used often
+		Set<Short> hairs = null;
+		if (getClient().getPlayer().getGender() == 0)
+			hairs = BeautyDataLoader.getInstance().getMaleHairs();
+		else if (getClient().getPlayer().getGender() == 1)
+			hairs = BeautyDataLoader.getInstance().getFemaleHairs();
+
+		short currentHair = getClient().getPlayer().getHair();
+		short color = (short) (currentHair % 10);
+		//we need a Set first so we don't have duplicate styles when getting rid
+		//of the color digit. Needs to be LinkedHashSet so iteration order is
+		//insertion order, which is natural order because hairs is a SortedSet's
+		//head/tail set.
+		Set<Short> styles = new LinkedHashSet<Short>();
+		for (Short s : hairs) {
+			short style = (short) (s.shortValue() - s.shortValue() % 10);
+			Short hair = Short.valueOf((short) (style + color));
+			//some hairs don't allow certain colors, and will crash the client
+			//if you try to force one - check if our current eye color is allowed
+			if (hairs.contains(hair))
+				styles.add(hair);
+			else
+				styles.add(Short.valueOf(style));
+		}
+
+		return Context.javaToJS(new NativeArray(styles.toArray(new Short[styles.size()])), globalScope);
+	}
+
+	public boolean isHairValid(short hair) {
+		if (getClient().getPlayer().getGender() == 0)
+			BeautyDataLoader.getInstance().getMaleHairs().contains(Short.valueOf(hair));
+		else if (getClient().getPlayer().getGender() == 1)
+			BeautyDataLoader.getInstance().getFemaleHairs().contains(Short.valueOf(hair));
+		return false;
+	}
+
+	public Object getAllHairColors() {
+		Set<Short> hairs = null;
+		if (getClient().getPlayer().getGender() == 0)
+			hairs = BeautyDataLoader.getInstance().getMaleHairs();
+		else if (getClient().getPlayer().getGender() == 1)
+			hairs = BeautyDataLoader.getInstance().getFemaleHairs();
+
+		short currentHair = getClient().getPlayer().getHair();
+		short style = (short) (currentHair - currentHair % 10);
+		List<Short> colors = new ArrayList<Short>();
+		for (short i = 0; i < 10; i++) {
+			Short hair = Short.valueOf((short) (style + i));
+			//some hairs don't allow certain colors, and will crash the client
+			//if you try to force one
+			if (hairs.contains(hair))
+				colors.add(hair);
+		}
+
+		return Context.javaToJS(new NativeArray(colors.toArray(new Short[colors.size()])), globalScope);
 	}
 
 	public void endConversation() {

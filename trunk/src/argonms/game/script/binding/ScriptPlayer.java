@@ -18,13 +18,16 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.UserPrivileges;
 import argonms.common.character.BuddyList;
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
 
@@ -210,6 +213,17 @@ public class ScriptPlayer {
 		getPlayer().setHp(newHp);
 	}
 
+	public boolean isGm() {
+		return getPlayer().getPrivilegeLevel() >= UserPrivileges.GM;
+	}
+
+	public void maxSkills() {
+		for (int skillid : Skills.ALL) {
+			byte masterLevel = SkillDataLoader.getInstance().getSkill(skillid).maxLevel();
+			getPlayer().setSkillLevel(skillid, masterLevel, masterLevel);
+		}
+	}
+
 	public void gainEquipInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.EQUIP).increaseCapacity(delta);
 		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.EQUIP, newCap));
@@ -226,6 +240,11 @@ public class ScriptPlayer {
 	}
 
 	public void gainEtcInventorySlots(short delta) {
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
+	}
+
+	public void gainCashInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
 		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
 	}
