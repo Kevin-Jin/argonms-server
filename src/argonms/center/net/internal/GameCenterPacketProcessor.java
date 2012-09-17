@@ -205,45 +205,47 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	private void processPartyDisbandment(LittleEndianReader packet) {
 		int partyId = packet.readInt();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
-		if (party != null) { //if there was lag, leader may have spammed leave button
-			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED);
-			party.lockRead();
-			try {
-				for (Byte channel : party.allChannels()) {
-					for (CenterGameInterface cgi : gameServers) {
-						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-							lew.writeByte(channel.byteValue());
-							lew.writeByte(InterServerPartyOps.DISBAND);
-							lew.writeInt(partyId);
-							cgi.getSession().send(lew.getBytes());
-						}
-					}
-				}
+		if (party == null) //if there was lag, leader may have spammed leave button
+			return;
 
-				//TODO: not safe if player is being concurrently loaded
-				Collection<Party.Member> offlineMembers = party.getMembersOfChannel(Party.OFFLINE_CH);
-				if (!offlineMembers.isEmpty()) {
-					Connection con = null;
-					PreparedStatement ps = null;
-					try {
-						con = DatabaseManager.getConnection(DatabaseType.STATE);
-						ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
-						for (Party.Member mem : offlineMembers) {
-							ps.setInt(1, mem.getPlayerId());
-							ps.addBatch();
-						}
-						ps.executeBatch();
-					} catch (SQLException ex) {
-						LOG.log(Level.WARNING, "Could not expel offline members from disbanded party " + partyId, ex);
-					} finally {
-						DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
-					}
+		party.lockRead();
+		try {
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (Byte channel : party.allChannels()) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.DISBAND);
+					lew.writeInt(partyId);
+					cgi.getSession().send(lew.getBytes());
 				}
-			} finally {
-				party.unlockRead();
 			}
+
+			//TODO: not safe if player is being concurrently loaded
+			Collection<Party.Member> offlineMembers = party.getMembersOfChannel(Party.OFFLINE_CH);
+			if (offlineMembers.isEmpty())
+				return;
+
+			Connection con = null;
+			PreparedStatement ps = null;
+			try {
+				con = DatabaseManager.getConnection(DatabaseType.STATE);
+				ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
+				for (Party.Member mem : offlineMembers) {
+					ps.setInt(1, mem.getPlayerId());
+					ps.addBatch();
+				}
+				ps.executeBatch();
+			} catch (SQLException ex) {
+				LOG.log(Level.WARNING, "Could not expel offline members from disbanded party " + partyId, ex);
+			} finally {
+				DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
+			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -254,64 +256,66 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		String leaverName = packet.readLengthPrefixedString();
 		boolean leaverExpelled = packet.readBool();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) { //if there was lag, party may have been disbanded before member clicked leave
-			boolean success;
-			party.lockWrite();
-			try {
-				success = party.removePlayer(leaverId);
-			} finally {
-				party.unlockWrite();
-			}
-			//if there was lag, member may have spammed leave button
-			if (success) {
-				party.lockRead();
-				try {
-					Set<Byte> partyChannels = party.allChannels();
-					if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
-						//make sure the leaving player saves himself to the
-						//database. otherwise if another player in the party
-						//logs on before he changes channels or logs off, he
-						//will still be loaded into the party list
-						CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
-					partyChannels = new HashSet<Byte>(partyChannels);
-					partyChannels.add(Byte.valueOf(leaverChannel));
-					for (Byte channel : partyChannels) {
-						for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-							if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-								LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(leaverChannel == channel.byteValue() ? 13 : (15 + leaverName.length()));
-								lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-								lew.writeByte(channel.byteValue());
-								lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
-								lew.writeInt(partyId);
-								lew.writeInt(leaverId);
-								lew.writeByte(leaverChannel);
-								lew.writeBool(leaverExpelled);
-								if (leaverChannel != channel.byteValue())
-									lew.writeLengthPrefixedString(leaverName);
-								cgi.getSession().send(lew.getBytes());
-							}
-						}
-					}
-				} finally {
-					party.unlockRead();
-				}
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
 
-				//TODO: not safe if player is being concurrently loaded
-				if (leaverChannel == Party.OFFLINE_CH) {
-					Connection con = null;
-					PreparedStatement ps = null;
-					try {
-						con = DatabaseManager.getConnection(DatabaseType.STATE);
-						ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
-						ps.setInt(1, leaverId);
-						ps.executeUpdate();
-					} catch (SQLException ex) {
-						LOG.log(Level.WARNING, "Could not expel offline member " + leaverName + " from party " + partyId, ex);
-					} finally {
-						DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
-					}
+		party.lockWrite();
+		try {
+			//if there was lag, member may have spammed leave button
+			if (!party.removePlayer(leaverId))
+				return;
+		} finally {
+			party.unlockWrite();
+		}
+
+		party.lockRead();
+		try {
+			Set<Byte> partyChannels = party.allChannels();
+			if (partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
+				//make sure the leaving player saves himself to the
+				//database. otherwise if another player in the party
+				//logs on before he changes channels or logs off, he
+				//will still be loaded into the party list
+				CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
+			partyChannels = new HashSet<Byte>(partyChannels);
+			partyChannels.add(Byte.valueOf(leaverChannel));
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (Byte channel : partyChannels) {
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(leaverChannel == channel.byteValue() ? 13 : (15 + leaverName.length()));
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
+					lew.writeInt(partyId);
+					lew.writeInt(leaverId);
+					lew.writeByte(leaverChannel);
+					lew.writeBool(leaverExpelled);
+					if (leaverChannel != channel.byteValue())
+						lew.writeLengthPrefixedString(leaverName);
+					cgi.getSession().send(lew.getBytes());
 				}
 			}
+		} finally {
+			party.unlockRead();
+		}
+
+		//TODO: not safe if player is being concurrently loaded
+		if (leaverChannel != Party.OFFLINE_CH)
+			return;
+
+		Connection con = null;
+		PreparedStatement ps = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("DELETE FROM `parties` WHERE `characterid` = ?");
+			ps.setInt(1, leaverId);
+			ps.executeUpdate();
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not expel offline member " + leaverName + " from party " + partyId, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
 		}
 	}
 
@@ -323,57 +327,59 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		short joinerJob = packet.readShort();
 		short joinerLevel = packet.readShort();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) { //if there was lag, party may have been disbanded before player clicked accept
-			boolean full;
-			party.lockWrite();
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
+
+		boolean full;
+		party.lockWrite();
+		try {
+			if (!party.isFull()) {
+				full = false;
+				party.addPlayer(new Party.Member(joinerId, joinerName, joinerJob, joinerLevel, joinerCh));
+			} else {
+				full = true;
+			}
+		} finally {
+			party.unlockWrite();
+		}
+		if (!full) {
+			party.lockRead();
 			try {
-				if (!party.isFull()) {
-					full = false;
-					party.addPlayer(new Party.Member(joinerId, joinerName, joinerJob, joinerLevel, joinerCh));
-				} else {
-					full = true;
+				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+					for (Byte channel : party.allChannels()) {
+						if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+							continue;
+
+						//notify other party members
+						LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(joinerCh == channel.byteValue() ? 12 : (18 + joinerName.length()));
+						lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+						lew.writeByte(channel.byteValue());
+						lew.writeByte(InterServerPartyOps.ADD_PLAYER);
+						lew.writeInt(partyId);
+						lew.writeInt(joinerId);
+						lew.writeByte(joinerCh);
+						//we don't need to send this information if the
+						//two are on the same channel
+						if (joinerCh != channel.byteValue()) {
+							lew.writeLengthPrefixedString(joinerName);
+							lew.writeShort(joinerJob);
+							lew.writeShort(joinerLevel);
+						}
+						cgi.getSession().send(lew.getBytes());
+					}
 				}
 			} finally {
-				party.unlockWrite();
+				party.unlockRead();
 			}
-			if (!full) {
-				party.lockRead();
-				try {
-					for (Byte channel : party.allChannels()) {
-						for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-							if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-								//notify other party members
-								LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(joinerCh == channel.byteValue() ? 12 : (18 + joinerName.length()));
-								lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-								lew.writeByte(channel.byteValue());
-								lew.writeByte(InterServerPartyOps.ADD_PLAYER);
-								lew.writeInt(partyId);
-								lew.writeInt(joinerId);
-								lew.writeByte(joinerCh);
-								//we don't need to send this information if the
-								//two are on the same channel
-								if (joinerCh != channel.byteValue()) {
-									lew.writeLengthPrefixedString(joinerName);
-									lew.writeShort(joinerJob);
-									lew.writeShort(joinerLevel);
-								}
-								cgi.getSession().send(lew.getBytes());
-							}
-						}
-					}
-				} finally {
-					party.unlockRead();
-				}
-			} else {
-				LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-				lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-				lew.writeByte(joinerCh);
-				lew.writeByte(InterServerPartyOps.JOIN_ERROR);
-				lew.writeInt(joinerId);
-				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED))
-					if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(joinerCh)))
-						cgi.getSession().send(lew.getBytes());
-			}
+		} else {
+			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+			lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+			lew.writeByte(joinerCh);
+			lew.writeByte(InterServerPartyOps.JOIN_ERROR);
+			lew.writeInt(joinerId);
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED))
+				if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(joinerCh)))
+					cgi.getSession().send(lew.getBytes());
 		}
 	}
 
@@ -381,28 +387,29 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int partyId = packet.readInt();
 		int newLeader = packet.readInt();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) { //if there was lag, party may have been disbanded before leader clicked Party Leader
-			party.setLeader(newLeader);
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
 
-			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED);
-			party.lockRead();
-			try {
+		party.setLeader(newLeader);
+
+		party.lockRead();
+		try {
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : party.allChannels()) {
-					for (CenterGameInterface cgi : gameServers) {
-						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
-							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-							lew.writeByte(channel.byteValue());
-							lew.writeByte(InterServerPartyOps.CHANGE_LEADER);
-							lew.writeInt(partyId);
-							lew.writeInt(newLeader);
-							cgi.getSession().send(lew.getBytes());
-						}
-					}
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.CHANGE_LEADER);
+					lew.writeInt(partyId);
+					lew.writeInt(newLeader);
+					cgi.getSession().send(lew.getBytes());
 				}
-			} finally {
-				party.unlockRead();
 			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -453,15 +460,17 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			Collection<Party.Member> members = party.getAllMembers();
 			lew.writeByte((byte) (members.size() - 1));
 			for (Party.Member member : members) {
-				if (member.getPlayerId() != excludePlayerId) {
-					lew.writeInt(member.getPlayerId());
-					lew.writeByte(member.getChannel());
-					if (member.getChannel() != responseCh) {
-						lew.writeLengthPrefixedString(member.getName());
-						lew.writeShort(member.getJob());
-						lew.writeShort(member.getLevel());
-					}
-				}
+				if (member.getPlayerId() == excludePlayerId)
+					continue;
+
+				lew.writeInt(member.getPlayerId());
+				lew.writeByte(member.getChannel());
+				if (member.getChannel() == responseCh)
+					continue;
+
+				lew.writeLengthPrefixedString(member.getName());
+				lew.writeShort(member.getJob());
+				lew.writeShort(member.getLevel());
 			}
 			r.getSession().send(lew.getBytes());
 		} finally {
@@ -474,33 +483,35 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int entererId = packet.readInt();
 		byte targetCh = packet.readByte();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) {
-			party.lockWrite();
-			try {
-				party.setMemberChannel(entererId, targetCh);
-			} finally {
-				party.unlockWrite();
-			}
-			party.lockRead();
-			try {
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
+
+		party.lockWrite();
+		try {
+			party.setMemberChannel(entererId, targetCh);
+		} finally {
+			party.unlockWrite();
+		}
+		party.lockRead();
+		try {
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : party.allChannels()) {
-					for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-							//notify other party members
-							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-							lew.writeByte(channel.byteValue());
-							lew.writeByte(InterServerPartyOps.MEMBER_CONNECTED);
-							lew.writeInt(partyId);
-							lew.writeInt(entererId);
-							lew.writeByte(targetCh);
-							cgi.getSession().send(lew.getBytes());
-						}
-					}
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					//notify other party members
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.MEMBER_CONNECTED);
+					lew.writeInt(partyId);
+					lew.writeInt(entererId);
+					lew.writeByte(targetCh);
+					cgi.getSession().send(lew.getBytes());
 				}
-			} finally {
-				party.unlockRead();
 			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -510,38 +521,40 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		byte lastCh = packet.readByte();
 		boolean loggingOff = packet.readBool();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) {
-			party.lockWrite();
-			try {
-				party.setMemberChannel(exiterId, Party.OFFLINE_CH);
-			} finally {
-				party.unlockWrite();
-			}
-			party.lockRead();
-			try {
-				Set<Byte> partyChannels = party.allChannels();
-				if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
-					CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
-				partyChannels = new HashSet<Byte>(partyChannels);
-				partyChannels.add(Byte.valueOf(lastCh));
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
+
+		party.lockWrite();
+		try {
+			party.setMemberChannel(exiterId, Party.OFFLINE_CH);
+		} finally {
+			party.unlockWrite();
+		}
+		party.lockRead();
+		try {
+			Set<Byte> partyChannels = party.allChannels();
+			if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
+				CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
+			partyChannels = new HashSet<Byte>(partyChannels);
+			partyChannels.add(Byte.valueOf(lastCh));
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : partyChannels) {
-					for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
-							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-							lew.writeByte(channel.byteValue());
-							lew.writeByte(InterServerPartyOps.MEMBER_DISCONNECTED);
-							lew.writeInt(partyId);
-							lew.writeInt(exiterId);
-							lew.writeByte(lastCh);
-							lew.writeBool(loggingOff);
-							cgi.getSession().send(lew.getBytes());
-						}
-					}
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.MEMBER_DISCONNECTED);
+					lew.writeInt(partyId);
+					lew.writeInt(exiterId);
+					lew.writeByte(lastCh);
+					lew.writeBool(loggingOff);
+					cgi.getSession().send(lew.getBytes());
 				}
-			} finally {
-				party.unlockRead();
 			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -553,34 +566,36 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		short newValue = packet.readShort();
 
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
-		if (party != null) {
-			party.lockRead();
-			try {
-				if (updateLevel)
-					party.getMember(updatedPlayerCh, updatedPlayerId).setLevel(newValue);
-				else
-					party.getMember(updatedPlayerCh, updatedPlayerId).setJob(newValue);
+		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
+			return;
+
+		party.lockRead();
+		try {
+			if (updateLevel)
+				party.getMember(updatedPlayerCh, updatedPlayerId).setLevel(newValue);
+			else
+				party.getMember(updatedPlayerCh, updatedPlayerId).setJob(newValue);
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : party.allChannels()) {
-					for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
-						if (cgi.isOnline() && cgi.getChannels().contains(channel)) {
-							LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(updatedPlayerCh == channel.byteValue() ? 12 : 15);
-							lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
-							lew.writeByte(channel.byteValue());
-							lew.writeByte(InterServerPartyOps.MEMBER_STAT_UPDATED);
-							lew.writeInt(partyId);
-							lew.writeInt(updatedPlayerId);
-							lew.writeByte(updatedPlayerCh);
-							if (updatedPlayerCh != channel.byteValue()) {
-								lew.writeBool(updateLevel);
-								lew.writeShort(newValue);
-							}
-							cgi.getSession().send(lew.getBytes());
-						}
+					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
+						continue;
+
+					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(updatedPlayerCh == channel.byteValue() ? 12 : 15);
+					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(channel.byteValue());
+					lew.writeByte(InterServerPartyOps.MEMBER_STAT_UPDATED);
+					lew.writeInt(partyId);
+					lew.writeInt(updatedPlayerId);
+					lew.writeByte(updatedPlayerCh);
+					if (updatedPlayerCh != channel.byteValue()) {
+						lew.writeBool(updateLevel);
+						lew.writeShort(newValue);
 					}
+					cgi.getSession().send(lew.getBytes());
 				}
-			} finally {
-				party.unlockRead();
 			}
+		} finally {
+			party.unlockRead();
 		}
 	}
 
@@ -654,22 +669,23 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			try {
 				for (byte i = 0; i < 3; i++) {
 					Chatroom.Avatar a = room.getPlayer(i);
-					if (position != i && a != null) {
-						lew.writeByte(a.getChannel());
-						lew.writeInt(a.getPlayerId());
-						lew.writeByte((byte) a.getEquips().size());
-						for (Map.Entry<Short, Integer> entry : a.getEquips().entrySet()) {
-							lew.writeShort(entry.getKey().shortValue());
-							lew.writeInt(entry.getValue().intValue());
-						}
-						lew.writeByte(a.getGender());
-						lew.writeByte(a.getSkin());
-						lew.writeInt(a.getEyes());
-						lew.writeInt(a.getHair());
-						lew.writeLengthPrefixedString(a.getName());
-					} else {
+					if (position == i || a == null) {
 						lew.writeByte((byte) 0);
+						continue;
 					}
+
+					lew.writeByte(a.getChannel());
+					lew.writeInt(a.getPlayerId());
+					lew.writeByte((byte) a.getEquips().size());
+					for (Map.Entry<Short, Integer> entry : a.getEquips().entrySet()) {
+						lew.writeShort(entry.getKey().shortValue());
+						lew.writeInt(entry.getValue().intValue());
+					}
+					lew.writeByte(a.getGender());
+					lew.writeByte(a.getSkin());
+					lew.writeInt(a.getEyes());
+					lew.writeInt(a.getHair());
+					lew.writeLengthPrefixedString(a.getName());
 				}
 			} finally {
 				room.unlockRead();
@@ -682,11 +698,12 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 		room.lockRead();
 		try {
+			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED);
 			for (Byte channel : room.allChannels()) {
 				if (channel.byteValue() == joinerCh)
 					continue;
 
-				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (CenterGameInterface cgi : gameServers) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
 						continue;
 
@@ -752,11 +769,12 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		boolean empty;
 		room.lockRead();
 		try {
+			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED);
 			for (Byte channel : room.allChannels()) {
 				if (channel.byteValue() == leaver.getChannel())
 					continue;
 
-				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (CenterGameInterface cgi : gameServers) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
 						continue;
 
@@ -821,22 +839,23 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			try {
 				for (byte i = 0; i < 3; i++) {
 					Chatroom.Avatar b = room.getPlayer(i);
-					if (pos != i && b != null) {
-						lew.writeByte(b.getChannel());
-						lew.writeInt(b.getPlayerId());
-						lew.writeByte((byte) b.getEquips().size());
-						for (Map.Entry<Short, Integer> entry : b.getEquips().entrySet()) {
-							lew.writeShort(entry.getKey().shortValue());
-							lew.writeInt(entry.getValue().intValue());
-						}
-						lew.writeByte(b.getGender());
-						lew.writeByte(b.getSkin());
-						lew.writeInt(b.getEyes());
-						lew.writeInt(b.getHair());
-						lew.writeLengthPrefixedString(b.getName());
-					} else {
+					if (pos == i || b == null) {
 						lew.writeByte((byte) 0);
+						continue;
 					}
+
+					lew.writeByte(b.getChannel());
+					lew.writeInt(b.getPlayerId());
+					lew.writeByte((byte) b.getEquips().size());
+					for (Map.Entry<Short, Integer> entry : b.getEquips().entrySet()) {
+						lew.writeShort(entry.getKey().shortValue());
+						lew.writeInt(entry.getValue().intValue());
+					}
+					lew.writeByte(b.getGender());
+					lew.writeByte(b.getSkin());
+					lew.writeInt(b.getEyes());
+					lew.writeInt(b.getHair());
+					lew.writeLengthPrefixedString(b.getName());
 				}
 			} finally {
 				room.unlockRead();
@@ -846,11 +865,12 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 		room.lockRead();
 		try {
+			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED);
 			for (Byte channel : room.allChannels()) {
 				if (channel.byteValue() == newChannel)
 					continue;
 
-				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (CenterGameInterface cgi : gameServers) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
 						continue;
 
@@ -919,8 +939,8 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 		room.lockRead();
 		try {
-			for (Byte channel : room.allChannels()) {
-				for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
+				for (Byte channel : room.allChannels()) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
 						continue;
 

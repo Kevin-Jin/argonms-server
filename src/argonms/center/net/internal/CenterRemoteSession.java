@@ -222,12 +222,13 @@ public class CenterRemoteSession implements Session {
 						List<CenterGameInterface> servers = CenterServer.getInstance().getAllServersOfWorld(world, serverId);
 						List<Byte> conflicts = new ArrayList<Byte>();
 						for (CenterGameInterface server : servers) {
-							if (!server.isShuttingDown()) {
-								for (int i = 0; i < channels.length; i++) {
-									Byte ch = Byte.valueOf(channels[i]);
-									if (server.getChannels().contains(ch))
-										conflicts.add(ch);
-								}
+							if (server.isShuttingDown())
+								continue;
+
+							for (int i = 0; i < channels.length; i++) {
+								Byte ch = Byte.valueOf(channels[i]);
+								if (server.getChannels().contains(ch))
+									conflicts.add(ch);
 							}
 						}
 						if (!conflicts.isEmpty()) {
@@ -260,7 +261,6 @@ public class CenterRemoteSession implements Session {
 		if (response != null) {
 			close(localError, null);
 			cri = null;
-			return;
 		}
 	}
 
