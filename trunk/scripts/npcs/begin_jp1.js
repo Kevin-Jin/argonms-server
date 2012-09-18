@@ -40,7 +40,6 @@ if (map == 0 || map == 3) {
 			player.changeMap(40000);
 		} else {
 			npc.sayNext("Please talk to me again when you finally made your decision.");
-			warpToTrainingCamp();
 		}
 	}
 } else if (map == 1) {

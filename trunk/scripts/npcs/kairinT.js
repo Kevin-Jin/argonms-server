@@ -89,7 +89,8 @@ function checkSecondJobAdvancementQuest() {
 }
 
 if (player.getJob() != 500 || player.getLevel() < 30 || !checkSecondJobAdvancementQuest()) {
-	let selection = npc.askMenu("Have you got something to say?\r\n#b#L0# I would like to learn more about pirates..#l");
+	let selection = npc.askMenu("Have you got something to say?\r\n#b"
+			+ "#L0# I would like to learn more about pirates..#l");
 	switch (selection) {
 		case 0:
 			if (player.getJob() == 0) {

@@ -24,7 +24,7 @@
  *
  * Teleports player from Lith Harbor to Ant Tunnel Park.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 npc.sayNext("Hi there! This cab is for VIP customers only. Instead of just taking you to different towns like the regular cabs, we offer a much better service worthy of VIP class. It's a bit pricey, but... for only 10,000 mesos, we'll take you safely to the #bant tunnel#k.");
@@ -45,5 +45,5 @@ if (selection == 1) {
 		npc.sayNext("It looks like you don't have enough mesos. Sorry but you won't be able to use this without it.");
 	}
 } else {
-	npc.sayNext("This town also has a lot to offer. Find us if and when you feel the need to go to the #m105070001#.");
+	npc.sayNext("This town also has a lot to offer. Find us if and when you feel the need to go to the ant tunnel park.");
 }

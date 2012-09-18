@@ -27,7 +27,7 @@
 
 /*let gqItems = [1032033, 4001024, 4001025, 4001026, 4001027, 4001028, 4001031, 4001032, 4001033, 4001034, 4001035, 4001037];
 
-let selection = npc.askMenu("The path to Sharenian starts here. What would you like to do? #b\r\n"
+let selection = npc.askMenu("The path to Sharenian starts here. What would you like to do? \r\n#b"
 		+ "#L0#Start a Guild Quest#l\r\n"
 		+ "#L1#Join your guild's Guild Quest#l");
 switch (selection) {

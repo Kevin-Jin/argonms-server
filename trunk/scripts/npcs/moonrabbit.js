@@ -29,7 +29,7 @@ switch (map.getId()) {
 	case 100000200: {
 		npc.sayNext("This is the #rPrimrose Hill#k. When there is a full moon the moon bunny comes to make rice cakes. Growlie wants rice cakes so you better go help him or he'll eat you.");
 		let selection = npc.askMenu("Would you like to go help Growlie?\r\n#b"
-				+ "#L0#Yes, I will go.#l#k");
+				+ "#L0#Yes, I will go.#l");
 		if (selection == 0) {
 			if (party == null) {
 				npc.say("You are not in a party.");

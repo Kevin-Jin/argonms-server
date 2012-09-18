@@ -26,12 +26,13 @@
  */
 
 let loop = true;
-let str = "We, the Union of Guilds, have been trying to decipher 'Emerald Tablet,' a treasured old relic, for a long time. As a result, we have found out that Sharenian, the mysterious country from the past, lay asleep here. We also found out that clues of #t4001024#, a legendary, mythical jewelry, may be here at the remains of Sharenian. This is why the Union of Guilds have opened Guild Quest to ultimately find #t4001024#.\r\n";
+let str = "We, the Union of Guilds, have been trying to decipher 'Emerald Tablet,' a treasured old relic, for a long time. As a result, we have found out that Sharenian, the mysterious country from the past, lay asleep here. We also found out that clues of #t4001024#, a legendary, mythical jewelry, may be here at the remains of Sharenian. This is why the Union of Guilds have opened Guild Quest to ultimately find #t4001024#.\r\n#b";
 while (loop) {
-	let selection = npc.askMenu(str + "#b#L0# What's Sharenian?#l \r\n"
-			+ "#b#L1# #t4001024#? What's that?#l\r\n"
-			+ "#b#L2# Guild Quest?#l\r\n"
-			+ "#b#L3# No, I'm fine now.#l");
+	let selection = npc.askMenu(str
+			+ "#L0# What's Sharenian?#l \r\n"
+			+ "#L1# #t4001024#? What's that?#l\r\n"
+			+ "#L2# Guild Quest?#l\r\n"
+			+ "#L3# No, I'm fine now.#l");
 	str = "Do you have any other questions?\r\n";
 
 	switch (selection) {

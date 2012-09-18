@@ -22,19 +22,19 @@
  *
  * Taxi NPC for Lith Harbor who also gives town advice for beginners.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 let taxiMaps = [102000000, 101000000, 100000000, 103000000, 120000000];
 let taxiFares = [1200, 1200, 800, 1000, 1000];
 
 npc.sayNext("Do you wanna head over to some other town? With a little money involved, I can make it happen. It's a tad expensive, but I run a special 90% discount for beginners.");
-let selection = npc.askMenu("It's understandable that you may be confused about this place if this is your first time around. If you got any questions about this place, fire away.\r\n#b"
+let selection = npc.askMenu("It's understable that you may be confused about this place if this is your first time around. If you got any questions about this place, fire away. #b\r\n"
 		+ "#L0#What kind of towns are here in Victoria Island?#l\r\n"
 		+ "#L1#Please take me somewhere else.#l#k");
 if (selection == 0) {
-	selection = npc.askMenu("There are 6 big towns here in Victoria Island. Which of those do you want to know more of?\r\n"
-			 + "#b#L0##m104000000##l\r\n"
+	selection = npc.askMenu("There are 6 big towns here in Victoria Island. Which of those do you want to know more of?\r\n#b"
+			 + "#L0##m104000000##l\r\n"
 			 + "#L1##m102000000##l\r\n"
 			 + "#L2##m101000000##l\r\n"
 			 + "#L3##m100000000##l\r\n"
@@ -49,7 +49,7 @@ if (selection == 0) {
 		case 1:
 			npc.sayNext("Alright I'll explain to you more about #b#m102000000##k. It's a warrior-town located at the northern-most part of Victoria Island, surrounded by rocky mountains. With an unfriendly atmosphere, only the strong survives there.");
 			npc.sayNext("Around the highland you'll find a really skinny tree, a wild hog running around the place, and monkeys that live all over the island. There's also a deep valley, and when you go deep into it, you'll find a humongous dragon with the power to match his size. Better go in there very carefully, or don't go at all.");
-			npc.sayNext("If you want to be a #bWarrior#k then find #r#p1022000##k, the chief of #m102000000#. If you're level 10 or higher, along with a good STR level, he may make you a warrior after all. If not, better keep training yourself until you reach that level.");
+			npc.sayNext("If you want to be a the #bWarrior#k then find #r#p1022000##k, the chief of #m102000000#. If you're level 10 or higher, along with a good STR level, he may make you a warrior afterall. If not, better keep training yourself until you reach that level.");
 			break;
 		case 2:
 			npc.sayNext("Alright I'll explain to you more about #b#m101000000##k. It's a magician-town located at the fart east of Victoria Island, and covered in tall, mystic trees. You'll find some fairies there, too; They don't like humans in general so it'll be best for you to be on their good side and stay quiet.");
@@ -59,12 +59,12 @@ if (selection == 0) {
 		case 3:
 			npc.sayNext("Alright I'll explain to you more about #b#m100000000##k. It's a bowman-town located at the southernmost part of the island, made on a flatland in the midst of a deep forest and prairies. The weather's just right, and everything is plentiful around that town, perfect for living. Go check it out.");
 			npc.sayNext("Around the prairie you'll find weak monsters such as snails, mushrooms, and pigs. According to what I hear, though, in the deepest part of the Pig Park, which is connected to the town somewhere, you'll find a humongous, powerful mushroom called Mushmom every now and then.");
-			npc.sayNext("If you want to be the #bBowman#k, you need to go see #r#p1012100##k at #m100000000#. With a level at or above 10 and a decent amount of DEX, she may make you be one after all. If not, go train yourself, make yourself stronger, then try again.");
+			npc.sayNext("If you want to be the #bBowman#k, you need to go see #r#p1012100##k at #m100000000#. With a level at or above 10 and a decent amount of DEX, she may make you be one afterall. If not, go train yourself, make yourself stronger, then try again.");
 			break;
 		case 4:
 			npc.sayNext("Alright I'll explain to you more about #b#m103000000##k. It's a thief-town located at the northwest part of Victoria Island, and there are buildings up there that have just this strange feeling around them. It's mostly covered in black clouds, but if you can go up to a really high place, you'll be able to see a very beautiful sunset there.");
 			npc.sayNext("From #m103000000#, you can go into several dungeons. You can go to a swamp where alligators and snakes are abound, or hit the subway full of ghosts and bats. At the deepest part of the underground, you'll find Lace, who is just as big and dangerous as a dragon.");
-			npc.sayNext("If you want to be the #bThief#k, seek #r#p1052001##k, the heart of darkness of #m103000000#. He may well make you a thief if you're at or above level 10 with a good amount of DEX. If not, go hunt and train yourself to reach there.");
+			npc.sayNext("If you want to be the #bThief#k, seek #r#p1052001##k, the heart of darkness of #m103000000#. He may well make you the thief if you're at or above level 10 with a good amount of DEX. If not, go hunt and train yourself to reach there.");
 			break;
 		case 5:
 			npc.sayNext("Alright I'll explain to you more about #b#m105040300##k. It's a forest town located at the southeast side of Victoria Island. It's pretty much in between #m100000000# and the ant-tunnel dungeon. There's a hotel there, so you can rest up after a long day at the dungeon ... it's a quiet town in general.");
@@ -97,6 +97,6 @@ if (selection == 0) {
 			npc.say("You don't have enough mesos. With your abilities, you should have more than that!");
 		}
 	} else if (selection == 0) {
-		npc.say("There's a lot to see in this town too. Let me know if you want to go somewhere else.");
+		npc.say("There's alot to see in this town too. Let me know if you want to go somewhere else.");
 	}
 }
