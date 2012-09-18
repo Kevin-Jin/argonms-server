@@ -31,9 +31,9 @@ let selection = npc.askMenu("Hey, you look like you need a breather from all tha
 		+ "#L0#Create a minigame item#l\r\n"
 		+ "#L1#Explain to me what the minigames are about#l");
 if (selection == 0) {
-	selection = npc.askMenu("You want to make the minigame item? Minigames aren't something you can just go ahead and play right off the bat. You'll need a specific set of items for a specific minigame. Which minigame item do you want to make?\r\n"
-			+ "#L0##bOmok Set#k#l\r\n"
-			+ "#L1##bA Set of Match Cards#k#l");
+	selection = npc.askMenu("You want to make the minigame item? Minigames aren't something you can just go ahead and play right off the bat. You'll need a specific set of items for a specific minigame. Which minigame item do you want to make?\r\n#b"
+			+ "#L0#Omok Set#l\r\n"
+			+ "#L1#A Set of Match Cards#l");
 	if (selection == 0) {
 		npc.sayNext("You want to play #bOmok#k, huh? To play it, you'll need the Omok Set. Only the ones with that item can open the room for a game of Omok, and you can play this game almost anywhere except for a few places at the market place.");
 		let sets = [4080000, 4080001, 4080002, 4080003, 4080004, 4080005];
@@ -60,9 +60,9 @@ if (selection == 0) {
 		}
 	}
 } else if (selection == 1) {
-	selection = npc.askMenu("You want to learn more about the minigames? Awesome! Ask me anything. Which minigame do you want to know more about?\r\n"
-			+ "#L0##bOmok#k#l\r\n"
-			+ "#L1##bMatch Cards#k#l");
+	selection = npc.askMenu("You want to learn more about the minigames? Awesome! Ask me anything. Which minigame do you want to know more about?\r\n#b"
+			+ "#L0#Omok#l\r\n"
+			+ "#L1#Match Cards#l");
 	if (selection == 0) {
 		npc.sayNext("Here are the rules to the game of Omok. Listen carefully. Omok is a game where, you and your opponent will take turns laying a piece on the table until someone finds a way to lay 5 consecutive pieces in a line, be it horizontal, diagonal or vertical. That person will be the winner. For starters, only the ones with #bOmok Set#k can open a game room.");
 		npc.sayNext("Every game of Omok will cost you #r100 mesos#k. Even if you don't have #bOmok set#k, you can enter the game room and play the game. If you don't have 100 mesos, however, then you won't be allowed in the room, period. The person opening the game room also needs 100 mesos to open the room, or there's no game. If you run out of mesos during the game, then you're automatically kicked out of the room!");

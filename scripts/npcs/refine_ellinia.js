@@ -90,12 +90,12 @@ let selection = npc.askYesNo("Do you want to take a look at some items? Well... 
 if (selection == 0) {
 	npc.sayNext("You don't trust my skills, I suppose... haha... you should know that I used to be a great wizard. You still can't believe my skills, huh... but just remember that I used to be the great magician of old...");
 } else if (selection == 1) {
-	selection = npc.askMenu("Alright ... it's for both of our own good, right? Choose what you want to do...\r\n"
-			+ "#L0##b Make a wand#l\r\n"
-			+ "#L1##b Make a staff#l\r\n"
-			+ "#L2##b Make a glove#l\r\n"
-			+ "#L3##b Upgrade a glove#l\r\n"
-			+ "#L4##b Upgrade a hat#l\r\n");
+	selection = npc.askMenu("Alright ... it's for both of our own good, right? Choose what you want to do...\r\n#b"
+			+ "#L0# Make a wand#l\r\n"
+			+ "#L1# Make a staff#l\r\n"
+			+ "#L2# Make a glove#l\r\n"
+			+ "#L3# Upgrade a glove#l\r\n"
+			+ "#L4# Upgrade a hat#l\r\n");
 	let itemids;
 	let itemreqs;
 	switch (selection) {

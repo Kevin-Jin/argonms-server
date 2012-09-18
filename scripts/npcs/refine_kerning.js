@@ -66,7 +66,7 @@ function confirm(giveCount, quantity, item, reqs) {
 	}
 }
 
-let selection = npc.askMenu("Pst... If you have the right goods, I can turn it into something niice...#b\r\n"
+let selection = npc.askMenu("Pst... If you have the right goods, I can turn it into something niice...\r\n#b"
 		+ "#L0# Create a glove#l\r\n"
 		+ "#L1# Upgrade a glove#l\r\n"
 		+ "#L2# Create a claw#l\r\n"
@@ -181,10 +181,10 @@ switch (selection) {
 			[4000018, 5],
 			[4011000, 1, 4011001, 1]
 		];
-		selection = npc.askMenu("Materials? I know of a few materials that I can make for you...\r\n"
-				+ "#L0##b Make #t" + itemids[0] + "# with #t" + itemreqs[0][0] + "##k\r\n"
-				+ "#L1##b Make #t" + itemids[1] + "# with #t" + itemreqs[1][0] + "##k\r\n"
-				+ "#L2##b Make #t" + itemids[2] + "#s (packs of " + itemcounts[2] + ")#k");
+		selection = npc.askMenu("Materials? I know of a few materials that I can make for you...\r\n#b"
+				+ "#L0# Make #t" + itemids[0] + "# with #t" + itemreqs[0][0] + "#\r\n"
+				+ "#L1# Make #t" + itemids[1] + "# with #t" + itemreqs[1][0] + "#\r\n"
+				+ "#L2# Make #t" + itemids[2] + "#s (packs of " + itemcounts[2] + ")");
 		let quantity = npc.askNumber("So, you want me to make some #t" + itemids[selection] + "#s? In that case, how many do you want me to make?", 1, 1, 100);
 		equip = false;
 		let item = itemids[selection];

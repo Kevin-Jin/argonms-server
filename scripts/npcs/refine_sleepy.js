@@ -62,10 +62,10 @@ function refineEquipMenuText(items, levels, jobs) {
 }
 
 let selection = npc.askMenu("Hello, I live here, but don't underestimate me. How about I help you by making you a new pair of shoes?\r\n#b"
-		+ "#L0##b Create a Warrior shoe#l\r\n"
-		+ "#L1##b Create a Bowman shoe#l\r\n"
-		+ "#L2##b Create a Magician shoe#l\r\n"
-		+ "#L3##b Create a Thief shoe#l\r\n");
+		+ "#L0# Create a Warrior shoe#l\r\n"
+		+ "#L1# Create a Bowman shoe#l\r\n"
+		+ "#L2# Create a Magician shoe#l\r\n"
+		+ "#L3# Create a Thief shoe#l\r\n");
 let selStr;
 let itemids;
 let itemreqs;

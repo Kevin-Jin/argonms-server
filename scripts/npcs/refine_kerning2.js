@@ -28,7 +28,7 @@
 
 let MESOS = 4031138;
 
-let selection = npc.askMenu("Yes, I do own this forge. If you're willing to pay, I can offer you some of my services.#b\r\n"
+let selection = npc.askMenu("Yes, I do own this forge. If you're willing to pay, I can offer you some of my services.\r\n#b"
 		+ "#L0# Refine a mineral ore#l\r\n"
 		+ "#L1# Refine a jewel ore#l\r\n"
 		+ "#L2# I have Iron Hog's Metal Hoof...#l\r\n"
@@ -50,9 +50,9 @@ switch (selection) {
 			[4010005, 10, MESOS, 500],
 			[4010006, 10, MESOS, 800]
 		];
-		str = "So, what kind of mineral ore would you like to refine?";
+		str = "So, what kind of mineral ore would you like to refine?#b";
 		for (let i = 0; i < itemids.length; i++)
-			str += ("\r\n#L" + i + "##b " + mineralnames[i] + "#k#l");
+			str += ("\r\n#L" + i + "# " + mineralnames[i] + "#l");
 		selection = npc.askMenu(str);
 
 		quantity = npc.askNumber("So, you want me to make some #t" + itemids[selection] + "#s? In that case, how many do you want me to make?", 1, 1, 100);
@@ -71,9 +71,9 @@ switch (selection) {
 			[4020007, 10, MESOS, 1000],
 			[4020008, 10, MESOS, 3000]
 		];
-		str = "So, what kind of jewel ore would you like to refine?";
+		str = "So, what kind of jewel ore would you like to refine?#b";
 		for (let i = 0; i < itemids.length; i++)
-			str += ("\r\n#L" + i + "##b #t" + itemids[i] + "##k#l");
+			str += ("\r\n#L" + i + "# #t" + itemids[i] + "##l");
 		selection = npc.askMenu(str);
 
 		quantity = npc.askNumber("So, you want me to make some #t" + itemids[selection] + "#s? In that case, how many do you want me to make?", 1, 1, 100);

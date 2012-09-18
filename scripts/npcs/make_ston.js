@@ -89,15 +89,15 @@ let reqset = [
 ];
 
 npc.sayNext("Alright, mix up the frog's tongue with the squirrel's tooth and ... oh yeah! Forgot to put in the sparkling white powder!! Man, that could have been really bad ... Whoa!! How long have you been standing there? I maaaay have been a little carried away with my work ... hehe.");
-let selection = npc.askMenu("As you can see, I'm just a traveling alchemist. I may be in training, but I can still make a few things that you may need. Do you want to take a look?\r\n\r\n"
-		+ "#L0##bMake Magic Rock#k#l\r\n"
-		+ "#L1##bMake The Summoning Rock#k#l");
+let selection = npc.askMenu("As you can see, I'm just a traveling alchemist. I may be in training, but I can still make a few things that you may need. Do you want to take a look?\r\n\r\n#b"
+		+ "#L0#Make Magic Rock#l\r\n"
+		+ "#L1#Make The Summoning Rock#l");
 let set = selection;
 let makeitem = makeitems[set];
-let str = "";
+let str = "Haha... #b#t" + makeitem + "##k is a mystical rock that only I can make. Many travelers seems to need this for most powerful skills that require more than just MP and HP. There are 5 ways to make #t" + makeitem + "#. Which way do you want to make it?#b";
 for (let i = 0; i < reqset[set].length; i++)
-	str += "\r\n#L" + i + "##bMake it using #t" + reqset[set][i][0][0] + "# and #t" + reqset[set][i][1][0] + "##k#l";
-selection = npc.askMenu("Haha... #b#t" + makeitem + "##k is a mystical rock that only I can make. Many travelers seems to need this for most powerful skills that require more than just MP and HP. There are 5 ways to make #t" + makeitem + "#. Which way do you want to make it?" + str);
+	str += "\r\n#L" + i + "#Make it using #t" + reqset[set][i][0][0] + "# and #t" + reqset[set][i][1][0] + "##l";
+selection = npc.askMenu(str);
 
 set = reqset[set][selection];
 let reqitem = [

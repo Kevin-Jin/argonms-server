@@ -34,12 +34,12 @@ function askQuestions() {
 				+ "#L3# #m101000000##l\r\n"
 				+ "#L4# #m103000000##l\r\n"
 				+ "#L5# #m105040300##l",
-		"Haha... that was just for practice. Ok, then... out of these people, choose the person that has nothing to do with the pets.\r\n"
-				+ "#b#L0# #p1032102##l\r\n"
+		"Haha... that was just for practice. Ok, then... out of these people, choose the person that has nothing to do with the pets.\r\n#b"
+				+ "#L0# #p1032102##l\r\n"
 				+ "#L1# #p1012005##l\r\n"
 				+ "#L2# #p1012101##l",
-		"Too easy, right? Ok, out of these descriptions about the pets, choose the one that does not make sense!\r\n"
-				+ "#b#L0#To name a pet, you need the pet-naming item to do so.#l\r\n"
+		"Too easy, right? Ok, out of these descriptions about the pets, choose the one that does not make sense!\r\n#b"
+				+ "#L0#To name a pet, you need the pet-naming item to do so.#l\r\n"
 				+ "#L1#When you give the pet a command, and it follows through, the intimacy level sometimes rises.#l\r\n"
 				+ "#L2#Starve the pet, and the intimacy level may go down.#l\r\n"
 				+ "#L3#Pets can attack the monster with its master.#k#l",
@@ -49,8 +49,8 @@ function askQuestions() {
 				+ "#L2##e3. #n#bLevel 15#k#l\r\n"
 				+ "#L3##e4. #n#bLevel 20#k#l",
 		"Last question! #p1012004# from #m100000000# sells\r\n"
-				+ "#t2120000#. How much fullness level does it raise?\r\n"
-				+ "#b#L0# 10#l\r\n"
+				+ "#t2120000#. How much fullness level does it raise?\r\n#b"
+				+ "#L0# 10#l\r\n"
 				+ "#L1# 20#l\r\n"
 				+ "#L2# 30#l\r\n"
 				+ "#L3# 40#l"
@@ -70,9 +70,9 @@ function askQuestions() {
 	return true;
 }
 
-let selection = npc.askMenu("Do you have any business with me?\r\n"
-		+ "#L0##bPlease tell me about this place.#l\r\n"
-		+ "#L1#I'm here through a word from Mar the Fairy...#k#l");
+let selection = npc.askMenu("Do you have any business with me?\r\n#b"
+		+ "#L0#Please tell me about this place.#l\r\n"
+		+ "#L1#I'm here through a word from Mar the Fairy...#l");
 switch (selection) {
 	case 0:
 		if (player.hasItem(4031035, 1)) {

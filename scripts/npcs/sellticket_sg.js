@@ -42,9 +42,9 @@ function admit(str, map) {
 	}
 }
 
-let selection = npc.askMenu("Hello there~ I am #p" + npc.getNpcId() + "# from Singapore Airport. I was transferred to #m103000000# to celebrate new opening of our service! How can I help you?\r\n"
-		+ "#L0##bI would like to buy a plane ticket to Singapore#k#l\r\n"
-		+ "#L1##bLet me go in to the departure point.#k#l");
+let selection = npc.askMenu("Hello there~ I am #p" + npc.getNpcId() + "# from Singapore Airport. I was transferred to #m103000000# to celebrate new opening of our service! How can I help you?\r\n#b"
+		+ "#L0#I would like to buy a plane ticket to Singapore#l\r\n"
+		+ "#L1#Let me go in to the departure point.#l");
 switch (selection) {
 	case 0:
 		selection = npc.askYesNo("The ticket will cost you " + COST + " mesos. Will you purchase the ticket?");

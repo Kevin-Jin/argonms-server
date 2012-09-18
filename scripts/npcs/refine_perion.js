@@ -30,7 +30,7 @@ let MESOS = 4031138;
 
 function refinePrompt(str, itemids, itemreqs) {
 	for (let i = 0; i < itemids.length; i++)
-		str += ("\r\n#L" + i + "##b #t" + itemids[i] + "##k#l");
+		str += ("\r\n#L" + i + "# #t" + itemids[i] + "##l");
 	let selection = npc.askMenu(str);
 
 	let item = itemids[selection];
@@ -125,7 +125,7 @@ if (selection == 0) {
 				[4010005, 10, MESOS, 500],
 				[4010006, 10, MESOS, 800]
 			];
-			[selection, quantity] = refinePrompt("Which mineral do you want to make?", itemids, itemreqs);
+			[selection, quantity] = refinePrompt("Which mineral do you want to make?#b", itemids, itemreqs);
 			equip = false;
 			break;
 		case 1:
@@ -141,7 +141,7 @@ if (selection == 0) {
 				[4020007, 10, MESOS, 1000],
 				[4020008, 10, MESOS, 3000]
 			];
-			[selection, quantity] = refinePrompt("Which jewel do you want to refine?", itemids, itemreqs);
+			[selection, quantity] = refinePrompt("Which jewel do you want to refine?#b", itemids, itemreqs);
 			equip = false;
 			break;
 		case 2:

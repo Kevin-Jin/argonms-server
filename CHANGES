@@ -2112,6 +2112,11 @@
 	instead of r2111 if applicable (cny no longer exist in r3171, so it is left
 	as r2111).
 
+2012-09-18  GoldenKevin  (revision 140)
+
+	* Fixed begin_jp1.js.
+	* Script formatting changes I missed last revision.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

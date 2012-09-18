@@ -143,10 +143,10 @@ if (selection == 0) {
 				[4000018, 5],
 				[4011000, 1, 4011001, 1]
 			];
-			selection = npc.askMenu("So you want to make some materials, huh? Okay...what kind of materials do you want to make?\r\n"
-					+ "#L0##bMake #t4003001# with #t4000003##k#l\r\n"
-					+ "#L1##bMake #t4003001# with #t4000018##k#l\r\n"
-					+ "#L2##bMake #t4003000#s#k#l");
+			selection = npc.askMenu("So you want to make some materials, huh? Okay...what kind of materials do you want to make?\r\n#b"
+					+ "#L0#Make #t4003001# with #t4000003##l\r\n"
+					+ "#L1#Make #t4003001# with #t4000018##l\r\n"
+					+ "#L2#Make #t4003000#s#l");
 
 			let str;
 			switch (selection) {

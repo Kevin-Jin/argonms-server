@@ -26,7 +26,7 @@
  */
 
 npc.sayNext("Hmm... are you raising one of my kids by any chance? I perfected a spell that uses Water of Life to blow life into a doll. People call it the #bPet#k. If you have one with you, feel free to ask me questions.");
-let selection = npc.askMenu("What do you want to know more of?#b\r\n"
+let selection = npc.askMenu("What do you want to know more of?\r\n#b"
 		+ "#L0#Tell me more about Pets.#l\r\n"
 		+ "#L1#How do I raise Pets?#l\r\n"
 		+ "#L2#Do Pets die too?#l\r\n"

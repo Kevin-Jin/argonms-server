@@ -52,8 +52,8 @@ if (player.getLevel() >= 20 && player.getLevel() <= 30) {
 			str = "Are you interested in participating in The Ariant Coliseum Challenge?!";
 			break;
 	}
-	let selection = npc.askMenu(str + "\r\n"
-			+ "#b#L0# I'd love to participate in this great competition.#l");
+	let selection = npc.askMenu(str + "\r\n#b"
+			+ "#L0# I'd love to participate in this great competition.#l");
 	switch (selection) {
 		case 0:
 			npc.sayNext("Okay, now I'll send you to the battle arena. I'd like to see you emerge victorious!");
