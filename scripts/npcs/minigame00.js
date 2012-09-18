@@ -17,8 +17,10 @@
  */
 
 /**
- * Casey: Master of MiniGame (NPC 1012008)
- * Victoria Road: Henesys Game Park (Map 100000203)
+ * Casey: Master of MiniGame (NPC 1012008),
+ *   Chico: Master of MiniGame (NPC 2040014)
+ * Victoria Road: Henesys Game Park (Map 100000203),
+ *   Ludibrium: Ludibrium Village (Map 220000300)
  *
  * Creates minigame items and gives info on them.
  *

@@ -17,7 +17,11 @@
  */
 
 /**
- * Bush (NPC 1094002)
+ * Bush (NPC 1094002),
+ *   Bush (NPC 1094003),
+ *   Bush (NPC 1094004),
+ *   Bush (NPC 1094005),
+ *   Bush (NPC 1094006)
  * Victoria Road: Nautilus Harbor (Map 120000000)
  *
  * Advances Help Me Find My Glasses (Quest 2186).

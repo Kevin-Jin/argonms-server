@@ -20,21 +20,9 @@
  * Nana(E): Love Fairy (NPC 9201024)
  * Victoria Road: Ellinia (Map 101000000)
  *
- * Barters soft feathers for a proof of love.
+ * Gives tips for weddings.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from DelphiMS r418)
  */
 
-//TODO: implement marriage quest (?)
-//if (npc.getPlayerMarriageQuestLevel() != 1 && npc.getPlayerMarriageQuestLevel() != 52) {
-	npc.say("Hi, I'm Nana the love fairy... Hows it going?");
-/*} else {
-	if (!player.hasItem(4003005, 20)) {
-		npc.sayNext("Hey, you look like you need Proofs of Love? I can get them for you.");
-		npc.sayNext("All you have to do is bring me 20 #b#t4003005#s#k.");
-	} else {
-		npc.sayNext("Wow, you were quick! Here's the #t4031368#...");
-		player.loseItem(4003005, 20)
-		player.gainItem(4031368, 1);
-	}
-}*/
+npc.sayNext("Nice to meet you! I am Nana the Fairy from Amoria. I am waiting for you to prove your devotion to your loved one by obtaining a Proof of Love! To start, you'll have to venture to Amoria to find my good friend, Moony the Ringmaker. Even if you are not interested in marriage yet, Amoria is open for everyone! Go visit Thomas Swift at Henesys to head to Amoria. If you are interested in weddings, be sure to speak with Ames the Wise once you get there!");

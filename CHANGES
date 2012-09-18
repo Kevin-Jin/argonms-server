@@ -2100,6 +2100,18 @@
 	* Added remaining Nautilus Harbor NPCs to complete Victoria Island NPC
 	scripts.
 
+2012-09-18  GoldenKevin  (revision 139)
+
+	* Updated some NPC scripts after consulting DelphiMS scripts.
+	* Updated several scripts so they are based on the more accurate Vana
+	scripts rather than those from KiniroMS.
+	* Updated some scripts that multiple NPCs share.
+	* Added a missing Maple Island script. Peter (NPC 2002) is also in the WZ
+	files, but v0.62 doesn't have Mushroom Town so I didn't include him.
+	* Vana consulted scripts have their documentation changed to read r3171
+	instead of r2111 if applicable (cny no longer exist in r3171, so it is left
+	as r2111).
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

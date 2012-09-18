@@ -23,7 +23,7 @@
  * Taxi NPC for Perion. Teleports players from Perion to other Victoria Island
  * towns.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 let taxiMaps = [104000000, 101000000, 103000000, 100000000, 120000000];

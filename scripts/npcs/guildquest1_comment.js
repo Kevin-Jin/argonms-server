@@ -22,7 +22,7 @@
  *
  * Gives background info on the guild quest.
  *
- * @author GoldenKevin (content from <choose one (Vana r3171|Vana r2111|KiniroMS r227)>)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 let loop = true;

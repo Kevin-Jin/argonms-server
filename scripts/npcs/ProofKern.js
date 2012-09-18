@@ -22,21 +22,9 @@
  *   Singapore: CBD (Map 540000000),
  *   Singapore: Boat Quay Town (Map 541000000)
  *
- * Barters horned mushroom caps for a proof of love.
+ * Gives tips for weddings.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from DelphiMS r418)
  */
 
-//TODO: implement marriage quest (?)
-//if (npc.getPlayerMarriageQuestLevel() != 1 && npc.getPlayerMarriageQuestLevel() != 52) {
-	npc.say("Hi, I'm Nana the love fairy... Hows it going?");
-/*} else {
-	if (!player.hasItem(4000015, 40)) {
-		npc.sayNext("Hey, you look like you need Proofs of Love? I can get them for you.");
-		npc.sayNext("All you have to do is bring me 40 #b#t4000015#s#k.");
-	} else {
-		npc.sayNext("Wow, you were quick! Here's the #t4031367#...");
-		player.loseItem(4000015, 40)
-		player.gainItem(4031367, 1);
-	}
-}*/
+npc.sayNext("Nice to meet you! I am Nana the Fairy from Amoria. I am waiting for you to prove your devotion to your loved one by obtaining a Proof of Love! To start, you'll have to venture to Amoria to find my good friend Moony the Ringmaker. Even if you are not interested in marriage yet, Amoria is open for everyone! Go visit Thomas Swift at Henesys to head to Amoria. If you are interested in weddings, be sure to speak with Ames the Wise once you get there!");

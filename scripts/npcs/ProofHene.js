@@ -20,7 +20,7 @@
  * Nana(H): Love Fairy (NPC 9201001)
  * Victoria Road: Henesys (Map 100000000)
  *
- * Gives tips for marriage.
+ * Gives tips for weddings.
  *
  * @author GoldenKevin (content from Vana r3171)
  */

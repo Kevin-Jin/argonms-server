@@ -20,9 +20,9 @@
  * Vikin (NPC 9000009)
  * Victoria Road: Lith Harbor (Map 104000000)
  *
- * Related to Pirate's Map quest.
+ * Related to Pirate's Map (Quest 3814).
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 npc.say("Hey hey!!! Find the #t4031018#! I lost the map somewhere and I can't leave without it.");
