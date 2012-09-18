@@ -23,7 +23,7 @@
  * Taxi NPC for Ellinia. Teleports players from Ellinia to other Victoria Island
  * towns.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 let taxiMaps = [104000000, 102000000, 103000000, 100000000, 120000000];

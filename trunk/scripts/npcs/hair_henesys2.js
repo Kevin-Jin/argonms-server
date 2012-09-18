@@ -22,7 +22,7 @@
  *
  * Henesys hair changer - random hair.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 function getRandomStyle(gender, currentHair) {

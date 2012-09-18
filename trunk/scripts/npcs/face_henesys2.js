@@ -22,7 +22,7 @@
  *
  * Henesys face changer - random face, eye style only.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 function getRandomStyle(gender, currentFace) {
@@ -43,7 +43,7 @@ if (selection == 1) {
 	if (player.hasItem(5152000, 1)) {
 		player.loseItem(5152000, 1);
 		player.setFace(getRandomStyle(player.getGender(), player.getFace()));
-		npc.say("Enjoy!");
+		npc.sayNext("Enjoy!");
 	} else {
 		npc.sayNext("Hmm ... it looks like you don't have the coupon specifically for this place. Sorry to say this, but without the coupon, there's no plastic surgery for you.");
 	}

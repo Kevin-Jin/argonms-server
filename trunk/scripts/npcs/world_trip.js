@@ -35,7 +35,7 @@
  *
  * Teleports player from many towns to Zipangu, and back.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 if (map.getId() == 800000000) {

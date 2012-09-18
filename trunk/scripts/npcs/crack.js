@@ -25,4 +25,5 @@
  * @author GoldenKevin
  */
 
-//TODO: start event instance map
+//TODO: chat from http://trac.assembla.com/DelphiMS/browser/bin/Scripts/NPC/bowman.ds
+//need to implement player variables.

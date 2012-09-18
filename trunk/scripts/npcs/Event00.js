@@ -18,13 +18,18 @@
 
 /**
  * Paul: Event Assistant (NPC 9000000),
- *   Jean: Event Assistant (NPC 9000001)
+ *   Jean: Event Assistant (NPC 9000001),
+ *   Martin: Event Assistant (NPC 9000011),
+ *   Tony: Event Assistant (NPC 9000013)
  * Maple Road: Southperry (Map 60000),
- *   Victoria Road: Lith Harbor (Map 104000000)
+ *   Victoria Road: Lith Harbor (Map 104000000),
+ *   Singapore: Boat Quay Town (Map 541000000),
+ *   Orbis: Orbis (Map 200000000),
+ *   Ludibrium: Ludibrium (Map 220000000)
  *
  * Maple Anniversary event assistants.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 let str;
@@ -38,6 +43,16 @@ switch (npc.getNpcId()) {
 		npc.sayNext("Hmm... what should I do? The event will start, soon... many people went to participate in the event, so we better be hurry...");
 		str = "Hey... why don't you go with me? I think my brother will come with other people.";
 		break;
+	case 9000011:
+		npc.sayNext("Hey, I'm #b#p9000011##k. I am waiting for my brothers... What takes them so long? I got bored now... If we do not get there on time, we might not be able to participate in the event...");
+		npc.sayNext("Hmm... What should I do? The event will start, soon... Many people went to participate in the event, so we better be hurry...");
+		str = "Hey... why don't you go with me, then?";
+		break;
+	case 9000013:
+		npc.sayNext("Hey, I'm #b#p9000013##k. I've been waiting for my brothers for a while, but they haven't gotten here yet. I'm sick and tired of doing things by myself. At least during the event, I don't feel quite so lonely with so many people around me and all. All events require a limited number of people, so if I don't get there fast enough, I won't be able to join.");
+		npc.sayNext("We may be cousins and all, but we keep on missing each other. Man, what should I do? The event should start any minute ... A lot of people should be there waiting, and there may not be any space for them ...");
+		str = "What do you think? Do you want to join me and head over to the event?";
+		break;
 }
 let selection = npc.askMenu(str + "\r\n"
 		+ "#L0##e1. #n#bWhat kind of an event is it?#k#l\r\n"
@@ -49,8 +64,8 @@ switch (selection) {
 		npc.sayNext("All this month MapleStory Global is celebrating its 1st anniversary! The GM's will be holding surprise GM Events throughout the event, so stay on your toes and make sure to participate in at least one of the events for great prizes!");
 		break;
 	case 1:
-		selection = npc.askMenu("There are many games for this event. It will help you a lot to know how to play the game before you play it. Choose the one you want to know more of!\r\n"
-				+ "#b#L0# Ola Ola#l\r\n"
+		selection = npc.askMenu("There are many games for this event. It will help you a lot to know how to play the game before you play it. Choose the one you want to know more of!\r\n#b"
+				+ "#L0# Ola Ola#l\r\n"
 				+ "#L1# MapleStory Maple Physical Fitness Test#l\r\n"
 				+ "#L2# Snow Ball#l\r\n"
 				+ "#L3# Coconut Harvest#l\r\n"

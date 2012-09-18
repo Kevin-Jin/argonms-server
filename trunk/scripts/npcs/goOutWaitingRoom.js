@@ -17,17 +17,58 @@
  */
 
 /**
- * Purin: Crewmember (NPC 1032009)
- * Victoria Road: Before Takeoff <To Orbis> (Map 101000301)
+ * Purin: Crewmember (NPC 1032009),
+ *   Erin: Crewmember (NPC 2012002),
+ *   Pelace: Crewmember (NPC 2012022),
+ *   Egnet: Crew (NPC 2012024),
+ *   Rosey: Crewmember (NPC 2041001),
+ *   Harry: Crewmember (NPC 2082002),
+ *   Slyn: Crew (NPC 2102001)
+ * Victoria Road: Before Takeoff <To Orbis> (Map 101000301),
+ *   Orbis: Before Takeoff <To Ellinia> (Map 200000112),
+ *   Orbis: Cabin <To Leafre> (Map 200000132),
+ *   Orbis: Station <To Ariant> (Map 200000152),
+ *   Orbis: Before the Departure <Ludibrium> (Map 200000122),
+ *   Ludibrium: Before the Departure <Orbis> (Map 220000111),
+ *   Leafre: Before Takeoff <To Orbis> (Map 240000111),
+ *   Ariant: Before Takeoff <To Orbis> (Map 260000110)
  *
- * Teleports player out of waiting room on the boat to Orbis
+ * Teleports player out of waiting rooms for transportation between continents
+ * back to stations.
  *
  * @author GoldenKevin (content from Vana r3171)
  */
 
 let selection = npc.askYesNo("Do you want to leave the waiting room? You can, but the ticket is NOT refundable. Are you sure you still want to leave this room?");
 if (selection == 1) {
-	player.changeMap(101000300);
+	let toMap;
+	switch (map.getId()) {
+		case 101000301:
+			toMap = 101000300;
+			break;
+		case 200000112:
+			toMap = 200000100;
+			break;
+		case 200000122:
+			toMap = 200000100;
+			break;
+		case 200000132:
+			toMap = 200000100;
+			break;
+		case 200000152:
+			toMap = 200000100;
+			break;
+		case 220000111:
+			toMap = 220000100;
+			break;
+		case 240000111:
+			toMap = 240000100;
+			break;
+		case 260000110:
+			toMap = 260000100;
+			break;
+	}
+	player.changeMap(toMap);
 } else if (selection == 0) {
 	npc.sayNext("You'll get to your destination in a few. Go ahead and talk to other people, and before you know it, you'll be there already.");
 }

@@ -17,42 +17,61 @@
  */
 
 /**
- * Cherry: Ticketing Usher (NPC 1032008)
- * Victoria Road: Ellinia Station (Map 101000300)
+ * Cherry: Ticketing Usher (NPC 1032008),
+ *   Rini: Ticketing Usher (NPC 2012001),
+ *   Sunny: Ticketing Usher (NPC 2012013),
+ *   Ramini: Crewmember (NPC 2012021),
+ *   Geras: Crew (NPC 2012025),
+ *   Tian: Ticketing Usher (NPC 2041000),
+ *   Tommie: Crewmember (NPC 2082001),
+ *   Asesson: Crew (NPC 2102000)
+ * Victoria Road: Ellinia Station (Map 101000300),
+ *   Orbis: Station<To Ellinia> (Map 200000111),
+ *   Orbis: Station<Ludibrium> (Map 200000121),
+ *   Orbis: Cabin <To Leafre> (Map 200000131),
+ *   Orbis: Station <To Ariant> (Map 200000151),
+ *   Ludibrium: Station<Orbis> (Map 220000110),
+ *   Leafre: Cabin <To Orbis> (Map 240000110),
+ *   Ariant: Ariant Station Platform (Map 260000100)
  *
- * Teleports player from Ellinia Station to the waiting room on
- * the boat to Orbis.
+ * Teleports player from stations to waiting rooms for transportation between
+ * continents.
  *
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-let event = npc.getEvent("ship_ossyria");
-if (event == null) {
-	let selection = npc.askYesNo("It looks like there's a problem with the boat to Orbis. I could instead warp you straight there as long as you have the original ticket you bought for the trip. Would you like to go straight to Orbis? Strong monsters and a whole new world of adventures await you there.");
-	if (selection == 0) {
-		npc.sayNext("You must have some business to take care of here, right?");
-	} else {
-		if (!player.hasItem(4031045, 1)) {
-			npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
+let event;
+switch (map.getId()) {
+	case 101000300:
+		event = npc.getEvent("ship_ossyria");
+		if (event == null) {
+			let selection = npc.askYesNo("It looks like there's a problem with the boat to Orbis. I could instead warp you straight there as long as you have the original ticket you bought for the trip. Would you like to go straight to Orbis? Strong monsters and a whole new world of adventures await you there.");
+			if (selection == 0) {
+				npc.sayNext("You must have some business to take care of here, right?");
+			} else {
+				if (!player.hasItem(4031045, 1)) {
+					npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
+				} else {
+					player.loseItem(4031045, 1);
+					player.changeMap(200000100);
+				}
+			}
+		} else if (event.getVariable("board")) {
+			let selection = npc.askYesNo("This will not be a short flight, so if you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the ship?");
+			if (selection == 0) {
+				npc.sayNext("You must have some business to take care of here, right?");
+			} else {
+				if (!player.hasItem(4031045, 1)) {
+					npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
+				} else {
+					player.loseItem(4031045, 1);
+					player.changeMap(101000301);
+				}
+			}
+		} else if (event.getVariable("0docked")) {
+			npc.sayNext("The ship is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the usher at the ticketing booth.");
 		} else {
-			player.loseItem(4031045, 1);
-			player.changeMap(200000100);
+			npc.sayNext("We will begin boarding 5 minutes before the takeoff. Please be patient and wait for a few minutes. Be aware that the ship will take off on time, and we stop receiving tickets 1 minute before that, so please make sure to be here on time.");
 		}
-	}
-} else if (event.getVariable("board")) {
-	let selection = npc.askYesNo("This will not be a short flight, so if you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the ship?");
-	if (selection == 0) {
-		npc.sayNext("You must have some business to take care of here, right?");
-	} else {
-		if (!player.hasItem(4031045, 1)) {
-			npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
-		} else {
-			player.loseItem(4031045, 1);
-			player.changeMap(101000301);
-		}
-	}
-} else if (event.getVariable("0docked")) {
-	npc.sayNext("The ship is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the usher at the ticketing booth.");
-} else {
-	npc.sayNext("We will begin boarding 5 minutes before the takeoff. Please be patient and wait for a few minutes. Be aware that the ship will take off on time, and we stop receiving tickets 1 minute before that, so please make sure to be here on time.");
+		break;
 }

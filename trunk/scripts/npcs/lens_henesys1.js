@@ -22,7 +22,7 @@
  *
  * Henesys face changer - eye color only.
  *
- * @author GoldenKevin (content from Vana r2111)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
 function getRandomColor() {

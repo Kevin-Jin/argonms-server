@@ -23,10 +23,9 @@
  * Teleports players from the Training Camp exit to the road to
  * Mushroom Town.
  *
- * @author GoldenKevin (content from KiniroMS r227)
+ * @author GoldenKevin (content from Vana r3171)
  */
 
-npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good, I will let you move on to the next place.");
+npc.sayNext("You have finished all your trainings. Good job. You seem to be ready to start with the journey right away! Good , I will let you on to the next place.");
 npc.sayNext("But remember, once you get out of here, you will enter a village full with monsters. Well them, good bye!");
 player.changeMap(40000);
-player.gainExp(3);

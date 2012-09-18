@@ -17,8 +17,12 @@
  */
 
 /**
- * Pason: Tour Guide (NPC 1002002)
- * Victoria Road: Lith Harbor (Map 104000000)
+ * Pason: Tour Guide (NPC 1002002),
+ *   Shuri: Tour Guide (NPC 2010005),
+ *   Nara: Tour Guide (NPC 2040048)
+ * Victoria Road: Lith Harbor (Map 104000000),
+ *   Orbis: Orbis (Map 200000000),
+ *   Ludibrium: Ludibrium (Map 220000000)
  *
  * Teleports player from Lith Harbor to Florina Beach.
  *
