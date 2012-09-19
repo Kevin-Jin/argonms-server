@@ -46,14 +46,17 @@ import java.util.logging.Logger;
  * This implementation employs an efficient single-threaded algorithm based on
  * one described in
  * <a href="http://cseweb.ucsd.edu/users/varghese/PAPERS/twheel.ps.Z">Hashed
- * and Hierarchical Timing Wheels</a> by George Varghese and Tony Lauck.
- 
+ * and Hierarchical Timing Wheels</a> by George Varghese and Tony Lauck. More
+ * comprehensive slides are located
+ * <a href="http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt">
+ * here</a>.
+ *
  * Note that the actual start of execution time of a scheduled task is only
  * accurate to the value passed to the constructor's tickDuration argument.
- * Tasks will never execute before their scheduled time, but can execute after
- * it, almost always less than the specified tickDuration, unless there is a
- * computationally heavy task being executed before it which will temporarily
- * delay the start of the wheel's next tick.
+ * Tasks will never execute before their scheduled time. They will usually
+ * execute within the specified tickDuration after the scheduled time, unless
+ * there was a computationally heavy task being executed before it that
+ * temporarily delayed the start of the task's tick on the wheel.
  * @author GoldenKevin
  */
 public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
@@ -70,6 +73,14 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	private int wheelCursor;
 
 	private abstract class HashedWheelFuture<V> implements ScheduledFuture<V> {
+		protected static final int
+			STATE_CANCELED = -1,
+			STATE_SCHEDULED = 0,
+			STATE_RUNNING = 1,
+			STATE_EXECUTED = 2
+		;
+
+		protected final AtomicInteger state;
 		private final long startTime;
 		private final long initDelay;
 		private final long periodLength;
@@ -78,10 +89,9 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		private long remainingRevolutions;
 		private int bucket;
 		private long scheduledExecutionTime;
-		protected volatile boolean inProgress;
-		private volatile boolean canceled, executed;
 
 		public HashedWheelFuture(long submitTime, long delay, long period, boolean fixedRate) {
+			this.state = new AtomicInteger(STATE_SCHEDULED);
 			this.startTime = submitTime;
 			this.initDelay = delay;
 			this.periodLength = period;
@@ -102,40 +112,42 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		public boolean cancel(boolean mayInterruptIfRunning) {
-			boolean success;
-			//there may be a race condition here if cancel and execute both call
-			//isDone simultaneously before they set canceled or executed
-			//respectively, so isDone will return false for both of them. The
-			//worst that could happen is that worker terminated early before all
-			//scheduled tasks are finished. Occurs so infrequently and the
-			//consequences so insignificant that it doesn't warrant the overhead
-			//of an extra mutex between checking isDone and setting canceled or
-			//executed to make isDone(), executed, and canceled truly atomic.
-			if (!isDone()) {
-				canceled = true;
-				success = buckets[bucket].remove(this);
-				if (mayInterruptIfRunning && inProgress)
-					workerThread.interrupt();
+			boolean result;
+			if (state.compareAndSet(STATE_SCHEDULED, STATE_CANCELED)) {
+				buckets[bucket].remove(this);
 				queuedTaskCount.decrementAndGet();
+				result = true;
+			} else if (state.compareAndSet(STATE_RUNNING, STATE_CANCELED)) {
+				queuedTaskCount.decrementAndGet();
+				if (mayInterruptIfRunning) {
+					workerThread.interrupt();
+					result = true;
+				} else {
+					result = false;
+				}
 			} else {
-				success = false;
+				assert isDone();
+				result = false;
 			}
 			synchronized(this) {
 				notifyAll();
 			}
-			return success;
+			return result;
 		}
 
 		@Override
 		public V get() throws InterruptedException, ExecutionException {
-			if (canceled)
+			int status = state.get();
+			if (status == STATE_CANCELED)
 				throw new CancellationException();
-			if (executed)
+			if (status == STATE_EXECUTED)
 				return getResult();
 			waitForResult();
-			if (canceled)
+
+			status = state.get();
+			if (status == STATE_CANCELED)
 				throw new CancellationException();
-			//assert executed;
+			assert status == STATE_EXECUTED;
 			return getResult();
 		}
 
@@ -143,34 +155,40 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		public V get(long arg0, TimeUnit arg1) throws InterruptedException,
 				ExecutionException, TimeoutException {
 			long submitTime = System.currentTimeMillis();
-			if (canceled)
+
+			int status = state.get();
+			if (status == STATE_CANCELED)
 				throw new CancellationException();
-			if (executed)
+			if (status == STATE_EXECUTED)
 				return getResult();
 			boolean timedOut = waitForResult(submitTime + arg1.toMillis(arg0));
-			if (canceled)
-				throw new CancellationException();
+
 			if (timedOut)
 				throw new TimeoutException();
-			//assert executed;
+			status = state.get();
+			if (status == STATE_CANCELED)
+				throw new CancellationException();
+			assert status == STATE_EXECUTED;
 			return getResult();
 		}
 
 		@Override
 		public boolean isCancelled() {
-			return canceled;
+			return state.get() == STATE_CANCELED;
 		}
 
 		@Override
 		public boolean isDone() {
-			return executed || canceled;
+			int status = state.get();
+			return status == STATE_EXECUTED || status == STATE_CANCELED;
 		}
 
 		public boolean hasCommencedExecution() {
-			return inProgress || isDone();
+			int status = state.get();
+			return status == STATE_EXECUTED || status == STATE_CANCELED || status == STATE_RUNNING;
 		}
 
-		protected abstract void runExpireTask();
+		protected abstract boolean runExpireTask();
 
 		protected abstract Runnable getRunnableTask();
 
@@ -194,31 +212,23 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		}
 
 		private void executed() {
-			//there may be a race condition here if cancel and execute both call
-			//isDone simultaneously before they set canceled or executed
-			//respectively, so isDone will return false for both of them. The
-			//worst that could happen is that worker terminated early before all
-			//scheduled tasks are finished. Occurs so infrequently and the
-			//consequences so insignificant that it doesn't warrant the overhead
-			//of an extra mutex between checking isDone and setting canceled or
-			//executed to make isDone(), executed, and canceled truly atomic.
-			if (!isDone()) {
-				if (periodLength < 0 || isShutdown()) {
-					executed = true;
+			if (periodLength < 0 || isShutdown()) {
+				if (state.compareAndSet(STATE_RUNNING, STATE_EXECUTED)) {
 					queuedTaskCount.decrementAndGet();
-				} else if (fixedRate) {
-					scheduledExecutionTime = startTime + initDelay + periodLength * ++periodNo;
-					long delay = scheduledExecutionTime - System.currentTimeMillis();
-					schedule(this, delay);
+					synchronized(this) {
+						notifyAll();
+					}
 				} else {
-					periodNo++;
-					long delay = periodLength;
-					scheduledExecutionTime = System.currentTimeMillis() + delay;
-					schedule(this, delay);
+					assert isCancelled();
 				}
-			}
-			synchronized(this) {
-				notifyAll();
+			} else if (!isCancelled()) {
+				if (fixedRate) {
+					scheduledExecutionTime = startTime + initDelay + periodLength * ++periodNo;
+					schedule(this, scheduledExecutionTime - System.currentTimeMillis());
+				} else {
+					scheduledExecutionTime = System.currentTimeMillis() + periodLength;
+					schedule(this, periodLength);
+				}
 			}
 		}
 	}
@@ -233,16 +243,18 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		}
 
 		@Override
-		protected void runExpireTask() {
-			inProgress = true;
+		protected boolean runExpireTask() {
+			if (!state.compareAndSet(STATE_SCHEDULED, STATE_RUNNING)) {
+				assert isCancelled();
+				return false;
+			}
 			try {
 				expireTask.run();
 				exc = null;
 			} catch (Throwable ex) {
 				exc = ex;
-			} finally {
-				inProgress = false;
 			}
+			return true;
 		}
 
 		@Override
@@ -269,16 +281,18 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		}
 
 		@Override
-		protected void runExpireTask() {
-			inProgress = true;
+		protected boolean runExpireTask() {
+			if (!state.compareAndSet(STATE_SCHEDULED, STATE_RUNNING)) {
+				assert isCancelled();
+				return false;
+			}
 			try {
 				result = expireTask.call();
 				exc = null;
 			} catch (Throwable ex) {
 				exc = ex;
-			} finally {
-				inProgress = false;
 			}
+			return true;
 		}
 
 		@Override
@@ -306,16 +320,18 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		}
 
 		@Override
-		protected void runExpireTask() {
-			inProgress = true;
+		protected boolean runExpireTask() {
+			if (!state.compareAndSet(STATE_SCHEDULED, STATE_RUNNING)) {
+				assert isCancelled();
+				return false;
+			}
 			try {
 				expireTask.run();
 				exc = null;
 			} catch (Throwable ex) {
 				exc = ex;
-			} finally {
-				inProgress = false;
 			}
+			return true;
 		}
 
 		@Override
@@ -341,13 +357,14 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		 * if 
 		 */
 		private long syncWithTick() {
-			if (shuttingDown && queuedTaskCount.get() <= 0 || shutdownImmediately)
+			if (shuttingDown && queuedTaskCount.get() == 0 || shutdownImmediately)
 				return -1;
 			if (tick == Integer.MAX_VALUE) {
 				startTime += tick * millisPerTick;
 				tick = 0;
 			}
-			long scheduledTime = startTime + ++tick * millisPerTick;
+			tick++;
+			long scheduledTime = startTime + tick * millisPerTick;
 			long sleepTime;
 			while ((sleepTime = scheduledTime - System.currentTimeMillis()) > 0) {
 				try {
@@ -355,9 +372,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 				} catch (InterruptedException e) {
 					if (shutdownImmediately)
 						return -1;
-					//propagate the interrupted status further up to our worker
-					//executor service and see if they care - we don't care
-					Thread.currentThread().interrupt();
+					//otherwise, it's probably from when Future.cancel(true) was
+					//called. just clear the interrupted status.
 				}
 			}
 			return scheduledTime;
@@ -388,15 +404,16 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 							//current time is after it
 							long delta = future.scheduledExecutionTime - tickScheduledExecute;
 							if (LOG.isLoggable(Level.FINE))
-								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too soon by {0}ms, or {1} tick(s)) -> Rescheduling.", new Object[] { delta, ceil((int) delta, millisPerTick) });
-							schedule(future, delta);
+								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too soon by {0}ms, or {1} tick(s)) -> Rescheduling.", new Object[] { delta, (int) Math.ceil((double) delta / millisPerTick) });
+							if (!future.isCancelled())
+								schedule(future, delta);
 						} else {
 							if (LOG.isLoggable(Level.FINE) && tickScheduledExecute - future.scheduledExecutionTime > millisPerTick) {
 								long delta = tickScheduledExecute - future.scheduledExecutionTime;
-								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too late by {0}ms, or {1} tick(s))", new Object[] { delta, floor((int) delta, millisPerTick) });
+								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too late by {0}ms, or {1} tick(s))", new Object[] { delta, (int) Math.floor((double) delta / millisPerTick) });
 							}
-							future.runExpireTask();
-							future.executed();
+							if (future.runExpireTask())
+								future.executed();
 						}
 					}
 				}
@@ -444,26 +461,6 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	 */
 	public ScheduledHashedWheelExecutor() {
 		this(512, 100, TimeUnit.MILLISECONDS);
-	}
-
-	/**
-	 * Finds the floor of (x / y)
-	 * @param x either 0, or must have the same sign as y
-	 * @param y must be non-zero and have the same sign as x
-	 * @return
-	 */
-	private int floor(int x, int y) {
-		return (x / y);
-	}
-
-	/**
-	 * Finds the ceiling of (x / y)
-	 * @param x must be positive
-	 * @param y must be positive
-	 * @return
-	 */
-	private int ceil(int x, int y) {
-		return ((x - 1) / y) + 1;
 	}
 
 	private void schedule(HashedWheelFuture<?> future, long delay) {
@@ -632,9 +629,21 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			queuedTaskCount.incrementAndGet();
 			futures.add(future);
 		}
-		for (HashedWheelFuture<T> future : futures)
-			if (!future.isDone())
-				future.waitForResult();
+		boolean interrupted = false;
+		for (HashedWheelFuture<T> future : futures) {
+			if (future.isDone())
+				continue;
+
+			if (!interrupted) {
+				try {
+					future.waitForResult();
+				} catch (InterruptedException e) {
+					interrupted = true;
+				}
+			}
+			if (interrupted)
+				future.cancel(false);
+		}
 		return new ArrayList<Future<T>>(futures);
 	}
 
@@ -649,13 +658,23 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			HashedWheelFuture<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
 			schedule(future, 0);
 			queuedTaskCount.incrementAndGet();
-			future.waitForResult();
 			futures.add(future);
 		}
-		boolean timedOut = false;
-		for (HashedWheelFuture<T> future : futures)
-			if (!future.isDone() && (timedOut || (timedOut = future.waitForResult(deadline))))
+		boolean interrupted = false, timedOut = false;
+		for (HashedWheelFuture<T> future : futures) {
+			if (future.isDone())
+				continue;
+
+			if (!interrupted && !timedOut) {
+				try {
+					timedOut = future.waitForResult(deadline);
+				} catch (InterruptedException e) {
+					interrupted = true;
+				}
+			}
+			if (interrupted || timedOut)
 				future.cancel(false);
+		}
 		return new ArrayList<Future<T>>(futures);
 	}
 
@@ -675,23 +694,40 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			futures.add(future);
 		}
 		T result = null;
-		boolean notAllDone = true;
-		while (result == null && notAllDone) {
-			//TODO: inefficient. register event handlers in HashedWheelFuture.executed instead?
-			notAllDone = false;
+		boolean allDone = false, interrupted = false, gotResult = false;
+		//spin lock until we get first result.
+		//TODO: eliminate spin loop. register event handlers in
+		//HashedWheelFuture.executed instead and just wait on some object until
+		//the first task completes and notifies that object?
+		while (!allDone) {
+			//even if we got our result or got interrupted, we still need to
+			//iterate and cancel the remaining tasks ("Upon normal or
+			//exceptional return, tasks that have not completed are cancelled").
+			//hence allDone, which is true only when all tasks are done (i.e.
+			//executed or canceled).
+			allDone = true;
 			for (HashedWheelFutureImpl<T> future : futures) {
 				if (future.isDone()) {
-					if (result == null && future.exc == null)
+					if (!gotResult && future.exc == null) {
 						result = future.get();
+						gotResult = true;
+					}
 				} else {
-					notAllDone = true;
-					if (result != null)
+					if (interrupted || gotResult)
 						future.cancel(false);
+					else
+						allDone = false;
 				}
 			}
+			//since we're using a spin loop and never call sleep, we do not get
+			//InterruptedExceptions, so it's imperative we regularly check if
+			//the thread's interrupted flag is set.
+			interrupted = Thread.interrupted();
 		}
-		if (result == null) //which exception do we throw with ExecutionException?
-			throw new ExecutionException("No tasks completed successfully", futures.get((int) (Math.random() * futures.size())).exc);
+		if (interrupted)
+			throw new InterruptedException();
+		if (!gotResult)
+			throw new ExecutionException("No tasks completed successfully", null);
 		return result;
 	}
 
@@ -712,28 +748,43 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 			futures.add(future);
 		}
 		T result = null;
-		boolean notAllDone = true;
-		boolean timedOut = System.currentTimeMillis() >= timeoutTime;
-		while (result == null && notAllDone && !timedOut) {
-			//TODO: inefficient. register event handlers in HashedWheelFuture.executed instead?
-			notAllDone = false;
+		boolean allDone = false, interrupted = false, gotResult = false, timedOut = false;
+		//spin lock until we get first result or timed out.
+		//TODO: eliminate spin loop. register event handlers in
+		//HashedWheelFuture.executed instead and just wait on some object (with
+		//a timeout) until the first task completes and notifies that object?
+		while (!allDone) {
+			//even if we got our result, got interrupted, or we timed out, we
+			//still need to iterate and cancel the remaining tasks ("Upon normal
+			//or exceptional return, tasks that have not completed are
+			//cancelled"). hence allDone, which is true only when all tasks are
+			//done (i.e. executed or canceled).
+			allDone = true;
 			for (HashedWheelFutureImpl<T> future : futures) {
 				if (future.isDone()) {
-					if (result == null && future.exc == null)
+					if (!gotResult && future.exc == null) {
 						result = future.get();
+						gotResult = true;
+					}
 				} else {
-					notAllDone = true;
 					timedOut = timedOut || System.currentTimeMillis() >= timeoutTime;
-					if (result != null || timedOut)
+					if (interrupted || gotResult || timedOut)
 						future.cancel(false);
+					else
+						allDone = false;
 				}
 			}
+			//since we're using a spin loop and never call sleep, we do not get
+			//InterruptedExceptions, so it's imperative we regularly check if
+			//the thread's interrupted flag is set.
+			interrupted = Thread.interrupted();
 		}
-		if (result == null)
-			if (timedOut)
-				throw new TimeoutException();
-			else
-				throw new ExecutionException("No tasks completed successfully", futures.get((int) (Math.random() * futures.size())).exc);
+		if (timedOut)
+			throw new TimeoutException();
+		if (interrupted)
+			throw new InterruptedException();
+		if (!gotResult)
+			throw new ExecutionException("No tasks completed successfully", null);
 		return result;
 	}
 
