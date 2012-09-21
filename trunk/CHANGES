@@ -2117,10 +2117,18 @@
 	* Fixed begin_jp1.js.
 	* Script formatting changes I missed last revision.
 
-2012-09-18  GoldenKevin  (revision 141)
+2012-09-19  GoldenKevin  (revision 141)
 
 	* Revisited ScheduledHashedWheelExecutor. Rewrote all thread-unsafe code,
 	corrected the broken invokeAll and invokeAny methods, and cleaned up.
+
+2012-09-20  GoldenKevin  (revision 142)
+
+	* ScheduledHashedWheelExecutor now will never misplace a task into the wrong
+	bucket. It required moving three division operations, a (fairly predictable)
+	branch, and a few instances of addition/subtraction and casting into a mutex
+	block shared with the worker thread, but avoiding reschedules should offset
+	any performance losses.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

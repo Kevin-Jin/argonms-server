@@ -39,8 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * This implementation employs an efficient single-threaded algorithm based on
@@ -60,9 +58,7 @@ import java.util.logging.Logger;
  * @author GoldenKevin
  */
 public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
-	private static final Logger LOG = Logger.getLogger(ScheduledHashedWheelExecutor.class.getName());
-
-	private final int millisPerTick, millisPerRev;
+	private final int millisPerTick;
 	private final Thread workerThread;
 	private final Set<HashedWheelFuture<?>>[] buckets;
 	private final AtomicInteger queuedTaskCount;
@@ -71,6 +67,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	private volatile boolean terminated;
 	private final Lock readLock, writeLock;
 	private int wheelCursor;
+	private long lastExecuted;
 
 	private abstract class HashedWheelFuture<V> implements ScheduledFuture<V> {
 		protected static final int
@@ -223,11 +220,12 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 				}
 			} else if (!isCancelled()) {
 				if (fixedRate) {
-					scheduledExecutionTime = startTime + initDelay + periodLength * ++periodNo;
-					schedule(this, scheduledExecutionTime - System.currentTimeMillis());
+					periodNo++;
+					scheduledExecutionTime = startTime + initDelay + periodLength * periodNo;
+					schedule(this);
 				} else {
 					scheduledExecutionTime = System.currentTimeMillis() + periodLength;
-					schedule(this, periodLength);
+					schedule(this);
 				}
 			}
 		}
@@ -381,7 +379,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 
 		@Override
 		public void run() {
-			startTime = System.currentTimeMillis();
+			lastExecuted = startTime = System.currentTimeMillis();
 			long tickScheduledExecute;
 			while ((tickScheduledExecute = syncWithTick()) != -1) {
 				Iterator<HashedWheelFuture<?>> iter;
@@ -389,6 +387,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 				try {
 					wheelCursor = (wheelCursor + 1) % buckets.length;
 					iter = buckets[wheelCursor].iterator();
+					lastExecuted = tickScheduledExecute;
 				} finally {
 					writeLock.unlock();
 				}
@@ -398,23 +397,9 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 						future.remainingRevolutions--;
 					} else {
 						iter.remove();
-						if (future.scheduledExecutionTime > tickScheduledExecute) {
-							//NEVER execute a task if the tick's start time is
-							//before the task's scheduled time even if the
-							//current time is after it
-							long delta = future.scheduledExecutionTime - tickScheduledExecute;
-							if (LOG.isLoggable(Level.FINE))
-								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too soon by {0}ms, or {1} tick(s)) -> Rescheduling.", new Object[] { delta, (int) Math.ceil((double) delta / millisPerTick) });
-							if (!future.isCancelled())
-								schedule(future, delta);
-						} else {
-							if (LOG.isLoggable(Level.FINE) && tickScheduledExecute - future.scheduledExecutionTime > millisPerTick) {
-								long delta = tickScheduledExecute - future.scheduledExecutionTime;
-								LOG.log(Level.FINE, "Executed task in wrong tick of HashedWheelExecutor. (Too late by {0}ms, or {1} tick(s))", new Object[] { delta, (int) Math.floor((double) delta / millisPerTick) });
-							}
-							if (future.runExpireTask())
-								future.executed();
-						}
+						assert future.scheduledExecutionTime <= tickScheduledExecute;
+						if (future.runExpireTask())
+							future.executed();
 					}
 				}
 			}
@@ -438,10 +423,9 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 	public ScheduledHashedWheelExecutor(int buckets, long tickDuration, TimeUnit unit) {
 		if (buckets <= 0)
 			throw new IllegalArgumentException("buckets must be positive");
-		if (tickDuration <= 0)
-			throw new IllegalArgumentException("tickDuration must be positive");
 		millisPerTick = (int) unit.toMillis(tickDuration);
-		millisPerRev = millisPerTick * buckets;
+		if (millisPerTick <= 0)
+			throw new IllegalArgumentException("tickDuration in milliseconds must be positive");
 		workerThread = new Thread(new Worker(), "hashed-wheel-timer-worker-thread");
 		this.buckets = new Set[buckets];
 		for (int i = 0; i < buckets; i++)
@@ -463,24 +447,40 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		this(512, 100, TimeUnit.MILLISECONDS);
 	}
 
-	private void schedule(HashedWheelFuture<?> future, long delay) {
-		long revolutions;
-		int relativeIndex;
-		if (delay > millisPerTick) {
-			revolutions = delay / millisPerRev;
-			delay %= millisPerRev;
-			//don't do ceiling - just always add 1 to the floor, even if
-			//remainder of (delay / millisPerTick) == 0
-			//avoids a lot of frequent rescheduling, which could be a
-			//performance killer
-			relativeIndex = (int) (delay / millisPerTick) + 1;
-		} else {
-			revolutions = 0;
-			relativeIndex = 1;
-		}
+	/**
+	 * Finds the ceiling of (x / y). If y is positive and x is non-positive, the
+	 * result is always less than or equal to 1.
+	 * @param x must be positive
+	 * @param y must be positive
+	 * @return
+	 */
+	private int ceil(int x, int y) {
+		return ((x - 1) / y) + 1;
+	}
+
+	private void schedule(HashedWheelFuture<?> future) {
 		readLock.lock();
 		try {
-			int bucket = (wheelCursor + relativeIndex) % buckets.length;
+			//never have totalTicks == 0, even if we just we scheduled the
+			//future for the exact same time as our last worker run. doing so
+			//would cause the task to be executed a full revolution late! never
+			//have totalTicks < 0, even if future.scheduledExecutionTime is less
+			//than lastExecuted. doing so would cause the task to be executed a
+			//few ticks late. in both cases, we should instead execute the task
+			//in the next tick, (totalTicks == 1). this means totalTicks >= 1
+			//always, so just Math.max the ceil result.
+
+			//(future.scheduledExecutionTime - lastExecuted) may be <= 0, but
+			//result of ceil with nonpositive x and positive y (millisPerTick
+			//must be positive) is always defined as <= 1, and with the
+			//surrounding Math.max, we can disregard an incorrect ceil result.
+			//this should be faster than using the more accurate Math.ceil,
+			//as it does integer division instead of floating point division,
+			//avoids some expensive method calls, and avoids lots of casting.
+			int totalTicks = Math.max(ceil((int) (future.scheduledExecutionTime - lastExecuted), millisPerTick), 1);
+			int revolutions = totalTicks / buckets.length;
+			int finalRevolutionTicks = totalTicks % buckets.length;
+			int bucket = (wheelCursor + finalRevolutionTicks) % buckets.length;
 			future.bucket = bucket;
 			future.remainingRevolutions = revolutions;
 			buckets[bucket].add(future);
@@ -495,9 +495,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 
-		long millisDelay = delay <= 0 ? delay : Math.max(unit.toMillis(delay), millisPerTick);
-		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, true, submitTime, millisDelay, -1);
-		schedule(future, millisDelay);
+		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, true, submitTime, unit.toMillis(delay), -1);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -508,9 +507,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 
-		long millisDelay = delay <= 0 ? delay : Math.max(unit.toMillis(delay), millisPerTick);
-		HashedWheelFuture<V> future = new HashedWheelFutureImpl<V>(callable, submitTime, millisDelay, -1);
-		schedule(future, millisDelay);
+		HashedWheelFuture<V> future = new HashedWheelFutureImpl<V>(callable, submitTime, unit.toMillis(delay), -1);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -521,9 +519,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 
-		long millisDelay = initialDelay <= 0 ? initialDelay : Math.max(unit.toMillis(initialDelay), millisPerTick);
-		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, true, submitTime, millisDelay, period);
-		schedule(future, millisDelay);
+		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, true, submitTime, unit.toMillis(initialDelay), period);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -534,9 +531,8 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 
-		long millisDelay = initialDelay <= 0 ? initialDelay : Math.max(unit.toMillis(initialDelay), millisPerTick);
-		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, false, submitTime, millisDelay, delay);
-		schedule(future, millisDelay);
+		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(command, false, submitTime, unit.toMillis(initialDelay), delay);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -590,7 +586,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 		HashedWheelFuture<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
-		schedule(future, 0);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -601,7 +597,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 		HashedWheelFuture<T> future = new HashedWheelFutureKnownResult<T>(task, result, submitTime, 0, -1);
-		schedule(future, 0);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -612,7 +608,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		if (isShutdown())
 			throw new RejectedExecutionException("shutdown");
 		HashedWheelFuture<Void> future = new VoidHashedWheelFuture(task, true, submitTime, 0, -1);
-		schedule(future, 0);
+		schedule(future);
 		queuedTaskCount.incrementAndGet();
 		return future;
 	}
@@ -625,7 +621,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		List<HashedWheelFuture<T>> futures = new ArrayList<HashedWheelFuture<T>>(tasks.size());
 		for (Callable<T> task : tasks) {
 			HashedWheelFuture<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
-			schedule(future, 0);
+			schedule(future);
 			queuedTaskCount.incrementAndGet();
 			futures.add(future);
 		}
@@ -656,7 +652,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		List<HashedWheelFuture<T>> futures = new ArrayList<HashedWheelFuture<T>>(tasks.size());
 		for (Callable<T> task : tasks) {
 			HashedWheelFuture<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
-			schedule(future, 0);
+			schedule(future);
 			queuedTaskCount.incrementAndGet();
 			futures.add(future);
 		}
@@ -689,7 +685,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		for (Callable<T> task : tasks) {
 			submitTime = System.currentTimeMillis();
 			HashedWheelFutureImpl<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
-			schedule(future, 0);
+			schedule(future);
 			queuedTaskCount.incrementAndGet();
 			futures.add(future);
 		}
@@ -743,7 +739,7 @@ public class ScheduledHashedWheelExecutor implements ScheduledExecutorService {
 		for (Callable<T> task : tasks) {
 			submitTime = System.currentTimeMillis();
 			HashedWheelFutureImpl<T> future = new HashedWheelFutureImpl<T>(task, submitTime, 0, -1);
-			schedule(future, 0);
+			schedule(future);
 			queuedTaskCount.incrementAndGet();
 			futures.add(future);
 		}
