@@ -125,6 +125,7 @@ public final class ChatHandler {
 	public enum TextStyle {
 		OK_BOX(1),
 		LIGHT_BLUE_TEXT_WHITE_BG(2),
+		TICKER(4),
 		RED_TEXT_CLEAR_BG(5),
 		LIGHT_BLUE_TEXT_CLEAR_BG(6),
 		ORANGE_TEXT_CLEAR_BG(0),

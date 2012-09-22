@@ -27,6 +27,7 @@ public class GameRegistry {
 	private boolean buffCooldowns;
 	private short expRate, dropRate, mesoRate;
 	private boolean consecutiveLevelUps;
+	private String ticker;
 
 	protected GameRegistry() {
 		
@@ -56,6 +57,10 @@ public class GameRegistry {
 		this.consecutiveLevelUps = allow;
 	}
 
+	public void setNewsTickerMessage(String message) {
+		this.ticker = message;
+	}
+
 	public boolean doItemExpires() {
 		return itemExpires;
 	}
@@ -78,5 +83,9 @@ public class GameRegistry {
 
 	public boolean doMultiLevel() {
 		return consecutiveLevelUps;
+	}
+
+	public String getNewsTickerMessage() {
+		return ticker;
 	}
 }
