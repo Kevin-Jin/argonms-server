@@ -19,6 +19,7 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
+import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventoryTools;
@@ -26,7 +27,9 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
 import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
+import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.command.CommandDefinition.CommandAction;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -67,6 +70,27 @@ public class CommandProcessor {
 	private void populateDefinitions() {
 		definitions.put("!id", new SearchCommandHandler());
 		definitions.put("!stat", new StatCommandHandler());
+		definitions.put("!heal", new CommandDefinition(new CommandAction() {
+			@Override
+			public String getUsage() {
+				return "Usage: !heal";
+			}
+
+			@Override
+			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+				for (PlayerStatusEffect e : new PlayerStatusEffect[] {
+						PlayerStatusEffect.CURSE, PlayerStatusEffect.DARKNESS,
+						PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL,
+						PlayerStatusEffect.WEAKEN }) {
+					PlayerStatusEffectValues v = p.getEffectValue(e);
+					if (v != null)
+						DiseaseTools.cancelDebuff(p, (short) v.getSource(), v.getLevelWhenCast());
+				}
+
+				p.setHp(p.getCurrentMaxHp());
+				p.setMp(p.getCurrentMaxMp());
+			}
+		}, "Cures all diseases and restores all HP/MP", UserPrivileges.GM));
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
@@ -309,7 +333,6 @@ public class CommandProcessor {
 							+ rate + ". Changes will be reverted on the next server restart.");
 				} else {
 					resp.printErr(getUsage());
-					return;
 				}
 			}
 		}, "Change the exp, meso, or drop rate of this game server.",

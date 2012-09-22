@@ -2130,6 +2130,13 @@
 	block shared with the worker thread, but avoiding reschedules should offset
 	any performance losses.
 
+2012-09-22  GoldenKevin  (revision 143)
+
+	* Support for scrolling messages in game server.
+	* Added !heal command.
+	* Fixed some misuse of Player.getMaxHp(), GameCharacter.getCurrentMaxHp(),
+	Player.getMaxMp(), and GameCharacter.getCurrentMaxHp().
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -131,6 +131,7 @@ public class GameServer implements LocalServer {
 			registry.setItemsWillExpire(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".itemexpire")));
 			registry.setBuffsWillCooldown(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablecooltime")));
 			registry.setMultiLevel(Boolean.parseBoolean(prop.getProperty("argonms.game." + serverId + ".enablemultilevel")));
+			registry.setNewsTickerMessage(prop.getProperty("argonms.game." + serverId + ".tickermessage"));
 
 			String temp = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "");
 			initialEvents = temp.isEmpty() ? new String[0] : temp.split(",");

@@ -55,21 +55,23 @@ public final class ItemTools {
 		//packet for each changed stat
 		Map<ClientUpdateKey, Number> ret = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
 		if (e.getHpRecover() != 0) {
-			p.setLocalHp((short) Math.min(p.getHp() + e.getHpRecover(), Short.MAX_VALUE));
+			p.setLocalHp((short) Math.min(p.getHp() + e.getHpRecover(), p.getCurrentMaxHp()));
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		if (e.getHpRecoverPercent() != 0) {
-			int hpGain = Math.round(e.getHpRecoverPercent() * p.getMaxHp() / 100f);
-			p.setLocalHp((short) Math.min(p.getHp() + hpGain, Short.MAX_VALUE));
+			short maxHp = p.getCurrentMaxHp();
+			int hpGain = Math.round(e.getHpRecoverPercent() * maxHp / 100f);
+			p.setLocalHp((short) Math.min(p.getHp() + hpGain, maxHp));
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		if (e.getMpRecover() != 0) {
-			p.setLocalMp((short) Math.min(p.getMp() + e.getMpRecover(), Short.MAX_VALUE));
+			p.setLocalMp((short) Math.min(p.getMp() + e.getMpRecover(), p.getCurrentMaxMp()));
 			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
 		}
 		if (e.getMpRecoverPercent() != 0) {
-			int mpGain = Math.round(e.getMpRecoverPercent() * p.getMaxMp() / 100f);
-			p.setLocalMp((short) Math.min(p.getMp() + mpGain, Short.MAX_VALUE));
+			short maxMp = p.getCurrentMaxMp();
+			int mpGain = Math.round(e.getMpRecoverPercent() * maxMp / 100f);
+			p.setLocalMp((short) Math.min(p.getMp() + mpGain, maxMp));
 			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
 		}
 		if (e.curesCurse()) {

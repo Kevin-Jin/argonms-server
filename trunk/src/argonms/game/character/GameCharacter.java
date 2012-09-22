@@ -1031,7 +1031,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void gainHp(int gain) {
-		setHp((short) Math.min(remHp + gain, Short.MAX_VALUE));
+		setHp((short) Math.min(remHp + gain, getCurrentMaxHp()));
 	}
 
 	public short getCurrentMaxHp() {
@@ -1130,7 +1130,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void gainMp(int gain) {
-		setMp((short) Math.min(remMp + gain, Short.MAX_VALUE));
+		setMp((short) Math.min(remMp + gain, getCurrentMaxMp()));
 	}
 
 	public short getCurrentMaxMp() {
