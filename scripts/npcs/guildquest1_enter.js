@@ -92,4 +92,4 @@ switch (selection) {
 		break;
 }*/
 
-//TODO: implement events
+//TODO: write event script

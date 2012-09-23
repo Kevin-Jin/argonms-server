@@ -17,10 +17,11 @@
  */
 
 /**
- * Chef (NPC 1002006)
- * Victoria Road: Lith Harbor (Map 104000000)
+ * Happy: Snow Fairy (NPC 9220004)
+ * Hidden Street: Extra Frosty Snow Zone (Map 209080000),
+ *   (Map 209080100)
  *
- * Unknown purpose.
+ * <insert description here>
  *
  * @author GoldenKevin
  */

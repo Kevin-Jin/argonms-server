@@ -37,7 +37,8 @@ switch (map.getId()) {
 				npc.say("You are not the party leader.");
 			} else {
 				if (party.getMembersCount(map.getId(), 10, 255) >= 3) {
-					//TODO: start the event
+					//TODO: write event script
+					//start event here.
 					npc.say("#e#b#rPrimrose Hill#k is not yet ready. Sorry!#n#k");
 				} else {
 					npc.say("Your party is not a party of three to six. Make sure all your members are present and qualified to participate in this quest.");

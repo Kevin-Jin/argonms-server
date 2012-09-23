@@ -2137,6 +2137,15 @@
 	* Fixed some misuse of Player.getMaxHp(), GameCharacter.getCurrentMaxHp(),
 	Player.getMaxMp(), and GameCharacter.getCurrentMaxHp().
 
+2012-09-23  GoldenKevin  (revision 144)
+
+	* Rearranged DealDamageHandler.handleRangedAttack and handleMagicAttack to
+	minimize latency between a player's attack and its reflection on the screens
+	of other players in the map.
+	* Stubs for Happyville NPCs.
+	* More consistent TODO descriptions in NPC scripts.
+	* npcs/begin7.js is now based on the corresponding Vana script.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

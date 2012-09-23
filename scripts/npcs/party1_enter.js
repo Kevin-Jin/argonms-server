@@ -34,7 +34,5 @@ if (party == null || player.getId() != party.getLeader()) {
 } else if (npc.getEvent("party1") != null) {
 	npc.say("Some other party has already gotten in to try clearing the quest. Please try again later.");
 } else {
-	//TODO: probably want to lock between (npc.getEvent("party1") != null) and npc.makeEvent("party1").
-	//don't want to let two parties in at once because of a race condition!
 	npc.makeEvent("party1", party);
 }

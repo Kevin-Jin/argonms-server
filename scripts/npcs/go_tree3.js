@@ -17,10 +17,10 @@
  */
 
 /**
- * Chef (NPC 1002006)
- * Victoria Road: Lith Harbor (Map 104000000)
+ * Straw Hat Snowman (NPC 2001003)
+ * Hidden Street: Happyville (Map 209000000)
  *
- * Unknown purpose.
+ * <insert description here>
  *
  * @author GoldenKevin
  */
