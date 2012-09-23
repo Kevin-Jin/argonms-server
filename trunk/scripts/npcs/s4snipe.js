@@ -49,11 +49,10 @@ if (player.isQuestActive(6108)) {
 			} else if (eligible != 2) {
 				npc.say("You can't enter. Your party member's job is not Bow Master or Marksman or Your party doesn't consist of two members.");
 			} else {
-				//TODO: event
+				//TODO: write event script
+				//in init, warp party to map 910500000 and start 20 minute timer
 				if (npc.getEvent("snipe4th") == null) {
 					npc.makeEvent("snipe4th", party);
-					//TODO: in init: (20 minute timer?), warp party to map
-					//910500000
 				} else {
 					npc.say("Other parties are challenging on quest clear now. Try again later.");
 				}

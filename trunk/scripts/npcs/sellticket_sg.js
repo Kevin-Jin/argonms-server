@@ -60,7 +60,7 @@ switch (selection) {
 		}
 		break;
 	case 1:
-		//TODO: IMPLEMENT EVENT
+		//TODO: write event script
 		let ap = cm.getEventManager("AirPlane");
 		if (ap != null)
 			if (ap.getProperty("entry").equals("true"))

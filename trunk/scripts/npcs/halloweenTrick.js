@@ -25,4 +25,4 @@
  * @author GoldenKevin
  */
 
-//TODO: implement Halloween event?
+//TODO: GMS-like conversation

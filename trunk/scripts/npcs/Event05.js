@@ -25,4 +25,4 @@
  * @author GoldenKevin
  */
 
-//TODO: get GMS like conversation
+//TODO: GMS-like conversation

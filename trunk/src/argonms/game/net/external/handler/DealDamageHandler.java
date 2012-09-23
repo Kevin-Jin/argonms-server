@@ -78,6 +78,8 @@ public final class DealDamageHandler {
 	public static void handleRangedAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
+
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		short useQty;
 		if (e == null) { //not a skill
@@ -129,13 +131,16 @@ public final class DealDamageHandler {
 		} else { //soul arrow sends no visible projectile either.
 			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
+
 		applyAttack(attack, p);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
 		final GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
+		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
+		applyAttack(attack, p);
+
 		final PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		if (e != null) {
 			switch (attack.skill) {
@@ -153,8 +158,6 @@ public final class DealDamageHandler {
 					break;
 			}
 		}
-		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
-		applyAttack(attack, p);
 	}
 
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, GameClient gc) {

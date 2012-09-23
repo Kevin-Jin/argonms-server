@@ -25,4 +25,5 @@
  * @author GoldenKevin (content from Vana r2111)
  */
 
+//TODO: real event stuff?
 npc.sayNext("The event has ended. See you next year~");

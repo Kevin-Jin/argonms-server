@@ -52,7 +52,7 @@ if (a || b || c || d || e) {
 	let items = [4031036, 4031037, 4031038, 4031711];
 	let go = true;
 	if (selection == 3) {
-		//TODO: implement NLC subway
+		//TODO: write event script
 		if (true) {
 			npc.sayNext("This subway is getting ready for takeoff. I'm sorry, but you'll have to get on the next ride. The ride schedule is available through the usher at the ticketing booth.");
 			go = false;
