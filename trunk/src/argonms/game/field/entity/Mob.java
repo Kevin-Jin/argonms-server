@@ -80,7 +80,7 @@ public class Mob extends AbstractEntity {
 	private final WeakHashMap<GameCharacter, PlayerAttacker> playerDamages;
 	private final WeakHashMap<PartyList, PartyAttacker> partyDamages;
 	private final Lock damagesReadLock, damagesWriteLock;
-	private WeakReference<GameCharacter> controller;
+	private volatile GameCharacter controller;
 	private volatile boolean aggroAware, hasAggro;
 	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
 	private final ConcurrentMap<Short, ScheduledFuture<?>> skillCancels;
@@ -100,7 +100,6 @@ public class Mob extends AbstractEntity {
 		ReadWriteLock lock = new ReentrantReadWriteLock();
 		this.damagesReadLock = lock.readLock();
 		this.damagesWriteLock = lock.writeLock();
-		this.controller = new WeakReference<GameCharacter>(null);
 		this.activeEffects = new ConcurrentSkipListMap<MonsterStatusEffect, MonsterStatusEffectValues>();
 		this.skillCancels = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
 		this.diseaseCancels = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
@@ -200,19 +199,15 @@ public class Mob extends AbstractEntity {
 	}
 
 	public byte getControlStatus() {
-		return getController() != null ? CONTROL_STATUS_NORMAL : CONTROL_STATUS_NONE;
+		return controller != null ? CONTROL_STATUS_NORMAL : CONTROL_STATUS_NONE;
 	}
 
 	public GameCharacter getController() {
-		//for this WeakReference, there is no need to check for
-		//GameCharacter.isClosed() since setController(null) is always called
-		//when GameCharacter is closing (before GameCharacter.isClosed() can
-		//become true).
-		return controller.get();
+		return controller;
 	}
 
 	public void setController(GameCharacter newController) {
-		this.controller = new WeakReference<GameCharacter>(newController);
+		this.controller = newController;
 	}
 
 	public boolean isFirstAttack() {

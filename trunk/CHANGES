@@ -2146,6 +2146,15 @@
 	* More consistent TODO descriptions in NPC scripts.
 	* npcs/begin7.js is now based on the corresponding Vana script.
 
+2012-09-25  GoldenKevin  (revision 145)
+
+	* Optimized NPC scripts with long sequences of sayNexts.
+	* Fixed NPC script bug when sayNext, say, and sayNext were called right
+	after another in that very order.
+	* Added askBoxText public function to ScriptNpc.
+	* No need for Mob.controller to be a WeakReference since we null the
+	reference whenever the controlling player leaves the map.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

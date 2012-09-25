@@ -58,7 +58,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	private static final Logger LOG = Logger.getLogger(ScriptNpc.class.getName());
 
 	private final int npcId;
-	private final PreviousMessageCache prevs;
+	private final MessageSequenceCache sequence;
 	private final AtomicBoolean terminated;
 	private volatile boolean endingChat;
 	private volatile Object continuation;
@@ -66,7 +66,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public ScriptNpc(int npcId, GameClient client, Scriptable globalScope) {
 		super(client, globalScope);
 		this.npcId = npcId;
-		this.prevs = new PreviousMessageCache();
+		this.sequence = new MessageSequenceCache();
 		this.terminated = new AtomicBoolean(false);
 	}
 
@@ -80,28 +80,29 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		ASK_QUIZ = 0x06,
 		ASK_AVATAR = 0x07,
 		ASK_ACCEPT = 0x0C,
-		ASK_ACCEPT_NO_ESC = 0x0D
+		ASK_ACCEPT_NO_ESC = 0x0D,
+		ASK_BOX_TEXT = 0x0E
 	;
 
 	public void setContinuation(Object continuation) {
 		this.continuation = continuation;
 	}
 
-	//I guess some scripts would want to put some
-	//consecutive sayNexts or a say without back buttons...
+	//I guess some scripts would want to put some consecutive sayNexts or a say
+	//without back buttons, so this public method is accessible to them
 	public void clearBackButton() {
-		prevs.clear();
+		sequence.clear();
 	}
 
 	public void say(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		boolean hasPrev = prevs.hasPrevOrIsFirst();
-		if (hasPrev)
-			prevs.add(message, false);
-		else
-			clearBackButton();
-		getClient().getSession().send(writeNpcSay(npcId, message, hasPrev, false));
+		if (!sequence.isEmpty()) //preceded by sayNext, or say after sayNext
+			if (!sequence.showNext()) //not preceded by sayNext
+				clearBackButton(); //cannot go backwards
+			else //preceded by sayNext
+				sequence.add(message, false); //save in sequence in case chat goes backwards and then returns forwards
+		getClient().getSession().send(writeNpcSay(npcId, message, sequence.hasBack(), false));
 		Context cx = Context.enter();
 		try {
 			throw cx.captureContinuation();
@@ -113,8 +114,11 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public void sayNext(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		prevs.add(message, true);
-		getClient().getSession().send(writeNpcSay(npcId, message, prevs.hasPrev(), true));
+		if (!sequence.isEmpty()) //preceded by sayNext, or say after sayNext
+			if (!sequence.showNext()) //preceded by say
+				clearBackButton(); //cannot go backwards
+		sequence.add(message, true); //save in sequence in case chat goes backwards
+		getClient().getSession().send(writeNpcSay(npcId, message, sequence.hasBack(), true));
 		Context cx = Context.enter();
 		try {
 			throw cx.captureContinuation();
@@ -126,7 +130,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public byte askYesNo(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_YES_NO));
 		Context cx = Context.enter();
 		try {
@@ -139,7 +143,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public byte askAccept(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT));
 		Context cx = Context.enter();
 		try {
@@ -152,7 +156,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public byte askAcceptNoESC(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_ACCEPT_NO_ESC));
 		Context cx = Context.enter();
 		try {
@@ -165,7 +169,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public String askQuiz(byte type, int objectId, int correct, int questions, int time) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcQuiz(npcId, type, objectId, correct, questions, time));
 		Context cx = Context.enter();
 		try {
@@ -179,7 +183,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 			String hint, int min, int max, int timeLimit) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcQuizQuestion(npcId,
 				title, problem, hint, min, max, timeLimit));
 		Context cx = Context.enter();
@@ -193,7 +197,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public String askText(String message, String def, short min, short max) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcAskText(npcId, message, def, min, max));
 		Context cx = Context.enter();
 		try {
@@ -203,24 +207,23 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		}
 	}
 
-	//I think this is probably 14 (0x0E)...
-	/*public String askBoxText(String message, String def, int col, int line) {
+	public String askBoxText(String def, short columns, short rows) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
-		getClient().getSession().send(writeNpcBoxText(npcId, message, def, col, line));
+		clearBackButton(); //cannot go backwards
+		getClient().getSession().send(writeNpcBoxText(npcId, def, columns, rows));
 		Context cx = Context.enter();
 		try {
 			throw cx.captureContinuation();
 		} finally {
 			Context.exit();
 		}
-	}*/
+	}
 
 	public int askNumber(String message, int def, int min, int max) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcAskNumber(npcId, message, def, min, max));
 		Context cx = Context.enter();
 		try {
@@ -233,7 +236,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public int askMenu(String message) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcSimple(npcId, message, ASK_MENU));
 		Context cx = Context.enter();
 		try {
@@ -246,7 +249,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 	public int askAvatar(String message, int... styles) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
-		clearBackButton();
+		clearBackButton(); //cannot go backwards
 		getClient().getSession().send(writeNpcAskAvatar(npcId, message, styles));
 		Context cx = Context.enter();
 		try {
@@ -330,15 +333,16 @@ public class ScriptNpc extends PlayerScriptInteraction {
 					case -1: //end chat (or esc key)
 						fireEndChatEvent();
 						break;
-					case 0: //prev
-						getClient().getSession().send(writeNpcSay(npcId, prevs.goBackAndGet(), prevs.hasPrev(), true));
+					case 0: //back
+						//if we clicked back on the message after this, then we
+						//must have a next button on this message
+						getClient().getSession().send(writeNpcSay(npcId, sequence.goBackwardAndGet(), sequence.hasBack(), true));
 						break;
 					case 1: //ok/next
-						if (prevs.hasNext()) {
-							getClient().getSession().send(writeNpcSay(npcId, prevs.goUpAndGet(), prevs.hasPrev(), prevs.showNext()));
-						} else {
+						if (sequence.hasNext())
+							getClient().getSession().send(writeNpcSay(npcId, sequence.goForwardAndGet(), sequence.hasBack(), sequence.showNext()));
+						else
 							resume(null);
-						}
 						break;
 				}
 				break;
@@ -359,6 +363,16 @@ public class ScriptNpc extends PlayerScriptInteraction {
 						fireEndChatEvent();
 						break;
 					case 1: //ok
+						resume(packet.readLengthPrefixedString());
+						break;
+				}
+				break;
+			case ASK_BOX_TEXT:
+				switch (action) {
+					case 0: //end chat (or esc key)
+						fireEndChatEvent();
+						break;
+					case 1:
 						resume(packet.readLengthPrefixedString());
 						break;
 				}
@@ -569,11 +583,11 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeNpcSay(int npcId, String msg, boolean prev, boolean next) {
+	private static byte[] writeNpcSay(int npcId, String msg, boolean back, boolean next) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12
 				+ msg.length());
 		writeCommonNpcAction(lew, npcId, SAY, msg);
-		lew.writeBool(prev);
+		lew.writeBool(back);
 		lew.writeBool(next);
 		return lew.getBytes();
 	}
@@ -585,6 +599,16 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		lew.writeLengthPrefixedString(def);
 		lew.writeShort(min);
 		lew.writeShort(max); //some short that seems to have no purpose?
+		return lew.getBytes();
+	}
+
+	private static byte[] writeNpcBoxText(int npcId, String def, short cols, short rows) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16
+				+ def.length());
+		writeCommonNpcAction(lew, npcId, ASK_BOX_TEXT, "");
+		lew.writeLengthPrefixedString(def);
+		lew.writeShort(cols);
+		lew.writeShort(rows);
 		return lew.getBytes();
 	}
 
@@ -642,7 +666,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		return lew.getBytes();
 	}
 
-	private static class PreviousMessageCache {
+	private static class MessageSequenceCache {
 		private Node first;
 		private Node cursor;
 
@@ -651,11 +675,12 @@ public class ScriptNpc extends PlayerScriptInteraction {
 			if (first == null) {
 				first = insert;
 			} else {
-				Node current = first;
-				while (current.next != null)
-					current = current.next;
-				current.next = insert;
-				insert.prev = current;
+				//this method should only be called at the end of the cached
+				//sequence (i.e. called after a script resume rather than a
+				//sequence cache fetch), so cursor better be the tail node
+				assert cursor.forward == null;
+				cursor.forward = insert;
+				insert.backward = cursor;
 			}
 			cursor = insert;
 		}
@@ -664,13 +689,17 @@ public class ScriptNpc extends PlayerScriptInteraction {
 			first = cursor = null;
 		}
 
-		public String goBackAndGet() {
-			cursor = cursor.prev;
+		public boolean isEmpty() {
+			return (cursor == null);
+		}
+
+		public String goBackwardAndGet() {
+			cursor = cursor.backward;
 			return cursor.data;
 		}
 
-		public String goUpAndGet() {
-			cursor = cursor.next;
+		public String goForwardAndGet() {
+			cursor = cursor.forward;
 			return cursor.data;
 		}
 
@@ -678,23 +707,21 @@ public class ScriptNpc extends PlayerScriptInteraction {
 			return cursor.showNext;
 		}
 
-		public boolean hasPrevOrIsFirst() {
-			return cursor != null && (cursor == first || cursor.prev != null);
-		}
-
-		public boolean hasPrev() {
-			return cursor != null && cursor.prev != null;
+		public boolean hasBack() {
+			//assert cursor.backward.showNext if this returns true
+			return cursor != null && cursor.backward != null;
 		}
 
 		public boolean hasNext() {
-			return cursor != null && cursor.next != null;
+			//assert cursor.showNext if this returns true
+			return cursor != null && cursor.forward != null;
 		}
 
 		private static class Node {
-			private Node prev;
+			private Node backward;
 			private String data;
 			private boolean showNext;
-			private Node next;
+			private Node forward;
 
 			public Node(String data, boolean showNext) {
 				this.data = data;
