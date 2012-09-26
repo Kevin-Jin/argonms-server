@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
- /**
+
+/**
  * Roger's Apple (NPC 2000 Quest 1021) End
  * Maple Road: Lower level of the Training Camp (Map 2)
  *

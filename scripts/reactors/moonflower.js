@@ -17,19 +17,27 @@
  */
 
 /**
- * (Reactor 2000)
- * Rainbow Street: Amherst (Map 1010000),
- *   Rainbow Street: Amherst Townstreet (Map 1010002),
- *   Rainbow Street: Snail Field of Flowers (Map 1010004),
- *   Rainbow Street: The Field East of Amherst (Map 1020000),
- *   Orbis: Top of the Hill (Map 200000300)
+ * moonflower1 (Reactor 9108000) [custom],
+ *   moonflower2 (Reactor 9108001) [custom],
+ *   moonflower3 (Reactor 9108002) [custom],
+ *   moonflower4 (Reactor 9108003) [custom],
+ *   moonflower5 (Reactor 9108004) [custom],
+ *   moonflower6 (Reactor 9108005) [custom]
+ * Hidden Street: Primrose Hill (Map 910010000)
  *
- * Scrap box in Amherst area and in Top of the Hill in Orbis.
- * Drops miscellaneous potions and mesos.
- * Locations in Amherst also drop quest items for Pio's Collecting Recycled
- * Goods (i.e. Rusty screw and Old Wooden Board).
+ * Henesys PQ flowers.
+ * Activated and blooms when the correct color primrose seed is dropped in its
+ * area.
+ * Overridden from script-less reactors to trigger the Moon Bunny spawn.
  *
  * @author GoldenKevin
  */
 
-reactor.dropItems(0, 0, 0, 4031161, 1000000, 4031162, 1000000);
+let event = reactor.getEvent("moonrabbit");
+let newCount = event.getVariable("flowers") + 1;
+event.setVariable("flowers", newCount);
+if (newCount == 6) {
+	let map = event.getMap(910010000);
+	map.setNoSpawn(false);
+	map.spawnMob(9300061, -180, -196);
+}

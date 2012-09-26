@@ -42,6 +42,7 @@ public class Reactor extends AbstractEntity {
 	private int delay;
 	private byte state;
 	private boolean alive;
+	private String customScript;
 
 	public Reactor(ReactorStats reactorStats) {
 		this.stats = reactorStats;
@@ -60,6 +61,10 @@ public class Reactor extends AbstractEntity {
 		this.delay = delay;
 	}
 
+	public void overrideScript(String script) {
+		customScript = script;
+	}
+
 	public String getName() {
 		return name;
 	}
@@ -74,6 +79,10 @@ public class Reactor extends AbstractEntity {
 
 	public State getState() {
 		return stats.getStates().get(Byte.valueOf(state));
+	}
+
+	private String getScript() {
+		return customScript == null ? stats.getScript() : customScript;
 	}
 
 	public Pair<Integer, Short> getItemTrigger() {
@@ -98,31 +107,44 @@ public class Reactor extends AbstractEntity {
 		return new Rectangle(x, y, width, height);
 	}
 
-	private void triggered(GameCharacter p) {
-		if (getState() != null) {
+	private void triggered(GameCharacter p, boolean itemTrigger) {
+		//TODO: if stats.getScript() == null and we are using MCDB, try loading
+		//from MCDB's drop table with the reactor's data id as the dropperid
+		if (itemTrigger) {
 			p.getMap().sendToAll(GamePackets.writeTriggerReactor(this));
+			if (getState() == null) {
+				String script = getScript();
+				if (script != null)
+					ReactorScriptManager.getInstance().runScript(script, this, p.getClient());
+			}
 		} else {
-			//TODO: if script does not exist and we are using MCDB, try loading
-			//from MCDB's drop table with the reactor's data id as the dropperid
-			ReactorScriptManager.getInstance().runScript(getDataId(), this, p.getClient());
-			alive = false;
-			p.getMap().destroyReactor(this);
+			if (getState() != null) {
+				p.getMap().sendToAll(GamePackets.writeTriggerReactor(this));
+			} else {
+				String script = getScript();
+				if (script != null)
+					ReactorScriptManager.getInstance().runScript(script, this, p.getClient());
+				alive = false;
+				p.getMap().destroyReactor(this);
+			}
 		}
 	}
 
 	public void hit(GameCharacter p, short stance) {
-		state = getState().getNextState();
-		triggered(p);
+		State s = getState();
+		boolean itemTrigger = (s.getType() == TYPE_ITEM_TRIGGERED);
+		state = s.getNextState();
+		triggered(p, itemTrigger);
 	}
 
 	public void touched(GameCharacter p) {
 		state++;
-		triggered(p);
+		triggered(p, false);
 	}
 
 	public void untouched(GameCharacter p) {
 		state--;
-		triggered(p);
+		triggered(p, false);
 	}
 
 	public final void reset() {

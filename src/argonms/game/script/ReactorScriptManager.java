@@ -49,8 +49,7 @@ public class ReactorScriptManager {
 		reactorScriptPath = scriptsPath + "reactors" + GlobalConstants.DIR_DELIMIT;
 	}
 
-	public boolean runScript(int reactorId, Reactor reactor, GameClient client) {
-		String scriptName = ReactorDataLoader.getInstance().getReactorStats(reactorId).getScript();
+	public boolean runScript(String scriptName, Reactor reactor, GameClient client) {
 		Context cx = Context.enter();
 		try {
 			FileReader reader = new FileReader(reactorScriptPath + scriptName + ".js");
@@ -58,7 +57,7 @@ public class ReactorScriptManager {
 			cx.setOptimizationLevel(1);
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			cx.getWrapFactory().setJavaPrimitiveWrap(false);
-			ScriptReactor actions = new ScriptReactor(reactorId, reactor, client, globalScope);
+			ScriptReactor actions = new ScriptReactor(reactor, client, globalScope);
 			globalScope.put("reactor", globalScope, Context.javaToJS(actions, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
 			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));

@@ -30,6 +30,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
+//TODO: GMS-like conversation
 function clear(event, stage, exp) {
 	event.setVariable(stage + "stageclear", true);
 	map.screenEffect("quest/party/clear");
