@@ -87,8 +87,9 @@ public class GameMap {
 	private final AtomicInteger monsters;
 	private final Map<String, String> portalOverrides;
 	private final Set<Short> occupiedChairs;
-	private Map<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
-	private Map<GameCharacter, ScheduledFuture<?>> decHpTasks;
+	private final Map<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
+	private final Map<GameCharacter, ScheduledFuture<?>> decHpTasks;
+	private volatile boolean disableSpawn;
 
 	protected GameMap(MapStats stats) {
 		this.stats = stats;
@@ -125,8 +126,12 @@ public class GameMap {
 		}
 		if (stats.getTimeLimit() > 0 && stats.getForcedReturn() != GlobalConstants.NULL_MAP)
 			timeLimitTasks = new ConcurrentHashMap<GameCharacter, ScheduledFuture<?>>();
+		else
+			timeLimitTasks = null;
 		if (stats.getDecHp() > 0)
 			decHpTasks = new ConcurrentHashMap<GameCharacter, ScheduledFuture<?>>();
+		else
+			decHpTasks = null;
 	}
 
 	public MapStats getStaticData() {
@@ -414,6 +419,10 @@ public class GameMap {
 		}
 	}
 
+	public void setNoSpawn(boolean value) {
+		disableSpawn = value;
+	}
+
 	public void spawnMist(final Mist mist, final int duration, final ScheduledFuture<?> periodicTask) {
 		spawnEntity(mist);
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
@@ -551,6 +560,8 @@ public class GameMap {
 	}
 
 	public void respawnReactors() {
+		//need to make a copy of reactor entity pool by getAllEntities so we
+		//don't get ConcurrentModificationException when we spawn reactors
 		for (MapEntity ent : getAllEntities(EntityType.REACTOR)) {
 			Reactor r = (Reactor) ent;
 			if (!r.isAlive())
@@ -560,7 +571,7 @@ public class GameMap {
 	}
 
 	public void respawnMobs() {
-		if (entPools.get(EntityType.PLAYER).getSizeSafely() == 0)
+		if (entPools.get(EntityType.PLAYER).getSizeSafely() == 0 || disableSpawn)
 			return;
 		monsterSpawns.lockRead();
 		try {
@@ -686,6 +697,20 @@ public class GameMap {
 
 	public void revertPortal(String portalName) {
 		portalOverrides.remove(portalName);
+	}
+
+	public void overrideReactor(String reactorName, String script) {
+		EntityPool reactors = entPools.get(EntityType.REACTOR);
+		reactors.lockRead();
+		try {
+			for (MapEntity ent : reactors.allEnts()) {
+				Reactor r = (Reactor) ent;
+				if (reactorName.equals(r.getName()))
+					r.overrideScript(script);
+			}
+		} finally {
+			reactors.unlockRead();
+		}
 	}
 
 	public Point calcPointBelow(Point initial) {

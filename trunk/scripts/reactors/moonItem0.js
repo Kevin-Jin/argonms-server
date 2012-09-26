@@ -17,19 +17,22 @@
  */
 
 /**
- * (Reactor 2000)
- * Rainbow Street: Amherst (Map 1010000),
- *   Rainbow Street: Amherst Townstreet (Map 1010002),
- *   Rainbow Street: Snail Field of Flowers (Map 1010004),
- *   Rainbow Street: The Field East of Amherst (Map 1020000),
- *   Orbis: Top of the Hill (Map 200000300)
+ * nut (Reactor 9102002),
+ *   nut (Reactor 9102003) [linked from moonItem1],
+ *   nut (Reactor 9102004) [linked from moonItem2],
+ *   nut (Reactor 9102005) [linked from moonItem3],
+ *   nut (Reactor 9102006) [linked from moonItem4],
+ *   nut (Reactor 9102007) [linked from moonItem5]
+ * Hidden Street: Primrose Hill (Map 910010000)
  *
- * Scrap box in Amherst area and in Top of the Hill in Orbis.
- * Drops miscellaneous potions and mesos.
- * Locations in Amherst also drop quest items for Pio's Collecting Recycled
- * Goods (i.e. Rusty screw and Old Wooden Board).
+ * Henesys PQ plants.
+ * Drops random colors of primrose seeds to advance first stage of Henesys party
+ * quest.
  *
  * @author GoldenKevin
  */
 
-reactor.dropItems(0, 0, 0, 4031161, 1000000, 4031162, 1000000);
+let items = [4001095, 4001096, 4001097, 4001098, 4001099, 4001100];
+if (Math.floor(Math.random() * 2) == 1) //50% chance a seed is dropped
+	//8.33% chance a particular color seed is drpoped
+	reactor.dropItems(0, 0, 0, items[Math.floor(Math.random() * items.length)], 1000000);

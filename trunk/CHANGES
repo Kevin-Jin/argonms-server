@@ -2155,6 +2155,15 @@
 	* No need for Mob.controller to be a WeakReference since we null the
 	reference whenever the controlling player leaves the map.
 
+2012-09-26  GoldenKevin  (revision 146)
+
+	* Fixed item based reactors.
+	* Started work on Henesys PQ. Added all NPC scripts and added event script.
+	No event code handles Moon Bunny getting hurt yet and no rice cakes are
+	dropped.
+	* Updated Henesys PQ scripts to be more GMS-like.
+	* Kerning PQ map config initialization is done before party is warped in.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -20,7 +20,7 @@
  * Mr. Moneybags (NPC 9300010)
  * Victoria Road: Henesys (Map 100000000)
  *
- * Event NPC.
+ * Chinese New Year Event NPC.
  *
  * @author GoldenKevin (content from Vana r2111)
  */

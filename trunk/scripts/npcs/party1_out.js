@@ -31,6 +31,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
+//TODO: GMS-like conversation
 if (map.getId() == 103000890) {
 	npc.sayNext("See you next time.");
 	player.changeMap(103000000, "mid00"); //TODO: shouldn't this be a random portal in Kerning?

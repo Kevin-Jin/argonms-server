@@ -17,33 +17,47 @@
  */
 
 /**
- * Logic for starting and exiting Kerning City party quest (AKA party1) using
+ * Logic for starting and exiting Henesys party quest (AKA moonrabbit) using
  * timers and party member triggers.
  *
  * @author GoldenKevin
  */
 
-let EXIT_MAP = 103000890;
+let EXIT_MAP = 910010300;
 
 let party;
 let members;
 let endTime;
 
 function init(attachment) {
-	for (let stage = 1; stage <= 4; stage++)
-		event.getMap(103000800 - 1 + stage).overridePortal("next00", "party1");
+	let map = event.getMap(910010000);
+	map.setNoSpawn(true);
+	map.clearMobs();
+	map.resetReactors();
+	map.overrideReactor("moonflower1", "moonflower");
+	map.overrideReactor("moonflower2", "moonflower");
+	map.overrideReactor("moonflower3", "moonflower");
+	map.overrideReactor("moonflower4", "moonflower");
+	map.overrideReactor("moonflower5", "moonflower");
+	map.overrideReactor("moonflower6", "moonflower");
 
 	party = attachment;
-	party.loseItem(4001008);
-	party.loseItem(4001007);
-	party.changeMap(103000800, "st00");
+	party.loseItem(4001095);
+	party.loseItem(4001096);
+	party.loseItem(4001097);
+	party.loseItem(4001098);
+	party.loseItem(4001099);
+	party.loseItem(4001100);
+	party.loseItem(4001101);
+	party.changeMap(910010000);
 	members = party.getLocalMembers();
 
-	event.getMap(103000800).showTimer(30 * 60);
-	event.startTimer("kick", 30 * 60 * 1000);
-	endTime = new Date().getTime() + 30 * 60 * 1000;
+	map.showTimer(10 * 60);
+	event.startTimer("kick", 10 * 60 * 1000);
+	endTime = new Date().getTime() + 10 * 60 * 1000;
 
 	event.setVariable("members", members);
+	event.setVariable("flowers", 0);
 
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(event);
@@ -59,7 +73,7 @@ function removePlayer(playerId, changeMap) {
 			//called and this method is not called again by the player
 			members[i].setEvent(null);
 			if (changeMap || members[i].getId() != playerId)
-				members[i].changeMap(EXIT_MAP, "st00");
+				members[i].changeMap(EXIT_MAP);
 		}
 		event.destroyEvent();
 	} else {
@@ -69,7 +83,7 @@ function removePlayer(playerId, changeMap) {
 				//not called and this method is not called again by the player
 				members[i].setEvent(null);
 				if (changeMap)
-					members[i].changeMap(EXIT_MAP, "st00");
+					members[i].changeMap(EXIT_MAP);
 				//collapse the members array so we don't accidentally warp
 				//this member again if the leader leaves later.
 				members.splice(i, 1);
@@ -87,11 +101,8 @@ function playerDisconnected(player) {
 }
 
 function playerChangedMap(player, destination) {
-	//TODO: is it true that even when a non-leader clicks Nella, the entire
-	//party is booted? and that GMS forces party out when only two members
-	//remain alive and online?
 	if (destination.getId() == EXIT_MAP)
-		//player died and respawned or clicked Nella to leave PQ
+		//player died and respawned or clicked Growlie to leave PQ
 		//changeMap is false so player doesn't get re-warped to exit map
 		removePlayer(player.getId(), false);
 	else
@@ -114,6 +125,12 @@ function deinit() {
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(null);
 
-	for (let stage = 1; stage <= 4; stage++)
-		event.getMap(103000800 - 1 + stage).revertPortal("next00");
+	let map = event.getMap(910010000);
+	map.setNoSpawn(false);
+	map.revertReactor("moonflower");
+	map.revertReactor("moonflower");
+	map.revertReactor("moonflower");
+	map.revertReactor("moonflower");
+	map.revertReactor("moonflower");
+	map.revertReactor("moonflower");
 }

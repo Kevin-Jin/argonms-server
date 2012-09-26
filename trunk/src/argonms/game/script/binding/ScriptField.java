@@ -81,6 +81,14 @@ public class ScriptField {
 		map.overridePortal(portalName, script);
 	}
 
+	public void overrideReactor(String reactorName, String script) {
+		map.overrideReactor(reactorName, script);
+	}
+
+	public void revertReactor(String reactorName) {
+		map.overrideReactor(reactorName, null);
+	}
+
 	public void revertPortal(String portalName) {
 		map.revertPortal(portalName);
 	}
@@ -98,5 +106,14 @@ public class ScriptField {
 		Mob mob = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map);
 		mob.setPosition(new Point(x, y));
 		map.spawnMonster(mob);
+	}
+
+	public void setNoSpawn(boolean value) {
+		map.setNoSpawn(value);
+	}
+
+	public void clearMobs() {
+		for (MapEntity ent : map.getAllEntities(MapEntity.EntityType.MONSTER))
+			map.removeMonster((Mob) ent);
 	}
 }
