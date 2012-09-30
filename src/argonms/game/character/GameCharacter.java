@@ -2084,13 +2084,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			//called for the same questId and mobId (e.g. we used a skill that
 			//attacks more than one monster), we actually show the client an
 			//improper fraction in the quest progress. not really a big deal
-			status.killedMob(mobId);
-			getClient().getSession().send(GamePackets.writeQuestProgress(questId, status.getData()));
-			//completeReqs can never be null because in order for us to add
-			//something to questReqWatching, it had to be not null
-			Map<Integer, Short> mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts();
 			Integer oId = Integer.valueOf(mobId);
-			if (status.getMobCount(mobId) >= mobReq.get(oId)) {
+			short mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts().get(oId);
+			int progress = status.killedMob(oId, mobReq);
+			getClient().getSession().send(GamePackets.writeQuestProgress(questId, status.getData()));
+			if (progress == mobReq) {
 				removeFromWatchedList(questId, QuestRequirementType.MOB, oId);
 				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
 					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));

@@ -18,7 +18,7 @@
 
 package argonms.game.loading.quest;
 
-import argonms.common.util.Rng;
+import argonms.common.character.PlayerJob;
 import argonms.common.util.TimeTool;
 
 /**
@@ -30,14 +30,14 @@ public class QuestItemStats {
 	private final short qty;
 	private int prob;
 	private byte gender;
-	private short job;
+	private short jobs;
 	private long expireTime;
 	private int period;
 
 	protected QuestItemStats(int id, short count) {
 		this.itemId = id;
 		this.qty = count;
-		this.job = -1;
+		this.jobs = PlayerJob.ALL_JOBS_BITSTRING;
 		this.gender = 2;
 	}
 
@@ -57,10 +57,6 @@ public class QuestItemStats {
 		return prob;
 	}
 
-	protected boolean roll(int sum) {
-		return sum == 0 || prob == 0 || prob > Rng.getGenerator().nextInt(sum);
-	}
-
 	protected void setGender(byte gender) {
 		this.gender = gender;
 	}
@@ -70,11 +66,11 @@ public class QuestItemStats {
 	}
 
 	protected void setJob(short job) {
-		this.job = job;
+		this.jobs = job;
 	}
 
 	protected boolean jobMatch(short pJob) {
-		return job == -1 || job == pJob;
+		return PlayerJob.isJobInBitString(pJob, jobs);
 	}
 
 	protected void setDateExpire(int dateExpire) {

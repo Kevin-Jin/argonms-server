@@ -2179,6 +2179,14 @@
 	* Ariant Coliseum bomb mob actually explodes. All mobs that self destruct on
 	a timer rather than at a certain HP are now supported.
 
+2012-09-30  GoldenKevin  (revision 148)
+
+	* Fixed quest mob progress going over the requirement if the player attacked
+	more than one of the required mobs and then killed some of them after
+	completing the requirement.
+	* Fixed random item rewards for quests.
+	* Fixed job check for quest item rewards.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
