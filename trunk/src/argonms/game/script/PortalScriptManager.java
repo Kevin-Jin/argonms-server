@@ -58,7 +58,7 @@ public class PortalScriptManager {
 			ScriptPortal portalManager = new ScriptPortal(p.getClient(), globalScope);
 			globalScope.put("portal", globalScope, Context.javaToJS(portalManager, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(p), globalScope));
-			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(p.getMap()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(p.getMap(), globalScope), globalScope));
 			globalScope.put("party", globalScope, Context.javaToJS(p.getParty() == null ? null : new ScriptParty(p.getClient().getChannel(), p.getParty(), globalScope), globalScope));
 			cx.evaluateReader(globalScope, reader, "portals/" + scriptName + ".js", 1, null);
 			reader.close();

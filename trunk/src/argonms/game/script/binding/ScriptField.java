@@ -24,16 +24,21 @@ import argonms.game.field.MapEntity;
 import argonms.game.field.entity.Mob;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.ChatHandler;
 import java.awt.Point;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ScriptField {
+	private final Scriptable globalScope;
 	private final GameMap map;
 
-	public ScriptField(GameMap map) {
+	public ScriptField(GameMap map, Scriptable globalScope) {
+		this.globalScope = globalScope;
 		this.map = map;
 	}
 
@@ -59,6 +64,10 @@ public class ScriptField {
 
 	public void soundEffect(String name) {
 		map.sendToAll(GamePackets.writeMapEffect((byte) 4, name));
+	}
+
+	public void blueMessage(String message) {
+		map.sendToAll(GamePackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void showTimer(int seconds) {
@@ -102,10 +111,18 @@ public class ScriptField {
 		map.respawnReactors();
 	}
 
-	public void spawnMob(int mobId, int x, int y) {
+	public Object spawnMob(int mobId, int x, int y) {
 		Mob mob = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map);
 		mob.setPosition(new Point(x, y));
 		map.spawnMonster(mob);
+		return Context.javaToJS(new ScriptMob(mob), globalScope);
+	}
+
+	public Object spawnMob(int mobId, int x, int y, boolean faceRight) {
+		Mob mob = new Mob(MobDataLoader.getInstance().getMobStats(mobId), map, faceRight ? (byte) 4 : (byte) 5);
+		mob.setPosition(new Point(x, y));
+		map.spawnMonster(mob);
+		return Context.javaToJS(new ScriptMob(mob), globalScope);
 	}
 
 	public void setNoSpawn(boolean value) {
@@ -114,6 +131,6 @@ public class ScriptField {
 
 	public void clearMobs() {
 		for (MapEntity ent : map.getAllEntities(MapEntity.EntityType.MONSTER))
-			map.removeMonster((Mob) ent);
+			map.killMonster((Mob) ent, null);
 	}
 }

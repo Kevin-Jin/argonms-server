@@ -2164,6 +2164,21 @@
 	* Updated Henesys PQ scripts to be more GMS-like.
 	* Kerning PQ map config initialization is done before party is warped in.
 
+2012-09-30  GoldenKevin  (revision 147)
+
+	* Support for the newest Kvj format.
+	* Fixed events/ship_ossyria.js not clearing Balrogs before the start of its
+	next run.
+	* Growlie now warps party out in the same conversation that it clears the
+	stage. The leader does not have to click him again after clearing.
+	* Fixed Henesys PQ event script not destroying itself when exiting from Pig
+	Town.
+	* Fixed Moon Bunny spawning in the wrong direction in Henesys PQ.
+	* Henesys PQ scripts are functionally complete - implemented rice cake drops
+	and Moon Bunny getting hurt.
+	* Ariant Coliseum bomb mob actually explodes. All mobs that self destruct on
+	a timer rather than at a certain HP are now supported.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

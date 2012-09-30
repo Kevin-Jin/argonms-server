@@ -21,6 +21,7 @@ package argonms.game.net.external.handler;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.util.Rng;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.DiseaseTools;
@@ -110,6 +111,7 @@ public final class TakeDamageHandler {
 							break;
 					}
 					m.hurt(p, hurtDmg);
+					p.getMap().sendToAll(writeHurtMonster(m, hurtDmg, false));
 				}
 				stance = packet.readByte();
 				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.POWER_STANCE) && !p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
@@ -163,6 +165,25 @@ public final class TakeDamageHandler {
 		p.getMap().sendToAll(writeHurtPuppet(p, puppet, misc, damage, mobEid));
 	}
 
+	public static void handleMobDamageMob(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
+		int attackerEid = packet.readInt();
+		/*int playerId = */packet.readInt();
+		int attackedEid = packet.readInt();
+
+		Mob attacker = (Mob) p.getMap().getEntityById(EntityType.MONSTER, attackerEid);
+		Mob attacked = (Mob) p.getMap().getEntityById(EntityType.MONSTER, attackedEid);
+
+		if (attacker != null && attacked != null) {
+			//TODO: Fix formula
+			int damage = attacker.getLevel() * Rng.getGenerator().nextInt(100) / 10;
+			p.getMap().damageMonster(null, attacked, damage);
+			if (p.getEvent() != null)
+				p.getEvent().friendlyMobHurt(attacked, p.getMapId());
+			p.getMap().sendToAll(writeHurtMonster(attacked, damage, true));
+		}
+	}
+
 	private static byte[] writeHurtPuppet(GameCharacter p, PlayerSkillSummon puppet, byte misc, int damage, int mobEid) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.DAMAGE_SUMMON);
@@ -198,6 +219,19 @@ public final class TakeDamageHandler {
 		} else { //repetitive much?
 			lew.writeInt(damage);
 			lew.writeInt(damage);
+		}
+		return lew.getBytes();
+	}
+
+	private static byte[] writeHurtMonster(Mob monster, int damage, boolean byMob) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(!byMob ? 11 : 19);
+		lew.writeShort(ClientSendOps.DAMAGE_MONSTER);
+		lew.writeInt(monster.getId());
+		lew.writeBool(byMob);
+		lew.writeInt(damage);
+		if (byMob) {
+			lew.writeInt(monster.getHp());
+			lew.writeInt(monster.getMaxHp());
 		}
 		return lew.getBytes();
 	}

@@ -18,7 +18,11 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Mob;
+import java.util.Collections;
 
 /**
  *
@@ -26,11 +30,9 @@ import argonms.game.field.entity.Mob;
  */
 public class ScriptMob {
 	private Mob m;
-	private int mapId;
 
-	public ScriptMob(Mob m, int mapId) {
+	public ScriptMob(Mob m) {
 		this.m = m;
-		this.mapId = mapId;
 	}
 
 	public int getDataId() {
@@ -42,7 +44,7 @@ public class ScriptMob {
 	}
 
 	public int getMapId() {
-		return mapId;
+		return m.getMap().getDataId();
 	}
 
 	public int getHp() {
@@ -51,5 +53,17 @@ public class ScriptMob {
 
 	public int getMaxHp() {
 		return m.getMaxHp();
+	}
+
+	public void dropItem(int itemId) {
+		InventorySlot item = InventoryTools.makeItemWithId(itemId);
+		m.getMap().drop(Collections.singletonList(new ItemDrop(item)), m, ItemDrop.PICKUP_ALLOW_ALL, 0);
+	}
+
+	public int getDropAfter(boolean afterHit) {
+		int dropTime = m.getDropItemPeriod() * 1000;
+		if (afterHit)
+			dropTime += m.getAnimationTime("hit1");
+		return dropTime;
 	}
 }

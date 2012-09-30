@@ -108,7 +108,7 @@ public class NpcScriptManager {
 				convoMan = new ScriptNpc(npcId, client, globalScope);
 			globalScope.put("npc", globalScope, Context.javaToJS(convoMan, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
-			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap(), globalScope), globalScope));
 			globalScope.put("party", globalScope, Context.javaToJS(client.getPlayer().getParty() == null ? null : new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);
@@ -138,7 +138,7 @@ public class NpcScriptManager {
 			convoMan = new ScriptQuest(npcId, questId, client, globalScope);
 			globalScope.put("npc", globalScope, Context.javaToJS(convoMan, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(client.getPlayer()), globalScope));
-			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap()), globalScope));
+			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(client.getPlayer().getMap(), globalScope), globalScope));
 			globalScope.put("party", globalScope, Context.javaToJS(client.getPlayer().getParty() == null ? null : new ScriptParty(client.getChannel(), client.getPlayer().getParty(), globalScope), globalScope));
 			client.setNpc(convoMan);
 			cx.executeScriptWithContinuations(script, globalScope);

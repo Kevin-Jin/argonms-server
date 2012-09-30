@@ -23,14 +23,15 @@
  * @author GoldenKevin
  */
 
-let EXIT_MAP = 910010300;
+let PLAY_MAP = 910010000, EXIT_MAP = 910010300, PIG_TOWN_EXIT_MAP = 910010400;
 
+let map;
 let party;
 let members;
 let endTime;
 
 function init(attachment) {
-	let map = event.getMap(910010000);
+	map = event.getMap(PLAY_MAP);
 	map.setNoSpawn(true);
 	map.clearMobs();
 	map.resetReactors();
@@ -49,7 +50,7 @@ function init(attachment) {
 	party.loseItem(4001099);
 	party.loseItem(4001100);
 	party.loseItem(4001101);
-	party.changeMap(910010000);
+	party.changeMap(PLAY_MAP);
 	members = party.getLocalMembers();
 
 	map.showTimer(10 * 60);
@@ -58,6 +59,7 @@ function init(attachment) {
 
 	event.setVariable("members", members);
 	event.setVariable("flowers", 0);
+	event.setVariable("cakes", 0);
 
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(event);
@@ -101,7 +103,7 @@ function playerDisconnected(player) {
 }
 
 function playerChangedMap(player, destination) {
-	if (destination.getId() == EXIT_MAP)
+	if (destination.getId() == EXIT_MAP || destination.getId() == PIG_TOWN_EXIT_MAP)
 		//player died and respawned or clicked Growlie to leave PQ
 		//changeMap is false so player doesn't get re-warped to exit map
 		removePlayer(player.getId(), false);
@@ -118,6 +120,25 @@ function timerExpired(key) {
 		case "kick":
 			removePlayer(party.getLeader(), true);
 			break;
+		case "riceCakeDrop": {
+			let cakes = parseInt(event.getVariable("cakes")) + 1;
+			let moonBunnyMob = event.getVariable("moonBunnyMob");
+			moonBunnyMob.dropItem(4001101);
+			event.setVariable("cakes", cakes);
+			map.blueMessage("The Moon Bunny made rice cake number " + cakes + ".");
+			event.startTimer("riceCakeDrop", moonBunnyMob.getDropAfter(false));
+			break;
+		}
+	}
+}
+
+function friendlyMobHurt(mob) {
+	if (mob.getHp() != 0) {
+		event.stopTimer("riceCakeDrop");
+		event.startTimer("riceCakeDrop", event.getVariable("moonBunnyMob").getDropAfter(true));
+	} else {
+		//Moon Bunny is dead. Kick everyone out.
+		removePlayer(party.getLeader(), true);
 	}
 }
 
@@ -125,7 +146,6 @@ function deinit() {
 	for (let i = 0; i < members.length; i++)
 		members[i].setEvent(null);
 
-	let map = event.getMap(910010000);
 	map.setNoSpawn(false);
 	map.revertReactor("moonflower");
 	map.revertReactor("moonflower");

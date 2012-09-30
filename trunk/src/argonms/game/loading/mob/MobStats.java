@@ -25,6 +25,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.util.Rng;
 import argonms.game.GameServer;
 import argonms.game.field.Element;
+import argonms.game.field.entity.Mob;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -41,7 +42,7 @@ import java.util.Random;
 public class MobStats {
 	private final int mobid;
 	private final Map<Element, Byte> elemAttr;
-	private final List<Integer> loseItems;
+	private final Map<Integer, Byte> loseItems;
 	private final List<Integer> summons;
 	private final Map<Byte, Attack> attacks;
 	private final List<Skill> skills;
@@ -54,6 +55,7 @@ public class MobStats {
 	private int exp;
 	private boolean undead;
 	private int removeAfter;
+	private byte deathAnimation;
 	private boolean hideHp;
 	private boolean hideName;
 	private byte hpTagColor;
@@ -64,16 +66,19 @@ public class MobStats {
 	private boolean firstAttack;
 	private int buff;
 	private MesoDropChance mesoDrop;
+	private byte dropItemPeriod;
 
 	protected MobStats(int mobid) {
 		this.mobid = mobid;
 		this.elemAttr = new EnumMap<Element, Byte>(Element.class);
-		this.loseItems = new ArrayList<Integer>();
+		this.loseItems = new HashMap<Integer, Byte>();
 		this.summons = new ArrayList<Integer>();
 		this.attacks = new HashMap<Byte, Attack>();
 		this.skills = new ArrayList<Skill>();
 		this.delays = new HashMap<String, Integer>();
 		this.itemDrops = new HashMap<Integer, Integer>();
+		this.removeAfter = -1;
+		this.deathAnimation = Mob.DESTROY_ANIMATION_NORMAL;
 	}
 
 	protected void setLevel(short level) {
@@ -111,6 +116,10 @@ public class MobStats {
 		this.removeAfter = time;
 	}
 
+	protected void setDestroyAnimation(byte animation) {
+		this.deathAnimation = animation;
+	}
+
 	protected void setHideHp() {
 		this.hideHp = true;
 	}
@@ -135,8 +144,8 @@ public class MobStats {
 		this.sd = hp;
 	}
 
-	protected void addLoseItem(int itemid) {
-		this.loseItems.add(Integer.valueOf(itemid));
+	protected void addLoseItem(int itemid, byte prob) {
+		this.loseItems.put(Integer.valueOf(itemid), Byte.valueOf(prob));
 	}
 
 	protected void setInvincible() {
@@ -173,6 +182,10 @@ public class MobStats {
 
 	protected void setMesoDrop(int chance, int min, int max) {
 		this.mesoDrop = new MesoDropChance(chance, min, max);
+	}
+
+	protected void setDropItemPeriod(byte period) {
+		dropItemPeriod = period;
 	}
 
 	public int getMobId() {
@@ -212,6 +225,10 @@ public class MobStats {
 		return removeAfter;
 	}
 
+	public byte getDeathAnimation() {
+		return deathAnimation;
+	}
+
 	public boolean isHpHidden() {
 		return hideHp;
 	}
@@ -236,8 +253,13 @@ public class MobStats {
 		return sd;
 	}
 
-	public List<Integer> getLoseItems() {
-		return Collections.unmodifiableList(loseItems);
+	public List<Integer> getItemsToTake() {
+		List<Integer> list = new ArrayList<Integer>();
+		Random r = Rng.getGenerator();
+		for (Entry<Integer, Byte> entry : loseItems.entrySet())
+			if (r.nextInt(100) < entry.getValue().byteValue())
+				list.add(entry.getKey());
+		return list;
 	}
 
 	public boolean isInvincible() {
@@ -313,6 +335,10 @@ public class MobStats {
 			}
 		}
 		return items;
+	}
+
+	public byte getDropItemPeriod() {
+		return dropItemPeriod;
 	}
 
 	private static class MesoDropChance {

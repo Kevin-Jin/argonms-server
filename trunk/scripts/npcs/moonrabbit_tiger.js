@@ -25,15 +25,19 @@
  * @author GoldenKevin
  */
 
-
-let event = npc.getEvent("moonrabbit");
-if (event.getVariable("cleared")) {
-	//TODO: GMS-like line
-	npc.sayNext("You made all these #b#t4001101##k for only me. Bon voyage!");
+function warpPartyAfterClear() {
 	let members = event.getVariable("members");
 	for (let i = 0; i < members.length; i++)
 		if (members[i].getHp() > 0)
 			player.changeMap(910010100, "st00");
+}
+
+let event = npc.getEvent("moonrabbit");
+if (event.getVariable("cleared")) {
+	//in case leader clicked End Chat instead of Next after Growlie cleared the stage.
+	npc.sayNext("Please come see me next time for more #b#t4001101##k. Have a safe trip home!");
+
+	warpPartyAfterClear();
 } else {
 	let str = "Growl! I am Growlie, always ready to protect this place.\r\nWhat brought you here?\r\n#b"
 			+ "#L0#Please tell me what this place is all about.#l\r\n";
@@ -52,16 +56,18 @@ if (event.getVariable("cleared")) {
 		case 1:
 			if (player.hasItem(4001101, 10)) {
 				npc.sayNext("Oh... isn't this rice cake made by Moon Bunny? Please hand me the rice cake.");
-				npc.sayNext("Mmmm ... this is delicious. Please come see me next time for more #b#t4001101##k. Have a safe trip home!");
-				player.loseItem(4001101, 10);
 
+				player.loseItem(4001101, 10);
 				event.setVariable("cleared", true);
 				map.screenEffect("quest/party/clear");
 				map.soundEffect("Party1/Clear");
 				let members = event.getVariable("members");
 				for (let i = 0; i < members.length; i++)
 					if (members[i].getHp() > 0)
-						members[i].gainExp(1500);
+						members[i].gainExp(1600);
+				npc.sayNext("Mmmm ... this is delicious. Please come see me next time for more #b#t4001101##k. Have a safe trip home!");
+
+				warpPartyAfterClear();
 			} else {
 				npc.say("I advise you to check and make sure that you have indeed gathered up #b10 #t4001101#s#k.");
 			}

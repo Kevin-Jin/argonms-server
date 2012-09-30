@@ -2211,6 +2211,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		this.event = event;
 	}
 
+	public EventManipulator getEvent() {
+		return event;
+	}
+
 	@Override
 	public EntityType getEntityType() {
 		return EntityType.PLAYER;
