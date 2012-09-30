@@ -25,6 +25,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
+import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -129,8 +130,7 @@ public class QuestRewards {
 	}
 
 	private boolean canGiveItem(GameCharacter p, QuestItemStats item) {
-		return item.jobMatch(p.getJob()) && item.genderMatch(p.getGender())
-				&& item.notExpired() && item.roll(sumItemProbs);
+		return item.jobMatch(p.getJob()) && item.genderMatch(p.getGender()) && item.notExpired();
 	}
 
 	private void giveItem(GameCharacter p, int itemId, short quantity, int period) {
@@ -177,18 +177,25 @@ public class QuestRewards {
 
 	//TODO: check if we can fit all items in the player's inventory.
 	private void awardItems(GameCharacter p) {
-		boolean awardedRandomItem = false;
+		boolean findRandomItem = (sumItemProbs != 0);
+		int random = findRandomItem ? Rng.getGenerator().nextInt(sumItemProbs) : 0, runningProbs = 0;
+
 		for (QuestItemStats item : items) {
-			if (canGiveItem(p, item)) {
+			boolean give = canGiveItem(p, item);
+			if (item.getProb() != 0 && give) {
+				if (findRandomItem && random < (runningProbs += item.getProb()))
+					//use this item - leave give = true and don't look for more random items
+					findRandomItem = false;
+				else
+					//don't give this item
+					give = false;
+			}
+			if (give) {
 				short quantity = item.getCount();
-				if (quantity > 0) {
-					if (item.getProb() == 0 || !awardedRandomItem)
-						giveItem(p, item.getItemId(), quantity, item.getPeriod());
-				} else {
+				if (quantity > 0)
+					giveItem(p, item.getItemId(), quantity, item.getPeriod());
+				else
 					takeItem(p, item.getItemId(), quantity);
-				}
-				if (item.getProb() != 0)
-					awardedRandomItem = true;
 			}
 		}
 	}

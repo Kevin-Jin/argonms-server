@@ -96,9 +96,36 @@ public class QuestEntry {
 		completionTime = time;
 	}
 
-	public void killedMob(int mobId) {
-		Integer oId = Integer.valueOf(mobId);
-		mobCount.get(oId).incrementAndGet();
+	/**
+	 * Atomically adds a value to an AtomicInteger and clip the resulting value
+	 * to within a certain range. This is equivalent to
+	 * <pre>
+	 *   int newValue = i.addAndGet(delta);
+	 *   if (i.get() &lt; min)
+	 *       i.set(min);
+	 *   if (i.get() &gt; max)
+	 *       i.set(max);
+	 *   return newValue;</pre>
+	 * except that the action is performed atomically.
+	 * @param i the AtomicInteger instance
+	 * @param delta the value to add
+	 * @param min inclusive
+	 * @param max inclusive
+	 * @return the value of <tt>i</tt> after the clamped add.
+	 */
+	private int clampedAdd(AtomicInteger i, int delta, int min, int max) {
+		//copied from AtomicInteger.addAndGet(int). only difference is that we
+		//set the value to the clamped next and return the clamped next.
+		while (true) {
+			int current = i.get();
+			int next = Math.min(Math.max(current + delta, min), max);
+			if (i.compareAndSet(current, next))
+				return next;
+		}
+	}
+
+	public int killedMob(Integer mobId, short max) {
+		return clampedAdd(mobCount.get(mobId), 1, 0, max);
 	}
 
 	public byte getState() {

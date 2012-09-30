@@ -81,6 +81,15 @@ public final class PlayerJob {
 		JOB_SUPER_GM = 910
 	;
 
+	public static byte ALL_JOBS_BITSTRING = 0x3F; //1 + 2 + 4 + 8 + 16 + 32
+
+	public static boolean isJobInBitString(short job, short bitstring) {
+		int jobPath = getJobPath(job);
+		if (jobPath == CLASS_GAMEMASTER)
+			return true;
+		return (bitstring & (1 << jobPath)) != 0;
+	}
+
 	public static int getJobPath(short jobid) {
 		return (jobid / 100);
 	}
