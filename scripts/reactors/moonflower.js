@@ -39,5 +39,7 @@ event.setVariable("flowers", newCount);
 if (newCount == 6) {
 	let map = event.getMap(910010000);
 	map.setNoSpawn(false);
-	map.spawnMob(9300061, -180, -196);
+	let moonBunnyMob = map.spawnMob(9300061, -180, -196, true);
+	event.setVariable("moonBunnyMob", moonBunnyMob);
+	event.startTimer("riceCakeDrop", moonBunnyMob.getDropAfter(false));
 }

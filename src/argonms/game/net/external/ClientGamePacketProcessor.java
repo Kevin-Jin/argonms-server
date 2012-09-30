@@ -196,6 +196,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.MOVE_MOB:
 				MovementHandler.handleMoveMob(reader, gc);
 				break;
+			case ClientRecvOps.MOB_DAMAGE_MOB:
+				TakeDamageHandler.handleMobDamageMob(reader, gc);
+				break;
 			case ClientRecvOps.MOVE_NPC:
 				MovementHandler.handleMoveNpc(reader, gc);
 				break;

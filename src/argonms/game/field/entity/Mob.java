@@ -19,10 +19,13 @@
 package argonms.game.field.entity;
 
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.ClientSession;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -82,6 +85,7 @@ public class Mob extends AbstractEntity {
 	private final Lock damagesReadLock, damagesWriteLock;
 	private volatile GameCharacter controller;
 	private volatile boolean aggroAware, hasAggro;
+	private volatile ScheduledFuture<?> removeAfter;
 	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
 	private final ConcurrentMap<Short, ScheduledFuture<?>> skillCancels;
 	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseCancels;
@@ -89,7 +93,7 @@ public class Mob extends AbstractEntity {
 	private volatile byte spawnEffect, deathEffect;
 	private final AtomicInteger venomUseCount;
 
-	public Mob(MobStats stats, GameMap map) {
+	public Mob(MobStats stats, GameMap map, byte stance) {
 		this.stats = stats;
 		this.map = map;
 		this.remHp = new AtomicInteger(stats.getMaxHp());
@@ -104,13 +108,21 @@ public class Mob extends AbstractEntity {
 		this.skillCancels = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
 		this.diseaseCancels = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
 		this.spawnedSummons = new AtomicInteger(0);
-		this.deathEffect = DESTROY_ANIMATION_NORMAL;
+		this.deathEffect = stats.getDeathAnimation();
 		this.venomUseCount = new AtomicInteger(0);
-		setStance((byte) 5);
+		setStance(stance);
+	}
+
+	public Mob(MobStats stats, GameMap map) {
+		this(stats, map, (byte) 5);
 	}
 
 	public int getDataId() {
 		return stats.getMobId();
+	}
+
+	public GameMap getMap() {
+		return map;
 	}
 
 	public boolean isMobile() {
@@ -177,11 +189,35 @@ public class Mob extends AbstractEntity {
 			cancelTask.cancel(false);
 		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
 			cancelTask.cancel(false);
+		if (removeAfter != null)
+			removeAfter.cancel(false);
 		int deathBuff = stats.getBuffToGive();
 		if (deathBuff > 0) {
 			ItemTools.useItem(killer, deathBuff);
 			killer.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1));
 			map.sendToAll(GamePackets.writeBuffMapVisualEffect(killer, StatusEffectTools.MOB_BUFF, deathBuff, (byte) 1, (byte) -1), killer);
+		}
+		for (Integer itemId : stats.getItemsToTake()) {
+			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
+			short quantity = InventoryTools.getAmountOfItem(killer.getInventory(type), itemId);
+			if (type == Inventory.InventoryType.EQUIP)
+				quantity += InventoryTools.getAmountOfItem(killer.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
+			if (quantity > 0) {
+				Inventory inv = killer.getInventory(type);
+				InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(killer, itemId, quantity);
+				ClientSession<?> ses = killer.getClient().getSession();
+				short pos;
+				for (Short s : changedSlots.modifiedSlots) {
+					pos = s.shortValue();
+					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+				}
+				for (Short s : changedSlots.addedOrRemovedSlots) {
+					pos = s.shortValue();
+					ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+				}
+				killer.itemCountChanged(itemId);
+				ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
+			}
 		}
 		Pair<Attacker, GameCharacter> highestDamage = giveExp(killer);
 		for (MobDeathListener hook : subscribers)
@@ -194,6 +230,12 @@ public class Mob extends AbstractEntity {
 	}
 
 	public void fireDeathEventNoRewards() {
+		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+			cancelTask.cancel(false);
+		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+			cancelTask.cancel(false);
+		if (removeAfter != null)
+			removeAfter.cancel(false);
 		for (MobDeathListener subscriber : subscribers)
 			subscriber.monsterKilled(null, null);
 	}
@@ -228,6 +270,22 @@ public class Mob extends AbstractEntity {
 
 	public int getMaxMp() {
 		return stats.getMaxMp();
+	}
+
+	public short getLevel() {
+		return stats.getLevel();
+	}
+
+	public int getRemoveAfter() {
+		return stats.getRemoveAfter();
+	}
+
+	public void setSelfRemoveFuture(ScheduledFuture<?> future) {
+		removeAfter = future;
+	}
+
+	public byte getDropItemPeriod() {
+		return stats.getDropItemPeriod();
 	}
 
 	/**
@@ -287,31 +345,36 @@ public class Mob extends AbstractEntity {
 	}
 
 	public void hurt(GameCharacter p, int damage) {
+		if (stats.isInvincible())
+			return;
+
 		int overkill = -clampedAdd(remHp, -damage, 0, Integer.MAX_VALUE);
 		if (overkill > 0)
 			damage -= overkill;
 
-		damagesWriteLock.lock();
-		try {
-			if (p.getParty() != null) {
-				PartyAttacker pd = partyDamages.get(p.getParty());
-				if (pd == null) {
-					pd = new PartyAttacker(p.getParty());
-					partyDamages.put(p.getParty(), pd);
+		if (p != null) {
+			damagesWriteLock.lock();
+			try {
+				if (p.getParty() != null) {
+					PartyAttacker pd = partyDamages.get(p.getParty());
+					if (pd == null) {
+						pd = new PartyAttacker(p.getParty());
+						partyDamages.put(p.getParty(), pd);
+					}
+					pd.addDamage(p, damage);
+				} else {
+					PlayerAttacker pd = playerDamages.get(p);
+					if (pd == null) {
+						pd = new PlayerAttacker(p);
+						playerDamages.put(p, pd);
+					}
+					pd.addDamage(p, damage);
 				}
-				pd.addDamage(p, damage);
-			} else {
-				PlayerAttacker pd = playerDamages.get(p);
-				if (pd == null) {
-					pd = new PlayerAttacker(p);
-					playerDamages.put(p, pd);
-				}
-				pd.addDamage(p, damage);
+				for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
+					subscribers.offer(hook);
+			} finally {
+				damagesWriteLock.unlock();
 			}
-			for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
-				subscribers.offer(hook);
-		} finally {
-			damagesWriteLock.unlock();
 		}
 
 		//TODO: add friendly mob damage stuffs too (after stats.isBoss check)
@@ -319,11 +382,14 @@ public class Mob extends AbstractEntity {
 			map.sendToAll(writeShowBossHp(stats, remHp.get()));
 		else if (stats.isBoss()) //minibosses
 			map.sendToAll(writeShowMobHp(getId(), (byte) (remHp.get() * 100 / stats.getMaxHp())));
-		else
+		else if (p != null)
 			p.getClient().getSession().send(writeShowMobHp(getId(), (byte) (remHp.get() * 100 / stats.getMaxHp())));
 
-		if (setIfInBounds(remHp, 0, 1, stats.getSelfDestructHp()))
-			deathEffect = DESTROY_ANIMATION_EXPLODE;
+		if (stats.getSelfDestructHp() != 0)
+			if (remHp.get() == 0) //don't explode if we damaged it enough to have killed it without self destruct
+				deathEffect = DESTROY_ANIMATION_NORMAL;
+			else //set hp to 0 if hp is below threshold. by default, deathEffect is the mob's explosion animation
+				setIfInBounds(remHp, 0, 1, stats.getSelfDestructHp());
 	}
 
 	public void loseMp(int loss) {

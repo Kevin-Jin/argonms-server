@@ -24,6 +24,8 @@ import argonms.game.script.EventManipulator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
@@ -32,6 +34,8 @@ import org.mozilla.javascript.Scriptable;
  * @author GoldenKevin
  */
 public class ScriptEvent {
+	private static final Logger LOG = Logger.getLogger(ScriptEvent.class.getName());
+
 	private final Scriptable globalScope;
 	private final String name;
 	private final byte channel;
@@ -65,11 +69,11 @@ public class ScriptEvent {
 	}
 
 	public Object getMap(int mapId) {
-		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId)), globalScope);
+		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().getMap(mapId), globalScope), globalScope);
 	}
 
 	public Object makeMap(int id) {
-		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().makeInstanceMap(id)), globalScope);
+		return Context.javaToJS(new ScriptField(GameServer.getChannel(channel).getMapFactory().makeInstanceMap(id), globalScope), globalScope);
 	}
 
 	public void destroyMap(ScriptField map) {
@@ -81,9 +85,19 @@ public class ScriptEvent {
 			@Override
 			public void run() {
 				timers.remove(key);
-				hooks.timerExpired(key);
+				try {
+					hooks.timerExpired(key);
+				} catch (Exception ex) {
+					LOG.log(Level.SEVERE, "Exception while processing event timer.", ex);
+				}
 			}
 		}, millisDelay));
+	}
+
+	public void stopTimer(String key) {
+		ScheduledFuture<?> future = timers.remove(key);
+		if (future != null)
+			future.cancel(false);
 	}
 
 	public void stopTimers() {

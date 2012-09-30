@@ -56,7 +56,9 @@ public class KvjMobDataLoader extends MobDataLoader {
 		BUFF = 21,
 		DELAY = 22,
 		DROPS = 23,
-		NO_MESOS = 24
+		NO_MESOS = 24,
+		DESTROY_ANIMATION = 25,
+		DROP_ITEM_PERIOD = 26
 	;
 
 	private final String dataPath;
@@ -157,7 +159,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 					stats.setSelfDestructHp(reader.readInt());
 					break;
 				case LOSE_ITEM:
-					stats.addLoseItem(reader.readInt());
+					stats.addLoseItem(reader.readInt(), reader.readByte());
 					break;
 				case INVINCIBLE:
 					stats.setInvincible();
@@ -192,6 +194,12 @@ public class KvjMobDataLoader extends MobDataLoader {
 					break;
 				case NO_MESOS:
 					stats.setMesoDrop(0, 0, 0);
+					break;
+				case DESTROY_ANIMATION:
+					stats.setDestroyAnimation(reader.readByte());
+					break;
+				case DROP_ITEM_PERIOD:
+					stats.setDropItemPeriod(reader.readByte());
 					break;
 			}
 		}

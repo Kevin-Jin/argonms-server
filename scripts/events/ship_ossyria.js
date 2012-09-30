@@ -101,8 +101,14 @@ function closeDoors(remainingTimeUntilDeparture, transition) {
 	event.startTimer("takeoff", remainingTimeUntilDeparture);
 
 	if (transition) {
+		//reset maps to a clean state before every run
+		//respawn crates - sBoxItem0 (Reactor 9102000)
 		toOrbisCabin.resetReactors();
 		toElliniaCabin.resetReactors();
+
+		//clear any remnants of Crimson Balrogs invasion
+		toOrbis.clearMobs();
+		toEllinia.clearMobs();
 	}
 }
 

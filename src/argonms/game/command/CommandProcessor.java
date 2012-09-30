@@ -269,21 +269,19 @@ public class CommandProcessor {
 				return "Usage: !clearmobs [-k]";
 			}
 
-			private void clearMob(String[] args, GameCharacter p, Mob mob) {
-				if (ParseHelper.hasOpt(args, "-k")) {
-					mob.hurt(p, mob.getHp());
-					p.getMap().killMonster(mob, p);
-				} else {
-					mob.hurt(p, mob.getHp());
-					p.getMap().removeMonster(mob);
-				}
-			}
-
 			@Override
 			public void doAction(final GameCharacter p, final String[] args, ClientNoticeStream resp) {
-				Collection<MapEntity> monsters = p.getMap().getAllEntities(EntityType.MONSTER);
-				for (MapEntity ent : monsters)
-					clearMob(args, p, (Mob) ent);
+				GameCharacter killer;
+				if (ParseHelper.hasOpt(args, "-k"))
+					killer = p;
+				else
+					killer = null;
+
+				for (MapEntity ent : p.getMap().getAllEntities(EntityType.MONSTER)) {
+					Mob mob = (Mob) ent;
+					mob.hurt(killer, mob.getHp());
+					p.getMap().killMonster(mob, killer);
+				}
 			}
 		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
 		definitions.put("!info", new CommandDefinition(new CommandAction() {

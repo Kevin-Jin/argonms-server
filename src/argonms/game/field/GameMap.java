@@ -338,10 +338,25 @@ public class GameMap {
 		p.pushHpToParty();
 	}
 
-	public final void spawnMonster(Mob monster) {
+	public final void spawnMonster(final Mob monster) {
 		spawnEntity(monster);
-		updateMonsterController(monster);
-		monsters.incrementAndGet();
+		int removeAfter = monster.getRemoveAfter();
+		if (removeAfter != 0) {
+			updateMonsterController(monster);
+			monsters.incrementAndGet();
+			if (removeAfter != -1) {
+				monster.setSelfRemoveFuture(Scheduler.getInstance().runAfterDelay(new Runnable() {
+					@Override
+					public void run() {
+						monster.setSelfRemoveFuture(null);
+						killMonster(monster, null);
+					}
+				}, removeAfter * 1000)); //is it in seconds?
+			}
+		} else {
+			//TODO: take items of those in range of self destruction.
+			destroyEntity(monster);
+		}
 	}
 
 	/**
@@ -479,16 +494,10 @@ public class GameMap {
 		GameCharacter controller = monster.getController();
 		if (controller != null)
 			controller.uncontrolMonster(monster);
-		monster.died(killer);
-		destroyEntity(monster);
-		monsters.decrementAndGet();
-	}
-
-	public void removeMonster(Mob monster) {
-		GameCharacter controller = monster.getController();
-		if (controller != null)
-			controller.uncontrolMonster(monster);
-		monster.fireDeathEventNoRewards();
+		if (killer != null)
+			monster.died(killer);
+		else
+			monster.fireDeathEventNoRewards();
 		destroyEntity(monster);
 		monsters.decrementAndGet();
 	}
