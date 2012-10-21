@@ -22,6 +22,7 @@ import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.BuffsData;
+import argonms.common.util.Scheduler;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
@@ -168,7 +169,7 @@ public final class StatusEffectTools {
 			p.getMap().sendToAll(effect, p);
 	}
 
-	private static PlayerStatusEffectValues applyEffect(GameCharacter p, StatusEffectsData e, PlayerStatusEffect buff) {
+	private static PlayerStatusEffectValues applyEffect(final GameCharacter p, StatusEffectsData e, PlayerStatusEffect buff) {
 		short mod = -1;
 		switch (buff) {
 			case SUMMON:
@@ -183,8 +184,29 @@ public final class StatusEffectTools {
 				break;
 			case MORPH:
 				break;
-			case RECOVERY:
+			case RECOVERY: {
+				//TODO: get packet for showing HP recovered (blue numbers above
+				//player's head when standing still or sitting on a chair)
+				final int period = e.getDuration() / 6;
+				final int gain = ((PlayerSkillEffectsData) e).getX();
+
+				//essentially scheduleWithFixedDelay with a repeat limit of 5.
+				//okay to send p in here because the GameCharacter is held for
+				//no longer than 30 seconds.
+				Scheduler.getInstance().runAfterDelay(new Runnable() {
+					private volatile int iteration = 0;
+
+					@Override
+					public void run() {
+						if (p.isEffectActive(PlayerStatusEffect.RECOVERY) && iteration < 6) {
+							iteration++;
+							p.gainHp(gain);
+							Scheduler.getInstance().runAfterDelay(this, period);
+						}
+					}
+				}, period);
 				break;
+			}
 			case MAPLE_WARRIOR:
 				break;
 			case POWER_STANCE:
@@ -210,6 +232,9 @@ public final class StatusEffectTools {
 			case CONCENTRATE:
 				break;
 			case ECHO_OF_HERO:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
+				p.addWatk(mod);
+				p.addMatk(mod);
 				break;
 			case GHOST_MORPH:
 				break;
@@ -338,6 +363,8 @@ public final class StatusEffectTools {
 			case MORPH:
 				break;
 			case RECOVERY:
+				//next iteration of recovery will detect if the skill is no
+				//longer active, so no need to manually cancel the task here.
 				break;
 			case MAPLE_WARRIOR:
 				break;
@@ -364,6 +391,8 @@ public final class StatusEffectTools {
 			case CONCENTRATE:
 				break;
 			case ECHO_OF_HERO:
+				p.addWatk(-value.getModifier());
+				p.addMatk(-value.getModifier());
 				break;
 			case GHOST_MORPH:
 				break;
