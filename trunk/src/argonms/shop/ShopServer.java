@@ -83,7 +83,6 @@ public class ShopServer implements LocalServer {
 		String centerIp;
 		int centerPort;
 		String authKey;
-		TimeZone tz;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.shop.config.file", "shop.properties"));
 			prop.load(fr);
@@ -99,9 +98,16 @@ public class ShopServer implements LocalServer {
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.shop.usenio"));
 
 			String temp = prop.getProperty("argonms.shop.tz");
-			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
+			//always set default TimeZone setting last in this block so the
+			//timezone of logged messages that caught exceptions from this block
+			//are consistently inconsistent - i.e. they always use the server's
+			//time zone rather than the intended time zone from config.
+			TimeZone.setDefault(temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp));
 		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load shop server properties!", ex);
+			//Do note that the time shown by SimpleFormatter is the server's
+			//time zone, NOT any time zone we intended to use from the config
+			//(because we can't access the config after all!)
+			LOG.log(Level.SEVERE, "(Time zone of reported date/time: " + TimeZone.getDefault().getID() + ")\nCould not load shop server properties!", ex);
 			System.exit(2);
 			return;
 		}
@@ -163,7 +169,6 @@ public class ShopServer implements LocalServer {
 		}
 
 		Scheduler.enable(true, true);
-		TimeTool.setInstance(tz);
 
 		sci = new ShopCenterInterface(this);
 		RemoteCenterSession<ShopCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, sci);

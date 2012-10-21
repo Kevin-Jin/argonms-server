@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -88,8 +89,18 @@ public class CenterServer {
 			authKey = prop.getProperty("argonms.center.auth.key");
 			telnetPort = Integer.parseInt(prop.getProperty("argonms.center.telnet"));
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.center.usenio"));
+
+			String temp = prop.getProperty("argonms.center.tz");
+			//always set default TimeZone setting last in this block so the
+			//timezone of logged messages that caught exceptions from this block
+			//are consistently inconsistent - i.e. they always use the server's
+			//time zone rather than the intended time zone from config.
+			TimeZone.setDefault(temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp));
 		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load center server properties!", ex);
+			//Do note that the time shown by SimpleFormatter is the server's
+			//time zone, NOT any time zone we intended to use from the config
+			//(because we can't access the config after all!)
+			LOG.log(Level.SEVERE, "(Time zone of reported date/time: " + TimeZone.getDefault().getID() + ")\nCould not load center server properties!", ex);
 			System.exit(2);
 			return;
 		}

@@ -376,7 +376,6 @@ public class CommandProcessor {
 				long startMillis = GameServer.getChannel(p.getClient().getChannel()).getTimeStarted();
 				long upTimeMillis = System.currentTimeMillis() - startMillis;
 				DateFormat fmt = DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.LONG);
-				fmt.setTimeZone(TimeTool.getTimeZone());
 				resp.printOut("This game server was started on " + fmt.format(startMillis) + ".");
 
 				long upDays = upTimeMillis / (1000 * 60 * 60 * 24);

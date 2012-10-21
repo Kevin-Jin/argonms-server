@@ -108,7 +108,6 @@ public class GameServer implements LocalServer {
 		int centerPort;
 		String authKey;
 		String[] chList;
-		TimeZone tz;
 		try {
 			FileReader fr = new FileReader(System.getProperty("argonms.game.config.file", "game" + serverId + ".properties"));
 			prop.load(fr);
@@ -136,9 +135,16 @@ public class GameServer implements LocalServer {
 			String temp = prop.getProperty("argonms.game." + serverId + ".events").replaceAll("\\s", "");
 			initialEvents = temp.isEmpty() ? new String[0] : temp.split(",");
 			temp = prop.getProperty("argonms.game." + serverId + ".tz");
-			tz = temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp);
+			//always set default TimeZone setting last in this block so the
+			//timezone of logged messages that caught exceptions from this block
+			//are consistently inconsistent - i.e. they always use the server's
+			//time zone rather than the intended time zone from config.
+			TimeZone.setDefault(temp.isEmpty() ? TimeZone.getDefault() : TimeZone.getTimeZone(temp));
 		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load game" + serverId + " server properties!", ex);
+			//Do note that the time shown by SimpleFormatter is the server's
+			//time zone, NOT any time zone we intended to use from the config
+			//(because we can't access the config after all!)
+			LOG.log(Level.SEVERE, "(Time zone of reported date/time: " + TimeZone.getDefault().getID() + ")\nCould not load game" + serverId + " server properties!", ex);
 			System.exit(2);
 			return;
 		}
@@ -211,7 +217,6 @@ public class GameServer implements LocalServer {
 		}
 
 		Scheduler.enable(true, true);
-		TimeTool.setInstance(tz);
 
 		gci = new GameCenterInterface(serverId, world, this);
 		RemoteCenterSession<GameCenterInterface> session = RemoteCenterSession.connect(centerIp, centerPort, authKey, gci);
