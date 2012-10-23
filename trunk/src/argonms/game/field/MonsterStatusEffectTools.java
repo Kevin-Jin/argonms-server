@@ -32,7 +32,6 @@ import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Random;
 
@@ -52,12 +51,11 @@ public final class MonsterStatusEffectTools {
 	}
 
 	private static byte[] getDispelEffect(Mob m, MonsterStatusEffectsData e) {
-		return GamePackets.writeMonsterCancelStatusEffect(m, EnumSet.of(e.getMonsterEffect()));
+		return GamePackets.writeMonsterCancelStatusEffect(m, e.getMonsterEffects());
 	}
 
 	private static int applyEffects(Map<MonsterStatusEffect, Short> updatedStats, Mob m, GameCharacter p, MonsterStatusEffectsData e) {
-		MonsterStatusEffect buff = e.getMonsterEffect();
-		if (buff != null) { //mob buff skill
+		for (MonsterStatusEffect buff : e.getMonsterEffects()) {
 			MonsterStatusEffectValues value = applyEffect(m, e, buff);
 			updatedStats.put(buff, Short.valueOf(value.getModifier()));
 			m.addToActiveEffects(buff, value);
@@ -178,18 +176,20 @@ public final class MonsterStatusEffectTools {
 		m.removeCancelEffectTask(e);
 		switch (e.getSourceType()) {
 			case MOB_SKILL: {
-				MonsterStatusEffect buff = e.getMonsterEffect();
-				MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
-				if (v != null)
-					dispelEffect(m, buff, v);
-				break;
-			}
-			case PLAYER_SKILL: {
-				MonsterStatusEffect buff = e.getMonsterEffect();
-				if (buff != null) {
+				for (MonsterStatusEffect buff : e.getMonsterEffects()) {
 					MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
 					if (v != null)
 						dispelEffect(m, buff, v);
+				}
+				break;
+			}
+			case PLAYER_SKILL: {
+				for (MonsterStatusEffect buff : e.getMonsterEffects()) {
+					if (buff != null) {
+						MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
+						if (v != null)
+							dispelEffect(m, buff, v);
+					}
 				}
 			}
 		}

@@ -473,21 +473,21 @@ public final class DealDamageHandler {
 					case Skills.FP_ELEMENT_COMPOSITION:
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
 								if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
 									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;
 					case Skills.IL_ELEMENT_COMPOSITION:
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
 								if (monster.getElementalResistance(Element.ICE) <= Element.EFFECTIVENESS_NORMAL)
 									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;
 					default:
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (attackEffect.getMonsterEffect() != null && attackEffect.makeChanceResult())
+							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
 								if (monster.getElementalResistance(SkillDataLoader.getInstance().getSkill(attack.skill).getElement()) <= Element.EFFECTIVENESS_NORMAL)
 									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;

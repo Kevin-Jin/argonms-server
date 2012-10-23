@@ -2201,6 +2201,13 @@
 	* CenterServer allows custom time zone for message logging and MySQL
 	Connector/J purposes.
 
+2012-10-23  GoldenKevin  (revision 150)
+
+	* Arrow drops now drop a quantity in the range of 10-25 instead of just 1.
+	* Players in map are shown the raw damage a player has taken (i.e. before
+	Magic Guard subtracts HP damage).
+	* Skills Disorder and Threaten now inflict both their mob effects on mobs.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

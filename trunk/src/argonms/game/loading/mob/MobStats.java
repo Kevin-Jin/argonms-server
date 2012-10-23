@@ -47,7 +47,7 @@ public class MobStats {
 	private final Map<Byte, Attack> attacks;
 	private final List<Skill> skills;
 	private final Map<String, Integer> delays;
-	private final Map<Integer, Integer> itemDrops;
+	private final List<ItemDropEntry> itemDrops;
 	private short level;
 	private int maxHp;
 	private int maxMp;
@@ -76,7 +76,7 @@ public class MobStats {
 		this.attacks = new HashMap<Byte, Attack>();
 		this.skills = new ArrayList<Skill>();
 		this.delays = new HashMap<String, Integer>();
-		this.itemDrops = new HashMap<Integer, Integer>();
+		this.itemDrops = new ArrayList<ItemDropEntry>();
 		this.removeAfter = -1;
 		this.deathAnimation = Mob.DESTROY_ANIMATION_NORMAL;
 	}
@@ -176,8 +176,8 @@ public class MobStats {
 		this.delays.put(name, Integer.valueOf(delay));
 	}
 
-	protected void addItemDrop(int itemid, int chance) {
-		this.itemDrops.put(Integer.valueOf(itemid), Integer.valueOf(chance));
+	protected void addItemDrop(int itemid, int chance, short min, short max) {
+		this.itemDrops.add(new ItemDropEntry(itemid, chance, min, max));
 	}
 
 	protected void setMesoDrop(int chance, int min, int max) {
@@ -326,11 +326,13 @@ public class MobStats {
 		Random generator = Rng.getGenerator();
 		List<InventorySlot> items = new ArrayList<InventorySlot>();
 		int multiplier = GameServer.getVariables().getDropRate();
-		for (Entry<Integer, Integer> entry : itemDrops.entrySet()) {
-			if (generator.nextInt(1000000) < ((long) entry.getValue().intValue() * multiplier)) {
-				InventorySlot item = InventoryTools.makeItemWithId(entry.getKey().intValue());
+		for (ItemDropEntry entry : itemDrops) {
+			if (generator.nextInt(1000000) < ((long) entry.getDropChance() * multiplier)) {
+				InventorySlot item = InventoryTools.makeItemWithId(entry.getItemId());
 				if (item.getType() == ItemType.EQUIP)
 					InventoryTools.randomizeStats((Equip) item);
+				if (entry.getMaxQuantity() != 1)
+					item.setQuantity((short) (generator.nextInt(entry.getMaxQuantity() - entry.getMinQuantity() + 1) + entry.getMinQuantity()));
 				items.add(item);
 			}
 		}
@@ -361,6 +363,36 @@ public class MobStats {
 		}
 
 		public int getMaxMesoDrop() {
+			return max;
+		}
+	}
+
+	private static class ItemDropEntry {
+		private int itemId;
+		private int chance;
+		private short min;
+		private short max;
+
+		public ItemDropEntry(int itemId, int chance, short min, short max) {
+			this.itemId = itemId;
+			this.chance = chance;
+			this.min = min;
+			this.max = max;
+		}
+
+		public int getItemId() {
+			return itemId;
+		}
+
+		public int getDropChance() {
+			return chance;
+		}
+
+		public short getMinQuantity() {
+			return min;
+		}
+
+		public short getMaxQuantity() {
 			return max;
 		}
 	}

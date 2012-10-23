@@ -130,13 +130,14 @@ public final class TakeDamageHandler {
 		//TODO: handle the rest of the good player skill stuffs (achilles, magic guard, powerguard, etc)!
 
 		if (!deadlyAttack) {
+			int hpBurn = damage;
 			PlayerStatusEffectValues mg = p.getEffectValue(PlayerStatusEffect.MAGIC_GUARD);
 			if (mg != null) {
 				int delta = damage * mg.getModifier() / 100;
-				damage -= delta;
+				hpBurn -= delta;
 				mpBurn += delta;
 			}
-			p.gainHp(-damage);
+			p.gainHp(-hpBurn);
 			if (mpBurn > 0)
 				p.gainMp(-mpBurn);
 			//TODO: morph dispel, battleship hurt...
