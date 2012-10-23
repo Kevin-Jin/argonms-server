@@ -195,7 +195,7 @@ public interface StatusEffectsData {
 	}
 
 	public interface MonsterStatusEffectsData extends StatusEffectsData {
-		public MonsterStatusEffect getMonsterEffect();
+		public Set<MonsterStatusEffect> getMonsterEffects();
 		public int getX();
 		public int getY();
 	}

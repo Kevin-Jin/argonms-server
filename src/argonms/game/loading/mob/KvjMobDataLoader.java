@@ -18,6 +18,7 @@
 
 package argonms.game.loading.mob;
 
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.util.input.LittleEndianByteArrayReader;
 import argonms.common.util.input.LittleEndianReader;
 import java.io.File;
@@ -189,7 +190,10 @@ public class KvjMobDataLoader extends MobDataLoader {
 					for (int i = amt - 1; i >= 0; --i) {
 						int itemid = reader.readInt();
 						int chance = reader.readInt();
-						stats.addItemDrop(itemid, chance);
+						if (InventoryTools.isArrowForBow(itemid) || InventoryTools.isArrowForCrossBow(itemid))
+							stats.addItemDrop(itemid, chance, (short) 10, (short) 25);
+						else
+							stats.addItemDrop(itemid, chance, (short) 1, (short) 1);
 					}
 					break;
 				case NO_MESOS:

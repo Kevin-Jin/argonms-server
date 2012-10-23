@@ -25,6 +25,7 @@ import argonms.common.util.Rng;
 import argonms.game.field.MobSkills;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -228,8 +229,8 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 	}
 
 	@Override
-	public MonsterStatusEffect getMonsterEffect() {
-		return monsterBuff;
+	public Set<MonsterStatusEffect> getMonsterEffects() {
+		return Collections.singleton(monsterBuff);
 	}
 
 	@Override

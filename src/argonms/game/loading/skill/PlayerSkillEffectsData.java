@@ -26,6 +26,8 @@ import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.util.Rng;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  *
@@ -52,7 +54,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 	private byte itemConCount;
 	private short bulletCon;
 	private short moneyCon;
-	private MonsterStatusEffect monsterDisease;
+	private final Set<MonsterStatusEffect> monsterDiseases;
 	private boolean isFreeze;
 	private short hp, mp;
 
@@ -60,6 +62,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		super(skillid);
 		this.level = level;
 		this.prop = 100;
+		this.monsterDiseases = EnumSet.noneOf(MonsterStatusEffect.class);
 		switch (skillid) { //for them skills that don't have x or y
 			case Skills.BEHOLDER:
 			case Skills.IFRIT:
@@ -122,7 +125,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					effects.add(PlayerStatusEffect.SOUL_ARROW);
 					break;
 				case Skills.SWORD_FIRE_CHARGE:
-					monsterDisease = MonsterStatusEffect.FREEZE;
+					monsterDiseases.add(MonsterStatusEffect.FREEZE);
 				case Skills.BW_FLAME_CHARGE:
 				case Skills.SWORD_ICE_CHARGE:
 				case Skills.BW_BLIZZARD_CHARGE:
@@ -233,10 +236,10 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 
 				case Skills.DISORDER:
-					monsterDisease = MonsterStatusEffect.WATK;
+					monsterDiseases.add(MonsterStatusEffect.WATK);
 					break;
 				case Skills.THREATEN:
-					monsterDisease = MonsterStatusEffect.WATK;
+					monsterDiseases.add(MonsterStatusEffect.WATK);
 					break;
 				case Skills.SWORD_COMA:
 				case Skills.AXE_COMA:
@@ -251,11 +254,11 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.SNATCH:
 				case Skills.BARRAGE:
 				case Skills.BLANK_SHOT:
-					monsterDisease = MonsterStatusEffect.STUN;
+					monsterDiseases.add(MonsterStatusEffect.STUN);
 					break;
 				case Skills.NL_TAUNT:
 				case Skills.SHADOWER_TAUNT:
-					monsterDisease = MonsterStatusEffect.TAUNT;
+					monsterDiseases.add(MonsterStatusEffect.TAUNT);
 					break;
 				case Skills.COLD_BEAM:
 				case Skills.ICE_STRIKE:
@@ -263,52 +266,52 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.IL_BLIZZARD:
 				case Skills.XBOW_BLIZZARD:
 				case Skills.ICE_SPLITTER:
-					monsterDisease = MonsterStatusEffect.FREEZE;
+					monsterDiseases.add(MonsterStatusEffect.FREEZE);
 					isFreeze = true;
 					break;
 				case Skills.PARALYZE:
 				case Skills.FP_SLOW:
 				case Skills.IL_SLOW:
-					monsterDisease = MonsterStatusEffect.SPEED;
+					monsterDiseases.add(MonsterStatusEffect.SPEED);
 					break;
 				case Skills.POISON_BREATH:
 				case Skills.FP_ELEMENT_COMPOSITION:
-					monsterDisease = MonsterStatusEffect.POISON;
+					monsterDiseases.add(MonsterStatusEffect.POISON);
 					break;
 				case Skills.DOOM:
-					monsterDisease = MonsterStatusEffect.DOOM;
+					monsterDiseases.add(MonsterStatusEffect.DOOM);
 					break;
 				case Skills.SILVER_HAWK:
 				case Skills.GOLDEN_EAGLE:
 					effects.add(PlayerStatusEffect.SUMMON);
-					monsterDisease = MonsterStatusEffect.STUN;
+					monsterDiseases.add(MonsterStatusEffect.STUN);
 					break;
 				case Skills.ELQUINES:
 				case Skills.FROSTPREY:
 					effects.add(PlayerStatusEffect.SUMMON);
-					monsterDisease = MonsterStatusEffect.FREEZE;
+					monsterDiseases.add(MonsterStatusEffect.FREEZE);
 					break;
 				case Skills.FP_SEAL:
 				case Skills.IL_SEAL:
-					monsterDisease = MonsterStatusEffect.SEAL;
+					monsterDiseases.add(MonsterStatusEffect.SEAL);
 					break;
 				case Skills.SHADOW_WEB:
-					monsterDisease = MonsterStatusEffect.SHADOW_WEB;
+					monsterDiseases.add(MonsterStatusEffect.SHADOW_WEB);
 					break;
 				case Skills.HAMSTRING:
 					effects.add(PlayerStatusEffect.HAMSTRING);
-					monsterDisease = MonsterStatusEffect.SPEED;
+					monsterDiseases.add(MonsterStatusEffect.SPEED);
 					break;
 				case Skills.BLIND:
 					effects.add(PlayerStatusEffect.BLIND);
-					monsterDisease = MonsterStatusEffect.ACC;
+					monsterDiseases.add(MonsterStatusEffect.ACC);
 					break;
 				case Skills.NL_NINJA_AMBUSH:
 				case Skills.SHADOWER_NINJA_AMBUSH:
-					monsterDisease = MonsterStatusEffect.NINJA_AMBUSH;
+					monsterDiseases.add(MonsterStatusEffect.NINJA_AMBUSH);
 					break;
 				case Skills.HYPNOTIZE:
-					monsterDisease = MonsterStatusEffect.INERTMOB;
+					monsterDiseases.add(MonsterStatusEffect.INERTMOB);
 					break;
 			}
 		}
@@ -331,10 +334,10 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 
 				case Skills.DISORDER:
-					monsterDisease = MonsterStatusEffect.WDEF;
+					monsterDiseases.add(MonsterStatusEffect.WDEF);
 					break;
 				case Skills.THREATEN:
-					monsterDisease = MonsterStatusEffect.WDEF;
+					monsterDiseases.add(MonsterStatusEffect.WDEF);
 					break;
 			}
 		}
@@ -522,8 +525,8 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 	}
 
 	@Override
-	public MonsterStatusEffect getMonsterEffect() {
-		return monsterDisease;
+	public Set<MonsterStatusEffect> getMonsterEffects() {
+		return monsterDiseases;
 	}
 
 	@Override

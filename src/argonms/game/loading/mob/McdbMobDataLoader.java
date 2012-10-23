@@ -151,7 +151,7 @@ public class McdbMobDataLoader extends MobDataLoader {
 				if (rs2.getBoolean(1))
 					stats.setMesoDrop(rs2.getInt(5), rs2.getInt(3), rs2.getInt(4));
 				else
-					stats.addItemDrop(rs2.getInt(2), rs2.getInt(5));
+					stats.addItemDrop(rs2.getInt(2), rs2.getInt(5), rs.getShort(3), rs.getShort(4));
 			rs2.close();
 			ps.close();
 			ps = con.prepareStatement("SELECT `attackid`,`mpconsume`,`mpburn`,`disease`,`level`,`deadly` FROM `mobattackdata` WHERE `mobid` = ?");
