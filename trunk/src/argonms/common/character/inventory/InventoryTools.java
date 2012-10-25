@@ -31,6 +31,8 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -210,33 +212,45 @@ public final class InventoryTools {
 			InventorySlot slotItem;
 			short slotQty;
 			int qtyDelta;
-			for (short i = 1; i <= invEnd && quantity > 0; i++) {
-				slotItem = inv.get(i);
-				if (slotItem == null) {
-					if (clone) {
-						item = item.clone();
-						if (updateUid) {
-							try {
-								item.setUniqueId(UniqueIdGenerator.getAndIncrement());
-							} catch (Exception e) {
-								LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
-							}
-						}
-					}
-					clone = true;
-					inv.put(i, item);
-
-					qtyDelta = Math.min(slotMax, quantity);
-					quantity -= qtyDelta;
-					if (!equip && !pet)
-						item.setQuantity((short) qtyDelta);
-					insertedSlots.add(i);
-				} else if (slotItem.getDataId() == itemid && (slotQty = slotItem.getQuantity()) < slotMax) {
+			Map<Short, InventorySlot> slots = inv.getAll();
+			synchronized(slots) {
+				for (Map.Entry<Short, InventorySlot> entry : slots.entrySet()) {
+					slotItem = entry.getValue();
+					if (slotItem.getDataId() != itemid)
+						continue;
+					slotQty = slotItem.getQuantity();
 					qtyDelta = Math.min(slotMax - slotQty, quantity);
+					if (qtyDelta <= 0)
+						continue;
 					quantity -= qtyDelta;
 					//assert (!equip && !pet);
 					slotItem.setQuantity((short) (slotQty + qtyDelta));
-					modifiedSlots.add(i);
+					modifiedSlots.add(entry.getKey());
+					if (quantity == 0)
+						break;
+				}
+				for (short i = 1; i <= invEnd && quantity != 0; i++) {
+					slotItem = inv.get(i);
+					if (slotItem == null) {
+						if (clone) {
+							item = item.clone();
+							if (updateUid) {
+								try {
+									item.setUniqueId(UniqueIdGenerator.getAndIncrement());
+								} catch (Exception e) {
+									LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
+								}
+							}
+						}
+						clone = true;
+						inv.put(i, item);
+
+						qtyDelta = Math.min(slotMax, quantity);
+						quantity -= qtyDelta;
+						if (!equip && !pet)
+							item.setQuantity((short) qtyDelta);
+						insertedSlots.add(i);
+					}
 				}
 			}
 		}

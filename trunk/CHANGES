@@ -2208,6 +2208,19 @@
 	Magic Guard subtracts HP damage).
 	* Skills Disorder and Threaten now inflict both their mob effects on mobs.
 
+2012-10-25  GoldenKevin  (revision 151)
+
+	* Corrected behavior of stacking items. Obtained items will always fill up
+	any unfilled slots of the same item before they start taking up empty slots.
+	* Fixed buying equips or enough items to fill up an entire slot (100 potions
+	for example).
+	* Fixed mob counting quests not incrementing properly if mobs are not killed
+	in one hit.
+	* Fixed quest completed notices repeatedly popping up for a quest even if
+	its requirements were already fulfilled before they were checked again.
+	* Maple TV NPCs no longer show the placeholder script for shop NPCs.
+	* Fixed NullPointerException for mob skills.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

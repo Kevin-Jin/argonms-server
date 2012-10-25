@@ -80,6 +80,11 @@ public class NpcScriptManager {
 			//TODO: Maple Package Service
 			return true;
 		}
+		if (npcId == 9201066 || npcId >= 9250023 && npcId <= 9250026 || npcId >= 9250042 && npcId <= 9250046
+				|| npcId >= 9270000 && npcId <= 9270016 || npcId == 9270040) {
+			//Maple TV
+			return true;
+		}
 		return false;
 	}
 
