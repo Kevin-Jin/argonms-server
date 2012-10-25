@@ -76,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -137,6 +138,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private final ConcurrentMap<Short, QuestEntry> questStatuses;
 	private final Map<QuestRequirementType, Map<Number, List<Short>>> questSubscriptions;
+	private final Set<Short> completableQuests;
+	private final Map<Integer, Set<Short>> mobDeathQuestHooks;
 
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, AtomicInteger>> minigameStats;
@@ -165,6 +168,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		rememberedMaps = new ConcurrentHashMap<MapMemoryVariable, Integer>();
 		questStatuses = new ConcurrentHashMap<Short, QuestEntry>();
 		questSubscriptions = Collections.synchronizedMap(new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class));
+		completableQuests = new HashSet<Short>(); //synchronized with questSubscriptions
+		mobDeathQuestHooks = new HashMap<Integer, Set<Short>>(); //synchronized with questSubscriptions
 		minigameStats = Collections.synchronizedMap(new EnumMap<MiniroomType, Map<MinigameResult, AtomicInteger>>(MiniroomType.class));
 		famesThisMonth = Collections.synchronizedMap(new HashMap<Integer, Long>());
 		//doesn't need to be synchronized because we only add/remove entries
@@ -1801,6 +1806,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				watched = Collections.synchronizedMap(new HashMap<Number, List<Short>>());
 				questSubscriptions.put(type, watched);
 			}
+			if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+				completableQuests.add(Short.valueOf(questId));
 		}
 		List<Short> questList = watched.get(id);
 		if (questList == null) {
@@ -1821,6 +1828,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			} else {
 				questList = watched.get(null);
 			}
+			if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+				completableQuests.add(Short.valueOf(questId));
 		}
 		questList.add(Short.valueOf(questId));
 	}
@@ -1838,6 +1847,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				if (watched.isEmpty())
 					questSubscriptions.remove(type);
 			}
+			completableQuests.remove(Short.valueOf(questId));
 		}
 	}
 
@@ -1850,6 +1860,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				if (questList.isEmpty())
 					questSubscriptions.remove(type);
 			}
+			completableQuests.remove(Short.valueOf(questId));
 		}
 	}
 
@@ -2009,9 +2020,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 						//completeReqs can never be null because in order for us to
 						//add something to questReqWatching, it had to be not null
 						Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
-						if (questReq.get(oId).byteValue() == newStatus)
-							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+						if (questReq.get(oId).byteValue() == newStatus) {
+							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+								if (!completableQuests.contains(Short.valueOf(questId))) {
+									completableQuests.add(Short.valueOf(questId));
+									getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+								}
+							} else {
+								completableQuests.remove(Short.valueOf(questId));
+							}
+						}
 					}
 				}
 			}
@@ -2030,9 +2048,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 						//completeReqs can never be null because in order for us to
 						//add something to questReqWatching, it had to be not null
 						Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
-						if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue()))
-							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+						if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue())) {
+							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+								if (!completableQuests.contains(Short.valueOf(questId))) {
+									completableQuests.add(Short.valueOf(questId));
+									getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+								}
+							} else {
+								completableQuests.remove(Short.valueOf(questId));
+							}
+						}
 					}
 				}
 			}
@@ -2045,9 +2070,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			List<Short> watchingQuests = watchedPets.get(Integer.valueOf(petItemId));
 			if (watchingQuests != null) {
 				synchronized(watchingQuests) {
-					for (Short questId : watchingQuests)
-						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+					for (Short questId : watchingQuests) {
+						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+							if (!completableQuests.contains(questId)) {
+								completableQuests.add(questId);
+								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+							}
+						} else {
+							completableQuests.remove(questId);
+						}
+					}
 				}
 			}
 		}
@@ -2058,9 +2090,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		if (watchedPetTameness != null) {
 			List<Short> watchingQuests = watchedPetTameness.get(null);
 			synchronized(watchingQuests) {
-				for (Short questId : watchingQuests)
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+				for (Short questId : watchingQuests) {
+					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+						if (!completableQuests.contains(questId)) {
+							completableQuests.add(questId);
+							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+						}
+					} else {
+						completableQuests.remove(questId);
+					}
+				}
 			}
 		}
 	}
@@ -2070,9 +2109,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		if (watchingMesos != null) {
 			List<Short> watchingQuests = watchingMesos.get(null);
 			synchronized(watchingQuests) {
-				for (Short questId : watchingQuests)
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue()))
-						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+				for (Short questId : watchingQuests) {
+					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+						if (!completableQuests.contains(questId)) {
+							completableQuests.add(questId);
+							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+						}
+					} else {
+						completableQuests.remove(questId);
+					}
+				}
 			}
 		}
 	}
@@ -2090,22 +2136,41 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			getClient().getSession().send(GamePackets.writeQuestProgress(questId, status.getData()));
 			if (progress == mobReq) {
 				removeFromWatchedList(questId, QuestRequirementType.MOB, oId);
-				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
-					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+				if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+					//completableQuests should not contain questId anyway, but
+					//check it here just for symmetry
+					if (!completableQuests.contains(Short.valueOf(questId))) {
+						completableQuests.add(Short.valueOf(questId));
+						getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
+					}
+				} else {
+					//completableQuests should not contain questId anyway, but
+					//remove it here just for symmetry
+					completableQuests.remove(Short.valueOf(questId));
+				}
 			}
 		} else { //shouldn't ever happen
 			
 		}
 	}
 
-	public List<MobDeathListener> getMobDeathListeners(final int mobId) {
+	public List<MobDeathListener> getMobDeathListeners(final int mobEntityId, final int mobId) {
 		List<MobDeathListener> mobSubscribers = new ArrayList<MobDeathListener>();
 		Map<Number, List<Short>> watchedMobs = questSubscriptions.get(QuestRequirementType.MOB);
 		if (watchedMobs != null) {
-			List<Short> watchingQuests = watchedMobs.get(Integer.valueOf(mobId));
+			final List<Short> watchingQuests = watchedMobs.get(Integer.valueOf(mobId));
 			if (watchingQuests != null) {
 				synchronized(watchingQuests) {
-					for (Short quest : watchingQuests) {
+					Set<Short> alreadyHooked = mobDeathQuestHooks.get(Integer.valueOf(mobEntityId));
+					if (alreadyHooked == null) {
+						alreadyHooked = new HashSet<Short>();
+						mobDeathQuestHooks.put(Integer.valueOf(mobEntityId), alreadyHooked);
+					}
+					for (final Short quest : watchingQuests) {
+						if (alreadyHooked.contains(quest))
+							continue;
+
+						final Set<Short> hookQuests = alreadyHooked;
 						final short questId = quest.shortValue();
 						final int mobMap = getMapId();
 						//hopefully, this will prevent any memory leaks.
@@ -2116,15 +2181,23 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 							@Override
 							public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
 								GameCharacter ourself = futureSelf.get();
-								if (ourself != null && !ourself.isClosed()
-										&& highestDamager == ourself
+								if (ourself == null || ourself.isClosed()
+										|| highestDamager != ourself
 										//I think we had to be the highest damager and
 										//we had to kill it to be recognized for the kill
-										&& last == highestDamager
-										&& ourself.getMapId() == mobMap)
-									ourself.killedMob(questId, mobId);
+										|| last != highestDamager
+										|| ourself.getMapId() != mobMap)
+									return;
+
+								ourself.killedMob(questId, mobId);
+								synchronized(watchingQuests) { //hookQuests/alreadyHooked is not synchronized
+									hookQuests.remove(quest);
+									if (hookQuests.isEmpty())
+										mobDeathQuestHooks.remove(Integer.valueOf(mobEntityId));
+								}
 							}
 						});
+						alreadyHooked.add(quest);
 					}
 				}
 			}

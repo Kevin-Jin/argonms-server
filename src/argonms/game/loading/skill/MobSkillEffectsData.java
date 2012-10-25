@@ -230,7 +230,10 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 
 	@Override
 	public Set<MonsterStatusEffect> getMonsterEffects() {
-		return Collections.singleton(monsterBuff);
+		if (monsterBuff == null)
+			return Collections.emptySet();
+		else
+			return Collections.singleton(monsterBuff);
 	}
 
 	@Override

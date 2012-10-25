@@ -370,7 +370,7 @@ public class Mob extends AbstractEntity {
 					}
 					pd.addDamage(p, damage);
 				}
-				for (MobDeathListener hook : p.getMobDeathListeners(getDataId()))
+				for (MobDeathListener hook : p.getMobDeathListeners(getId(), getDataId()))
 					subscribers.offer(hook);
 			} finally {
 				damagesWriteLock.unlock();

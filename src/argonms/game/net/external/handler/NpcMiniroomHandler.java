@@ -101,7 +101,7 @@ public final class NpcMiniroomHandler {
 				if (!InventoryTools.isRechargeable(itemId)) {
 					//client normally only allows total quantity to be less than
 					//slot's max - unless the packet bypassed the client checks!
-					if (totalQuantity < slotMax) {
+					if (totalQuantity <= slotMax) {
 						if (InventoryTools.canFitEntirely(inv, itemId, quantity, true))
 							changedSlots = InventoryTools.addToInventory(p.getInventory(invType), itemId, totalQuantity);
 					} else {
