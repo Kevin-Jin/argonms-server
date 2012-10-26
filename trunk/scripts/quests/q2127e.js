@@ -17,15 +17,12 @@
  */
 
 /**
- * market05
- * Aquarium: Aquarium (Map 230000000)
+ * To the Desert... (NPC 1022002 Quest 2127) End
+ * Victoria Road: Perion (Map 102000000)
  *
- * Aquarium Free Market portal.
- * Warps players from Aquarium to Free Market.
+ * Teleports player to Nihal Desert.
  *
  * @author GoldenKevin
  */
 
-portal.rememberMap("FREE_MARKET");
-portal.playSoundEffect();
-player.changeMap(910000000, "out00");
+//TODO: GMS-like conversation

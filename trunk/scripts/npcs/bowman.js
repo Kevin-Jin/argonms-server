@@ -127,7 +127,7 @@ if (player.getJob() == 0) {
 						if (selection == 0) {
 							npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly ... come talk to me once you have made your decision.");
 						} else if (selection == 1) {
-							if (getSP() > ((getLevel() - 30) * 3)) {
+							if (player.getSP() > ((player.getLevel() - 30) * 3)) {
 								npc.sayNext("Hmmm...you have too much SP...you can't make the 2nd job advancement with that many SP in store. Use more SP on the skills on the 1st level and then come back.");
 							} else {
 								player.setJob(320);

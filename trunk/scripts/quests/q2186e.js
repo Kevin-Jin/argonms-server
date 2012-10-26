@@ -17,15 +17,15 @@
  */
 
 /**
- * market05
- * Aquarium: Aquarium (Map 230000000)
+ * Help Me Find My Glasses (NPC 1094001 Quest 2186) End
+ * Victoria Road: Nautilus Harbor (Map 120000000)
  *
- * Aquarium Free Market portal.
- * Warps players from Aquarium to Free Market.
+ * Teleports player to Nihal Desert.
  *
  * @author GoldenKevin
  */
 
-portal.rememberMap("FREE_MARKET");
-portal.playSoundEffect();
-player.changeMap(910000000, "out00");
+//TODO: GMS-like conversation
+player.gainExp(1700);
+player.gainItem(2030019, 10);
+npc.completeQuest();

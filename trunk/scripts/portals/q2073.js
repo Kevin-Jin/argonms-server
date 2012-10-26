@@ -17,15 +17,21 @@
  */
 
 /**
- * market05
- * Aquarium: Aquarium (Map 230000000)
+ * q2073
+ * Victoria Road: The Forest East of Henesys (Map 100010000)
  *
- * Aquarium Free Market portal.
- * Warps players from Aquarium to Free Market.
+ * Warps players into Utah's pig farm for Camila's Gem (quest 2073).
  *
- * @author GoldenKevin
+ * @author GoldenKevin (content from Vana r3171)
  */
 
-portal.rememberMap("FREE_MARKET");
-portal.playSoundEffect();
-player.changeMap(910000000, "out00");
+if (player.isQuestActive(2073)) {
+	if (portal.getEvent("party1") == null) {
+		portal.playSoundEffect();
+		portal.makeEvent("pigFarm", player);
+	} else {
+		portal.sayErrorInChat("It seems like someone already has visited Yoota's Farm.");
+	}
+} else {
+	portal.sayErrorInChat("There's a door that'll lead me somewhere, but I can't seem to get in there.");
+}

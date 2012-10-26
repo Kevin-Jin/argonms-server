@@ -17,15 +17,40 @@
  */
 
 /**
- * market05
- * Aquarium: Aquarium (Map 230000000)
- *
- * Aquarium Free Market portal.
- * Warps players from Aquarium to Free Market.
+ * Logic for handling the time limit for Camila's Gem jump quest.
  *
  * @author GoldenKevin
  */
 
-portal.rememberMap("FREE_MARKET");
-portal.playSoundEffect();
-player.changeMap(910000000, "out00");
+let player;
+
+function init(attachment) {
+	player = attachment;
+
+	player.changeMap(900000000);
+
+	event.getMap(900000000).showTimer(10 * 60);
+	event.startTimer("kick", 10 * 60 * 1000);
+
+	player.setEvent(event);
+}
+
+function playerDisconnected(player) {
+	event.destroyEvent();
+}
+
+function playerChangedMap(player, destination) {
+	event.destroyEvent();
+}
+
+function timerExpired(key) {
+	switch (key) {
+		case "kick":
+			player.changeMap(100030000, "quest00"); //let playerChangedMap handle destroy
+			break;
+	}
+}
+
+function deinit() {
+	player.setEvent(null);
+}
