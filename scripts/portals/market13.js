@@ -27,4 +27,5 @@
  */
 
 portal.rememberMap("FREE_MARKET");
+portal.playSoundEffect();
 player.changeMap(910000000, "out00");

@@ -42,4 +42,5 @@ function getPortal(map) {
 let map = portal.resetRememberedMap("FREE_MARKET");
 if (map == 999999999)
 	map = 102000000;
+portal.playSoundEffect();
 player.changeMap(map, getPortal(map));

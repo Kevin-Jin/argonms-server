@@ -39,6 +39,15 @@ public class ScriptPortal extends PlayerScriptInteraction {
 		getClient().getSession().send(writeHintBalloon(hint, width, height));
 	}
 
+	public void playSoundEffect() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte((byte) 7);
+
+		getClient().getSession().send(lew.getBytes());
+	}
+
 	public void block() {
 		getClient().getSession().send(writePortalBlocked((byte) 0x01));
 		warped = false;

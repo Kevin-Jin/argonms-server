@@ -60,6 +60,10 @@ public abstract class PlayerScriptInteraction {
 		client.getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
+	public void sayErrorInChat(String message) {
+		client.getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+	}
+
 	public void rememberMap(String variable) {
 		client.getPlayer().rememberMap(MapMemoryVariable.valueOf(variable));
 	}

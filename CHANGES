@@ -2220,6 +2220,14 @@
 	its requirements were already fulfilled before they were checked again.
 	* Maple TV NPCs no longer show the placeholder script for shop NPCs.
 	* Fixed NullPointerException for mob skills.
+	* Allow movement between The Forest East of Henesys and On the Way to the
+	Harbor.
+
+2012-10-26  GoldenKevin  (revision 152)
+
+	* Fixed scripted portals being silent when entered.
+	* Fixed broken second job advancement to crossbowmen and bandits.
+	* Added full support for Camila's Gem jump quest.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
