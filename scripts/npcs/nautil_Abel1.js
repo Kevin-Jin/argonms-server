@@ -42,10 +42,12 @@ if (player.isQuestStarted(2186)) {
 			item = 4031854;
 			break;
 	}
-	player.gainItem(item, 1);
 
-	if (item == 4031853)
-		npc.sayNext("I found Abel's glasses.");
-	else
-		npc.say("I found a pair of glasses, but it doesn't seem to be Abel's. Abel's pair is horn-rimmed...");
+	if (player.gainItem(item, 1))
+		if (item == 4031853)
+			npc.sayNext("I found Abel's glasses.");
+		else
+			npc.say("I found a pair of glasses, but it doesn't seem to be Abel's. Abel's pair is horn-rimmed...");
+	else //TODO: GMS-like line
+		npc.say("Please check whether your ETC. inventory is full.");
 }

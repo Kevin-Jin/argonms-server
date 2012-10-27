@@ -229,10 +229,12 @@ function getPrize() {
 		rewards = potions;
 	else //10% chance
 		rewards = etc;
-	
+
 	let index = Math.floor(Math.random() * (rewards.length / 2)) * 2;
-	player.gainItem(rewards[index], rewards[index + 1]);
-	player.changeMap(103000805, "sp");
+	if (player.gainItem(rewards[index], rewards[index + 1]))
+		player.changeMap(103000805, "sp");
+	else //TODO: GMS-like line
+		npc.say("Please check whether your inventory is full.");
 }
 
 let stage = map.getId() - 103000800 + 1;
@@ -297,6 +299,7 @@ switch (stage) {
 						let numcoupons = answers[event.getVariable(qIndexVar)];
 						if (!player.hasItem(4001007, numcoupons + 1) && player.hasItem(4001007, numcoupons)) {
 							player.loseItem(4001007, numcoupons);
+							//there should already be at least one empty slot in the ETC inventory by now
 							player.gainItem(4001008, 1);
 							npc.sayNext("That's the right answer! For that you have just received a #bpass#k. Please hand it to the leader of the party.");
 							event.setVariable(dVar, true);

@@ -54,7 +54,10 @@ if (selection == 0) {
 	} else if (selection == 1) {
 		if (player.hasItem(4030012, 99)) {
 			player.loseItem(4030012, 99);
-			player.gainItem(4080100, 1);
+			if (player.canGainItem(4080100, 1))
+				player.gainItem(4080100, 1);
+			else //TODO: GMS-like line
+				npc.say("Please check whether your ETC. inventory is full.");
 		} else {
 			npc.sayNext("You want #b#t4080100##k? Hmmm... to make #t4080100#, you'll need some #b#t4030012#s#k. #t4030012# can be obtained by taking out the monsters all around the island. Collect 99 #t4030012#s and you can make a set of Match Cards.");
 		}

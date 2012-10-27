@@ -41,6 +41,9 @@ if (player.getJob() == 0) {
 				player.gainSp((player.getLevel() - 8) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
 			player.setJob(200);
+			//don't bother checking whether the inventories are full.
+			//1. the user's inventory is not expected to be full by now, and
+			//2. the items given are insignificant (just beginner's items)
 			player.gainItem(1372043, 1); //Beginner Wand
 			let mpinc = 100 + Math.floor(Math.random() * 50); //Extra MP Given
 			player.increaseMaxMp(mpinc);
@@ -66,8 +69,10 @@ if (player.getJob() == 0) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
 		} else if (selection == 1) {
 			npc.sayNext("Good...you look strong, alright, but I need to see if it is for real. The test isn't terribly difficult and you should be able to pass it. Here, take my letter first. Make sure you don't lose it.");
-			player.gainItem(4031009, 1);
-			npc.sayNext("Please get this letter to #b#p1072001##k around #b#m101020000##k near Ellinia. He's doing the role of an instructor in place of me. He'll give you all the details about it. Best of luck to you...");
+			if (player.gainItem(4031009, 1))
+				npc.sayNext("Please get this letter to #b#p1072001##k around #b#m101020000##k near Ellinia. He's doing the role of an instructor in place of me. He'll give you all the details about it. Best of luck to you...");
+			else //TODO: GMS-like line
+				npc.say("Please check whether your ETC. inventory is full.");
 		}
 	} else if (player.hasItem(4031009, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072001##k who's around #b#m101020000#k near Ellinia. Give the letter to him and he may let you know what to do.");

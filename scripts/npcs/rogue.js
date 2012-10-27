@@ -50,6 +50,9 @@ if (player.isQuestStarted(6141)) {
 				player.gainSp((player.getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
 			player.setJob(400);
+			//don't bother checking whether the inventories are full.
+			//1. the user's inventory is not expected to be full by now, and
+			//2. the items given are insignificant (just beginner's items)
 			player.gainItem(1472061, 1); //Beginners Garnier
 			player.gainItem(1332063, 1); //Beginners Dagger
 			player.gainItem(2070015, 3); //Special subis
@@ -79,8 +82,10 @@ if (player.isQuestStarted(6141)) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
 		} else if (selection == 1) {
 			npc.sayNext("Good thinking. But, I need to make sure you are as strong as you look. It's not a hard test, one that should be easy for you to pass. First, take this letter...make sure you don't lose it.");
-			player.gainItem(4031011, 1);
-			npc.sayNext("Please take this letter to #b#p1072003##k around #b#m102040000##k near Kerning City. He's doing the job of an instructor in place of me. Give him the letter and he'll give you the test for me. If you want more details, hear it straight from him. I'll be wishing you good luck.");
+			if (player.gainItem(4031011, 1))
+				npc.sayNext("Please take this letter to #b#p1072003##k around #b#m102040000##k near Kerning City. He's doing the job of an instructor in place of me. Give him the letter and he'll give you the test for me. If you want more details, hear it straight from him. I'll be wishing you good luck.");
+			else //TODO: GMS-like line
+				npc.say("Please check whether your ETC. inventory is full.");
 		}
 	} else if (player.hasItem(4031010, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072003##k who's around #b#m102040000##k near Kerning City. Give the letter to him and he may let you know what to do.");

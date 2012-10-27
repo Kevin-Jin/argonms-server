@@ -41,6 +41,9 @@ if (player.getJob() == 0) {
 				player.gainSp((player.getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
 			player.setJob(300);
+			//don't bother checking whether the inventories are full.
+			//1. the user's inventory is not expected to be full by now, and
+			//2. the items given are insignificant (just beginner's items)
 			player.gainItem(1452051, 1); //Beginner Bow
 			player.gainItem(2060000, 2000); //Arrow for Bow
 			player.gainItem(2060000, 2000); //Arrow for Bow
@@ -71,8 +74,10 @@ if (player.getJob() == 0) {
 			npc.sayNext("Really? Have to give it more thought, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once you have made your decision.");
 		} else if (selection == 1) {
 			npc.sayNext("Good decision. You look strong, but I need to see if you really are strong enough to pass the test. It's not a difficult test, so you'll do just fine. Here, take my letter first...make sure you don't lose it!");
-			player.gainItem(4031010, 1);
-			npc.sayNext("Please get this letter to #b#p1072002##k who's around #b#m106010000##k near Henesys. She's taking care of the the job of an instructor in place of me. Give her the letter and she'll test you in place of me. Best of luck to you.");
+			if (player.gainItem(4031010, 1))
+				npc.sayNext("Please get this letter to #b#p1072002##k who's around #b#m106010000##k near Henesys. She's taking care of the the job of an instructor in place of me. Give her the letter and she'll test you in place of me. Best of luck to you.");
+			else //TODO: GMS-like line
+				npc.say("Please check whether your ETC. inventory is full.");
 		}
 	} else if (player.hasItem(4031010, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072002##k who's around #b#m106010000##k near Henesys. Give the letter to her and she may let you know what to do.");

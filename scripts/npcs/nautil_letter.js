@@ -29,6 +29,8 @@ npc.sayNext("A half-written letter... maybe it's important! Should I take a look
 if (player.hasItem(4031839)) {
 	npc.say("I've already picked one up. I don't think I'll need to pick up another one.");
 } else {
-	player.gainItem(4031839, 1);
-	npc.say("I can barely make this out... but it reads Kyrin.");
+	if (player.gainItem(4031839, 1))
+		npc.say("I can barely make this out... but it reads Kyrin.");
+	else //TODO: GMS-like line
+		npc.say("Please check whether your ETC. inventory is full.");
 }

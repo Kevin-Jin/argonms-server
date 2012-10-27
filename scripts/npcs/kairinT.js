@@ -101,6 +101,9 @@ if (player.getJob() != 500 || player.getLevel() < 30 || !checkSecondJobAdvanceme
 						npc.sayNext("Welcome to the band of Pirates! You may have to spend some time as a wanderer at first, but better days will certainly dawn upon you, sooner than you think! In the mean time, let me share some of my abilities with you.");
 
 						player.setJob(500);
+						//don't bother checking whether the inventories are full.
+						//1. the user's inventory is not expected to be full by now, and
+						//2. the items given are insignificant (just beginner's items)
 						player.gainItem(1482014, 1); //Scallywag Knuckler
 						player.gainItem(1492014, 1); //Pirate's Pistol
 						player.gainItem(2330006, 600); //Bullet for Novice Pirates

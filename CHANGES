@@ -2229,6 +2229,10 @@
 	* Fixed broken second job advancement to crossbowmen and bandits.
 	* Added full support for Camila's Gem jump quest.
 
+2012-10-27  GoldenKevin  (revision 153)
+
+	* All NPC scripts account for a full inventory before giving any items.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
