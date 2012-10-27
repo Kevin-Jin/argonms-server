@@ -74,8 +74,13 @@ switch (map.getId()) {
 
 if (item != 0) {
 	if (player.hasMesos(cost)) {
-		player.loseMesos(cost);
-		player.gainItem(item, 1);
+		if (player.canGainItem(item, 1)) {
+			player.loseMesos(cost);
+			player.gainItem(item, 1);
+		} else {
+			//TODO: GMS-like line
+			npc.say("Please check whether your ETC. inventory is full.");
+		}
 	} else {
 		npc.say("I'm sorry, but you don't have enough money. It costs #b" + cost + " Mesos#k.");
 	}

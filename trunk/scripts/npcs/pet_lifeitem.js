@@ -82,8 +82,10 @@ switch (selection) {
 			if (selection == 0) {
 				npc.sayNext("Hmmm ... too busy to do it right now? If you feel like doing it, though, come back and find me.");
 			} else {
-				player.gainItem(4031035, 1);
-				npc.sayNext("Ok, here's the letter. He wouldn't know I sent you if you just went there straight, so go through the obstacles with your pet, go to the very top, and then talk to Trainer Frod to give him the letter. It won't be hard if you pay attention to your pet while going through obstacles. Good luck!");
+				if (player.gainItem(4031035, 1))
+					npc.sayNext("Ok, here's the letter. He wouldn't know I sent you if you just went there straight, so go through the obstacles with your pet, go to the very top, and then talk to Trainer Frod to give him the letter. It won't be hard if you pay attention to your pet while going through obstacles. Good luck!");
+				else //TODO: GMS-like line
+					npc.say("Please check whether your ETC. inventory is full.");
 			}
 		}
 		break;
@@ -98,10 +100,16 @@ switch (selection) {
 				npc.sayNext("Alright! 5 questions, and you need to answer all of them right! Are you up for it? Here it is!!!");
 				if (askQuestions()) {
 					npc.sayNext("Alright!! Hmmm... you do know quite a bit on pets. Good, since you know a lot, I'll happily give you the scroll. I know it's not mine and all, but... who's the one that wore someone else's clothes and then left something very important in it? Anyway here you go!");
-					if (player.hasItem(4031034, 0))
-						player.gainItem(4031034, 1);
-					npc.sayNext("Well then, all you need to do now is to take it and go to\r\n"
-							+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
+					let needsItem = player.hasItem(4031034, 0);
+					if (!needsItem || player.canGainItem(4031034, 1)) {
+						if (needsItem)
+							player.gainItem(4031034, 1);
+						npc.sayNext("Well then, all you need to do now is to take it and go to\r\n"
+								+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
+					} else {
+						//TODO: GMS-like line
+						npc.say("Please check whether your ETC. inventory is full.");
+					}
 				}
 			}
 		} else if (player.isQuestStarted(2049)) {

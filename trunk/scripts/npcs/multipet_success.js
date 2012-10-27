@@ -32,8 +32,10 @@ if (!player.isQuestStarted(4646)) {
 	if (selection == 0) {
 		npc.sayNext("#b(I didn't touch this hidden item covered in grass)");
 	} else {
-		player.gainItem(4031921, 1);
-		npc.sayNext("I found the item that Pet Trainer Bartos hid... this note.");
+		if (player.gainItem(4031921, 1))
+			npc.sayNext("I found the item that Pet Trainer Bartos hid... this note.");
+		else //TODO: GMS-like line
+			npc.say("Please check whether your ETC. inventory is full.");
 	}
 } else {
 	npc.sayNext("#b(What's this... eww... a pet's poop was in there!)");

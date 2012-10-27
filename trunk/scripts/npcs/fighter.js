@@ -41,6 +41,9 @@ if (player.getJob() == 0) {
 				player.gainSp((player.getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
 			}
 			player.setJob(100);
+			//don't bother checking whether the inventories are full.
+			//1. the user's inventory is not expected to be full by now, and
+			//2. the items given are insignificant (just beginner's items)
 			player.gainItem(1302077, 1); //Beginner Sword
 			let hpinc = 200 + Math.floor(Math.random() * 50); //Extra HP Given
 			player.increaseMaxHp(hpinc);
@@ -65,8 +68,10 @@ if (player.getJob() == 0) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
 		} else if (selection == 1) {
 			npc.sayNext("Good thinking. You look strong, don't get me wrong, but there's still a need to test your strength and see if you are for real. The test isn't too difficult, so you'll do just fine...Here, take this letter first. Make sure you don't lose it.");
-			player.gainItem(4031008, 1);
-			npc.sayNext("Please get this letter to #b#p1072000##k who may be around #b#m102020300##k that's near Perion. He's the one being the instructor now in place of me, as I am busy here. Get him the letter and he'll give the test in place of me. For more details, hear it straight from him. Best of luck to you.");
+			if (player.gainItem(4031008, 1))
+				npc.sayNext("Please get this letter to #b#p1072000##k who may be around #b#m102020300##k that's near Perion. He's the one being the instructor now in place of me, as I am busy here. Get him the letter and he'll give the test in place of me. For more details, hear it straight from him. Best of luck to you.");
+			else //TODO: GMS-like line
+				npc.say("Please check whether your ETC. inventory is full.");
 		}
 	} else if (player.hasItem(4031012, 0) && player.hasItem(4031008, 1)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072000##k who's around #b#m102020300##k near Perion. Give the letter to him and he may let you know what to do.");

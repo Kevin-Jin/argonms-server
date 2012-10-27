@@ -26,10 +26,17 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
+let itemId, quantity;
 if (player.isQuestActive(2055)) {
-	player.gainItem(4031039, 1);
+	itemId = 4031039;
+	quantity = 1;
 } else {
 	let rewards = [4010003, 4010000, 4010002, 4020001, 4010005, 4010004, 4010001];
-	player.gainItem(rewards[Math.floor(Math.random() * rewards.length)], 2);
+	itemId = rewards[Math.floor(Math.random() * rewards.length)];
+	quantity = 2;
 }
-player.changeMap(103000100);
+
+if (player.gainItem(itemId, quantity))
+	player.changeMap(103000100);
+else //TODO: GMS-like line
+	npc.say("Please check whether your ETC. inventory is full.");

@@ -32,6 +32,7 @@ if (player.hasItem(4031013, 30)) {
 	npc.sayNext("Ohhhhh...you collected all 30 Dark Marbles!! Wasn't it difficult?? Alright. You've passed the test and for that, I'll reward you #b#t4031012##k. Take that item and go back to Henesys.");
 	player.loseItem(4031013);
 	player.loseItem(4031010);
+	//there should already be at least two empty slots in the ETC inventory by now
 	player.gainItem(4031012, 1);
 	player.changeMap(100000000);
 } else {
