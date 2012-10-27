@@ -40,9 +40,9 @@ switch (map.getId()) {
 		selection = npc.askYesNo("Hi, I can take you to New Leaf City (NLC) for only #b" + cost + " mesos#k. Would you like to go?");
 		if (selection == 1)
 			if (basic)
-				item = 4031711;
+				item = 4031710;
 			else
-				item = 4031712;
+				item = 4031711;
 		else if (selection == 0)
 			npc.say("Ok, come talk to me again when you want to go to NLC.");
 		break;
@@ -50,9 +50,9 @@ switch (map.getId()) {
 		selection = npc.askYesNo("Hi, I can take you back to Kerning City for only #b" + cost + " mesos#k. Would you like to go?");
 		if (selection == 1)
 			if (basic)
-				item = 4031713;
+				item = 4031712;
 			else
-				item = 4031714;
+				item = 4031713;
 		else if (selection == 0)
 			npc.say("Ok, come talk to me again when you want to go back to Kerning City.");
 		break;

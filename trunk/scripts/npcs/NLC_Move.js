@@ -17,44 +17,33 @@
  */
 
 /**
- * The Ticket Gate (NPC 1052007)
- * Victoria Road: Subway Ticketing Booth (Map 103000100)
+ * NLC ticket gate (NPC 9201068)
+ * New Leaf City Town Street: NLC Subway Station (Map 600010001)
  *
- * Admits players into Kerning City subway.
- * Starts jump quests Shumi's Lost Coin (Quest 2055), Shumi's Lost Bundle of
- * Money (Quest 2056), and Shumi's Lost Bundle of Money (Quest 2057)
- * Teleports players to waiting room of subway to New Leaf City.
+ * Admits players into New Leaf City subway.
+ * Teleports players to waiting room of subway to Kerning City.
  *
  * @author GoldenKevin (content from Vana r3171)
  */
 
 let str = "Here's the ticket reader. ";
-let a = player.hasItem(4031036, 1);
-let b = player.hasItem(4031037, 1);
-let c = player.hasItem(4031038, 1);
-let d = player.hasItem(4031711, 1);
-let e = player.hasItem(4031710, 1);
-if (a || b || c || d || e) {
+let a = player.hasItem(4031713, 1);
+let b = player.hasItem(4031712, 1);
+if (a || b) {
 	str += "You will be brought in immediately. Which ticket would you like to use?\r\n";
 	if (a)
-		str += "#b#L0#Construction site B1#l#k\r\n";
-	if (b)
-		str += "#b#L1#Construction site B2#l#k\r\n";
-	if (c)
-		str += "#b#L2#Construction site B3#l#k\r\n";
-	if (d)
-		str += "#b#L3#New Leaf city (Normal)#l#k\r\n";
-	else if (e)
-		str += "#b#L3#New Leaf city (Basic)#l#k\r\n";
+		str += "#b#L0#New Leaf city (Normal)#l#k\r\n";
+	else if (b)
+		str += "#b#L0#New Leaf city (Basic)#l#k\r\n";
 	let selection = npc.askMenu(str);
 
-	let maps = [103000900, 103000903, 103000906, 600010004];
-	let items = [4031036, 4031037, 4031038, d ? 4031711 : 4031712];
+	let maps = [600010002];
+	let items = [a ? 4031712 : 4031713];
 	let go = true;
-	if (selection == 3) {
+	if (selection == 0) {
 		let event = npc.getEvent("ship_nlc");
 		if (event == null) {
-			npc.say("Sorry, it looks like there's a problem with the subway to New Leaf City.");
+			npc.say("Sorry, it looks like there's a problem with the subway to Kerning City.");
 			go = false;
 		} else if (event.getVariable("board")) {
 			if (npc.askYesNo("It looks like there's plenty of room for this ride. Please have your ticket ready so I can let you in. The ride will be long, but you'll get to your destination just fine. What do you think? Do you want to get on this ride?") == 0) {
