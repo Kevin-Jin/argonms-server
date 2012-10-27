@@ -45,17 +45,7 @@ switch (map.getId()) {
 	case 101000300:
 		event = npc.getEvent("ship_ossyria");
 		if (event == null) {
-			let selection = npc.askYesNo("It looks like there's a problem with the boat to Orbis. I could instead warp you straight there as long as you have the original ticket you bought for the trip. Would you like to go straight to Orbis? Strong monsters and a whole new world of adventures await you there.");
-			if (selection == 0) {
-				npc.sayNext("You must have some business to take care of here, right?");
-			} else {
-				if (!player.hasItem(4031045, 1)) {
-					npc.sayNext("Oh no ... I don't think you have the ticket with you. I can't let you in without it. Please buy the ticket at the ticketing booth.");
-				} else {
-					player.loseItem(4031045, 1);
-					player.changeMap(200000100);
-				}
-			}
+			npc.say("Sorry, it looks like there's a problem with the boat to Orbis.");
 		} else if (event.getVariable("board")) {
 			let selection = npc.askYesNo("This will not be a short flight, so if you need to take care of some things, I suggest you do that first before getting on board. Do you still wish to board the ship?");
 			if (selection == 0) {

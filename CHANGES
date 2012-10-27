@@ -2233,6 +2233,17 @@
 
 	* All NPC scripts account for a full inventory before giving any items.
 
+2012-10-27  GoldenKevin  (revision 154)
+
+	* Added NPCs and NPC stubs for NPCs in New Leaf City.
+	* Added persistent event for subway between New Leaf City and Kerning City,
+	and enabled it by default in game*.properties
+	* Fixed Kerning City ticket gate not taking basic tickets to New Leaf City.
+	* Fixed Kerning City ticket seller giving the wrong items.
+	* Ellinia Station ticket usher does not allow a player to visit Orbis unless
+	the ship_ossyria persistent event is enabled. The player is no longer
+	instantly warped there.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
