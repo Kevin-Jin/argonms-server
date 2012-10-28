@@ -39,59 +39,64 @@ public final class StatAllocationHandler {
 		/*int time = */packet.readInt();
 		int updateMask = packet.readInt();
 		Map<ClientUpdateKey, Short> updatedStats = new EnumMap<ClientUpdateKey, Short>(ClientUpdateKey.class);
-		for (ClientUpdateKey key : ClientUpdateKey.valueOf(updateMask)) {
-			if (p.getAp() <= 0) {
-				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant AP");
-				return;
+		p.writeLockStats();
+		try {
+			for (ClientUpdateKey key : ClientUpdateKey.valueOf(updateMask)) {
+				if (p.getAp() <= 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant AP");
+					return;
+				}
+				switch (key) {
+					case STR:
+						if (p.getStr() < Short.MAX_VALUE) {
+							updatedStats.put(ClientUpdateKey.STR, Short.valueOf(p.incrementLocalStr()));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+					case DEX:
+						if (p.getDex() < Short.MAX_VALUE) {
+							updatedStats.put(ClientUpdateKey.DEX, Short.valueOf(p.incrementLocalDex()));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+					case INT:
+						if (p.getInt() < Short.MAX_VALUE) {
+							updatedStats.put(ClientUpdateKey.INT, Short.valueOf(p.incrementLocalInt()));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+					case LUK:
+						if (p.getLuk() < Short.MAX_VALUE) {
+							updatedStats.put(ClientUpdateKey.LUK, Short.valueOf(p.incrementLocalLuk()));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+					case MAXHP:
+						if (p.getMaxHp() < 30000) {
+							byte level;
+							int increase = 1;
+							if ((level = p.getSkillLevel(Skills.IMPROVE_MAXHP)) > 0)
+								increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVE_MAXHP).getLevel(level).getY();
+							if ((level = p.getSkillLevel(Skills.IMPROVED_MAXHP_INCREASE)) > 0)
+								increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXHP_INCREASE).getLevel(level).getY();
+							updatedStats.put(ClientUpdateKey.MAXHP, Short.valueOf(p.incrementMaxHp(increase)));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+					case MAXMP:
+						if (p.getMaxMp() < 30000) {
+							byte level;
+							int increase = 1;
+							if ((level = p.getSkillLevel(Skills.IMPROVED_MAXMP_INCREASE)) > 0)
+								increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXMP_INCREASE).getLevel(level).getY();
+							updatedStats.put(ClientUpdateKey.MAXMP, Short.valueOf(p.incrementMaxMp(increase)));
+							updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
+						}
+						break;
+				}
 			}
-			switch (key) {
-				case STR:
-					if (p.getStr() < Short.MAX_VALUE) {
-						updatedStats.put(ClientUpdateKey.STR, Short.valueOf(p.incrementLocalStr()));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-				case DEX:
-					if (p.getDex() < Short.MAX_VALUE) {
-						updatedStats.put(ClientUpdateKey.DEX, Short.valueOf(p.incrementLocalDex()));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-				case INT:
-					if (p.getInt() < Short.MAX_VALUE) {
-						updatedStats.put(ClientUpdateKey.INT, Short.valueOf(p.incrementLocalInt()));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-				case LUK:
-					if (p.getLuk() < Short.MAX_VALUE) {
-						updatedStats.put(ClientUpdateKey.LUK, Short.valueOf(p.incrementLocalLuk()));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-				case MAXHP:
-					if (p.getMaxHp() < 30000) {
-						byte level;
-						int increase = 1;
-						if ((level = p.getSkillLevel(Skills.IMPROVE_MAXHP)) > 0)
-							increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVE_MAXHP).getLevel(level).getY();
-						if ((level = p.getSkillLevel(Skills.IMPROVED_MAXHP_INCREASE)) > 0)
-							increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXHP_INCREASE).getLevel(level).getY();
-						updatedStats.put(ClientUpdateKey.MAXHP, Short.valueOf(p.incrementMaxHp(increase)));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-				case MAXMP:
-					if (p.getMaxMp() < 30000) {
-						byte level;
-						int increase = 1;
-						if ((level = p.getSkillLevel(Skills.IMPROVED_MAXMP_INCREASE)) > 0)
-							increase += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXMP_INCREASE).getLevel(level).getY();
-						updatedStats.put(ClientUpdateKey.MAXMP, Short.valueOf(p.incrementMaxMp(increase)));
-						updatedStats.put(ClientUpdateKey.AVAILABLEAP, Short.valueOf(p.decrementLocalAp()));
-					}
-					break;
-			}
+		} finally {
+			p.writeUnlockStats();
 		}
 		gc.getSession().send(GamePackets.writeUpdatePlayerStats(updatedStats, true));
 	}
@@ -101,16 +106,24 @@ public final class StatAllocationHandler {
 		/*int time = */packet.readInt();
 		int skillId = packet.readInt();
 		byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
-		if (p.getSp() > 0 || Skills.isBeginnerSkill(skillId)) {
-			if (newLevel <= p.getMasterSkillLevel(skillId)) {
+		if (newLevel <= p.getMasterSkillLevel(skillId)) {
+			if (Skills.isBeginnerSkill(skillId)) {
 				p.setSkillLevel(skillId, newLevel, (byte) -1);
-				if (!Skills.isBeginnerSkill(skillId))
-					p.setSp((short) (p.getSp() - 1));
 			} else {
-				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
+				p.writeLockStats();
+				try {
+					if (p.getSp() > 0) {
+						p.setSp((short) (p.getSp() - 1));
+						p.setSkillLevel(skillId, newLevel, (byte) -1);
+					} else {
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
+					}
+				} finally {
+					p.writeUnlockStats();
+				}
 			}
 		} else {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
 		}
 	}
 

@@ -137,6 +137,11 @@ public final class TakeDamageHandler {
 				hpBurn -= delta;
 				mpBurn += delta;
 			}
+			int mpOverage = mpBurn - p.getMp();
+			if (mpOverage > 0) {
+				mpBurn -= mpOverage;
+				hpBurn += mpOverage;
+			}
 			p.gainHp(-hpBurn);
 			if (mpBurn > 0)
 				p.gainMp(-mpBurn);

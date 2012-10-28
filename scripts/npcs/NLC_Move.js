@@ -38,7 +38,7 @@ if (a || b) {
 	let selection = npc.askMenu(str);
 
 	let maps = [600010002];
-	let items = [a ? 4031712 : 4031713];
+	let items = [a ? 4031713 : 4031712];
 	let go = true;
 	if (selection == 0) {
 		let event = npc.getEvent("ship_nlc");

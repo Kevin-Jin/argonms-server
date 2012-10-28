@@ -2244,6 +2244,15 @@
 	the ship_ossyria persistent event is enabled. The player is no longer
 	instantly warped there.
 
+2012-10-27  GoldenKevin  (revision 155)
+
+	* StatAllocationHandler now mutexes SP and AP allocation so concurrent
+	modifications by "megatubi" enabled clients don't cause issues.
+	* Fixed ticket gates for Kerning City and New Leaf City subways.
+	* Fixed Magic Guard not burning additional HP if MP is depleted.
+	* Added a stub to handling the Dispel skill (including a new method that is
+	application for other party skills).
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

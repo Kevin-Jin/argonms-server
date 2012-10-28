@@ -29,6 +29,7 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
 import argonms.game.character.inventory.ItemTools;
@@ -46,6 +47,10 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public final class BuffHandler {
+	private static boolean isAffected(byte bitset, byte index, byte partySize) {
+		return ((bitset & (1 << (6 + index - partySize))) != 0);
+	}
+
 	public static void handleUseSkill(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		/*int tickCount = */packet.readInt();
@@ -75,6 +80,18 @@ public final class BuffHandler {
 					}
 				}
 				stance = packet.readByte();
+				break;
+			}
+			case Skills.DISPEL: {
+				byte affected = packet.readByte();
+				PartyList party = p.getParty();
+				byte partySize = party.getMembersCount();
+				for (byte i = 0; i < partySize; i++) {
+					if (isAffected(affected, i, partySize)) {
+						
+					}
+				}
+				affected = packet.readByte();
 				break;
 			}
 			default:
