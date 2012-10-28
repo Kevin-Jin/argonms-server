@@ -49,7 +49,7 @@ if (a || b || c || d || e) {
 	let selection = npc.askMenu(str);
 
 	let maps = [103000900, 103000903, 103000906, 600010004];
-	let items = [4031036, 4031037, 4031038, d ? 4031711 : 4031712];
+	let items = [4031036, 4031037, 4031038, d ? 4031711 : 4031710];
 	let go = true;
 	if (selection == 3) {
 		let event = npc.getEvent("ship_nlc");

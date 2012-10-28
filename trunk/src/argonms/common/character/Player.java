@@ -40,6 +40,8 @@ import java.sql.Types;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,6 +59,8 @@ public abstract class Player {
 	protected short eyes, hair;
 	protected byte skin;
 	protected byte gender;
+
+	private final ReadWriteLock statLocks;
 	protected volatile short level;
 	protected volatile short job;
 	protected volatile short baseStr, baseDex, baseInt, baseLuk, baseMaxHp, baseMaxMp;
@@ -73,6 +77,8 @@ public abstract class Player {
 	private final Pet[] pets;
 
 	protected Player() {
+		statLocks = new ReentrantReadWriteLock();
+
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		pets = new Pet[3];
 	}
@@ -93,6 +99,14 @@ public abstract class Player {
 
 	public byte getGender() {
 		return gender;
+	}
+
+	public void readLockStats() {
+		statLocks.readLock().lock();
+	}
+
+	public void readUnlockStats() {
+		statLocks.readLock().unlock();
 	}
 
 	public byte getSkinColor() {
@@ -189,6 +203,14 @@ public abstract class Player {
 
 	public byte getPrivilegeLevel() {
 		return gm;
+	}
+
+	public void writeLockStats() {
+		statLocks.writeLock().lock();
+	}
+
+	public void writeUnlockStats() {
+		statLocks.writeLock().unlock();
 	}
 
 	protected void setName(String name) {
