@@ -2253,6 +2253,17 @@
 	* Added a stub to handling the Dispel skill (including a new method that is
 	application for other party skills).
 
+2012-10-29  GoldenKevin  (revision 156)
+
+	* Refactored `shopitems` table in default_shops.sql so the `shops` table is
+	no longer needed.
+	* Added shops for Nautilus.
+	* Removed some inaccurate shop items.
+	* Added bullets in applicable shops.
+	* Fixed portal to Utah's Pig Farm.
+	* Fixed NPC script for trash can in Nautilus.
+	* Fixed Speed Potions.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

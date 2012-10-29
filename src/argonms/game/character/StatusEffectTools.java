@@ -281,11 +281,11 @@ public final class StatusEffectTools {
 				p.addHands(mod);
 				break;
 			case SPEED:
-				mod = ((PlayerSkillEffectsData) e).getSpeed();
+				mod = ((BuffsData) e).getSpeed();
 				p.addSpeed(mod);
 				break;
 			case JUMP:
-				mod = ((PlayerSkillEffectsData) e).getJump();
+				mod = ((BuffsData) e).getJump();
 				p.addJump(mod);
 				break;
 			case MAGIC_GUARD:

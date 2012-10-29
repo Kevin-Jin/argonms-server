@@ -40,41 +40,27 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 	private static final Logger LOG = Logger.getLogger(DefaultNpcShopDataLoader.class.getName());
 
 	@Override
-	protected int load(int npcid) {
+	protected void load(int npcid) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `shopid` FROM `shops` WHERE `npcid` = ?");
+			List<NpcShop.ShopSlot> items = new ArrayList<NpcShop.ShopSlot>();
+			ps = con.prepareStatement("SELECT `itemid`,`price` FROM `shopitems` WHERE `npcid` = ? ORDER BY `position` ASC");
 			ps.setInt(1, npcid);
 			rs = ps.executeQuery();
-			if (rs.next()) {
-				int shopId = rs.getInt(1);
-				npcToShop.put(Integer.valueOf(npcid), Integer.valueOf(shopId));
+			while (rs.next())
+				items.add(new NpcShop.ShopSlot(rs.getInt(1), (short) 1, rs.getInt(2)));
 
-				List<NpcShop.ShopSlot> items = new ArrayList<NpcShop.ShopSlot>();
-				PreparedStatement ips = null;
-				ResultSet irs = null;
-				try {
-					ips = con.prepareStatement("SELECT `itemid`,`price` FROM `shopitems` WHERE `shopid` = ? ORDER BY `position` ASC");
-					ips.setInt(1, shopId);
-					irs = ips.executeQuery();
-					while (irs.next())
-						items.add(new NpcShop.ShopSlot(irs.getInt(1), (short) 1, irs.getInt(2)));
-				} finally {
-					DatabaseManager.cleanup(DatabaseType.STATE, irs, ips, null);
-				}
-
+			if (!items.isEmpty()) {
 				NpcShop shop = new NpcShop.DefaultNpcShopStock(items);
-				loadedShops.put(Integer.valueOf(shopId), shop);
-				return shopId;
+				loadedShops.put(Integer.valueOf(npcid), shop);
 			} else {
-				return 0;
+				loadedShops.put(Integer.valueOf(npcid), null);
 			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not read data from default table for shop of NPC " + npcid, ex);
-			return 0;
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
@@ -88,28 +74,16 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 		List<NpcShop.ShopSlot> items;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			Map<Integer, List<NpcShop.ShopSlot>> shopItems = new HashMap<Integer, List<NpcShop.ShopSlot>>();
-			ps = con.prepareStatement("SELECT `shopid`,`itemid`,`price` FROM `shopitems` ORDER BY `shopid`,`position` ASC");
+			ps = con.prepareStatement("SELECT `npcid`,`itemid`,`price` FROM `shopitems` ORDER BY `shopid`,`position` ASC");
 			rs = ps.executeQuery();
 			boolean more = false;
 			while (more || rs.next()) {
-				int shopId = rs.getInt(1);
+				int npcId = rs.getInt(1);
 				items = new ArrayList<NpcShop.ShopSlot>();
 				do
 					items.add(new NpcShop.ShopSlot(rs.getInt(2), (short) 1, rs.getInt(3)));
-				while ((more = rs.next()) && rs.getInt(1) == shopId);
-				shopItems.put(Integer.valueOf(shopId), items);
-			}
-			rs.close();
-			ps.close();
-
-			ps = con.prepareStatement("SELECT `shopid`,`npcid` FROM `shops`");
-			rs = ps.executeQuery();
-			while (rs.next()) {
-				Integer shopId = Integer.valueOf(rs.getInt(1));
-				npcToShop.put(Integer.valueOf(rs.getInt(2)), shopId);
-				List<NpcShop.ShopSlot> stock = shopItems.get(shopId);
-				loadedShops.put(shopId, new NpcShop.DefaultNpcShopStock(stock != null ? stock : Collections.<NpcShop.ShopSlot>emptyList()));
+				while ((more = rs.next()) && rs.getInt(1) == npcId);
+				loadedShops.put(Integer.valueOf(npcId), new NpcShop.DefaultNpcShopStock(items));
 			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load all shop data from MCDB.", ex);
