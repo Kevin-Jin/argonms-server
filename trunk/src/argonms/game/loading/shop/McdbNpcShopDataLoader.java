@@ -58,7 +58,7 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 	}
 
 	@Override
-	protected int load(int npcid) {
+	protected void load(int npcid) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -68,9 +68,6 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 			ps.setInt(1, npcid);
 			rs = ps.executeQuery();
 			if (rs.next()) {
-				int shopId = rs.getInt(1);
-				npcToShop.put(Integer.valueOf(npcid), Integer.valueOf(shopId));
-
 				Map<Integer, Double> rechargeables;
 				int rechargeTier = rs.getInt(2);
 				if (rechargeTier == 0) {
@@ -97,7 +94,7 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 				ResultSet irs = null;
 				try {
 					ips = con.prepareStatement("SELECT `itemid`,`quantity`,`price` FROM `shopitemdata` WHERE `shopid` = ? ORDER BY `sort` DESC");
-					ips.setInt(1, shopId);
+					ips.setInt(1, rs.getInt(1));
 					irs = ips.executeQuery();
 					while (irs.next())
 						items.add(new NpcShop.ShopSlot(irs.getInt(1), irs.getShort(2), irs.getInt(3)));
@@ -108,14 +105,12 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 				//saves a bit of memory - shops that use the same recharge tier
 				//just use aliases of the same immutable map
 				NpcShop shop = new NpcShop.McdbNpcShopStock(rechargeables, items);
-				loadedShops.put(Integer.valueOf(shopId), shop);
-				return shopId;
+				loadedShops.put(Integer.valueOf(npcid), shop);
 			} else {
-				return 0;
+				loadedShops.put(Integer.valueOf(npcid), null);
 			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not read MCDB data for shop of NPC " + npcid, ex);
-			return 0;
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.WZ, rs, ps, con);
 		}
@@ -156,10 +151,10 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				int shopId = rs.getInt(1);
-				npcToShop.put(Integer.valueOf(rs.getInt(2)), Integer.valueOf(shopId));
+				int npcId = rs.getInt(2);
 				int rechargeTier = rs.getInt(3);
 				Map<Integer, Double> rechargeables = rechargeTier != 0 ? rechargeTiers.get(Integer.valueOf(rechargeTier)) : Collections.<Integer, Double>emptyMap();
-				loadedShops.put(Integer.valueOf(shopId), new NpcShop.McdbNpcShopStock(rechargeables != null ? rechargeables : Collections.<Integer, Double>emptyMap(), shopItems.get(Integer.valueOf(shopId))));
+				loadedShops.put(Integer.valueOf(npcId), new NpcShop.McdbNpcShopStock(rechargeables != null ? rechargeables : Collections.<Integer, Double>emptyMap(), shopItems.get(Integer.valueOf(shopId))));
 			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load all shop data from MCDB.", ex);
@@ -172,8 +167,11 @@ public class McdbNpcShopDataLoader extends NpcShopDataLoader {
 
 	@Override
 	public boolean canLoad(int npcid) {
-		if (npcToShop.containsKey(Integer.valueOf(npcid)))
+		if (loadedShops.get(Integer.valueOf(npcid)) != null)
 			return true;
+		//if loadedShops.containsKey npcid but loadedShops.get npcid is null, that means the shop of npcid could not be loaded
+		if (loadedShops.containsKey(Integer.valueOf(npcid)))
+			return false;
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
