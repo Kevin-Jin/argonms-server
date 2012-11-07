@@ -45,13 +45,18 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-		if (args.length < 3) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
 		}
-		String type = args[1];
-		String query = ParseHelper.restOfString(args, 2);
+		String type = args.next();
+
+		if (!args.hasNext()) {
+			resp.printErr(getUsage());
+			return;
+		}
+		String query = args.restOfString();
 
 		List<String> matches;
 		String typeName;

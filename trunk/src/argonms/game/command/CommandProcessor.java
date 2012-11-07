@@ -25,7 +25,6 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
-import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
@@ -77,7 +76,7 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				for (PlayerStatusEffect e : new PlayerStatusEffect[] {
 						PlayerStatusEffect.CURSE, PlayerStatusEffect.DARKNESS,
 						PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL,
@@ -98,23 +97,31 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (args.length < 3) {
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+				String target = args.extractTarget(null, null);
+				if (target == null) {
 					resp.printErr(getUsage());
 					return;
 				}
-				GameCharacter warpee = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
+				GameCharacter warpee = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
 				if (warpee == null) {
-					resp.printErr("No player named " + args[1] + " is online on this channel.");
+					resp.printErr("No player named " + target + " is online on this channel.");
 					resp.printErr(getUsage());
 					return;
 				}
-				GameCharacter warpTo = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[2]);
+
+				target = args.extractTarget(null, null);
+				if (target == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				GameCharacter warpTo = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
 				if (warpTo == null) {
-					resp.printErr("No player named " + args[2] + " is online on this channel.");
+					resp.printErr("No player named " + target + " is online on this channel.");
 					resp.printErr(getUsage());
 					return;
 				}
+
 				GameMap map = warpTo.getMap();
 				warpee.changeMap(map.getDataId(), map.nearestSpawnPoint(warpTo.getPosition()));
 			}
@@ -127,44 +134,55 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (args.length < 3) {
-					resp.printErr(getUsage());
-					return;
-				}
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				int skillId;
 				byte skillLevel, masterLevel = -1;
 				SkillStats s;
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String param = args.next();
 				try {
-					skillId = Integer.parseInt(args[1]);
+					skillId = Integer.parseInt(param);
 					s = SkillDataLoader.getInstance().getSkill(skillId);
 					if (s == null)
 						throw new NumberFormatException();
 				} catch (NumberFormatException e) {
-					resp.printErr(args[1] + " is not a valid skillid.");
+					resp.printErr(param + " is not a valid skillid.");
 					resp.printErr(getUsage());
 					return;
 				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				param = args.next();
 				try {
-					skillLevel = Byte.parseByte(args[2]);
+					skillLevel = Byte.parseByte(param);
 					if (skillLevel != 0 && s.getLevel(skillLevel) == null)
 						throw new NumberFormatException();
 				} catch (NumberFormatException e) {
-					resp.printErr(args[2] + " is not a valid level of skill " + skillId + ".");
+					resp.printErr(param + " is not a valid level of skill " + skillId + ".");
 					resp.printErr(getUsage());
 					return;
 				}
-				if (args.length > 3) {
+
+				if (args.hasNext()) {
+					param = args.next();
 					try {
-						masterLevel = Byte.parseByte(args[3]);
+						masterLevel = Byte.parseByte(param);
 						if (masterLevel != 0 && s.getLevel(masterLevel) == null)
 							throw new NumberFormatException();
 					} catch (NumberFormatException e) {
-						resp.printErr(args[3] + " is not a valid master level of skill " + skillId + ".");
+						resp.printErr(param + " is not a valid master level of skill " + skillId + ".");
 						resp.printErr(getUsage());
 						return;
 					}
 				}
+
 				p.setSkillLevel(skillId, skillLevel, masterLevel);
 			}
 		}, "Change the level of one of your skills", UserPrivileges.GM));
@@ -178,30 +196,35 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (args.length < 2) {
-					resp.printErr(getUsage());
-					return;
-				}
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				int itemId;
 				int quantity = 1;
-				try {
-					itemId = Integer.parseInt(args[1]);
-					//TODO: check if item is valid. Throw NumberFormatException if not
-				} catch (NumberFormatException e) {
-					resp.printErr(args[1] + " is not a valid itemid.");
+
+				if (!args.hasNext()) {
 					resp.printErr(getUsage());
 					return;
 				}
-				if (args.length > 2) {
+				String param = args.next();
+				try {
+					itemId = Integer.parseInt(param);
+					//TODO: check if item is valid. Throw NumberFormatException if not
+				} catch (NumberFormatException e) {
+					resp.printErr(param + " is not a valid itemid.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (args.hasNext()) {
+					param = args.next();
 					try {
-						quantity = Integer.parseInt(args[2]);
+						quantity = Integer.parseInt(param);
 					} catch (NumberFormatException e) {
-						resp.printErr(args[2] + " is not a valid item quantity.");
+						resp.printErr(param + " is not a valid item quantity.");
 						resp.printErr(getUsage());
 						return;
 					}
 				}
+
 				InventoryType type = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(type);
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
@@ -226,21 +249,24 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				int scriptId = 9901000;
-				if (args.length > 1) {
+				
+				if (args.hasNext()) {
+					String param = args.next();
 					try {
-						scriptId = Integer.parseInt(args[1]);
+						scriptId = Integer.parseInt(param);
 						if (scriptId < 9901000 || scriptId > 9901319) {
 							resp.printErr("Scriptid must be between 9901000 and 9901319.");
 							return;
 						}
 					} catch (NumberFormatException e) {
-						resp.printErr(args[2] + " is not a valid scriptid.");
+						resp.printErr(param + " is not a valid scriptid.");
 						resp.printErr(getUsage());
 						return;
 					}
 				}
+
 				PlayerNpc npc = new PlayerNpc(p, scriptId);
 				p.getMap().spawnPlayerNpc(npc);
 			}
@@ -257,7 +283,7 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(final GameCharacter p, String[] args, ClientNoticeStream resp) {
+			public void doAction(final GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				Collection<MapEntity> drops = p.getMap().getAllEntities(EntityType.DROP);
 				for (MapEntity ent : drops)
 					clearDrop((ItemDrop) ent, p);
@@ -270,9 +296,9 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(final GameCharacter p, final String[] args, ClientNoticeStream resp) {
+			public void doAction(final GameCharacter p, final CommandArguments args, ClientNoticeStream resp) {
 				GameCharacter killer;
-				if (ParseHelper.hasOpt(args, "-k"))
+				if (args.hasOpt("-k"))
 					killer = p;
 				else
 					killer = null;
@@ -291,17 +317,16 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (args.length > 1) {
-					p = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(args[1]);
-					if (p == null) {
-						resp.printErr("No player named " + args[1] + " is online on this channel.");
-						resp.printErr(getUsage());
-						return;
-					}
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+				String target = args.extractTarget(null, p.getName());
+				GameCharacter targetPlayer = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
+				if (targetPlayer == null) {
+					resp.printErr("No player named " + target + " is online on this channel.");
+					resp.printErr(getUsage());
+					return;
 				}
-				Point pos = p.getPosition();
-				resp.printOut("PlayerId=" + p.getId() + "; Map=" + p.getMapId() + "; Position(" + pos.x + "," + pos.y + ")");
+				Point pos = targetPlayer.getPosition();
+				resp.printOut("PlayerId=" + targetPlayer.getId() + "; Map=" + targetPlayer.getMapId() + "; Position(" + pos.x + "," + pos.y + ")");
 			}
 		}, "Show location info of yourself or another player", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
@@ -311,21 +336,36 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (args.length < 3 || !AbstractCommandDefinition.isNumber(args[2])) {
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+				short rate;
+
+				if (!args.hasNext()) {
 					resp.printErr(getUsage());
 					return;
 				}
-				short rate = (short) Math.min(Integer.parseInt(args[2]), Short.MAX_VALUE);
-				if (args[1].equalsIgnoreCase("exp")) {
+				String key = args.next();
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String value = args.next();
+				try {
+					rate = (short) Math.min(Integer.parseInt(value), Short.MAX_VALUE);
+				} catch (NumberFormatException ex) {
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (key.equalsIgnoreCase("exp")) {
 					GameServer.getVariables().setExpRate(rate);
 					resp.printOut("The exp rate of this game server has been set to "
 							+ rate + ". Changes will be reverted on the next server restart.");
-				} else if (args[1].equalsIgnoreCase("meso")) {
+				} else if (key.equalsIgnoreCase("meso")) {
 					GameServer.getVariables().setMesoRate(rate);
 					resp.printOut("The meso rate of this game server has been set to "
 							+ rate + ". Changes will be reverted on the next server restart.");
-				} else if (args[1].equalsIgnoreCase("drop")) {
+				} else if (key.equalsIgnoreCase("drop")) {
 					GameServer.getVariables().setDropRate(rate);
 					resp.printOut("The drop rate of this game server has been set to "
 							+ rate + ". Changes will be reverted on the next server restart.");
@@ -342,16 +382,18 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				byte privilegeLevelLimit = UserPrivileges.USER;
-				if (args.length > 1) {
+				if (args.hasNext()) {
+					String param = args.next();
 					try {
-						privilegeLevelLimit = Byte.parseByte(args[1]);
+						privilegeLevelLimit = Byte.parseByte(param);
 					} catch (NumberFormatException e) {
 						resp.printErr(getUsage());
 						return;
 					}
 				}
+
 				StringBuilder sb = new StringBuilder();
 				for (GameCharacter c : GameServer.getChannel(p.getClient().getChannel()).getConnectedPlayers())
 					if (c.getPrivilegeLevel() >= privilegeLevelLimit)
@@ -369,8 +411,8 @@ public class CommandProcessor {
 			}
 
 			@Override
-			public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-				if (ParseHelper.hasOpt(args, "-gc"))
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+				if (args.hasOpt("-gc"))
 					System.gc();
 
 				long startMillis = GameServer.getChannel(p.getClient().getChannel()).getTimeStarted();
@@ -410,8 +452,9 @@ public class CommandProcessor {
 		AbstractCommandDefinition def = definitions.get(args[0].toLowerCase());
 		ClientNoticeStream resp = new ClientNoticeStream(p.getClient());
 		if (def != null && p.getPrivilegeLevel() >= def.minPrivilegeLevel()) {
-			if (!ParseHelper.hasOpt(args, "--help")) {
-				def.execute(p, args, resp);
+			CommandArguments argsContainer = new CommandArguments(args);
+			if (!argsContainer.hasOpt("--help")) {
+				def.execute(p, argsContainer, resp);
 			} else {
 				resp.printOut(def.getUsage());
 				resp.printOut(def.getHelpMessage());
@@ -432,19 +475,20 @@ public class CommandProcessor {
 		}
 
 		@Override
-		public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp) {
-			if (args.length == 1) {
+		public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+			if (!args.hasNext()) {
 				for (Entry<String, AbstractCommandDefinition> entry : definitions.entrySet())
 					if (p.getPrivilegeLevel() >= entry.getValue().minPrivilegeLevel())
 						resp.printOut(entry.getKey() + " - " + entry.getValue().getHelpMessage());
 			} else {
-				AbstractCommandDefinition def = definitions.get(args[1].toLowerCase());
+				String param = args.next();
+				AbstractCommandDefinition def = definitions.get(param.toLowerCase());
 				if (def == null || p.getPrivilegeLevel() < def.minPrivilegeLevel()) {
-					resp.printErr(args[1] + " is not a valid command.");
+					resp.printErr(param + " is not a valid command.");
 					resp.printErr(getUsage());
 					return;
 				}
-				resp.printOut(args[1] + " - " + def.getHelpMessage());
+				resp.printOut(param + " - " + def.getHelpMessage());
 			}
 		}
 	}

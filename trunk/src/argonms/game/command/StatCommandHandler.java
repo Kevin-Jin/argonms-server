@@ -44,20 +44,32 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-		if (args.length < 4) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
 		}
+		String option = args.next();
+
+		if (!args.hasNext()) {
+			resp.printErr(getUsage());
+			return;
+		}
+		String stat = args.next();
+
+		if (!args.hasNext()) {
+			resp.printErr(getUsage());
+			return;
+		}
+		String param = args.next();
 		int val;
 		try {
-			val = Integer.parseInt(args[3]);
+			val = Integer.parseInt(param);
 		} catch (NumberFormatException e) {
 			resp.printErr(getUsage());
 			return;
 		}
-		String option = args[1];
-		String stat = args[2];
+
 		if (option.equalsIgnoreCase("set")) {
 			if (stat.equalsIgnoreCase("str")) {
 				p.setStr((short) Math.min(val, Short.MAX_VALUE));
