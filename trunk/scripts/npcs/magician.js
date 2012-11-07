@@ -56,7 +56,7 @@ if (player.getJob() == 0) {
 			npc.sayNext("One more warning. Once you have chosen your job, try to stay alive as much as you can. Once you reach that level, when you die, you will lose your experience level. You wouldn't want to lose your hard-earned experience points, do you?");
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. I'll be waiting for you here...");
 			npc.sayNext("Oh, and... if you have any questions about being the Magician, feel free to ask. I don't know EVERYTHING, per se, but I'll help you out with all that I know of. Til then...");
-		} else {
+		} else if (selection == 0) {
 			npc.sayNext("Really? Have to give more thought to it, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once your have made your decision...");
 		}
 	} else {
@@ -78,6 +78,7 @@ if (player.getJob() == 0) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072001##k who's around #b#m101020000#k near Ellinia. Give the letter to him and he may let you know what to do.");
 	} else if (player.hasItem(4031009, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("You got back here safely. Well done. I knew you'd pass the tests very easily...alright, I'll make you much stronger now. Before that, though...you need to choose one of the three paths that will be given to you. It will be a tough decision for you to make, but...if you have any questions about it, feel free to ask.");
+
 		let selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom...\r\n"
 				+ "#L0##bPlease explain the characteristics of the Wizard of Fire and Poison.#l#k\r\n"
 				+ "#L1##bPlease explain the characteristics of the Wizard of ICe and Lightning.#l#k\r\n"

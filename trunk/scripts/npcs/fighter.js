@@ -62,7 +62,7 @@ if (player.getJob() == 0) {
 		npc.sayNext("You need more training to be a Warrior. In order to be one, you need to train yourself to be more powerful than you are right now. Please come back much stronger.");
 	}
 } else if (player.getJob() == 100 && player.getLevel() >= 30) {
-	if (player.hasItem(4031012, 0) && player.hasItem(4031008, 0)) {
+	if (player.hasItem(4031008, 0) && player.hasItem(4031012, 0)) {
 		let selection = npc.askYesNo("Whoa! You have definitely grown up! You don't look small and weak anymore...rather, now I can feel your presence as the Warrior! Impressive...so, what do you think? Do you want to get even stronger than you are right now? Pass a simple test and I'll do just that! Wanna do it?");
 		if (selection == 0) {
 			npc.sayNext("Really? It will help you out a great deal on your journey if you get stronger fast...if you choose to change your mind in the future, please feel free to come back. Know that I'll make you much more powerful than you are right now.");
@@ -73,9 +73,9 @@ if (player.getJob() == 0) {
 			else //TODO: GMS-like line
 				npc.say("Please check whether your ETC. inventory is full.");
 		}
-	} else if (player.hasItem(4031012, 0) && player.hasItem(4031008, 1)) {
+	} else if (player.hasItem(4031008, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072000##k who's around #b#m102020300##k near Perion. Give the letter to him and he may let you know what to do.");
-	} else if (player.hasItem(4031012, 1) && player.hasItem(4031008, 1)) {
+	} else if (player.hasItem(4031008, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("OHH...you came back safe! I knew you'd breeze through...I'll admit you are a strong, formidable warrior...alright, I'll make you an even strong Warrior than you already are right now...Before THAT! you need to choose one of the three paths that you'll be given...it isn't going to be easy, so if you have any questions, feel free to ask.");
 
 		let selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom.\r\n"

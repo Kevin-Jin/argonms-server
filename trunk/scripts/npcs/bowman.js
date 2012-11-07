@@ -61,7 +61,7 @@ if (player.getJob() == 0) {
 			npc.sayNext("One more warning. Once you have chosen your job, try to stay alive as much as you can. Once you reach that level, when you die, you will lose your experience level. You wouldn't want to lose your hard-earned experience points, do you?");
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. I'll be waiting for you.");
 			npc.sayNext("Oh, and... if you have any other questions about being the Bowman, feel free to ask. I don't every single thing about  being the bowman, but I'll answer as many questions as I can. Til then...");
-		} else {
+		} else if (selection == 0) {
 			npc.sayNext("Really? Have to give more though to it, huh? Take your time, take your time. This is not something you should take lightly...come talk to me once you have made your decision.");
 		}
 	} else {
@@ -84,7 +84,7 @@ if (player.getJob() == 0) {
 	} else if (player.hasItem(4031010, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("Haha...I knew you'd breeze through that test. I'll admit, you are a great bowman. I'll make you much stronger than you are right now. Before that, however...you'll need to choose one of two ppaths given to you. It'll be a difficult decision for you to make, but...if there's any question to ask, please do so.");
 
-		selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom.\r\n"
+		let selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom.\r\n"
 				+ "#L0##bPlease explain to me what being the Hunter is all about.#k#l\r\n"
 				+ "#L1##bPlease explain to me what being the Crossbowman is all about.#k#l\r\n"
 				+ "#L2##bI'll choose my occupation!#k#l\r\n");

@@ -300,18 +300,23 @@ public final class CommonPackets {
 
 		Map<Short, QuestEntry> started = new HashMap<Short, QuestEntry>();
 		Map<Short, QuestEntry> completed = new HashMap<Short, QuestEntry>();
-		for (Entry<Short, QuestEntry> entry : p.getAllQuests().entrySet()) {
-			QuestEntry status = entry.getValue();
-			switch (status.getState()) {
-				case QuestEntry.STATE_NOT_STARTED:
-					break;
-				case QuestEntry.STATE_STARTED:
-					started.put(entry.getKey(), status);
-					break;
-				case QuestEntry.STATE_COMPLETED:
-					completed.put(entry.getKey(), status);
-					break;
+		p.readLockQuests();
+		try {
+			for (Entry<Short, QuestEntry> entry : p.getAllQuests().entrySet()) {
+				QuestEntry status = entry.getValue();
+				switch (status.getState()) {
+					case QuestEntry.STATE_NOT_STARTED:
+						break;
+					case QuestEntry.STATE_STARTED:
+						started.put(entry.getKey(), status);
+						break;
+					case QuestEntry.STATE_COMPLETED:
+						completed.put(entry.getKey(), status);
+						break;
+				}
 			}
+		} finally {
+			p.readUnlockQuests();
 		}
 		lew.writeShort((short) started.size());
 		for (Entry<Short, QuestEntry> startedQuest : started.entrySet()) {

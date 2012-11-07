@@ -268,7 +268,7 @@ public class PartyList {
 	}
 
 	/**
-	 * This PartyList must be read locked when this method is called.
+	 * This PartyList must be at least read locked when this method is called.
 	 * @return 
 	 */
 	public boolean allOffline() {
