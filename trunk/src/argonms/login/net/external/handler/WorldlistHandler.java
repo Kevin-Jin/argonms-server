@@ -167,7 +167,7 @@ public final class WorldlistHandler {
 
 	private static void sendToGameServer(LoginClient c, int charid, String macs) {
 		if (c.hasBannedMac(macs)) {
-			c.getSession().close("Banned", null);
+			c.getSession().close("Banned");
 			return;
 		}
 		LoginWorld w = LoginServer.getInstance().getWorld(c.getWorld());

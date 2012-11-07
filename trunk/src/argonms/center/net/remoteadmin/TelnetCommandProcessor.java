@@ -25,7 +25,7 @@ package argonms.center.net.remoteadmin;
 public class TelnetCommandProcessor {
 	public void process(String message, TelnetClient client) {
 		if (message.equals("exit") || message.equals("quit")) {
-			client.getSession().close("User typed '" + message + "'", null);
+			client.getSession().close("User typed '" + message + "'");
 			return;
 		} else if (message.equals("help")) {
 			client.getSession().send("EXIT\t\tCloses the current telnet session.\r\n"

@@ -142,7 +142,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 											connected.put(acceptedKey, session);
 											session.sendInitPacket();
 										} catch (IOException ex) {
-											close("Error while accepting client", ex);
+											close(ex.getMessage(), ex);
 										}
 									}
 								} else {
@@ -183,7 +183,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 												}
 											} catch (IOException ex) {
 												//does an IOException in read always mean an invalid channel?
-												session.close("Error while reading", ex);
+												session.close(ex.getMessage());
 											}
 										}
 										if (key.isValid() && key.isWritable())
@@ -196,7 +196,7 @@ public class ClientListener<T extends RemoteClient> implements SessionCreator {
 							}
 						}
 					} catch (IOException ex) {
-						close("Error while opening", ex);
+						close(ex.getMessage(), ex);
 					}
 				}
 			});

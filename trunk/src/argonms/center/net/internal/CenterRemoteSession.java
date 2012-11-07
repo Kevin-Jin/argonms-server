@@ -148,7 +148,7 @@ public class CenterRemoteSession implements Session {
 	}
 
 	@Override
-	public boolean close(String reason, Throwable reasonExc) {
+	public boolean close(String reason) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -158,10 +158,7 @@ public class CenterRemoteSession implements Session {
 			stopPingTask();
 			idleTaskFuture.cancel(false);
 
-			if (reasonExc == null)
-				LOG.log(Level.FINE, "{0} server ({1}) disconnected: {2}", new Object[] { getServerName(), getAddress(), reason });
-			else
-				LOG.log(Level.FINE, getServerName() + " server (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			LOG.log(Level.FINE, "{0} server ({1}) disconnected: {2}", new Object[] { getServerName(), getAddress(), reason });
 			if (cri != null)
 				cri.disconnected();
 			return true;
@@ -197,7 +194,7 @@ public class CenterRemoteSession implements Session {
 			return 1;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			close("Error while writing", ex);
+			close(ex.getMessage());
 			return -2;
 		} finally {
 			sendQueue.setCanWrite();
@@ -259,7 +256,7 @@ public class CenterRemoteSession implements Session {
 		responsePacket.writeLengthPrefixedString(response == null ? "" : response);
 		send(responsePacket.getBytes());
 		if (response != null) {
-			close(localError, null);
+			close(localError);
 			cri = null;
 		}
 	}
@@ -283,7 +280,7 @@ public class CenterRemoteSession implements Session {
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close("EOF received", null);
+			close("EOF received");
 			return null;
 		}
 		if (readBuffer.remaining() != 0) { //buffer is still not full
@@ -344,7 +341,7 @@ public class CenterRemoteSession implements Session {
 
 		@Override
 		public void run() {
-			close("Timed out after " + TIMEOUT + " milliseconds", null);
+			close("Timed out after " + TIMEOUT + " milliseconds");
 		}
 
 		public void receivedPong() {
