@@ -2279,6 +2279,12 @@
 	* Player stats lock moved to LoggedInPlayer because login server players are
 	immutable.
 
+2012-11-07  GoldenKevin  (revision 159)
+
+	* All commands rewritten to make use of a new argument parsing solution that
+	does away with argument counts and argument indices in favor of a iterator
+	interface.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

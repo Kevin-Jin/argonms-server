@@ -72,7 +72,7 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	private static void maxStats(GameCharacter p, String[] args) {
+	private static void maxStats(GameCharacter p, CommandArguments args) {
 		p.setStr(Short.MAX_VALUE);
 		p.setDex(Short.MAX_VALUE);
 		p.setInt(Short.MAX_VALUE);
@@ -119,7 +119,7 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 			maxEquips(p);
 		}
 	}
@@ -141,7 +141,7 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 			maxSkills(p);
 		}
 	}
@@ -163,7 +163,7 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 			maxSkills(p);
 			maxEquips(p);
 			maxStats(p, args);

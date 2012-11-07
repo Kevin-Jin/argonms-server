@@ -51,12 +51,12 @@ public class CommandDefinition extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 		r.doAction(p, args, resp);
 	}
 
 	public interface CommandAction {
 		public String getUsage();
-		public void doAction(GameCharacter p, String[] args, ClientNoticeStream resp);
+		public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp);
 	}
 }

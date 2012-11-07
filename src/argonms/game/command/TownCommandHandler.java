@@ -81,15 +81,15 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-		if (args.length < 2) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
 		}
-		if (args[1].equalsIgnoreCase("list")) {
+		String name = args.restOfString();
+		if (name.equalsIgnoreCase("list")) {
 			resp.printOut("Valid locations: " + getList());
 		} else {
-			String name = ParseHelper.restOfString(args, 1);
 			Integer mapId = lookup.get(name.toLowerCase());
 			if (mapId != null)
 				p.changeMap(mapId.intValue());

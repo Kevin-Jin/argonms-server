@@ -46,10 +46,10 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		return UserPrivileges.GM;
 	}
 
-	private int getMobTime(String[] array, ClientNoticeStream resp) {
+	private int getMobTime(CommandArguments args, ClientNoticeStream resp) {
 		String s;
 		try {
-			s = ParseHelper.getOptValue(array, "-m");
+			s = args.getOptValue("-m");
 		} catch (Exception e) {
 			resp.printErr("No mobtime specified after -m flag.");
 			resp.printErr(getUsage());
@@ -66,10 +66,10 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		}
 	}
 
-	private int getCount(String[] array, ClientNoticeStream resp) {
+	private int getCount(CommandArguments args, ClientNoticeStream resp) {
 		String s;
 		try {
-			s = ParseHelper.getOptValue(array, "-c");
+			s = args.getOptValue("-c");
 		} catch (Exception e) {
 			resp.printErr("No count specified after -c flag.");
 			resp.printErr(getUsage());
@@ -87,26 +87,36 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-		if (args.length < 3) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		boolean mob;
+
+		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
 		}
-		boolean mob;
-		if (args[1].equalsIgnoreCase("mob")) {
+		String key = args.next();
+
+		if (key.equalsIgnoreCase("mob")) {
 			mob = true;
-		} else if (args[1].equalsIgnoreCase("npc")) {
+		} else if (key.equalsIgnoreCase("npc")) {
 			mob = false;
 		} else {
-			resp.printErr(args[1] + " is not a valid spawn type.");
+			resp.printErr(key + " is not a valid spawn type.");
 			resp.printErr(getUsage());
 			return;
 		}
+
+		if (!args.hasNext()) {
+			resp.printErr(getUsage());
+			return;
+		}
+		String param = args.next();
+
 		int dataId;
 		try {
-			dataId = Integer.parseInt(args[2]);
+			dataId = Integer.parseInt(param);
 		} catch (NumberFormatException e) {
-			resp.printErr(args[2] + " is not a valid " + args[1] + " id.");
+			resp.printErr(param + " is not a valid " + key + " id.");
 			resp.printErr(getUsage());
 			return;
 		}
@@ -114,7 +124,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		if (mob) {
 			MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
 			if (stats == null) {
-				resp.printErr(args[2] + " is not a valid " + args[1] + " id.");
+				resp.printErr(param + " is not a valid " + key + " id.");
 				resp.printErr(getUsage());
 				return;
 			}

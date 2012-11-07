@@ -70,25 +70,37 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, String[] args, ClientNoticeStream resp) {
-		if (ParseHelper.hasOpt(args, "-c")) {
+	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		if (args.hasOpt("-c")) {
 			//TODO: cancel shutdown
 		} else {
 			boolean halt = false, restart = false;
-			int currentIndex = 1;
-			if (ParseHelper.hasOpt(args, "-h")) {
+			if (args.hasOpt("-h")) {
 				halt = true;
-				currentIndex++;
+				args.next();
 			}
-			if (ParseHelper.hasOpt(args, "-r")) {
+			if (args.hasOpt("-r")) {
 				restart = true;
-				currentIndex++;
+				args.next();
 			}
+
+			if (!args.hasNext()) {
+				resp.printErr(getUsage());
+				return;
+			}
+			String param = args.next();
+
 			int seconds;
-			if (args[currentIndex].equalsIgnoreCase("NOW"))
+			if (param.equalsIgnoreCase("NOW")) {
 				seconds = 0;
-			else
-				seconds = Integer.parseInt(args[currentIndex]);
+			} else {
+				try {
+					seconds = Integer.parseInt(param);
+				} catch (NumberFormatException e) {
+					resp.printErr(getUsage());
+					return;
+				}
+			}
 			//TODO: implement restart
 			String message = "The server is going down for " + reason(halt, restart) + " " + formatTime(seconds) + "!";
 			serverWideNotice(message);
