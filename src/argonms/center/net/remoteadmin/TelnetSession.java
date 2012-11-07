@@ -132,7 +132,7 @@ public class TelnetSession implements Session {
 	}
 
 	@Override
-	public boolean close(String reason, Throwable reasonExc) {
+	public boolean close(String reason) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -140,10 +140,7 @@ public class TelnetSession implements Session {
 				LOG.log(Level.FINE, "Error while closing telnet client " + getClient().getAccountName() + " (" + getAddress() + ")", e);
 			}
 
-			if (reasonExc == null)
-				LOG.log(Level.FINE, "Telnet client {0} ({1}) disconnected: {2}", new Object[] { getClient().getAccountName(), getAddress(), reason });
-			else
-				LOG.log(Level.FINE, "Telnet client " + getClient().getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			LOG.log(Level.FINE, "Telnet client {0} ({1}) disconnected: {2}", new Object[] { getClient().getAccountName(), getAddress(), reason });
 			client.disconnected();
 			return true;
 		}
@@ -183,7 +180,7 @@ public class TelnetSession implements Session {
 			return 1;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			close("Error while writing", ex);
+			close(ex.getMessage());
 			return -2;
 		} finally {
 			sendQueue.setCanWrite();
@@ -330,7 +327,7 @@ public class TelnetSession implements Session {
 	/* package-private */ byte[] readMessage(int readBytes) {
 		if (readBytes == -1) {
 			//connection closed
-			close("EOF received", null);
+			close("EOF received");
 			return null;
 		}
 		readBuffer.flip();

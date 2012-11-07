@@ -132,7 +132,7 @@ public class TelnetListener implements SessionCreator {
 											clientState.setSession(session);
 											acceptedKey.attach(session);
 										} catch (IOException ex) {
-											close("Error while accepting telnet client", ex);
+											close(ex.getMessage(), ex);
 										}
 									}
 								} else {
@@ -157,7 +157,7 @@ public class TelnetListener implements SessionCreator {
 												}
 											} catch (IOException ex) {
 												//does an IOException in read always mean an invalid channel?
-												session.close("Error while reading", ex);
+												session.close(ex.getMessage());
 											}
 										}
 										if (key.isValid() && key.isWritable())
@@ -170,7 +170,7 @@ public class TelnetListener implements SessionCreator {
 							}
 						}
 					} catch (IOException ex) {
-						close("Error while opening", ex);
+						close(ex.getMessage(), ex);
 					}
 				}
 			});

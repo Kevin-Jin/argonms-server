@@ -199,7 +199,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 	}
 
 	@Override
-	public boolean close(String reason, Throwable reasonExc) {
+	public boolean close(String reason) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -209,10 +209,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 			stopPingTask();
 			idleTaskFuture.cancel(false);
 
-			if (reasonExc == null)
-				LOG.log(Level.FINE, "Client {0} ({1}) disconnected: {2}", new Object[] { getAccountName(), getAddress(), reason });
-			else
-				LOG.log(Level.FINE, "Client " + getAccountName() + " (" + getAddress() + ") disconnected: " + reason, reasonExc);
+			LOG.log(Level.FINE, "Client {0} ({1}) disconnected: {2}", new Object[] { getAccountName(), getAddress(), reason });
 			client.disconnected();
 			onClose.closed(this);
 			return true;
@@ -253,7 +250,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 			return 1;
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			close("Error while writing", ex);
+			close(ex.getMessage());
 			return -2;
 		} finally {
 			sendQueue.setCanWrite();
@@ -307,7 +304,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close("EOF received", null);
+			close("EOF received");
 			return null;
 		}
 		if (readBuffer.remaining() != 0) { //buffer is still not full
@@ -321,7 +318,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				byte[] message = new byte[readBuffer.remaining()];
 				readBuffer.get(message);
 				if (!ClientEncryption.checkPacket(message, recvIv)) {
-					close("Failed packet test", null);
+					close("Failed packet test");
 					return null;
 				}
 				int length = ClientEncryption.getPacketLength(message);
@@ -378,7 +375,7 @@ public class ClientSession<T extends RemoteClient> implements Session {
 
 		@Override
 		public void run() {
-			close("Timed out after " + TIMEOUT + " milliseconds", null);
+			close("Timed out after " + TIMEOUT + " milliseconds");
 		}
 
 		public void receivedPong() {

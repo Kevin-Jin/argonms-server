@@ -29,13 +29,14 @@ public interface Session {
 	public enum MessageType { HEADER, BODY }
 
 	public SocketAddress getAddress();
+
 	public void send(byte[] b);
+
 	/**
 	 * 
 	 * @param reason
-	 * @param reasonExc
 	 * @return true if successful. False return indicates that the Session may
 	 * have already been closed before.
 	 */
-	public boolean close(String reason, Throwable reasonExc);
+	public boolean close(String reason);
 }

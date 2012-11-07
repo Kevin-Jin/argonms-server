@@ -43,7 +43,7 @@ public final class ShopHandler {
 		byte state = sc.getOnlineState();
 		allowLogin = (state == RemoteClient.STATUS_MIGRATION);
 		if (!allowLogin) {
-			sc.getSession().close(player.getName() + " tried to double login on shop", null);
+			sc.getSession().close(player.getName() + " tried to double login on shop");
 			return;
 		}
 		sc.updateState(RemoteClient.STATUS_INSHOP);

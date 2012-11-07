@@ -119,7 +119,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			while (buf.remaining() != commChn.write(buf));
 		} catch (IOException ex) {
 			//does an IOException in write always mean an invalid channel?
-			close("Error while writing", ex);
+			close(ex.getMessage());
 		}
 	}
 
@@ -137,7 +137,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 	}
 
 	@Override
-	public boolean close(String reason, Throwable reasonExc) {
+	public boolean close(String reason) {
 		if (closeEventsTriggered.compareAndSet(false, true)) {
 			try {
 				commChn.close();
@@ -147,10 +147,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 			stopPingTask();
 			idleTaskFuture.cancel(false);
 
-			if (reasonExc == null)
-				LOG.log(Level.FINE, "Disconnected from center server ({0}): {1}", new Object[] { getAddress(), reason });
-			else
-				LOG.log(Level.FINE, "Disconnected from center server (" + getAddress() + "): " + reason, reasonExc);
+			LOG.log(Level.FINE, "Disconnected from center server ({0}): {1}", new Object[] { getAddress(), reason });
 			server.disconnected();
 			return true;
 		}
@@ -189,7 +186,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 		idleTaskFuture.cancel(false);
 		if (readBytes == -1) {
 			//connection closed
-			close("EOF received", null);
+			close("EOF received");
 			return null;
 		}
 		if (readBuffer.remaining() != 0) { //buffer is still not full
@@ -250,7 +247,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 
 		@Override
 		public void run() {
-			close("Timed out after " + TIMEOUT + " milliseconds", null);
+			close("Timed out after " + TIMEOUT + " milliseconds");
 		}
 
 		public void receivedPong() {
@@ -317,7 +314,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 							}
 						} catch (IOException ex) {
 							//does an IOException in read always mean an invalid channel?
-							session.close("Error while reading", ex);
+							session.close(ex.getMessage());
 						}
 					}
 				}

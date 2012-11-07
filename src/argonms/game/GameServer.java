@@ -384,7 +384,7 @@ public class GameServer implements LocalServer {
 		for (WorldChannel chn : channels.values()) {
 			chn.shutdown();
 			for (GameCharacter p : chn.getConnectedPlayers()) {
-				p.getClient().getSession().close("Shutdown", null);
+				p.getClient().getSession().close("Shutdown");
 				toSave.add(p);
 			}
 		}
@@ -396,7 +396,7 @@ public class GameServer implements LocalServer {
 		if (halt) {
 			Scheduler.getInstance().shutdown();
 			Scheduler.getWheelTimer().shutdown();
-			gci.getSession().close("Halt", null);
+			gci.getSession().close("Halt");
 		} else {
 			for (WorldChannel chn : channels.values()) {
 				chn.getMapFactory().clear();

@@ -2264,6 +2264,11 @@
 	* Fixed NPC script for trash can in Nautilus.
 	* Fixed Speed Potions.
 
+2012-11-06  GoldenKevin  (revision 157)
+
+	* Don't print the stack trace of a network IO error that closed a session,
+	as it is meaningless and clutters the logs.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

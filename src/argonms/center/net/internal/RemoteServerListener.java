@@ -122,7 +122,7 @@ public class RemoteServerListener implements SessionCreator {
 											SelectionKey acceptedKey = client.register(selector, SelectionKey.OP_READ);
 											acceptedKey.attach(new CenterRemoteSession(client, acceptedKey, interServerPassword));
 										} catch (IOException ex) {
-											close("Error while accepting remote server", ex);
+											close(ex.getMessage(), ex);
 										}
 									}
 								} else {
@@ -157,7 +157,7 @@ public class RemoteServerListener implements SessionCreator {
 												}
 											} catch (IOException ex) {
 												//does an IOException in read always mean an invalid channel?
-												session.close("Error while reading", ex);
+												session.close(ex.getMessage());
 											}
 										}
 										if (key.isValid() && key.isWritable())
@@ -170,7 +170,7 @@ public class RemoteServerListener implements SessionCreator {
 							}
 						}
 					} catch (IOException ex) {
-						close("Error while opening", ex);
+						close(ex.getMessage(), ex);
 					}
 				}
 			});
