@@ -69,7 +69,7 @@ if (player.isQuestStarted(6141)) {
 			npc.sayNext("One more warning. Once you have chosen your job, try to stay alive as much as you can. Once you reach that level, when you die, you will lose your experience level. You wouldn't want to lose your hard-earned experience points, do you?");
 			npc.sayNext("OK! This is all I can teach you. Go to places, train and better yourself. Find me when you feel like you've done all you can, and need something interesting. Then, and only then, I'll hook you up with more interesting experiences...");
 			npc.sayNext("Oh, and... if you have any questions about being the Thief, feel free to ask. I don't know EVERYTHING, but I'll help you out with all that I know of. Til then...");
-		} else {
+		} else if (selection == 0) {
 			npc.sayNext("Oh, and... if you have any questions about being the Thief, feel free to ask. I don't know EVERYTHING, but I'll help you out with all that I know of. Til then...");
 		}
 	} else {
@@ -87,12 +87,12 @@ if (player.isQuestStarted(6141)) {
 			else //TODO: GMS-like line
 				npc.say("Please check whether your ETC. inventory is full.");
 		}
-	} else if (player.hasItem(4031010, 1) && player.hasItem(4031012, 0)) {
+	} else if (player.hasItem(4031011, 1) && player.hasItem(4031012, 0)) {
 		npc.sayNext("Still haven't met the person yet? Find #b#p1072003##k who's around #b#m102040000##k near Kerning City. Give the letter to him and he may let you know what to do.");
-	} else if (player.hasItem(4031010, 0) && player.hasItem(4031012, 1)) {
+	} else if (player.hasItem(4031011, 0) && player.hasItem(4031012, 1)) {
 		npc.sayNext("Hmmm...so you got back here safely. I knew that test would be too easy for you. I admit, you are a great great thief. Now...I'll make you even more powerful than you already are. But, before all that...you need to choose one of two ways. It'll be a difficult decision for you to make, but...if you have any questions, please ask.");
 
-		selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom...\r\n"
+		let selection = npc.askMenu("Alright, when you have made your decision, click on [I'll choose my occupation!] at the very bottom...\r\n"
 				+ "#L0##bPlease explain the characteristics of the Assassin.#k#l\r\n"
 				+ "#L1##bPlease explain the characteristics of the Bandit.#k#l\r\n"
 				+ "#L2##bI'll choose my occupation!#k#l\r\n");

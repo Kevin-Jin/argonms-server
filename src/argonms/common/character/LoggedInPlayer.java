@@ -19,15 +19,65 @@
 package argonms.common.character;
 
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
  * @author GoldenKevin
  */
 public abstract class LoggedInPlayer extends Player {
+	private final ReadWriteLock statLocks;
+	private final ReadWriteLock questLocks;
+
+	protected LoggedInPlayer() {
+		statLocks = new ReentrantReadWriteLock();
+		questLocks = new ReentrantReadWriteLock();
+	}
+
 	public abstract byte getBuddyListCapacity();
+
 	public abstract int getMesos();
+
 	public abstract Map<Integer, SkillEntry> getSkillEntries();
+
 	public abstract Map<Integer, Cooldown> getCooldowns();
+
+	/**
+	 * Quests must be at least read locked while the returned Map is in scope.
+	 * @return 
+	 */
 	public abstract Map<Short, QuestEntry> getAllQuests();
+
+	public void readLockStats() {
+		statLocks.readLock().lock();
+	}
+
+	public void readUnlockStats() {
+		statLocks.readLock().unlock();
+	}
+
+	public void writeLockStats() {
+		statLocks.writeLock().lock();
+	}
+
+	public void writeUnlockStats() {
+		statLocks.writeLock().unlock();
+	}
+
+	public void readLockQuests() {
+		questLocks.readLock().lock();
+	}
+
+	public void readUnlockQuests() {
+		questLocks.readLock().unlock();
+	}
+
+	public void writeLockQuests() {
+		questLocks.readLock().lock();
+	}
+
+	public void writeUnlockQuests() {
+		questLocks.readLock().unlock();
+	}
 }

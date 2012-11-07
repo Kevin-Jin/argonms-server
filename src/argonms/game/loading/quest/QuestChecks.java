@@ -167,15 +167,20 @@ public class QuestChecks {
 		}
 		Map<Short, QuestEntry> statuses = p.getAllQuests();
 		QuestEntry status;
-		for (Entry<Short, Byte> entry : reqQuests.entrySet()) {
-			status = statuses.get(entry.getKey());
-			if (status != null) {
-				if (entry.getValue().byteValue() != status.getState())
-					return false;
-			} else {
-				if (entry.getValue().byteValue() != QuestEntry.STATE_NOT_STARTED)
-					return false;
+		p.readLockQuests();
+		try {
+			for (Entry<Short, Byte> entry : reqQuests.entrySet()) {
+				status = statuses.get(entry.getKey());
+				if (status != null) {
+					if (entry.getValue().byteValue() != status.getState())
+						return false;
+				} else {
+					if (entry.getValue().byteValue() != QuestEntry.STATE_NOT_STARTED)
+						return false;
+				}
 			}
+		} finally {
+			p.readUnlockQuests();
 		}
 		for (Entry<Integer, Integer> entry : reqSkills.entrySet()) {
 			//TODO: what the hell? what is the value supposed to mean?

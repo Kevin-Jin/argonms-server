@@ -2269,6 +2269,16 @@
 	* Don't print the stack trace of a network IO error that closed a session,
 	as it is meaningless and clutters the logs.
 
+2012-11-06  GoldenKevin  (revision 158)
+
+	* Fixed second job advancement scripts for warriors, magicians, bowmen, and
+	thieves and made them more consistent.
+	* Fixed any remaining race conditions for player quests by using a single
+	mutex over all quest-related structures in GameCharacter rather than
+	attempting to coordinate concurrent structures.
+	* Player stats lock moved to LoggedInPlayer because login server players are
+	immutable.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
