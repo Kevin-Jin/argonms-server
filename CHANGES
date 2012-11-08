@@ -2285,6 +2285,17 @@
 	does away with argument counts and argument indices in favor of a iterator
 	interface.
 
+2012-11-07  GoldenKevin  (revision 160)
+
+	* Started work on experimental system that facilitates making commands apply
+	for characters other than the calling character. The !tp, !info, !skill,
+	!stat, and !give commands have been retrofitted to support this system.
+	Currently the system only works on players that are either offline or on the
+	same channel as the calling character.
+	* Added !map command to change map of other characters or to warp to a
+	specific spawn point in a map. When used with only one argument, it behaves
+	identically to the /m command.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -20,8 +20,9 @@ package argonms.game.command;
 
 import argonms.common.GlobalConstants;
 import argonms.common.UserPrivileges;
-import argonms.game.character.ExpTables;
 import argonms.game.character.GameCharacter;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  *
@@ -30,12 +31,12 @@ import argonms.game.character.GameCharacter;
 public class StatCommandHandler extends AbstractCommandDefinition {
 	@Override
 	public String getHelpMessage() {
-		return "Change the value of one of your stats.";
+		return "Change the value of a player's stat.";
 	}
 
 	@Override
 	public String getUsage() {
-		return "Usage: !stat set|add str|dex|int|luk|ap|sp|level|exp|job|maxhp|maxmp|hp|mp|fame|meso <amount>";
+		return "Usage: !stat [-t <target>] set|add str|dex|int|luk|ap|sp|level|exp|job|maxhp|maxmp|hp|mp|fame|meso <amount>";
 	}
 
 	@Override
@@ -45,6 +46,18 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 
 	@Override
 	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+		String targetName = args.extractOptionalTarget(p.getName());
+		if (targetName == null) {
+			resp.printErr(getUsage());
+			return;
+		}
+		CommandTarget target = args.getTargetByName(targetName, p);
+		if (target == null) {
+			resp.printErr("The character " + targetName + " does not exist.");
+			resp.printErr(getUsage());
+			return;
+		}
+
 		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
@@ -70,91 +83,81 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 			return;
 		}
 
+		Map<CommandTarget.CharacterManipulation, ?> updated;
 		if (option.equalsIgnoreCase("set")) {
 			if (stat.equalsIgnoreCase("str")) {
-				p.setStr((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_STR, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("dex")) {
-				p.setDex((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_DEX, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("int")) {
-				p.setInt((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_INT, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("luk")) {
-				p.setLuk((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_LUK, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("ap")) {
-				p.setAp((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_AP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("sp")) {
-				p.setSp((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_SP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("level")) {
-				p.setLevel((short) Math.min(val, GlobalConstants.MAX_LEVEL));
-				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
-					p.setExp(Math.min(p.getExp(), ExpTables.getForLevel(p.getLevel()) - 1));
-				else
-					p.setExp(0);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_LEVEL, Short.valueOf((short) Math.min(val, GlobalConstants.MAX_LEVEL)));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
-					p.setExp(Math.min(val, ExpTables.getForLevel(p.getLevel()) - 1));
-				else if (val == 0)
-					p.setExp(0);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_EXP, Integer.valueOf(val));
 			} else if (stat.equalsIgnoreCase("job")) {
-				p.setJob((short) val);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_JOB, Short.valueOf((short) val));
 			} else if (stat.equalsIgnoreCase("maxhp")) {
-				p.setMaxHp((short) Math.min(val, 30000));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_MAX_HP, Short.valueOf((short) Math.min(val, 30000)));
 			} else if (stat.equalsIgnoreCase("maxmp")) {
-				p.setMaxMp((short) Math.min(val, 30000));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_MAX_MP, Short.valueOf((short) Math.min(val, 30000)));
 			} else if (stat.equalsIgnoreCase("hp")) {
-				p.setHp((short) Math.min(val, p.getCurrentMaxHp()));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_HP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("mp")) {
-				p.setMp((short) Math.min(val, p.getCurrentMaxMp()));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_MP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("fame")) {
-				p.setFame((short) Math.min(val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_FAME, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("meso")) {
-				p.setMesos(val);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.SET_MESO, Integer.valueOf(val));
 			} else {
 				resp.printErr("Invalid stat " + stat + ". Valid choices: str, dex,"
 						+ "int, luk, ap, sp, level, exp, job, maxhp, maxmp, hp, mp, fame, meso");
+				return;
 			}
 		} else if (option.equalsIgnoreCase("add")) {
 			if (stat.equalsIgnoreCase("str")) {
-				p.setStr((short) Math.min(p.getStr() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_STR, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("dex")) {
-				p.setDex((short) Math.min(p.getDex() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_DEX, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("int")) {
-				p.setInt((short) Math.min(p.getInt() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_INT, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("luk")) {
-				p.setLuk((short) Math.min(p.getLuk() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_LUK, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("ap")) {
-				p.setAp((short) Math.min(p.getAp() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_AP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("sp")) {
-				p.setSp((short) Math.min(p.getSp() + val, Short.MAX_VALUE));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_SP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("level")) {
-				p.setLevel((short) Math.min(p.getLevel() + val, GlobalConstants.MAX_LEVEL));
-				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
-					p.setExp(Math.min(p.getExp(), ExpTables.getForLevel(p.getLevel()) - 1));
-				else
-					p.setExp(0);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_LEVEL, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("exp")) {
-				if (p.getLevel() < GlobalConstants.MAX_LEVEL)
-					p.setExp(Math.min((int) Math.min((long) p.getExp() + val, Integer.MAX_VALUE), ExpTables.getForLevel(p.getLevel()) - 1));
-				else if (p.getExp() + val == 0)
-					p.setExp(0);
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_EXP, Integer.valueOf(val));
 			} else if (stat.equalsIgnoreCase("maxhp")) {
-				p.setMaxHp((short) Math.min(p.getMaxHp() + val, 30000));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_MAX_HP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("maxmp")) {
-				p.setMaxMp((short) Math.min(p.getMaxMp() + val, 30000));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_MAX_MP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("hp")) {
-				p.setHp((short) Math.min(p.getHp() + val, p.getCurrentMaxHp()));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_HP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("mp")) {
-				p.setMp((short) Math.min(p.getMp() + val, p.getCurrentMaxMp()));
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_MP, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
 			} else if (stat.equalsIgnoreCase("fame")) {
-				p.setFame((short) Math.min(p.getFame() + val, Short.MAX_VALUE));
-			}  else if (stat.equalsIgnoreCase("meso")) {
-				p.setMesos((int) Math.min((long) p.getMesos() + val, Integer.MAX_VALUE));
-			}else {
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_FAME, Short.valueOf((short) Math.min(val, Short.MAX_VALUE)));
+			} else if (stat.equalsIgnoreCase("meso")) {
+				updated = Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_MESO, Integer.valueOf(val));
+			} else {
 				resp.printErr("Invalid stat " + stat + ". Valid choices: str, dex,"
 						+ "int, luk, ap, sp, level, exp, maxhp, maxmp, hp, mp, fame, meso");
+				return;
 			}
 		} else {
 			resp.printErr(getUsage());
 			return;
 		}
+		target.mutate(updated);
 	}
 }
