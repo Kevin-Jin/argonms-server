@@ -18,6 +18,9 @@
 
 package argonms.game.command;
 
+import argonms.common.character.Player;
+import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -26,7 +29,7 @@ import java.util.NoSuchElementException;
  * @author GoldenKevin
  */
 public class CommandArguments implements Iterator<String> {
-	private String[] values;
+	private final String[] values;
 	private int index;
 
 	public CommandArguments(String[] array) {
@@ -105,7 +108,7 @@ public class CommandArguments implements Iterator<String> {
 
 		StringBuilder sb = new StringBuilder();
 		while (hasNext())
-			sb.append(values[index++]).append(' ');
+			sb.append(next()).append(' ');
 		return sb.substring(0, sb.length() - 1);
 	}
 
@@ -122,15 +125,15 @@ public class CommandArguments implements Iterator<String> {
 	public String extractTarget(String flag, String def) {
 		if (flag == null)
 			if (hasNext())
-				return values[index];
+				return next();
 			else
 				return def;
 
 		if (hasNext() && values[index].equalsIgnoreCase(flag))
-			if (index + 1 >= values.length)
+			if (++index >= values.length)
 				return null;
 			else
-				return values[index + 1];
+				return next();
 		return def;
 	}
 
@@ -146,5 +149,23 @@ public class CommandArguments implements Iterator<String> {
 	 */
 	public String extractOptionalTarget(String def) {
 		return extractTarget("-T", def);
+	}
+
+	public CommandTarget getTargetByName(String name, GameCharacter caller) {
+		if (name.equalsIgnoreCase(caller.getName()))
+			return new LocalChannelCommandTarget(caller);
+
+		GameCharacter onLocalChannel = GameServer.getChannel(caller.getClient().getChannel()).getPlayerByName(name);
+		if (onLocalChannel != null)
+			return new LocalChannelCommandTarget(onLocalChannel);
+
+		byte channel = GameServer.getChannel(caller.getClient().getChannel()).getInterChannelInterface().getChannelOfPlayer(name);
+		if (channel != 0)
+			return new CrossChannelCommandTarget(channel, name);
+
+		if (Player.characterExists(name))
+			return new OfflineCharacterCommandTarget(name);
+
+		return null;
 	}
 }

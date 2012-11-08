@@ -40,8 +40,6 @@ import java.sql.Types;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -285,7 +283,7 @@ public abstract class Player {
 		gm = rs.getByte(33);
 	}
 
-	private void setEquipUpdateVariables(Equip equip, int inventoryKey, PreparedStatement ps) throws SQLException {
+	private static void setEquipUpdateVariables(Equip equip, int inventoryKey, PreparedStatement ps) throws SQLException {
 		ps.setInt(1, inventoryKey);
 		ps.setByte(2, equip.getUpgradeSlots());
 		ps.setByte(3, equip.getLevel());
@@ -306,14 +304,14 @@ public abstract class Player {
 		ps.setShort(18, equip.getJump());
 	}
 
-	private byte indexOf(Pet search) {
+	private static byte indexOf(Pet[] pets, Pet search) {
 		for (byte i = 0; i < 3; i++)
 			if (pets[i] != null && pets[i] == search)
 				return i;
 		return -1;
 	}
 
-	protected void commitInventory(Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+	public static void commitInventory(int characterId, int accountId, Pet[] pets, Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
 		PreparedStatement ps = null, eps = null, rps = null, pps = null, mps = null;
 		ResultSet rs = null;
 		try {
@@ -333,8 +331,8 @@ public abstract class Player {
 			mps = con.prepareStatement("INSERT INTO `inventorymounts` "
 					+ "(`inventoryitemid`,`level`,`exp`,`tiredness`) "
 					+ "VALUES (?,?,?,?)");
-			ps.setInt(1, getDataId());
-			ps.setInt(2, getClient().getAccountId());
+			ps.setInt(1, characterId);
+			ps.setInt(2, accountId);
 			for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
 				switch (ent.getKey()) {
 					case STORAGE:
@@ -342,7 +340,7 @@ public abstract class Player {
 						ps.setNull(1, Types.INTEGER);
 						break;
 					default:
-						ps.setInt(1, getDataId());
+						ps.setInt(1, characterId);
 						break;
 				}
 				ps.setInt(3, ent.getKey().byteValue());
@@ -399,7 +397,7 @@ public abstract class Player {
 								rs.close();
 
 								pps.setInt(1, inventoryKey);
-								pps.setByte(2, indexOf(pet));
+								pps.setByte(2, indexOf(pets, pet));
 								pps.setString(3, pet.getName());
 								pps.setByte(4, pet.getLevel());
 								pps.setShort(5, pet.getCloseness());
@@ -447,7 +445,11 @@ public abstract class Player {
 		}
 	}
 
-	protected void loadInventory(Connection con, ResultSet rs, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+	protected void commitInventory(Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+		commitInventory(getDataId(), getClient().getAccountId(), pets, con, inventories);
+	}
+
+	public static void loadInventory(Pet[] pets, Connection con, ResultSet rs, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
 		PreparedStatement ips = null;
 		ResultSet irs = null;
 		try {
@@ -544,6 +546,10 @@ public abstract class Player {
 		}
 	}
 
+	protected void loadInventory(Connection con, ResultSet rs, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+		loadInventory(pets, con, rs, inventories);
+	}
+
 	public static String getNameFromId(int characterid) {
 		String name = null;
 		Connection con = null;
@@ -551,7 +557,7 @@ public abstract class Player {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `name` FROM `characters` WHERE id = ?");
+			ps = con.prepareStatement("SELECT `name` FROM `characters` WHERE `id` = ?");
 			ps.setInt(1, characterid);
 			rs = ps.executeQuery();
 			if (rs.next())
@@ -562,5 +568,43 @@ public abstract class Player {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
 		return name;
+	}
+
+	public static int getIdFromName(String name) {
+		int id = -1;
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE `name` = ?");
+			ps.setString(1, name);
+			rs = ps.executeQuery();
+			if (rs.next())
+				id = rs.getInt(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not find id of character " + name, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+		return id;
+	}
+
+	public static boolean characterExists(String name) {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM `characters` WHERE `name` = ? LIMIT 1)");
+			ps.setString(1, name);
+			rs = ps.executeQuery();
+			return (rs.next() && rs.getBoolean(1));
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not determine if character " + name + " exists", ex);
+			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 	}
 }

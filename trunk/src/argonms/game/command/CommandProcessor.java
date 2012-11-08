@@ -20,11 +20,6 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
-import argonms.common.character.inventory.Inventory;
-import argonms.common.character.inventory.Inventory.InventoryType;
-import argonms.common.character.inventory.InventoryTools;
-import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
-import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
@@ -38,10 +33,10 @@ import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerNpc;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
-import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.text.DateFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,44 +88,118 @@ public class CommandProcessor {
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
-				return "Usage: !tp <name of player to warp> <name of player to warp to>";
+				return "Usage: !tp <target> <destination>";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-				String target = args.extractTarget(null, null);
-				if (target == null) {
+				String warpeeName = args.extractTarget(null, null);
+				if (warpeeName == null) {
 					resp.printErr(getUsage());
 					return;
 				}
-				GameCharacter warpee = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
+				CommandTarget warpee = args.getTargetByName(warpeeName, p);
 				if (warpee == null) {
-					resp.printErr("No player named " + target + " is online on this channel.");
+					resp.printErr("The character " + warpeeName + " does not exist.");
 					resp.printErr(getUsage());
 					return;
 				}
 
-				target = args.extractTarget(null, null);
-				if (target == null) {
+				String warpToName = args.extractTarget(null, null);
+				if (warpToName == null) {
 					resp.printErr(getUsage());
 					return;
 				}
-				GameCharacter warpTo = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
+				CommandTarget warpTo = args.getTargetByName(warpToName, p);
 				if (warpTo == null) {
-					resp.printErr("No player named " + target + " is online on this channel.");
+					resp.printErr("The character " + warpToName + " does not exist.");
 					resp.printErr(getUsage());
 					return;
 				}
 
-				GameMap map = warpTo.getMap();
-				warpee.changeMap(map.getDataId(), map.nearestSpawnPoint(warpTo.getPosition()));
+				CommandTarget.MapValue destination = (CommandTarget.MapValue) warpTo.access(CommandTarget.CharacterProperty.MAP);
+				byte destChannel = ((Byte) warpTo.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
+				warpee.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_MAP, destination));
+				if (destChannel == 0) {
+					resp.printOut(warpToName + " is currently offline. " + warpeeName + " has been warped to where he/she will spawn on next login.");
+				} else {
+					byte sourceChannel = ((Byte) warpee.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
+					if (sourceChannel == 0) {
+						resp.printOut(warpeeName + " is currently offline He/she will spawn on next login where " + warpToName + " is now.");
+					} else if (sourceChannel != destChannel) {
+						warpee.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_CHANNEL, Byte.valueOf(destChannel)));
+						resp.printOut(warpeeName + " has been transferred to channel " + destChannel + ".");
+					}
+				}
 			}
-		}, "Teleport a player on this channel to another on this channel", UserPrivileges.GM));
+		}, "Teleport a player to another", UserPrivileges.GM));
 		definitions.put("!town", new TownCommandHandler());
+		definitions.put("!map", new CommandDefinition(new CommandAction() {
+			@Override
+			public String getUsage() {
+				return "Usage: !map [-t <target>] <mapid> [<spawn point>]";
+			}
+
+			@Override
+			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+				String targetName = args.extractOptionalTarget(p.getName());
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, p);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				int mapId;
+				try {
+					mapId = Integer.parseInt(args.next());
+				} catch (NumberFormatException ex) {
+					resp.printErr("Invalid map id.");
+					resp.printErr(getUsage());
+					return;
+				}
+				GameMap map = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(mapId);
+				if (map == null) {
+					resp.printErr("Invalid map id.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				byte spawnPoint = 0;
+				if (args.hasNext()) {
+					String param = args.next();
+					try {
+						spawnPoint = Byte.parseByte(param);
+						if (!map.getStaticData().getPortals().containsKey(Byte.valueOf(spawnPoint))) {
+							resp.printErr("Invalid spawn point.");
+							resp.printErr(getUsage());
+							return;
+						}
+					} catch (NumberFormatException ex) {
+						spawnPoint = map.getPortalIdByName(param);
+						if (spawnPoint == -1) {
+							resp.printErr("Invalid spawn point.");
+							resp.printErr(getUsage());
+							return;
+						}
+					}
+				}
+
+				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_MAP, new CommandTarget.MapValue(mapId, spawnPoint)));
+			}
+		}, "Warp a player to a specific map and spawn point", UserPrivileges.GM));
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
-				return "Usage: !skill <skillid> <level> [<master level>]";
+				return "Usage: !skill [-t <target>] <skillid> <level> [<master level>]";
 			}
 
 			@Override
@@ -138,6 +207,18 @@ public class CommandProcessor {
 				int skillId;
 				byte skillLevel, masterLevel = -1;
 				SkillStats s;
+
+				String targetName = args.extractOptionalTarget(p.getName());
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, p);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
 
 				if (!args.hasNext()) {
 					resp.printErr(getUsage());
@@ -183,22 +264,34 @@ public class CommandProcessor {
 					}
 				}
 
-				p.setSkillLevel(skillId, skillLevel, masterLevel);
+				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.SET_SKILL_LEVEL, new CommandTarget.SkillValue(skillId, skillLevel, masterLevel)));
 			}
-		}, "Change the level of one of your skills", UserPrivileges.GM));
+		}, "Change a player's skill level", UserPrivileges.GM));
 		definitions.put("!maxequips", new MaxStatCommandHandlers.MaxEquipStatsHandler());
 		definitions.put("!maxskills", new MaxStatCommandHandlers.MaxSkillsHandler());
 		definitions.put("!maxall", new MaxStatCommandHandlers.MaxAllHandler());
 		definitions.put("!give", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
-				return "Usage: !give <itemid> [<quantity>]";
+				return "Usage: !give [-t <target>] <itemid> [<quantity>]";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
 				int itemId;
 				int quantity = 1;
+
+				String targetName = args.extractOptionalTarget(p.getName());
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, p);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
 
 				if (!args.hasNext()) {
 					resp.printErr(getUsage());
@@ -225,22 +318,9 @@ public class CommandProcessor {
 					}
 				}
 
-				InventoryType type = InventoryTools.getCategory(itemId);
-				Inventory inv = p.getInventory(type);
-				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, itemId, quantity);
-				ClientSession<?> ses = p.getClient().getSession();
-				short pos;
-				for (Short s : changedSlots.modifiedSlots) {
-					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
-				}
-				for (Short s : changedSlots.addedOrRemovedSlots) {
-					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
-				}
-				p.itemCountChanged(itemId);
+				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_ITEM, new CommandTarget.ItemValue(itemId, quantity)));
 			}
-		}, "Give yourself an item", UserPrivileges.GM));
+		}, "Give a player an item", UserPrivileges.GM));
 		definitions.put("!spawn", new SpawnCommandHandler());
 		definitions.put("!playernpc", new CommandDefinition(new CommandAction() {
 			@Override
@@ -313,22 +393,35 @@ public class CommandProcessor {
 		definitions.put("!info", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
-				return "Usage: !info [<player's name>]";
+				return "Usage: !info [<target>]";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-				String target = args.extractTarget(null, p.getName());
-				GameCharacter targetPlayer = GameServer.getChannel(p.getClient().getChannel()).getPlayerByName(target);
-				if (targetPlayer == null) {
-					resp.printErr("No player named " + target + " is online on this channel.");
+				String targetName = args.extractTarget(null, p.getName());
+				if (targetName == null) {
 					resp.printErr(getUsage());
 					return;
 				}
-				Point pos = targetPlayer.getPosition();
-				resp.printOut("PlayerId=" + targetPlayer.getId() + "; Map=" + targetPlayer.getMapId() + "; Position(" + pos.x + "," + pos.y + ")");
+				CommandTarget target = args.getTargetByName(targetName, p);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+				Point pos = (Point) target.access(CommandTarget.CharacterProperty.POSITION);
+				byte channel = ((Byte) target.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
+				StringBuilder sb = new StringBuilder();
+				sb.append("PlayerId=").append(target.access(CommandTarget.CharacterProperty.PLAYER_ID));
+				if (channel != 0)
+					sb.append("; Channel=").append(channel);
+				else
+					sb.append("; Offline");
+				sb.append("; Map=").append(((CommandTarget.MapValue) target.access(CommandTarget.CharacterProperty.MAP)).mapId);
+				sb.append("; Position(").append(pos.x).append(",").append(pos.y).append(")");
+				resp.printOut(sb.toString());
 			}
-		}, "Show location info of yourself or another player", UserPrivileges.GM));
+		}, "Show location info of a player", UserPrivileges.GM));
 		definitions.put("!rate", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
