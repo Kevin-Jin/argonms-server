@@ -2312,6 +2312,12 @@
 	(cross) bow.
 	* Fixed denying buddy invites.
 
+2012-11-09  GoldenKevin  (revision 163)
+
+	* Started work on experimental system that facilitates the creation of
+	commands that could be called by a GM connecting over telnet.
+	* !town now supports the command target system.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

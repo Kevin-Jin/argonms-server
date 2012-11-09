@@ -18,27 +18,22 @@
 
 package argonms.game.command;
 
-import argonms.common.net.external.ClientSession;
-import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.ChatHandler.TextStyle;
+import argonms.game.field.GameMap;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ClientNoticeStream {
-	private ClientSession<?> ses;
+public interface CommandCaller {
+	public String getName();
 
-	public ClientNoticeStream(GameClient rc) {
-		ses = rc.getSession();
-	}
+	public byte getChannel();
 
-	public void printOut(String message) {
-		ses.send(GamePackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
-	}
+	public GameMap getMap();
 
-	public void printErr(String message) {
-		ses.send(GamePackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
-	}
+	public boolean isInGame();
+
+	public byte getPrivilegeLevel();
+
+	public boolean isDisconnected();
 }

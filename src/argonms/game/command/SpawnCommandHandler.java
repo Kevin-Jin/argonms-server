@@ -19,7 +19,6 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.entity.Npc;
 import argonms.game.loading.mob.MobDataLoader;
@@ -30,7 +29,7 @@ import java.awt.Point;
  *
  * @author GoldenKevin
  */
-public class SpawnCommandHandler extends AbstractCommandDefinition {
+public class SpawnCommandHandler extends AbstractCommandDefinition<GameCharacterCommandCaller> {
 	@Override
 	public String getHelpMessage() {
 		return "Spawn a temporary NPC or monster at your current location";
@@ -46,7 +45,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		return UserPrivileges.GM;
 	}
 
-	private int getMobTime(CommandArguments args, ClientNoticeStream resp) {
+	private int getMobTime(CommandArguments args, CommandOutput resp) {
 		String s;
 		try {
 			s = args.getOptValue("-m");
@@ -66,7 +65,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 		}
 	}
 
-	private int getCount(CommandArguments args, ClientNoticeStream resp) {
+	private int getCount(CommandArguments args, CommandOutput resp) {
 		String s;
 		try {
 			s = args.getOptValue("-c");
@@ -87,7 +86,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+	public void execute(GameCharacterCommandCaller caller, CommandArguments args, CommandOutput resp) {
 		boolean mob;
 
 		if (!args.hasNext()) {
@@ -120,7 +119,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 			resp.printErr(getUsage());
 			return;
 		}
-		GameMap map = p.getMap();
+		GameMap map = caller.getMap();
 		if (mob) {
 			MobStats stats = MobDataLoader.getInstance().getMobStats(dataId);
 			if (stats == null) {
@@ -128,7 +127,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 				resp.printErr(getUsage());
 				return;
 			}
-			Point pos = p.getPosition();
+			Point pos = caller.getBackingCharacter().getPosition();
 			int mobtime = getMobTime(args, resp);
 			int count = getCount(args, resp);
 			Point spawnLoc = map.calcPointBelow(pos);
@@ -137,13 +136,13 @@ public class SpawnCommandHandler extends AbstractCommandDefinition {
 				map.addMonsterSpawn(stats, new Point(spawnLoc), foothold, mobtime);
 		} else {
 			//TODO: check if npcid is valid.
-			Point pos = p.getPosition();
+			Point pos = caller.getBackingCharacter().getPosition();
 			Npc n = new Npc(dataId);
 			n.setFoothold(map.getStaticData().getFootholds().findBelow(pos).getId());
 			n.setPosition(map.calcPointBelow(pos));
 			n.setCy((short) pos.y);
 			n.setRx((short) pos.x, (short) pos.x);
-			n.setStance((byte) (p.getStance() & 0x01)); //only uses lsb, which is what determines direction
+			n.setStance((byte) (caller.getBackingCharacter().getStance() & 0x01)); //only uses lsb, which is what determines direction
 			map.spawnEntity(n);
 		}
 	}

@@ -20,7 +20,6 @@ package argonms.game.command;
 
 import argonms.common.GlobalConstants;
 import argonms.common.UserPrivileges;
-import argonms.game.character.GameCharacter;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,7 +27,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class StatCommandHandler extends AbstractCommandDefinition {
+public class StatCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 	@Override
 	public String getHelpMessage() {
 		return "Change the value of a player's stat.";
@@ -45,13 +44,13 @@ public class StatCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-		String targetName = args.extractOptionalTarget(p.getName());
+	public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+		String targetName = args.extractOptionalTarget(caller.getName());
 		if (targetName == null) {
 			resp.printErr(getUsage());
 			return;
 		}
-		CommandTarget target = args.getTargetByName(targetName, p);
+		CommandTarget target = args.getTargetByName(targetName, caller);
 		if (target == null) {
 			resp.printErr("The character " + targetName + " does not exist.");
 			resp.printErr(getUsage());

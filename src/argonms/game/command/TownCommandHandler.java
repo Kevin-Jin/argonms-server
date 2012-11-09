@@ -19,7 +19,7 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.game.character.GameCharacter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @author GoldenKevin
  */
-public class TownCommandHandler extends AbstractCommandDefinition {
+public class TownCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 	private final Map<String, Integer> lookup;
 
 	public TownCommandHandler() {
@@ -60,12 +60,12 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 
 	@Override
 	public String getHelpMessage() {
-		return "Warp to a town or place of interest. Use \"!town list\" for a list of locations.";
+		return "Warp a player to a town or place of interest. Use \"!town list\" for a list of locations.";
 	}
 
 	@Override
 	public String getUsage() {
-		return "Usage: !town <name>|list";
+		return "Usage: !town [-t <target>] <name>|list";
 	}
 
 	@Override
@@ -81,18 +81,31 @@ public class TownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+	public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+		String targetName = args.extractOptionalTarget(caller.getName());
+		if (targetName == null) {
+			resp.printErr(getUsage());
+			return;
+		}
+		CommandTarget target = args.getTargetByName(targetName, caller);
+		if (target == null) {
+			resp.printErr("The character " + targetName + " does not exist.");
+			resp.printErr(getUsage());
+			return;
+		}
+
 		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;
 		}
 		String name = args.restOfString();
+
 		if (name.equalsIgnoreCase("list")) {
 			resp.printOut("Valid locations: " + getList());
 		} else {
 			Integer mapId = lookup.get(name.toLowerCase());
 			if (mapId != null)
-				p.changeMap(mapId.intValue());
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, new CommandTarget.MapValue(mapId))));
 			else
 				resp.printErr(name + " is not a recognized location. Type \"!town list\" for a list of locations.");
 		}

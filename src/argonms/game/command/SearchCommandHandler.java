@@ -20,7 +20,6 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.loading.string.StringDataLoader;
-import argonms.game.character.GameCharacter;
 import argonms.game.loading.quest.QuestDataLoader;
 import java.util.List;
 
@@ -28,7 +27,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class SearchCommandHandler extends AbstractCommandDefinition {
+public class SearchCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 	@Override
 	public String getHelpMessage() {
 		return "Look up the WZ data ID of an object based on its name.";
@@ -45,7 +44,7 @@ public class SearchCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+	public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
 		if (!args.hasNext()) {
 			resp.printErr(getUsage());
 			return;

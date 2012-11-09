@@ -151,15 +151,12 @@ public class CommandArguments implements Iterator<String> {
 		return extractTarget("-T", def);
 	}
 
-	public CommandTarget getTargetByName(String name, GameCharacter caller) {
-		if (name.equalsIgnoreCase(caller.getName()))
-			return new LocalChannelCommandTarget(caller);
-
-		GameCharacter onLocalChannel = GameServer.getChannel(caller.getClient().getChannel()).getPlayerByName(name);
+	public CommandTarget getTargetByName(String name, CommandCaller caller) {
+		GameCharacter onLocalChannel = GameServer.getChannel(caller.getChannel()).getPlayerByName(name);
 		if (onLocalChannel != null)
 			return new LocalChannelCommandTarget(onLocalChannel);
 
-		byte channel = GameServer.getChannel(caller.getClient().getChannel()).getInterChannelInterface().getChannelOfPlayer(name);
+		byte channel = GameServer.getChannel(caller.getChannel()).getInterChannelInterface().getChannelOfPlayer(name);
 		if (channel != 0)
 			return new CrossChannelCommandTarget(channel, name);
 
