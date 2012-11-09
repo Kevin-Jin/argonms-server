@@ -19,13 +19,21 @@
 package argonms.game.command;
 
 import argonms.common.GlobalConstants;
+import argonms.common.character.BuddyList;
+import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
+import argonms.game.character.DiseaseTools;
 import argonms.game.character.ExpTables;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.inventory.StorageInventory;
 import argonms.game.net.external.GamePackets;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,17 +47,17 @@ public class LocalChannelCommandTarget implements CommandTarget {
 		target = backing;
 	}
 
-	private int getInt(Map.Entry<CharacterManipulation, ?> update) {
+	private int getInt(CharacterManipulation update) {
 		return ((Integer) update.getValue()).intValue();
 	}
 
-	private short getShort(Map.Entry<CharacterManipulation, ?> update) {
+	private short getShort(CharacterManipulation update) {
 		return ((Short) update.getValue()).shortValue();
 	}
 
 	@Override
-	public void mutate(Map<CharacterManipulation, ?> updates) {
-		for (Map.Entry<CharacterManipulation, ?> update : updates.entrySet()) {
+	public void mutate(List<CharacterManipulation> updates) {
+		for (CharacterManipulation update : updates) {
 			switch (update.getKey()) {
 				case CHANGE_MAP: {
 					MapValue value = (MapValue) update.getValue();
@@ -182,6 +190,57 @@ public class LocalChannelCommandTarget implements CommandTarget {
 						ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 					}
 					target.itemCountChanged(value.itemId);
+					break;
+				}
+				case CANCEL_DEBUFFS: {
+					PlayerStatusEffect[] effects = (PlayerStatusEffect[]) update.getValue();
+					for (PlayerStatusEffect e : effects) {
+						PlayerStatusEffectValues v = target.getEffectValue(e);
+						if (v != null)
+							DiseaseTools.cancelDebuff(target, (short) v.getSource(), v.getLevelWhenCast());
+					}
+					break;
+				}
+				case MAX_ALL_EQUIP_STATS: {
+					Map<Short, InventorySlot> iv = target.getInventory(Inventory.InventoryType.EQUIPPED).getAll();
+					synchronized(iv) {
+						for (Map.Entry<Short, InventorySlot> item : iv.entrySet()) {
+							Equip e = (Equip) item.getValue();
+							target.equipChanged(e, false, false);
+							e.setStr(Short.MAX_VALUE);
+							e.setDex(Short.MAX_VALUE);
+							e.setInt(Short.MAX_VALUE);
+							e.setLuk(Short.MAX_VALUE);
+							e.setHp((short) 30000);
+							e.setMp((short) 30000);
+							e.setWatk(Short.MAX_VALUE);
+							e.setMatk(Short.MAX_VALUE);
+							e.setWdef(Short.MAX_VALUE);
+							e.setMdef(Short.MAX_VALUE);
+							e.setAcc(Short.MAX_VALUE);
+							e.setAvoid(Short.MAX_VALUE);
+							e.setHands(Short.MAX_VALUE);
+							e.setSpeed((short) 40);
+							e.setJump((short) 23);
+							target.equipChanged(e, true, true);
+							target.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
+						}
+					}
+				}
+				case MAX_INVENTORY_SLOTS: {
+					for (Inventory.InventoryType type : new Inventory.InventoryType[] { Inventory.InventoryType.EQUIP, Inventory.InventoryType.USE, Inventory.InventoryType.SETUP, Inventory.InventoryType.ETC, Inventory.InventoryType.CASH }) {
+						Inventory inv = target.getInventory(type);
+						inv.increaseCapacity((short) 0xFF);
+						target.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(type, (short) 0xFF));
+					}
+					StorageInventory inv = target.getStorageInventory();
+					inv.increaseCapacity((short) 0xFF);
+					break;
+				}
+				case MAX_BUDDY_LIST_SLOTS: {
+					BuddyList bList = target.getBuddyList();
+					bList.increaseCapacity((short) 0xFF);
+					target.getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
 					break;
 				}
 			}

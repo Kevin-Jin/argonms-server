@@ -19,85 +19,47 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
-import argonms.common.character.BuddyList;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.Skills;
-import argonms.common.character.inventory.Equip;
-import argonms.common.character.inventory.Inventory;
-import argonms.common.character.inventory.Inventory.InventoryType;
-import argonms.common.character.inventory.InventorySlot;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.inventory.StorageInventory;
 import argonms.game.loading.skill.SkillDataLoader;
-import argonms.game.net.external.GamePackets;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author GoldenKevin
  */
 public final class MaxStatCommandHandlers {
-	private static void maxEquips(GameCharacter p) {
-		Map<Short, InventorySlot> iv = p.getInventory(InventoryType.EQUIPPED).getAll();
-		synchronized(iv) {
-			for (Entry<Short, InventorySlot> item : iv.entrySet()) {
-				Equip e = (Equip) item.getValue();
-				p.equipChanged(e, false, false);
-				e.setStr(Short.MAX_VALUE);
-				e.setDex(Short.MAX_VALUE);
-				e.setInt(Short.MAX_VALUE);
-				e.setLuk(Short.MAX_VALUE);
-				e.setHp((short) 30000);
-				e.setMp((short) 30000);
-				e.setWatk(Short.MAX_VALUE);
-				e.setMatk(Short.MAX_VALUE);
-				e.setWdef(Short.MAX_VALUE);
-				e.setMdef(Short.MAX_VALUE);
-				e.setAcc(Short.MAX_VALUE);
-				e.setAvoid(Short.MAX_VALUE);
-				e.setHands(Short.MAX_VALUE);
-				e.setSpeed((short) 40);
-				e.setJump((short) 23);
-				p.equipChanged(e, true, true);
-				p.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
-			}
-		}
+	private static void maxEquips(List<CommandTarget.CharacterManipulation> changes) {
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.MAX_ALL_EQUIP_STATS, null));
 	}
 
-	private static void maxSkills(GameCharacter p) {
+	private static void maxSkills(List<CommandTarget.CharacterManipulation> changes) {
 		for (int skillid : Skills.ALL) {
 			byte masterLevel = SkillDataLoader.getInstance().getSkill(skillid).maxLevel();
-			p.setSkillLevel(skillid, masterLevel, masterLevel);
+			changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_SKILL_LEVEL, new CommandTarget.SkillValue(skillid, masterLevel, masterLevel)));
 		}
 	}
 
-	private static void maxStats(GameCharacter p, CommandArguments args) {
-		p.setStr(Short.MAX_VALUE);
-		p.setDex(Short.MAX_VALUE);
-		p.setInt(Short.MAX_VALUE);
-		p.setLuk(Short.MAX_VALUE);
-		p.setMaxHp((short) 30000);
-		p.setHp((short) 30000);
-		p.setMaxMp((short) 30000);
-		p.setMp((short) 30000);
-		p.setLevel((short) 200);
-		p.setExp(0);
-		p.setJob(PlayerJob.JOB_SUPER_GM);
-		p.setFame(Short.MAX_VALUE);
+	private static void maxStats(List<CommandTarget.CharacterManipulation> changes) {
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_STR, Short.valueOf(Short.MAX_VALUE)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_DEX, Short.valueOf(Short.MAX_VALUE)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_INT, Short.valueOf(Short.MAX_VALUE)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_LUK, Short.valueOf(Short.MAX_VALUE)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MAX_HP, Short.valueOf((short) 30000)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_HP, Short.valueOf((short) 30000)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MAX_MP, Short.valueOf((short) 30000)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MP, Short.valueOf((short) 30000)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_LEVEL, Short.valueOf((short) 200)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_EXP, Integer.valueOf(0)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_JOB, Short.valueOf(PlayerJob.JOB_SUPER_GM)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_FAME, Short.valueOf(Short.MAX_VALUE)));
 
-		p.setMesos(Integer.MAX_VALUE);
-		for (InventoryType type : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
-			Inventory inv = p.getInventory(type);
-			inv.increaseCapacity((short) 0xFF);
-			p.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(type, (short) 0xFF));
-		}
-		StorageInventory inv = p.getStorageInventory();
-		inv.increaseCapacity((short) 0xFF);
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MESO, Integer.valueOf(Integer.MAX_VALUE)));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.MAX_INVENTORY_SLOTS, null));
 
-		BuddyList bList = p.getBuddyList();
-		bList.increaseCapacity((short) 0xFF);
-		p.getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
+		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.MAX_BUDDY_LIST_SLOTS, null));
 
 		//TODO: increase character limit to 6
 	}
@@ -105,12 +67,12 @@ public final class MaxStatCommandHandlers {
 	public static class MaxEquipStatsHandler extends AbstractCommandDefinition {
 		@Override
 		public String getHelpMessage() {
-			return "Sets the bonus stats of all your equipped equipment to their max values.";
+			return "Sets the bonus stats of all of player's equipped equipment to their max values.";
 		}
 
 		@Override
 		public String getUsage() {
-			return "Usage: !maxequips";
+			return "Usage: !maxequips [<target>]";
 		}
 
 		@Override
@@ -120,7 +82,21 @@ public final class MaxStatCommandHandlers {
 
 		@Override
 		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			maxEquips(p);
+			String targetName = args.extractTarget(null, p.getName());
+			if (targetName == null) {
+				resp.printErr(getUsage());
+				return;
+			}
+			CommandTarget target = args.getTargetByName(targetName, p);
+			if (target == null) {
+				resp.printErr("The character " + targetName + " does not exist.");
+				resp.printErr(getUsage());
+				return;
+			}
+
+			List<CommandTarget.CharacterManipulation> changes = new ArrayList<CommandTarget.CharacterManipulation>();
+			maxEquips(changes);
+			target.mutate(changes);
 		}
 	}
 
@@ -132,7 +108,7 @@ public final class MaxStatCommandHandlers {
 
 		@Override
 		public String getUsage() {
-			return "Usage: !maxskills";
+			return "Usage: !maxskills [<target>]";
 		}
 
 		@Override
@@ -142,19 +118,33 @@ public final class MaxStatCommandHandlers {
 
 		@Override
 		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			maxSkills(p);
+			String targetName = args.extractTarget(null, p.getName());
+			if (targetName == null) {
+				resp.printErr(getUsage());
+				return;
+			}
+			CommandTarget target = args.getTargetByName(targetName, p);
+			if (target == null) {
+				resp.printErr("The character " + targetName + " does not exist.");
+				resp.printErr(getUsage());
+				return;
+			}
+
+			List<CommandTarget.CharacterManipulation> changes = new ArrayList<CommandTarget.CharacterManipulation>();
+			maxSkills(changes);
+			target.mutate(changes);
 		}
 	}
 
 	public static class MaxAllHandler extends AbstractCommandDefinition {
 		@Override
 		public String getHelpMessage() {
-			return "Maxes out your base stats, your equipment bonus stats, and your skill levels.";
+			return "Maxes out a player's base stats, equipment bonus stats, and skill levels.";
 		}
 
 		@Override
 		public String getUsage() {
-			return "Usage: !maxall";
+			return "Usage: !maxall [<target>]";
 		}
 
 		@Override
@@ -164,9 +154,23 @@ public final class MaxStatCommandHandlers {
 
 		@Override
 		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			maxSkills(p);
-			maxEquips(p);
-			maxStats(p, args);
+			String targetName = args.extractTarget(null, p.getName());
+			if (targetName == null) {
+				resp.printErr(getUsage());
+				return;
+			}
+			CommandTarget target = args.getTargetByName(targetName, p);
+			if (target == null) {
+				resp.printErr("The character " + targetName + " does not exist.");
+				resp.printErr(getUsage());
+				return;
+			}
+
+			List<CommandTarget.CharacterManipulation> changes = new ArrayList<CommandTarget.CharacterManipulation>();
+			maxSkills(changes);
+			maxEquips(changes);
+			maxStats(changes);
+			target.mutate(changes);
 		}
 	}
 

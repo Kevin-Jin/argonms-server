@@ -31,6 +31,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -144,19 +145,26 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 		return val;
 	}
 
-	private int getInt(Map.Entry<CharacterManipulation, ?> update) {
+	private int getInt(CharacterManipulation update) {
 		return ((Integer) update.getValue()).intValue();
 	}
 
-	private short getShort(Map.Entry<CharacterManipulation, ?> update) {
+	private short getShort(CharacterManipulation update) {
 		return ((Short) update.getValue()).shortValue();
 	}
 
 	@Override
-	public void mutate(Map<CharacterManipulation, ?> updates) {
+	public void mutate(List<CharacterManipulation> updates) {
+		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
+		boolean prevAutoCommit = true;
 		try {
 			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
-			for (Map.Entry<CharacterManipulation, ?> update : updates.entrySet()) {
+			prevTransactionIsolation = con.getTransactionIsolation();
+			prevAutoCommit = con.getAutoCommit();
+			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			con.setAutoCommit(false);
+
+			for (CharacterManipulation update : updates) {
 				switch (update.getKey()) {
 					case CHANGE_MAP: {
 						MapValue value = (MapValue) update.getValue();
@@ -326,11 +334,74 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						Player.commitInventory(characterId, accountId, pets, con, inventories);
 						break;
 					}
+					case CANCEL_DEBUFFS:
+						//offline characters don't have any active status effects
+						break;
+					case MAX_ALL_EQUIP_STATS:
+						ps = con.prepareStatement("UPDATE `inventoryequipment` `e` "
+								+ "LEFT JOIN `inventoryitems` `i` ON `i`.`inventoryitemid` = `e`.`inventoryitemid` "
+								+ "LEFT JOIN `characters` `c` ON `i`.`characterid` = `c`.`id` "
+								+ "SET "
+								+ "`e`.`str` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`dex` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`int` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`luk` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`hp` = 30000, "
+								+ "`e`.`mp` = 30000, "
+								+ "`e`.`watk` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`matk` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`wdef` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`mdef` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`acc` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`avoid` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`hands` = " + Short.MAX_VALUE + ", "
+								+ "`e`.`speed` = 40, "
+								+ "`e`.`jump` = 23 "
+								+ "WHERE `c`.`name` = ? AND `i`.`inventorytype` = " + Inventory.InventoryType.EQUIPPED.byteValue());
+						ps.setString(1, target);
+						ps.executeUpdate();
+						ps.close();
+						break;
+					case MAX_INVENTORY_SLOTS:
+						ps = con.prepareStatement("UPDATE `characters` SET "
+								+ "`equipslots` = 255, `useslots` = 255, `setupslots` = 255, `etcslots` = 255, `cashslots` = 255 "
+								+ "WHERE `name` = ?");
+						ps.setString(1, target);
+						ps.executeUpdate();
+						ps.close();
+
+						ps = con.prepareStatement("UPDATE `accounts` SET "
+								+ "`storageslots` = 255 "
+								+ "WHERE `id` = (SELECT `accountid` FROM `characters` WHERE `name` = ?)");
+						ps.setString(1, target);
+						ps.executeUpdate();
+						ps.close();
+						break;
+					case MAX_BUDDY_LIST_SLOTS:
+						ps = con.prepareStatement("UPDATE `characters` SET "
+								+ "`buddyslots` = 255 WHERE `name` = ?");
+						ps.setString(1, target);
+						ps.executeUpdate();
+						ps.close();
+						break;
 				}
 			}
+
+			con.commit();
 		} catch (SQLException e) {
-			LOG.log(Level.WARNING, "Could not manipulate stat of offline character", e);
+			LOG.log(Level.WARNING, "Could not manipulate stat of offline character. Rolling back all changes...", e);
+			try {
+				con.rollback();
+			} catch (SQLException ex2) {
+				LOG.log(Level.WARNING, "Error rolling back stat manipulations of offline character.", ex2);
+			}
 		} finally {
+			try {
+				con.setAutoCommit(prevAutoCommit);
+				con.setTransactionIsolation(prevTransactionIsolation);
+			} catch (SQLException ex) {
+				LOG.log(Level.WARNING, "Could not reset Connection config after manipulating offline character " + target, ex);
+			}
 			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
 		}
 	}

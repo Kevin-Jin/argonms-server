@@ -21,9 +21,7 @@ package argonms.game.command;
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.game.GameServer;
-import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
-import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.command.CommandDefinition.CommandAction;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -35,9 +33,11 @@ import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
 import java.awt.Point;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -67,24 +67,34 @@ public class CommandProcessor {
 		definitions.put("!heal", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
-				return "Usage: !heal";
+				return "Usage: !heal [<target>]";
 			}
 
 			@Override
 			public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-				for (PlayerStatusEffect e : new PlayerStatusEffect[] {
-						PlayerStatusEffect.CURSE, PlayerStatusEffect.DARKNESS,
-						PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL,
-						PlayerStatusEffect.WEAKEN }) {
-					PlayerStatusEffectValues v = p.getEffectValue(e);
-					if (v != null)
-						DiseaseTools.cancelDebuff(p, (short) v.getSource(), v.getLevelWhenCast());
+				String targetName = args.extractTarget(null, p.getName());
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, p);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
 				}
 
-				p.setHp(p.getCurrentMaxHp());
-				p.setMp(p.getCurrentMaxMp());
+				List<CommandTarget.CharacterManipulation> changes = new ArrayList<CommandTarget.CharacterManipulation>();
+				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CANCEL_DEBUFFS, new PlayerStatusEffect[] {
+						PlayerStatusEffect.CURSE, PlayerStatusEffect.DARKNESS,
+						PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL,
+						PlayerStatusEffect.WEAKEN
+				}));
+				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_HP, Short.valueOf((short) 30000))); //receiver will limit this to their max HP
+				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MP, Short.valueOf((short) 30000))); //receiver will limit this to their max MP
+				target.mutate(changes);
 			}
-		}, "Cures all diseases and restores all HP/MP", UserPrivileges.GM));
+		}, "Cures a player of all diseases and restores all of his/her HP and MP", UserPrivileges.GM));
 		definitions.put("!tp", new CommandDefinition(new CommandAction() {
 			@Override
 			public String getUsage() {
@@ -119,7 +129,7 @@ public class CommandProcessor {
 
 				CommandTarget.MapValue destination = (CommandTarget.MapValue) warpTo.access(CommandTarget.CharacterProperty.MAP);
 				byte destChannel = ((Byte) warpTo.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
-				warpee.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_MAP, destination));
+				warpee.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, destination)));
 				if (destChannel == 0) {
 					resp.printOut(warpToName + " is currently offline. " + warpeeName + " has been warped to where he/she will spawn on next login.");
 				} else {
@@ -127,7 +137,7 @@ public class CommandProcessor {
 					if (sourceChannel == 0) {
 						resp.printOut(warpeeName + " is currently offline He/she will spawn on next login where " + warpToName + " is now.");
 					} else if (sourceChannel != destChannel) {
-						warpee.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_CHANNEL, Byte.valueOf(destChannel)));
+						warpee.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_CHANNEL, Byte.valueOf(destChannel))));
 						resp.printOut(warpeeName + " has been transferred to channel " + destChannel + ".");
 					}
 				}
@@ -193,7 +203,7 @@ public class CommandProcessor {
 					}
 				}
 
-				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.CHANGE_MAP, new CommandTarget.MapValue(mapId, spawnPoint)));
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, new CommandTarget.MapValue(mapId, spawnPoint))));
 			}
 		}, "Warp a player to a specific map and spawn point", UserPrivileges.GM));
 		definitions.put("!skill", new CommandDefinition(new CommandAction() {
@@ -264,7 +274,7 @@ public class CommandProcessor {
 					}
 				}
 
-				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.SET_SKILL_LEVEL, new CommandTarget.SkillValue(skillId, skillLevel, masterLevel)));
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_SKILL_LEVEL, new CommandTarget.SkillValue(skillId, skillLevel, masterLevel))));
 			}
 		}, "Change a player's skill level", UserPrivileges.GM));
 		definitions.put("!maxequips", new MaxStatCommandHandlers.MaxEquipStatsHandler());
@@ -318,7 +328,7 @@ public class CommandProcessor {
 					}
 				}
 
-				target.mutate(Collections.singletonMap(CommandTarget.CharacterManipulation.ADD_ITEM, new CommandTarget.ItemValue(itemId, quantity)));
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.ADD_ITEM, new CommandTarget.ItemValue(itemId, quantity))));
 			}
 		}, "Give a player an item", UserPrivileges.GM));
 		definitions.put("!spawn", new SpawnCommandHandler());

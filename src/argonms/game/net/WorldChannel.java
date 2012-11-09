@@ -157,13 +157,11 @@ public class WorldChannel {
 		worldComm.sendChannelChangeRequest(destCh, p);
 	}
 
-	public void performChannelChange(int playerId) {
-		Pair<Byte, ScheduledFuture<?>> channelChangeState = queuedChannelChanges.remove(Integer.valueOf(playerId));
-		channelChangeState.right.cancel(false);
+	public void performChannelChange(int playerId, byte destination) {
 		byte[] destHost;
 		int destPort;
 		try {
-			Pair<byte[], Integer> hostAndPort = worldComm.getChannelHost(channelChangeState.left.byteValue());
+			Pair<byte[], Integer> hostAndPort = worldComm.getChannelHost(destination);
 			destHost = hostAndPort.left;
 			destPort = hostAndPort.right.intValue();
 		} catch (UnknownHostException e) {
@@ -178,6 +176,12 @@ public class WorldChannel {
 		} else {
 			channelChangeError(p);
 		}
+	}
+
+	public void performChannelChange(int playerId) {
+		Pair<Byte, ScheduledFuture<?>> channelChangeState = queuedChannelChanges.remove(Integer.valueOf(playerId));
+		channelChangeState.right.cancel(false);
+		performChannelChange(playerId, channelChangeState.left.byteValue());
 	}
 
 	public void storePlayerBuffs(int playerId, PlayerContinuation context) {
