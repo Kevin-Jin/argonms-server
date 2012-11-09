@@ -18,21 +18,51 @@
 
 package argonms.game.command;
 
+import argonms.game.character.GameCharacter;
+import argonms.game.field.GameMap;
+
 /**
  *
  * @author GoldenKevin
  */
-public abstract class AbstractCommandDefinition<T extends CommandCaller> {
-	public abstract String getHelpMessage();
-	public abstract String getUsage();
-	public abstract void execute(T caller, CommandArguments args, CommandOutput resp);
-	public abstract byte minPrivilegeLevel();
+public class GameCharacterCommandCaller implements CommandCaller {
+	private final GameCharacter caller;
 
-	public static boolean isNumber(String s) {
-		char[] array = s.toCharArray();
-		for (int i = array.length - 1; i > 0; --i)
-			if (array[i] > '9' || array[i] < '0')
-				return false;
+	public GameCharacterCommandCaller(GameCharacter caller) {
+		this.caller = caller;
+	}
+
+	@Override
+	public String getName() {
+		return caller.getName();
+	}
+
+	@Override
+	public byte getChannel() {
+		return caller.getClient().getChannel();
+	}
+
+	@Override
+	public GameMap getMap() {
+		return caller.getMap();
+	}
+
+	@Override
+	public boolean isInGame() {
 		return true;
+	}
+
+	@Override
+	public byte getPrivilegeLevel() {
+		return caller.getPrivilegeLevel();
+	}
+
+	@Override
+	public boolean isDisconnected() {
+		return caller.isClosed();
+	}
+
+	public GameCharacter getBackingCharacter() {
+		return caller;
 	}
 }

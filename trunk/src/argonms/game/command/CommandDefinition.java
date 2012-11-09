@@ -18,18 +18,16 @@
 
 package argonms.game.command;
 
-import argonms.game.character.GameCharacter;
-
 /**
  *
  * @author GoldenKevin
  */
-public class CommandDefinition extends AbstractCommandDefinition {
-	private final CommandAction r;
+public class CommandDefinition<T extends CommandCaller> extends AbstractCommandDefinition<T> {
+	private final CommandAction<T> r;
 	private final String help;
 	private final byte minGm;
 
-	public CommandDefinition(CommandAction toExec, String helpMessage, byte minPriv) {
+	public CommandDefinition(CommandAction<T> toExec, String helpMessage, byte minPriv) {
 		r = toExec;
 		help = helpMessage;
 		minGm = minPriv;
@@ -51,12 +49,12 @@ public class CommandDefinition extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-		r.doAction(p, args, resp);
+	public void execute(T caller, CommandArguments args, CommandOutput resp) {
+		r.doAction(caller, args, resp);
 	}
 
-	public interface CommandAction {
+	public interface CommandAction<T extends CommandCaller> {
 		public String getUsage();
-		public void doAction(GameCharacter p, CommandArguments args, ClientNoticeStream resp);
+		public void doAction(T caller, CommandArguments args, CommandOutput resp);
 	}
 }

@@ -21,7 +21,6 @@ package argonms.game.command;
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.Skills;
-import argonms.game.character.GameCharacter;
 import argonms.game.loading.skill.SkillDataLoader;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +63,7 @@ public final class MaxStatCommandHandlers {
 		//TODO: increase character limit to 6
 	}
 
-	public static class MaxEquipStatsHandler extends AbstractCommandDefinition {
+	public static class MaxEquipStatsHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Sets the bonus stats of all of player's equipped equipment to their max values.";
@@ -81,13 +80,13 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			String targetName = args.extractTarget(null, p.getName());
+		public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+			String targetName = args.extractTarget(null, caller.getName());
 			if (targetName == null) {
 				resp.printErr(getUsage());
 				return;
 			}
-			CommandTarget target = args.getTargetByName(targetName, p);
+			CommandTarget target = args.getTargetByName(targetName, caller);
 			if (target == null) {
 				resp.printErr("The character " + targetName + " does not exist.");
 				resp.printErr(getUsage());
@@ -100,7 +99,7 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	public static class MaxSkillsHandler extends AbstractCommandDefinition {
+	public static class MaxSkillsHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Sets all skills across all skillbooks to their master levels.";
@@ -117,13 +116,13 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			String targetName = args.extractTarget(null, p.getName());
+		public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+			String targetName = args.extractTarget(null, caller.getName());
 			if (targetName == null) {
 				resp.printErr(getUsage());
 				return;
 			}
-			CommandTarget target = args.getTargetByName(targetName, p);
+			CommandTarget target = args.getTargetByName(targetName, caller);
 			if (target == null) {
 				resp.printErr("The character " + targetName + " does not exist.");
 				resp.printErr(getUsage());
@@ -136,7 +135,7 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	public static class MaxAllHandler extends AbstractCommandDefinition {
+	public static class MaxAllHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Maxes out a player's base stats, equipment bonus stats, and skill levels.";
@@ -153,13 +152,13 @@ public final class MaxStatCommandHandlers {
 		}
 
 		@Override
-		public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
-			String targetName = args.extractTarget(null, p.getName());
+		public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+			String targetName = args.extractTarget(null, caller.getName());
 			if (targetName == null) {
 				resp.printErr(getUsage());
 				return;
 			}
-			CommandTarget target = args.getTargetByName(targetName, p);
+			CommandTarget target = args.getTargetByName(targetName, caller);
 			if (target == null) {
 				resp.printErr("The character " + targetName + " does not exist.");
 				resp.printErr(getUsage());

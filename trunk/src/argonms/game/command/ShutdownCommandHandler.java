@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class ShutdownCommandHandler extends AbstractCommandDefinition {
+public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 	private static final Logger LOG = Logger.getLogger(ShutdownCommandHandler.class.getName());
 
 	@Override
@@ -70,7 +70,7 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition {
 	}
 
 	@Override
-	public void execute(GameCharacter p, CommandArguments args, ClientNoticeStream resp) {
+	public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
 		if (args.hasOpt("-c")) {
 			//TODO: cancel shutdown
 		} else {

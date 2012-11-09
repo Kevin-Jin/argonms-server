@@ -18,21 +18,35 @@
 
 package argonms.game.command;
 
+import argonms.common.net.external.ClientSession;
+import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.ChatHandler.TextStyle;
+
 /**
  *
  * @author GoldenKevin
  */
-public abstract class AbstractCommandDefinition<T extends CommandCaller> {
-	public abstract String getHelpMessage();
-	public abstract String getUsage();
-	public abstract void execute(T caller, CommandArguments args, CommandOutput resp);
-	public abstract byte minPrivilegeLevel();
+public interface CommandOutput {
+	public void printOut(String message);
 
-	public static boolean isNumber(String s) {
-		char[] array = s.toCharArray();
-		for (int i = array.length - 1; i > 0; --i)
-			if (array[i] > '9' || array[i] < '0')
-				return false;
-		return true;
+	public void printErr(String message);
+
+	public static class InChat implements CommandOutput {
+		private ClientSession<?> ses;
+
+		public InChat(GameClient rc) {
+			ses = rc.getSession();
+		}
+
+		@Override
+		public void printOut(String message) {
+			ses.send(GamePackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		}
+
+		@Override
+		public void printErr(String message) {
+			ses.send(GamePackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		}
 	}
 }

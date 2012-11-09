@@ -35,6 +35,11 @@ public interface CommandTarget {
 			this.mapId = mapId;
 			this.spawnPoint = portal;
 		}
+
+		public MapValue(int mapId) {
+			this.mapId = mapId;
+			this.spawnPoint = 0;
+		}
 	}
 
 	public static class SkillValue {
