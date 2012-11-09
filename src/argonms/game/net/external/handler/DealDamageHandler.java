@@ -78,7 +78,6 @@ public final class DealDamageHandler {
 	public static void handleRangedAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
-		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
 
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		short useQty;
@@ -132,6 +131,7 @@ public final class DealDamageHandler {
 			attack.ammoItemId = 0; //should be 0 already, but just make sure.
 		}
 
+		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
 		applyAttack(attack, p);
 	}
 

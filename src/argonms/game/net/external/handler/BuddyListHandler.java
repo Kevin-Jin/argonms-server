@@ -223,6 +223,10 @@ public final class BuddyListHandler {
 	private static void processDeleteEntry(int deletedId, GameClient client) {
 		GameCharacter p = client.getPlayer();
 		BuddyList bList = p.getBuddyList();
+		if (bList.isInInvites(deletedId)) {
+			bList.removeInvite(deletedId);
+			return;
+		}
 		byte channel = bList.removeBuddy(deletedId).getChannel();
 		client.getSession().send(GamePackets.writeBuddyList(REMOVE, bList));
 
