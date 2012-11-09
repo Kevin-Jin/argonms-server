@@ -18,7 +18,7 @@
 
 package argonms.game.command;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  *
@@ -33,20 +33,20 @@ public class CrossChannelCommandTarget implements CommandTarget {
 		this.targetName = targetName;
 	}
 
-	private int getInt(Map.Entry<CharacterManipulation, ?> update) {
+	private int getInt(CharacterManipulation update) {
 		return ((Integer) update.getValue()).intValue();
 	}
 
-	private short getShort(Map.Entry<CharacterManipulation, ?> update) {
+	private short getShort(CharacterManipulation update) {
 		return ((Short) update.getValue()).shortValue();
 	}
 
-	//TODO: receiving end will construct a "Map<CharacterManipulation, ?> updates"
+	//TODO: receiving end will construct a "List<CharacterManipulation> updates"
 	//from the packet and construct a LocalChannelCommandTarget that parses
 	//updates
 	@Override
-	public void mutate(Map<CharacterManipulation, ?> updates) {
-		for (Map.Entry<CharacterManipulation, ?> update : updates.entrySet()) {
+	public void mutate(List<CharacterManipulation> updates) {
+		for (CharacterManipulation update : updates) {
 			switch (update.getKey()) {
 				case CHANGE_MAP:
 					//writeInt
@@ -96,6 +96,14 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case ADD_ITEM:
 					//writeInt
 					//writeInt
+					break;
+				case CANCEL_DEBUFFS:
+					//writeLong of masks
+					break;
+				case MAX_ALL_EQUIP_STATS:
+				case MAX_INVENTORY_SLOTS:
+				case MAX_BUDDY_LIST_SLOTS:
+					//do not write any additional bytes
 					break;
 			}
 		}

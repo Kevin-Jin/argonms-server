@@ -19,6 +19,7 @@
 package argonms.game.command;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,8 +28,8 @@ import java.util.Map;
  */
 public interface CommandTarget {
 	public static class MapValue {
-		public int mapId;
-		public byte spawnPoint;
+		public final int mapId;
+		public final byte spawnPoint;
 
 		public MapValue(int mapId, byte portal) {
 			this.mapId = mapId;
@@ -37,9 +38,9 @@ public interface CommandTarget {
 	}
 
 	public static class SkillValue {
-		public int skillId;
-		public byte skillLevel;
-		public byte skillMasterLevel;
+		public final int skillId;
+		public final byte skillLevel;
+		public final byte skillMasterLevel;
 
 		public SkillValue(int skillId, byte skillLevel, byte skillMasterLevel) {
 			this.skillId = skillId;
@@ -49,8 +50,8 @@ public interface CommandTarget {
 	}
 
 	public static class ItemValue {
-		public int itemId;
-		public int quantity;
+		public final int itemId;
+		public final int quantity;
 
 		public ItemValue(int itemId, int quantity) {
 			this.itemId = itemId;
@@ -58,7 +59,25 @@ public interface CommandTarget {
 		}
 	}
 
-	public enum CharacterManipulation {
+	public static class CharacterManipulation {
+		private final CharacterManipulationKey key;
+		private final Object value;
+
+		public CharacterManipulation(CharacterManipulationKey key, Object value) {
+			this.key = key;
+			this.value = value;
+		}
+
+		public CharacterManipulationKey getKey() {
+			return key;
+		}
+
+		public Object getValue() {
+			return value;
+		}
+	}
+
+	public enum CharacterManipulationKey {
 		CHANGE_MAP((byte) 1),
 		CHANGE_CHANNEL((byte) 2),
 		ADD_LEVEL((byte) 3),
@@ -91,19 +110,23 @@ public interface CommandTarget {
 		ADD_MESO((byte) 30),
 		SET_MESO((byte) 31),
 		SET_SKILL_LEVEL((byte) 32),
-		ADD_ITEM((byte) 33);
+		ADD_ITEM((byte) 33),
+		CANCEL_DEBUFFS((byte) 34),
+		MAX_ALL_EQUIP_STATS((byte) 35),
+		MAX_INVENTORY_SLOTS((byte) 36),
+		MAX_BUDDY_LIST_SLOTS((byte) 37);
 
-		private static final Map<Byte, CharacterManipulation> lookup;
+		private static final Map<Byte, CharacterManipulationKey> lookup;
 
 		static {
-			lookup = new HashMap<Byte, CharacterManipulation>();
-			for (CharacterManipulation key : values())
+			lookup = new HashMap<Byte, CharacterManipulationKey>();
+			for (CharacterManipulationKey key : values())
 				lookup.put(Byte.valueOf(key.byteValue()), key);
 		}
 
 		private final byte serial;
 
-		private CharacterManipulation(byte serial) {
+		private CharacterManipulationKey(byte serial) {
 			this.serial = serial;
 		}
 
@@ -137,7 +160,7 @@ public interface CommandTarget {
 		}
 	}
 
-	public void mutate(Map<CharacterManipulation, ?> updates);
+	public void mutate(List<CharacterManipulation> updates);
 
 	public Object access(CharacterProperty key);
 }

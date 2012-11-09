@@ -2296,6 +2296,16 @@
 	specific spawn point in a map. When used with only one argument, it behaves
 	identically to the /m command.
 
+2012-11-09  GoldenKevin  (revision 161)
+
+	* Fixed compilation error in WorldChannel.
+	* CommandTarget.mutate accepts a List of properties to change rather than
+	a Map.
+	* !heal, !maxstats, !maxequips, and !maxall now support the command target
+	system.
+	* OfflineCharacterCommandTarget is now manually committed once after all
+	updates have been made, in order to speed up commands such as !maxall.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
