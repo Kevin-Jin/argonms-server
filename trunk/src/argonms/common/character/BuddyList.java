@@ -68,6 +68,10 @@ public class BuddyList {
 		return Collections.unmodifiableSet(pendingInvites.entrySet());
 	}
 
+	public boolean isInInvites(int id) {
+		return pendingInvites.containsKey(Integer.valueOf(id));
+	}
+
 	public boolean isFull() {
 		return buddies.size() >= capacity;
 	}

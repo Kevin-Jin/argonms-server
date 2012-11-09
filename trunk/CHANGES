@@ -2306,6 +2306,12 @@
 	* OfflineCharacterCommandTarget is now manually committed once after all
 	updates have been made, in order to speed up commands such as !maxall.
 
+2012-11-09  GoldenKevin  (revision 162)
+
+	* Fixed invisible throwing stars or arrows when attacking with a claw or
+	(cross) bow.
+	* Fixed denying buddy invites.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
