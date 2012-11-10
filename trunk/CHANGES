@@ -2318,6 +2318,13 @@
 	commands that could be called by a GM connecting over telnet.
 	* !town now supports the command target system.
 
+2012-11-10  GoldenKevin  (revision 164)
+
+	* Reverted changes to WorldChannel and made LocalChannelCommandTarget do
+	channel changes the right way.
+	* Started work on experiment system that will eventually supplant
+	InterChannelCommunication in a more object oriented and manageable manner.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

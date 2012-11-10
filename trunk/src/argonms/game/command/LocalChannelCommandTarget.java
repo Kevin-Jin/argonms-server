@@ -47,6 +47,10 @@ public class LocalChannelCommandTarget implements CommandTarget {
 		target = backing;
 	}
 
+	private byte getByte(CharacterManipulation update) {
+		return ((Byte) update.getValue()).byteValue();
+	}
+
 	private int getInt(CharacterManipulation update) {
 		return ((Integer) update.getValue()).intValue();
 	}
@@ -65,7 +69,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					break;
 				}
 				case CHANGE_CHANNEL:
-					GameServer.getChannel(target.getClient().getChannel()).performChannelChange(target.getDataId(), ((Byte) update.getValue()).byteValue());
+					GameServer.getChannel(target.getClient().getChannel()).requestChannelChange(target, getByte(update));
 					break;
 				case ADD_LEVEL:
 					target.setLevel((short) Math.min(target.getLevel() + getShort(update), GlobalConstants.MAX_LEVEL));
