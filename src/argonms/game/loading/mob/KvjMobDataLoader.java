@@ -58,8 +58,9 @@ public class KvjMobDataLoader extends MobDataLoader {
 		DELAY = 22,
 		DROPS = 23,
 		NO_MESOS = 24,
-		DESTROY_ANIMATION = 25,
-		DROP_ITEM_PERIOD = 26
+		QUEST_ITEM_DROPS = 25,
+		DESTROY_ANIMATION = 26,
+		DROP_ITEM_PERIOD = 27
 	;
 
 	private final String dataPath;
@@ -185,7 +186,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 					int delay = reader.readInt();
 					stats.addDelay(name, delay);
 					break;
-				case DROPS:
+				case DROPS: {
 					byte amt = reader.readByte();
 					for (int i = amt - 1; i >= 0; --i) {
 						int itemid = reader.readInt();
@@ -196,9 +197,20 @@ public class KvjMobDataLoader extends MobDataLoader {
 							stats.addItemDrop(itemid, chance, (short) 1, (short) 1);
 					}
 					break;
+				}
 				case NO_MESOS:
 					stats.setMesoDrop(0, 0, 0);
 					break;
+				case QUEST_ITEM_DROPS: {
+					byte amt = reader.readByte();
+					for (int i = amt - 1; i >= 0; --i) {
+						int itemid = reader.readInt();
+						int chance = reader.readInt();
+						short questId = reader.readShort();
+						stats.addItemDrop(itemid, chance, (short) 1, (short) 1, questId);
+					}
+					break;
+				}
 				case DESTROY_ANIMATION:
 					stats.setDestroyAnimation(reader.readByte());
 					break;

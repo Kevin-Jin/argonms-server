@@ -180,6 +180,10 @@ public class MobStats {
 		this.itemDrops.add(new ItemDropEntry(itemid, chance, min, max));
 	}
 
+	protected void addItemDrop(int itemid, int chance, short min, short max, short questId) {
+		this.itemDrops.add(new ItemDropEntry(itemid, chance, min, max, questId));
+	}
+
 	protected void setMesoDrop(int chance, int min, int max) {
 		this.mesoDrop = new MesoDropChance(chance, min, max);
 	}
@@ -372,12 +376,18 @@ public class MobStats {
 		private int chance;
 		private short min;
 		private short max;
+		private short questId;
 
-		public ItemDropEntry(int itemId, int chance, short min, short max) {
+		public ItemDropEntry(int itemId, int chance, short min, short max, short questId) {
 			this.itemId = itemId;
 			this.chance = chance;
 			this.min = min;
 			this.max = max;
+			this.questId = questId;
+		}
+
+		public ItemDropEntry(int itemId, int chance, short min, short max) {
+			this(itemId, chance, min, max, (short) 0);
 		}
 
 		public int getItemId() {
@@ -394,6 +404,10 @@ public class MobStats {
 
 		public short getMaxQuantity() {
 			return max;
+		}
+
+		public short getQuestId() {
+			return questId;
 		}
 	}
 }

@@ -33,6 +33,10 @@ public class CrossChannelCommandTarget implements CommandTarget {
 		this.targetName = targetName;
 	}
 
+	private byte getByte(CharacterManipulation update) {
+		return ((Byte) update.getValue()).byteValue();
+	}
+
 	private int getInt(CharacterManipulation update) {
 		return ((Integer) update.getValue()).intValue();
 	}
