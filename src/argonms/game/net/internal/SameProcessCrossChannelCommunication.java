@@ -18,10 +18,12 @@
 
 package argonms.game.net.internal;
 
+import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.PlayerContinuation;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.BlockingQueue;
 
 /**
  *
@@ -30,11 +32,13 @@ import java.net.UnknownHostException;
 public class SameProcessCrossChannelCommunication implements CrossChannelCommunication {
 	private final CrossServerCommunication handler;
 	private SameProcessCrossChannelCommunication pipe;
+	private final byte localCh;
 	private final byte targetCh;
 
-	public SameProcessCrossChannelCommunication(CrossServerCommunication self, byte channel) {
+	public SameProcessCrossChannelCommunication(CrossServerCommunication self, byte localCh, byte remoteCh) {
 		this.handler = self;
-		this.targetCh = channel;
+		this.localCh = localCh;
+		this.targetCh = remoteCh;
 	}
 
 	public void connect(SameProcessCrossChannelCommunication other) {
@@ -68,5 +72,14 @@ public class SameProcessCrossChannelCommunication implements CrossChannelCommuni
 
 	private void receivedChannelChangeAcceptance(int playerId) {
 		handler.receivedChannelChangeAcceptance(targetCh, playerId);
+	}
+
+	@Override
+	public void callPlayerExistsCheck(BlockingQueue<Pair<Byte, Object>> resultConsumer, String name) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(returnPlayerExistsResult(name))));
+	}
+
+	private boolean returnPlayerExistsResult(String name) {
+		return GameServer.getChannel(localCh).getPlayerByName(name) != null;
 	}
 }

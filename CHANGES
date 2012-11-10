@@ -2338,6 +2338,16 @@
 	at most a few hours if they are abusing their hacks but low enough to allow
 	an average of 33 false positives a day for infractions that last 30 days.
 
+2012-11-10  GoldenKevin  (revision 166)
+
+	* Fixed thread unsafe methods in CrossServerCommunication.
+	* Replaced usages of Future in CrossProcessCrossChannelCommunication with
+	BlockingQueues. This allows early outs in blocking calls in
+	CrossServerCommunication when a desired value is found. Credits go to Markus
+	Fuchs' WeakValueHashMap as inspiration for the WeakValueMap nested class.
+	* Implemented replacement method for InterChannelCommunication's
+	getChannelOfPlayer in CrossServerCommunication.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
