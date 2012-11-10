@@ -64,6 +64,18 @@ public interface CommandTarget {
 		}
 	}
 
+	public static class BanValue {
+		public final String banner;
+		public final String reason;
+		public final long expireTimestamp;
+
+		public BanValue(String banner, String reason, long expireTimestamp) {
+			this.banner = banner;
+			this.reason = reason;
+			this.expireTimestamp = expireTimestamp;
+		}
+	}
+
 	public static class CharacterManipulation {
 		private final CharacterManipulationKey key;
 		private final Object value;
@@ -119,7 +131,8 @@ public interface CommandTarget {
 		CANCEL_DEBUFFS((byte) 34),
 		MAX_ALL_EQUIP_STATS((byte) 35),
 		MAX_INVENTORY_SLOTS((byte) 36),
-		MAX_BUDDY_LIST_SLOTS((byte) 37);
+		MAX_BUDDY_LIST_SLOTS((byte) 37),
+		BAN((byte) 38);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

@@ -60,10 +60,10 @@ public class TimeTool {
 		Calendar cal = Calendar.getInstance();
 		switch (timeStr.length()) {
 			case 8: //YYYYMMDD
-				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)), Integer.parseInt(timeStr.substring(6, 8)));
+				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)) - 1, Integer.parseInt(timeStr.substring(6, 8)));
 				break;
 			case 10: //YYYYMMDDHH
-				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)), Integer.parseInt(timeStr.substring(6, 8)), Integer.parseInt(timeStr.substring(8, 10)), 0);
+				cal.set(Integer.parseInt(timeStr.substring(0, 4)), Integer.parseInt(timeStr.substring(4, 6)) - 1, Integer.parseInt(timeStr.substring(6, 8)), Integer.parseInt(timeStr.substring(8, 10)), 0);
 				break;
 			default:
 				cal = null;

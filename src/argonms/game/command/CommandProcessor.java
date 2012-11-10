@@ -20,6 +20,7 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -34,6 +35,7 @@ import argonms.game.loading.skill.SkillStats;
 import java.awt.Point;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -210,6 +212,70 @@ public class CommandProcessor {
 				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, new CommandTarget.MapValue(mapId, spawnPoint))));
 			}
 		}, "Warp a player to a specific map and spawn point", UserPrivileges.GM));
+		universalCommands.put("!ban", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
+			@Override
+			public String getUsage() {
+				return "Usage: !ban <target> <reason> [<expire date>|perm]";
+			}
+
+			@Override
+			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+				String targetName = args.extractTarget(null, null);
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, caller);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String reason = args.next();
+
+				long expireTimestamp;
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String param = args.next();
+				try {
+					int iDate = Integer.parseInt(param);
+					Calendar expireCal = TimeTool.intDateToCalendar(iDate);
+					if (expireCal == null) {
+						resp.printErr("Expire date must be in the form of YYYYMMDD.");
+						resp.printErr(getUsage());
+						return;
+					}
+
+					expireCal.set(Calendar.HOUR_OF_DAY, 0);
+					expireCal.set(Calendar.MINUTE, 0);
+					expireCal.set(Calendar.SECOND, 0);
+					expireCal.set(Calendar.MILLISECOND, 0);
+
+					if (expireCal.before(Calendar.getInstance())) {
+						resp.printErr("Expire date must not be in the past.");
+						resp.printErr(getUsage());
+						return;
+					}
+					expireTimestamp = expireCal.getTimeInMillis();
+				} catch (NumberFormatException e) {
+					if (!param.equalsIgnoreCase("perm")) {
+						resp.printErr("Expire date must be in the form of YYYYMMDD.");
+						resp.printErr(getUsage());
+						return;
+					}
+					expireTimestamp = TimeTool.NO_EXPIRATION;
+				}
+
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.BAN, new CommandTarget.BanValue(caller.getName(), reason, expireTimestamp))));
+			}
+		}, "Raise a player's infraction level past the tolerance to ban them", UserPrivileges.GM));
 		universalCommands.put("!skill", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {

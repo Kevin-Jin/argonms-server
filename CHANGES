@@ -2320,10 +2320,23 @@
 
 2012-11-10  GoldenKevin  (revision 164)
 
+	* Support for the newest Kvj format.
+	* Started work on supporting quest mob and reactor drops.
 	* Reverted changes to WorldChannel and made LocalChannelCommandTarget do
 	channel changes the right way.
 	* Started work on experiment system that will eventually supplant
 	InterChannelCommunication in a more object oriented and manageable manner.
+
+2012-11-10  GoldenKevin  (revision 165)
+
+	* Fixed TimeTool.intDateToCalendar.
+	* Added !ban command and support for adding infractions to users that are
+	offline.
+	* Reenabled infraction system, although false positions for auto ban should
+	be at a minimum now that I reduced points for machine detected packet
+	editing to 0.1% of the tolerance - still high enough to catch cheaters after
+	at most a few hours if they are abusing their hacks but low enough to allow
+	an average of 33 false positives a day for infractions that last 30 days.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

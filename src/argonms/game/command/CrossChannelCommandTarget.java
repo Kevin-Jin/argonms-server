@@ -109,6 +109,11 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case MAX_BUDDY_LIST_SLOTS:
 					//do not write any additional bytes
 					break;
+				case BAN:
+					//writeLengthPrefixedString
+					//writeLengthPrefixedString
+					//writeLong
+					break;
 			}
 		}
 	}
