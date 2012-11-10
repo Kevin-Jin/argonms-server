@@ -25,7 +25,9 @@ import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
+import argonms.common.util.TimeTool;
 import argonms.game.GameServer;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.ExpTables;
@@ -33,6 +35,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.net.external.GamePackets;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -245,6 +248,13 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					BuddyList bList = target.getBuddyList();
 					bList.increaseCapacity((short) 0xFF);
 					target.getClient().getSession().send(GamePackets.writeBuddyCapacityUpdate(bList.getCapacity()));
+					break;
+				}
+				case BAN: {
+					BanValue value = (BanValue) update.getValue();
+					Calendar cal = TimeTool.currentDateTime();
+					cal.setTimeInMillis(value.expireTimestamp);
+					CheatTracker.get(target.getClient()).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
 					break;
 				}
 			}

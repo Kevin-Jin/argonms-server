@@ -23,13 +23,16 @@ import argonms.common.character.Player;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.util.DatabaseManager;
+import argonms.common.util.TimeTool;
 import argonms.game.character.ExpTables;
 import argonms.game.loading.map.MapDataLoader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -384,6 +387,13 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						ps.executeUpdate();
 						ps.close();
 						break;
+					case BAN: {
+						BanValue value = (BanValue) update.getValue();
+						Calendar cal = TimeTool.currentDateTime();
+						cal.setTimeInMillis(value.expireTimestamp);
+						CheatTracker.get(target).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
+						break;
+					}
 				}
 			}
 

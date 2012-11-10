@@ -29,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -52,19 +53,19 @@ import java.util.logging.Logger;
  * This class is thread safe.
  * @author GoldenKevin
  */
-public class CheatTracker {
+public abstract class CheatTracker {
 	private static final Logger LOG = Logger.getLogger(CheatTracker.class.getName());
 
-	private static final int TOLERANCE = 10000;
+	private static final short TOLERANCE = 10000;
 
-	private static LockableMap<RemoteClient, CheatTracker> recent;
+	private static LockableMap<RemoteClient, OnlineCheatTracker> recent;
 
 	static {
-		recent = new LockableMap<RemoteClient, CheatTracker>(new WeakHashMap<RemoteClient, CheatTracker>());
+		recent = new LockableMap<RemoteClient, OnlineCheatTracker>(new WeakHashMap<RemoteClient, OnlineCheatTracker>());
 	}
 
 	public enum Infraction {
-		PACKET_EDITING	(1, 2000, 30L * 24 * 60 * 60 * 1000); //30 days
+		PACKET_EDITING	(1, 10, 30L * 24 * 60 * 60 * 1000); //30 days
 
 		private static final Map<Byte, Infraction> lookup;
 
@@ -120,19 +121,29 @@ public class CheatTracker {
 		}
 	}
 
-	private final RemoteClient client;
 	private final Lock loadLock;
 	private final Map<String, Long> timeLog;
 	private int totalPoints;
 	private boolean infractionsLoaded;
 
-	private CheatTracker(RemoteClient rc) {
-		this.client = rc;
+	private CheatTracker() {
 		this.loadLock = new ReentrantLock();
 		this.timeLog = new ConcurrentHashMap<String, Long>();
 		this.totalPoints = 0;
 		this.infractionsLoaded = false;
 	}
+
+	protected abstract void disconnectClient();
+
+	protected abstract int getAccountId();
+
+	protected abstract byte[] getIpAddress();
+
+	/**
+	 * Get the id of the character that this client is logged in on.
+	 * @return -1 if no player exists on this client
+	 */
+	protected abstract int getCharacterId();
 
 	private long ipBytesToLong(byte[] b) {
 		//IP addresses are just 4-byte (32-bit) integers represented by 4 bytes
@@ -245,11 +256,11 @@ public class CheatTracker {
 			ps.setByte(8, reason.byteValue());
 			ps.setShort(9, points);
 			ps.executeUpdate();
-			/*if (totalPoints >= TOLERANCE) {
+			if (totalPoints >= TOLERANCE) {
 				ban(con);
 				if (dcOnBan)
-					client.getSession().close("Banned", null);
-			}*/
+					disconnectClient();
+			}
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cheatlog for account "
 					+ getAccountId(), ex);
@@ -261,6 +272,13 @@ public class CheatTracker {
 	public void suspicious(Infraction reason, String details) {
 		StackTraceElement caller = Thread.currentThread().getStackTrace()[2];
 		addInfraction(reason, Assigner.AUTOBAN, caller.toString(), details, -1L, (short) -1, true);
+	}
+
+	public void ban(Infraction reason, String callerName, String details, Calendar expire) {
+		long expireTimeStamp = -1L;
+		if (expire != null)
+			expireTimeStamp = expire.getTimeInMillis();
+		addInfraction(reason, Assigner.GM, callerName, details, expireTimeStamp, TOLERANCE, true);
 	}
 
 	public void logTime(String key, long timeStamp) {
@@ -277,42 +295,121 @@ public class CheatTracker {
 		return t != null ? t.longValue() : 0;
 	}
 
-	private int getAccountId() {
-		return client.getAccountId();
+	private static class OnlineCheatTracker extends CheatTracker {
+		private final RemoteClient client;
+
+		private OnlineCheatTracker(RemoteClient rc) {
+			this.client = rc;
+		}
+
+		@Override
+		protected void disconnectClient() {
+			client.getSession().close("Banned");
+		}
+
+		@Override
+		protected int getAccountId() {
+			return client.getAccountId();
+		}
+
+		/**
+		 * Get the network address of the remote client.
+		 * @return the IP address of the remote client in big-endian
+		 * byte order.
+		 */
+		@Override
+		protected byte[] getIpAddress() {
+			return ((InetSocketAddress) client.getSession().getAddress()).getAddress().getAddress();
+		}
+
+		/**
+		 * Get the character that this client is associated with.
+		 * @return null if this client isn't associated with a player
+		 */
+		@Override
+		protected int getCharacterId() {
+			Player p = client.getPlayer();
+			return (p != null ? p.getId() : -1);
+		}
 	}
 
-	/**
-	 * Get the network address of the remote client.
-	 * @return the IP address of the remote client in big-endian
-	 * byte order.
-	 */
-	private byte[] getIpAddress() {
-		return ((InetSocketAddress) client.getSession().getAddress()).getAddress().getAddress();
-	}
+	private static class OfflineCheatTracker extends CheatTracker {
+		private final int accountId;
+		private final int characterId;
+		private final byte[] ipAddress;
 
-	/**
-	 * Get the character that this client is associated with.
-	 * @return null if this client isn't associated with a player
-	 */
-	private Player getCharacter() {
-		return client.getPlayer();
-	}
+		private byte[] longToByteArray(long longValue) {
+			byte[] bigEndian = new byte[4];
+			for (int byt = 0, bitShift = 24; byt < 4; byt++, bitShift -= 8)
+				bigEndian[byt] = (byte) ((longValue >>> bitShift) & 0xFF);
+			return bigEndian;
+		}
 
-	/**
-	 * Get the id of the character that this client is logged in on.
-	 * @return -1 if no player exists on this client
-	 */
-	private int getCharacterId() {
-		Player p = getCharacter();
-		return (p != null ? p.getId() : -1);
+		private OfflineCheatTracker(int accountId, int characterId, long recentIp) {
+			this.accountId = accountId;
+			this.characterId = characterId;
+			this.ipAddress = longToByteArray(recentIp);
+		}
+
+		@Override
+		protected void disconnectClient() {
+			
+		}
+
+		@Override
+		protected int getAccountId() {
+			return accountId;
+		}
+
+		/**
+		 * Get the network address of the remote client.
+		 * @return the IP address of the remote client in big-endian
+		 * byte order.
+		 */
+		@Override
+		protected byte[] getIpAddress() {
+			return ipAddress;
+		}
+
+		/**
+		 * Get the character that this client is associated with.
+		 * @return null if this client isn't associated with a player
+		 */
+		@Override
+		protected int getCharacterId() {
+			return characterId;
+		}
 	}
 
 	public static CheatTracker get(RemoteClient rc) {
-		CheatTracker ct = recent.getWhenSafe(rc); //try getting from cache first
+		OnlineCheatTracker ct = recent.getWhenSafe(rc); //try getting from cache first
 		if (ct == null) {
-			ct = new CheatTracker(rc);
+			ct = new OnlineCheatTracker(rc);
 			recent.putWhenSafe(rc, ct);
 		}
 		return ct;
+	}
+
+	public static CheatTracker get(String characterName) {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			//only get infractions that haven't expired and aren't pardoned yet
+			ps = con.prepareStatement("SELECT `a`.`id`,`c`.`id`,`a`.`recentip` FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` WHERE `c`.`name` = ?");
+			ps.setString(1, characterName);
+			rs = ps.executeQuery();
+			if (!rs.next())
+				return null;
+
+			return new OfflineCheatTracker(rs.getInt(1), rs.getInt(2), rs.getLong(3));
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not load cheatlog for offline character "
+					+ characterName, ex);
+			return null;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 	}
 }
