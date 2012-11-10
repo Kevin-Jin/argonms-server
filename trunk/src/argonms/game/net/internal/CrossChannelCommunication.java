@@ -18,8 +18,10 @@
 
 package argonms.game.net.internal;
 
+import argonms.common.util.collections.Pair;
 import argonms.game.character.PlayerContinuation;
 import java.net.UnknownHostException;
+import java.util.concurrent.BlockingQueue;
 
 /**
  *
@@ -33,4 +35,6 @@ public interface CrossChannelCommunication {
 	public void sendPlayerContext(int playerId, PlayerContinuation context);
 
 	public void sendChannelChangeAcceptance(int playerId);
+
+	public void callPlayerExistsCheck(BlockingQueue<Pair<Byte, Object>> resultConsumer, String name);
 }

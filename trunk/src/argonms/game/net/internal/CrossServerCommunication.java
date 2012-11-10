@@ -18,6 +18,8 @@
 
 package argonms.game.net.internal;
 
+import argonms.common.util.collections.LockableMap;
+import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerContinuation;
@@ -26,22 +28,29 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class CrossServerCommunication {
-	private final Map<Byte, CrossChannelCommunication> otherChannelsInWorld;
-	private final Map<Byte, CrossProcessCrossChannelCommunication> remoteChannelsInWorld;
+	private static final Logger LOG = Logger.getLogger(CrossServerCommunication.class.getName());
+
+	private final LockableMap<Byte, CrossChannelCommunication> otherChannelsInWorld;
+	private final LockableMap<Byte, CrossProcessCrossChannelCommunication> remoteChannelsInWorld;
 	private final ReadWriteLock locks;
 	private final WorldChannel self;
 
 	public CrossServerCommunication(WorldChannel channel) {
-		otherChannelsInWorld = new HashMap<Byte, CrossChannelCommunication>();
-		remoteChannelsInWorld = new HashMap<Byte, CrossProcessCrossChannelCommunication>();
+		otherChannelsInWorld = new LockableMap<Byte, CrossChannelCommunication>(new HashMap<Byte, CrossChannelCommunication>());
+		remoteChannelsInWorld = new LockableMap<Byte, CrossProcessCrossChannelCommunication>(new HashMap<Byte, CrossProcessCrossChannelCommunication>());
 		locks = new ReentrantReadWriteLock();
 		self = channel;
 	}
@@ -53,8 +62,8 @@ public class CrossServerCommunication {
 		locks.writeLock().lock();
 		try {
 			for (Map.Entry<Byte, CrossServerCommunication> other : initialized.entrySet()) {
-				SameProcessCrossChannelCommunication source = new SameProcessCrossChannelCommunication(other.getValue(), self.getChannelId());
-				SameProcessCrossChannelCommunication sink = new SameProcessCrossChannelCommunication(other.getValue(), other.getKey().byteValue());
+				SameProcessCrossChannelCommunication source = new SameProcessCrossChannelCommunication(other.getValue(), other.getKey().byteValue(), self.getChannelId());
+				SameProcessCrossChannelCommunication sink = new SameProcessCrossChannelCommunication(other.getValue(), self.getChannelId(), other.getKey().byteValue());
 				sink.connect(source);
 				other.getValue().otherChannelsInWorld.put(Byte.valueOf(self.getChannelId()), source);
 				this.otherChannelsInWorld.put(other.getKey(), sink);
@@ -120,11 +129,11 @@ public class CrossServerCommunication {
 
 	public void receivedCrossProcessCrossChannelCommunicationPacket(LittleEndianReader packet) {
 		byte srcCh = packet.readByte();
-		remoteChannelsInWorld.get(Byte.valueOf(srcCh)).receivedCrossProcessCrossChannelCommunicationPacket(packet);
+		remoteChannelsInWorld.getWhenSafe(Byte.valueOf(srcCh)).receivedCrossProcessCrossChannelCommunicationPacket(packet);
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
-		otherChannelsInWorld.get(Byte.valueOf(destCh)).sendPlayerContext(p.getId(), new PlayerContinuation(p));
+		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendPlayerContext(p.getId(), new PlayerContinuation(p));
 	}
 
 	/* package-private */ void receivedChannelChangeRequest(byte srcCh, int playerId, PlayerContinuation context) {
@@ -133,10 +142,41 @@ public class CrossServerCommunication {
 	}
 
 	public void sendChannelChangeAcceptance(byte destCh, int playerId) {
-		otherChannelsInWorld.get(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
+		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
 	}
 
 	/* package-private */ void receivedChannelChangeAcceptance(byte srcCh, int playerId) {
 		self.performChannelChange(playerId);
+	}
+
+	public byte scanChannelOfPlayer(String name) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		locks.readLock().lock();
+		try {
+			int remaining = 0;
+			for (Map.Entry<Byte, CrossChannelCommunication> entry : otherChannelsInWorld.entrySet()) {
+				entry.getValue().callPlayerExistsCheck(queue, name);
+				remaining++;
+			}
+
+			long limit = System.currentTimeMillis() + 2000;
+			while (remaining > 0) {
+				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				if (result == null) {
+					LOG.log(Level.FINE, "Cross process player search timeout");
+					return 0;
+				}
+				if (((Boolean) result.right).booleanValue())
+					return result.left.byteValue();
+			}
+			return 0;
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+			return 0;
+		} finally {
+			locks.readLock().unlock();
+		}
 	}
 }
