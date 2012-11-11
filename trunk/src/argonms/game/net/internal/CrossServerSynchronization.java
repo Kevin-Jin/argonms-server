@@ -30,6 +30,7 @@ import argonms.game.character.PlayerContinuation;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,9 +96,6 @@ public class CrossServerSynchronization {
 		locks.readLock().unlock();
 	}
 
-	//instantiate all CrossServerCommunication for game server and assign them to Map<Byte, CrossServerCommunication> allChannels;
-	//Map<Byte, CrossServerCommunication> initialized = empty hashmap;
-	//in each iteration over allChannels: this.initializeLocalChannels(initialized) then initialized.put(channel, this)
 	public void initializeLocalChannels(Map<Byte, CrossServerSynchronization> initialized) {
 		lockWrite();
 		try {
@@ -108,7 +106,7 @@ public class CrossServerSynchronization {
 
 			for (Map.Entry<Byte, CrossServerSynchronization> other : initialized.entrySet()) {
 				source = new SameProcessCrossChannelSynchronization(other.getValue(), other.getKey().byteValue(), self.getChannelId());
-				sink = new SameProcessCrossChannelSynchronization(other.getValue(), self.getChannelId(), other.getKey().byteValue());
+				sink = new SameProcessCrossChannelSynchronization(this, self.getChannelId(), other.getKey().byteValue());
 				sink.connect(source);
 				other.getValue().allChannelsInWorld.put(Byte.valueOf(self.getChannelId()), source);
 				this.allChannelsInWorld.put(other.getKey(), sink);
@@ -139,6 +137,11 @@ public class CrossServerSynchronization {
 		} finally {
 			unlockRead();
 		}
+	}
+
+	public Pair<byte[], Integer> getChannelHost(byte ch) throws UnknownHostException {
+		CrossChannelSynchronization css = allChannelsInWorld.getWhenSafe(Byte.valueOf(ch));
+		return new Pair<byte[], Integer>(css.getIpAddress(), Integer.valueOf(css.getPort()));
 	}
 
 	public void addRemoteChannels(byte[] host, Map<Byte, Integer> ports) {
@@ -175,9 +178,13 @@ public class CrossServerSynchronization {
 		}
 	}
 
-	public void receivedCrossProcessCrossChannelCommunicationPacket(LittleEndianReader packet) {
+	public void receivedCrossProcessCrossChannelSynchronizationPacket(LittleEndianReader packet) {
 		byte srcCh = packet.readByte();
 		remoteChannelsInWorld.getWhenSafe(Byte.valueOf(srcCh)).receivedCrossProcessCrossChannelSynchronizationPacket(packet);
+	}
+
+	public void receivedCenterServerSynchronizationPacket(LittleEndianReader packet) {
+		partiesAndChatRooms.receivedCenterServerSynchronziationPacket(packet);
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
@@ -206,8 +213,11 @@ public class CrossServerSynchronization {
 				ccs.callPlayerExistsCheck(queue, name);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
-					return result.left.byteValue();
+				while ((result = queue.poll()) != null)
+					if (((Boolean) result.right).booleanValue())
+						return result.left.byteValue();
+					else
+						remaining--;
 				remaining++;
 			}
 
@@ -220,6 +230,7 @@ public class CrossServerSynchronization {
 				}
 				if (((Boolean) result.right).booleanValue())
 					return result.left.byteValue();
+				remaining--;
 			}
 			return 0;
 		} catch (InterruptedException e) {
@@ -322,17 +333,20 @@ public class CrossServerSynchronization {
 		}
 	}
 
-	public boolean sendWhisper(String recipient, String sender, String message) {
+	public boolean sendWhisper(String recipient, GameCharacter sender, String message) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
 		lockRead();
 		try {
 			int remaining = 0;
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
-				ccs.callSendWhisper(queue, recipient, sender, message);
+				ccs.callSendWhisper(queue, recipient, sender.getName(), message);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
-					return true;
+				while ((result = queue.poll()) != null)
+					if (((Boolean) result.right).booleanValue())
+						return true;
+					else
+						remaining--;
 				remaining++;
 			}
 
@@ -345,6 +359,7 @@ public class CrossServerSynchronization {
 				}
 				if (((Boolean) result.right).booleanValue())
 					return true;
+				remaining--;
 			}
 			return false;
 		} catch (InterruptedException e) {
@@ -402,8 +417,11 @@ public class CrossServerSynchronization {
 				Pair<Byte, Object> result;
 				byte inviteResult;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null && (inviteResult = ((Byte) result.right).byteValue()) != -1)
-					return inviteResult;
+				while ((result = queue.poll()) != null)
+					if ((inviteResult = ((Byte) result.right).byteValue()) != -1)
+						return inviteResult;
+					else
+						remaining--;
 				remaining++;
 			}
 
@@ -417,6 +435,7 @@ public class CrossServerSynchronization {
 				byte inviteResult = ((Byte) result.right).byteValue();
 				if (inviteResult != -1)
 					return inviteResult;
+				remaining--;
 			}
 			return 0;
 		} catch (InterruptedException e) {
@@ -691,8 +710,8 @@ public class CrossServerSynchronization {
 		partiesAndChatRooms.sendJoinChatroom(joiner, roomId);
 	}
 
-	public void sendLeaveChatroom(int roomId, int leaver) {
-		partiesAndChatRooms.sendLeaveChatroom(roomId, leaver);
+	public void sendLeaveChatroom(GameCharacter leaver) {
+		partiesAndChatRooms.sendLeaveChatroom(leaver.getChatRoom().getRoomId(), leaver.getId());
 	}
 
 	public boolean sendChatroomInvite(String invitee, int roomId, String inviter) {
@@ -704,8 +723,11 @@ public class CrossServerSynchronization {
 				ccs.callSendChatroomInvite(queue, invitee, roomId, inviter);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
-					return true;
+				while ((result = queue.poll()) != null)
+					if (((Boolean) result.right).booleanValue())
+						return true;
+					else
+						remaining--;
 				remaining++;
 			}
 
@@ -718,6 +740,7 @@ public class CrossServerSynchronization {
 				}
 				if (((Boolean) result.right).booleanValue())
 					return true;
+				remaining--;
 			}
 			return false;
 		} catch (InterruptedException e) {

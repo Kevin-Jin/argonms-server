@@ -67,7 +67,7 @@ public final class PartyListHandler {
 		switch (packet.readByte()) {
 			case CREATE: {
 				if (currentParty == null)
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendMakeParty(p);
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendMakeParty(p);
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(ALREADY_IN_PARTY));
 				break;
@@ -75,9 +75,9 @@ public final class PartyListHandler {
 			case LEAVE: {
 				if (currentParty != null)
 					if (currentParty.getLeader() == p.getId())
-						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendDisbandParty(currentParty.getId());
+						GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendDisbandParty(currentParty.getId());
 					else
-						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendLeaveParty(p, currentParty.getId());
+						GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendLeaveParty(p, currentParty.getId());
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
 				break;
@@ -85,7 +85,7 @@ public final class PartyListHandler {
 			case JOIN: {
 				int partyId = packet.readInt();
 				if (currentParty == null)
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendJoinParty(p, partyId);
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendJoinParty(p, partyId);
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(ALREADY_IN_PARTY));
 				break;
@@ -116,7 +116,7 @@ public final class PartyListHandler {
 				if (currentParty != null && currentParty.getLeader() == p.getId()) {
 					currentParty.lockRead();
 					try {
-						GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendExpelPartyMember(currentParty.getMember(expelled), currentParty.getId());
+						GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendExpelPartyMember(currentParty.getMember(expelled), currentParty.getId());
 					} finally {
 						currentParty.unlockRead();
 					}
@@ -128,7 +128,7 @@ public final class PartyListHandler {
 			case CHANGE_LEADER: {
 				int newLeader = packet.readInt();
 				if (currentParty != null && currentParty.getLeader() == p.getId())
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendChangePartyLeader(currentParty.getId(), newLeader);	
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendChangePartyLeader(currentParty.getId(), newLeader);	
 				else
 					gc.getSession().send(GamePackets.writeSimplePartyListMessage(NOT_IN_PARTY));
 				break;

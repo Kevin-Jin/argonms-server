@@ -2391,6 +2391,17 @@
 	server synchronization."
 	* Added support for chatrooms in CrossServerSynchronization.
 
+2012-11-11  GoldenKevin  (revision 172)
+
+	* Dropped in CrossServerSynchronization to replace InterChannelCommunication
+	and replaced any references of the old class name. Also refactored several
+	methods so "interchannel" can no longer be found in any identifiers.
+	* Fixed logic errors for player scan, whisper, buddy invites, and chatroom
+	invites in CrossServerSynchronization.
+	* Fixed CrossServerSynchronization.initializeLocalChannels.
+	* Shortened the channel change response timeout to match cross channel
+	synchronization blocking call timeout.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

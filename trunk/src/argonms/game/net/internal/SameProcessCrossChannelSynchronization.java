@@ -77,7 +77,7 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	@Override
 	public void callPlayerExistsCheck(BlockingQueue<Pair<Byte, Object>> resultConsumer, String name) {
-		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(returnPlayerExistsResult(name))));
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(pipe.returnPlayerExistsResult(name))));
 	}
 
 	private boolean returnPlayerExistsResult(String name) {
@@ -167,10 +167,10 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	@Override
 	public void callSendChatroomInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, String invitee, int roomId, String inviter) {
-		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(returnPlayerExistsResult(invitee, roomId, inviter))));
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(pipe.returnChatroomInviteResult(invitee, roomId, inviter))));
 	}
 
-	private boolean returnPlayerExistsResult(String invitee, int roomId, String inviter) {
+	private boolean returnChatroomInviteResult(String invitee, int roomId, String inviter) {
 		return handler.makeChatroomInviteResult(invitee, roomId, inviter);
 	}
 

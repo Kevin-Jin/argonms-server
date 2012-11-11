@@ -118,7 +118,7 @@ public class CrossChannelCommandTarget implements CommandTarget {
 		}
 	}
 
-	//TODO: use response id interface in InterChannelCommunication for blocking retrievals
+	//TODO: use blocking retrievals through CrossServerSynchronization
 	@Override
 	public Object access(CharacterProperty key) {
 		switch (key) {

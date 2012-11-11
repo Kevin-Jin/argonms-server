@@ -154,6 +154,6 @@ public class PlayerContinuation {
 			p.addToEnergyCharge(energyCharge);
 		}
 		if (chatroomId != 0)
-			GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerChangedChannels(p, chatroomId);
+			GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerChangedChannels(p, chatroomId);
 	}
 }

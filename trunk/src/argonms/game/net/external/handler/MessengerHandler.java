@@ -42,9 +42,9 @@ public class MessengerHandler {
 				}
 				int roomId = packet.readInt();
 				if (roomId == 0) //create
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendMakeChatroom(p);
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendMakeChatroom(p);
 				else //join
-					GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendJoinChatroom(p, roomId);
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendJoinChatroom(p, roomId);
 				break;
 			}
 			case Chatroom.ACT_EXIT:
@@ -52,7 +52,7 @@ public class MessengerHandler {
 					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to leave null chatroom.");
 					return;
 				}
-				GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendLeaveChatroom(p, room);
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendLeaveChatroom(p);
 				break;
 			case Chatroom.ACT_INVITE: {
 				if (room == null) {
@@ -67,13 +67,13 @@ public class MessengerHandler {
 					room.unlockRead();
 				}
 				String recipient = packet.readLengthPrefixedString();
-				boolean result = GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendChatroomInvite(p.getName(), room.getRoomId(), recipient);
+				boolean result = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendChatroomInvite(p.getName(), room.getRoomId(), recipient);
 				gc.getSession().send(GamePackets.writeChatroomInviteResponse(Chatroom.ACT_INVITE_RESPONSE, recipient, result));
 				break;
 			}
 			case Chatroom.ACT_DECLINE: {
 				String recipient = packet.readLengthPrefixedString();
-				GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendChatroomDecline(p.getName(), recipient);
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendChatroomDecline(p.getName(), recipient);
 				break;
 			}
 			case Chatroom.ACT_CHAT:
@@ -82,7 +82,7 @@ public class MessengerHandler {
 					return;
 				}
 				String text = packet.readLengthPrefixedString();
-				GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendChatroomText(text, room, p.getId());
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendChatroomText(text, room, p.getId());
 				break;
 		}
 	}
