@@ -24,6 +24,7 @@ import argonms.common.util.collections.LockableMap;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
@@ -58,10 +59,11 @@ public class CrossServerCommunication {
 		PRIVATE_CHAT_TYPE_GUILD = 2
 	;
 
-	private static final int BLOCKING_CALL_TIMEOUT = 2000; //in milliseconds
+	/* package-private */ static final int BLOCKING_CALL_TIMEOUT = 2000; //in milliseconds
 
-	private final LockableMap<Byte, CrossChannelCommunication> otherChannelsInWorld;
+	private final LockableMap<Byte, CrossChannelCommunication> allChannelsInWorld;
 	private final LockableMap<Byte, CrossProcessCrossChannelCommunication> remoteChannelsInWorld;
+	private CenterServerSynchronization partiesAndChatRooms;
 	private final ReadWriteLock locks;
 	private final WorldChannel self;
 
@@ -70,86 +72,105 @@ public class CrossServerCommunication {
 		//so current channel and same process channels should be first to be iterated.
 		//since initializeLocalChannels is called before addRemoteChannels, this should be
 		//true as long as otherChannelsInWorld is in insertion order, so use a LinkedHashMap
-		otherChannelsInWorld = new LockableMap<Byte, CrossChannelCommunication>(new LinkedHashMap<Byte, CrossChannelCommunication>());
+		allChannelsInWorld = new LockableMap<Byte, CrossChannelCommunication>(new LinkedHashMap<Byte, CrossChannelCommunication>());
 		remoteChannelsInWorld = new LockableMap<Byte, CrossProcessCrossChannelCommunication>(new HashMap<Byte, CrossProcessCrossChannelCommunication>());
 		locks = new ReentrantReadWriteLock();
 		self = channel;
+	}
+
+	/* package-private */ void lockWrite() {
+		locks.writeLock().lock();
+	}
+
+	/* package-private */ void unlockWrite() {
+		locks.writeLock().unlock();
+	}
+
+	/* package-private */ void lockRead() {
+		locks.readLock().lock();
+	}
+
+	/* package-private */ void unlockRead() {
+		locks.readLock().unlock();
 	}
 
 	//instantiate all CrossServerCommunication for game server and assign them to Map<Byte, CrossServerCommunication> allChannels;
 	//Map<Byte, CrossServerCommunication> initialized = empty hashmap;
 	//in each iteration over allChannels: this.initializeLocalChannels(initialized) then initialized.put(channel, this)
 	public void initializeLocalChannels(Map<Byte, CrossServerCommunication> initialized) {
-		locks.writeLock().lock();
+		lockWrite();
 		try {
 			SameProcessCrossChannelCommunication source = new SameProcessCrossChannelCommunication(this, self.getChannelId(), self.getChannelId());
 			SameProcessCrossChannelCommunication sink = new SameProcessCrossChannelCommunication(this, self.getChannelId(), self.getChannelId());
 			sink.connect(source);
-			this.otherChannelsInWorld.put(Byte.valueOf(self.getChannelId()), sink);
+			this.allChannelsInWorld.put(Byte.valueOf(self.getChannelId()), sink);
 
 			for (Map.Entry<Byte, CrossServerCommunication> other : initialized.entrySet()) {
 				source = new SameProcessCrossChannelCommunication(other.getValue(), other.getKey().byteValue(), self.getChannelId());
 				sink = new SameProcessCrossChannelCommunication(other.getValue(), self.getChannelId(), other.getKey().byteValue());
 				sink.connect(source);
-				other.getValue().otherChannelsInWorld.put(Byte.valueOf(self.getChannelId()), source);
-				this.otherChannelsInWorld.put(other.getKey(), sink);
+				other.getValue().allChannelsInWorld.put(Byte.valueOf(self.getChannelId()), source);
+				this.allChannelsInWorld.put(other.getKey(), sink);
 			}
+
+			//this could be called in the ctor, but that would leak "this"
+			partiesAndChatRooms = new CenterServerSynchronization(this, self);
 		} finally {
-			locks.writeLock().unlock();
+			unlockWrite();
 		}
 	}
 
 	public Set<Byte> localChannels() {
-		locks.readLock().lock();
+		lockRead();
 		try {
-			Set<Byte> local = new HashSet<Byte>(otherChannelsInWorld.keySet());
+			Set<Byte> local = new HashSet<Byte>(allChannelsInWorld.keySet());
 			local.removeAll(remoteChannelsInWorld.keySet());
 			return local;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
 	public Set<Byte> remoteChannels() {
-		locks.readLock().lock();
+		lockRead();
 		try {
 			return new HashSet<Byte>(remoteChannelsInWorld.keySet());
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
 	public void addRemoteChannels(byte[] host, Map<Byte, Integer> ports) {
-		locks.writeLock().lock();
+		lockWrite();
 		try {
 			for (Map.Entry<Byte, Integer> port : ports.entrySet()) {
 				CrossProcessCrossChannelCommunication cpc = new CrossProcessCrossChannelCommunication(this, self.getChannelId(), port.getKey().byteValue(), host, port.getValue().intValue());
 				remoteChannelsInWorld.put(port.getKey(), cpc);
-				otherChannelsInWorld.put(port.getKey(), cpc);
+				allChannelsInWorld.put(port.getKey(), cpc);
 			}
 		} finally {
-			locks.writeLock().unlock();
+			unlockWrite();
 		}
 	}
 
 	public void removeRemoteChannels(Set<Byte> channels) {
-		locks.writeLock().lock();
+		lockWrite();
 		try {
 			for (Byte ch : channels) {
 				remoteChannelsInWorld.remove(ch);
-				otherChannelsInWorld.remove(ch);
+				allChannelsInWorld.remove(ch);
 			}
 		} finally {
-			locks.writeLock().unlock();
+			unlockWrite();
 		}
 	}
 
 	public void changeRemoteChannelPort(byte channel, int port) {
-		locks.writeLock().lock();
+		lockWrite();
 		try {
 			remoteChannelsInWorld.get(Byte.valueOf(channel)).setPort(port);
 		} finally {
-			locks.writeLock().unlock();
+			unlockWrite();
 		}
 	}
 
@@ -159,7 +180,7 @@ public class CrossServerCommunication {
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
-		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendPlayerContext(p.getId(), new PlayerContinuation(p));
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendPlayerContext(p.getId(), new PlayerContinuation(p));
 	}
 
 	/* package-private */ void receivedChannelChangeRequest(byte srcCh, int playerId, PlayerContinuation context) {
@@ -168,7 +189,7 @@ public class CrossServerCommunication {
 	}
 
 	public void sendChannelChangeAcceptance(byte destCh, int playerId) {
-		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
 	}
 
 	/* package-private */ void receivedChannelChangeAcceptance(byte srcCh, int playerId) {
@@ -177,10 +198,10 @@ public class CrossServerCommunication {
 
 	public byte scanChannelOfPlayer(String name) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
-		locks.readLock().lock();
+		lockRead();
 		try {
 			int remaining = 0;
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values()) {
 				ccc.callPlayerExistsCheck(queue, name);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
@@ -206,7 +227,7 @@ public class CrossServerCommunication {
 			Thread.currentThread().interrupt();
 			return 0;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -277,15 +298,15 @@ public class CrossServerCommunication {
 
 			if (ch != 0) {
 				//we already know the destination channel, and don't need to channel scan
-				otherChannelsInWorld.getWhenSafe(Byte.valueOf(ch)).sendPrivateChat(type, recipients, name, message);
+				allChannelsInWorld.getWhenSafe(Byte.valueOf(ch)).sendPrivateChat(type, recipients, name, message);
 			} else {
 				//channel scan for these players
-				locks.readLock().lock();
+				lockRead();
 				try {
-					for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+					for (CrossChannelCommunication ccc : allChannelsInWorld.values())
 						ccc.sendPrivateChat(type, recipients, name, message);
 				} finally {
-					locks.readLock().unlock();
+					unlockRead();
 				}
 			}
 		}
@@ -302,10 +323,10 @@ public class CrossServerCommunication {
 
 	public boolean sendWhisper(String recipient, String sender, String message) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
-		locks.readLock().lock();
+		lockRead();
 		try {
 			int remaining = 0;
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values()) {
 				ccc.callSendWhisper(queue, recipient, sender, message);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
@@ -331,7 +352,7 @@ public class CrossServerCommunication {
 			Thread.currentThread().interrupt();
 			return false;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -351,13 +372,13 @@ public class CrossServerCommunication {
 		if (recipient == 0)
 			return;
 
-		locks.readLock().lock();
+		lockRead();
 		try {
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values())
 				if (ccc.sendSpouseChat(recipient, name, message))
 					break;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -372,10 +393,10 @@ public class CrossServerCommunication {
 
 	public byte sendBuddyInvite(GameCharacter sender, int recipientId) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
-		locks.readLock().lock();
+		lockRead();
 		try {
 			int remaining = 0;
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values()) {
 				ccc.callSendBuddyInvite(queue, recipientId, sender.getId(), sender.getName());
 				Pair<Byte, Object> result;
 				byte inviteResult;
@@ -403,7 +424,7 @@ public class CrossServerCommunication {
 			Thread.currentThread().interrupt();
 			return 0;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -423,7 +444,7 @@ public class CrossServerCommunication {
 	}
 
 	private void sendReturnBuddyLogInNotifications(byte destCh, int recipient, List<Integer> senders, boolean bubble) {
-		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendReturnBuddyLogInNotifications(recipient, senders, bubble);
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendReturnBuddyLogInNotifications(recipient, senders, bubble);
 	}
 
 	/* package-private */ void receivedReturnedBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble, byte srcCh) {
@@ -462,13 +483,13 @@ public class CrossServerCommunication {
 			recipients = temp;
 		}
 
-		locks.readLock().lock();
+		lockRead();
 		try {
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values())
 				if ((remaining -= ccc.exchangeBuddyLogInNotifications(p.getId(), recipients)) <= 0)
 					break;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -496,13 +517,13 @@ public class CrossServerCommunication {
 	}
 
 	public void sendBuddyAccepted(GameCharacter p, int recipient) {
-		locks.readLock().lock();
+		lockRead();
 		try {
-			for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+			for (CrossChannelCommunication ccc : allChannelsInWorld.values())
 				if (ccc.sendBuddyAccepted(p.getId(), recipient))
 					break;
 		} finally {
-			locks.readLock().unlock();
+			unlockRead();
 		}
 	}
 
@@ -548,7 +569,7 @@ public class CrossServerCommunication {
 			int i = 0;
 			for (Integer recipient : entry.getValue())
 				recipients[i++] = recipient.intValue();
-			otherChannelsInWorld.getWhenSafe(entry.getKey()).sendBuddyLogOffNotifications(p.getId(), recipients);
+			allChannelsInWorld.getWhenSafe(entry.getKey()).sendBuddyLogOffNotifications(p.getId(), recipients);
 		}
 	}
 
@@ -571,7 +592,7 @@ public class CrossServerCommunication {
 	}
 
 	public void sendBuddyDeleted(GameCharacter p, int recipient, byte destCh) {
-		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendBuddyDeleted(p.getId(), recipient);
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendBuddyDeleted(p.getId(), recipient);
 	}
 
 	/* package-private */ void receivedBuddyDeleted(int recipient, int sender) {
@@ -588,5 +609,78 @@ public class CrossServerCommunication {
 
 		entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
 		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
+	}
+
+	public void sendMakeParty(GameCharacter p) {
+		partiesAndChatRooms.sendMakeParty(p);
+	}
+
+	public void sendDisbandParty(int partyId) {
+		partiesAndChatRooms.sendDisbandParty(partyId);
+	}
+
+	public void sendLeaveParty(GameCharacter p, int partyId) {
+		partiesAndChatRooms.sendLeaveParty(p, partyId);
+	}
+
+	public void sendJoinParty(GameCharacter p, int partyId) {
+		partiesAndChatRooms.sendJoinParty(p, partyId);
+	}
+
+	public void sendExpelPartyMember(PartyList.Member member, int partyId) {
+		partiesAndChatRooms.sendExpelPartyMember(member, partyId);
+	}
+
+	public void sendChangePartyLeader(int partyId, int newLeader) {
+		partiesAndChatRooms.sendChangePartyLeader(partyId, newLeader);
+	}
+
+	/* package-private */ void fillPartyList(GameCharacter excludeMember, PartyList party) {
+		BlockingQueue<Pair<Byte, Object>> resultConsumer = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+		try {
+			Pair<Byte, Object> result = resultConsumer.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			if (result == null) {
+				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+				return;
+			}
+			party.setLeader(((Integer) result.right).intValue());
+
+			result = resultConsumer.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			if (result == null) {
+				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+				return;
+			}
+			for (Object mem : (PartyList.Member[]) result.right) {
+				if (mem instanceof PartyList.LocalMember)
+					party.addPlayer((PartyList.LocalMember) mem);
+				else if (mem instanceof PartyList.RemoteMember)
+					party.addPlayer((PartyList.RemoteMember) mem);
+			}
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	public PartyList sendFetchPartyList(GameCharacter p, int partyId) {
+		return partiesAndChatRooms.sendFetchPartyList(p, partyId);
+	}
+
+	public void sendPartyMemberLogInNotifications(GameCharacter p, PartyList party) {
+		partiesAndChatRooms.sendPartyMemberOnline(p, party);
+	}
+
+	public void sendPartyMemberLogOffNotifications(GameCharacter p, boolean loggingOff) {
+		partiesAndChatRooms.sendPartyMemberOffline(p, loggingOff);
+	}
+
+	public void sendPartyLevelOrJobUpdate(GameCharacter p, boolean level) {
+		partiesAndChatRooms.sendPartyLevelOrJobUpdate(p, level);
+	}
+
+	/* package-private */ LockableMap<Byte, CrossChannelCommunication> getChannelsInWorld() {
+		return allChannelsInWorld;
 	}
 }

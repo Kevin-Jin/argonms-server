@@ -27,21 +27,17 @@ import argonms.game.GameServer;
 import argonms.game.character.BuffState;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.field.entity.PlayerSkillSummon;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
  * @author GoldenKevin
  */
-public class CrossProcessCrossChannelCommunication implements CrossChannelCommunication {
+public class CrossProcessCrossChannelCommunication extends CrossProcessCommunication implements CrossChannelCommunication {
 	private static final byte
 		INBOUND_PLAYER = 1,
 		INBOUND_PLAYER_ACCEPTED = 2,
@@ -64,82 +60,11 @@ public class CrossProcessCrossChannelCommunication implements CrossChannelCommun
 		CHATROOM_TEXT = 19
 	;
 
-	private static class WeakValueMap<K, V> {
-		private final Map<K, WeakValue<K, V>> backingMap;
-		private final ReferenceQueue<V> queue;
-
-		public WeakValueMap(Map<K, WeakValue<K, V>> backingMap) {
-			this.backingMap = backingMap;
-			queue = new ReferenceQueue<V>();
-		}
-
-		@SuppressWarnings("unchecked")
-		private void processQueue() {
-			WeakValue<K, V> wv;
-			while ((wv = (WeakValue<K, V>) queue.poll()) != null)
-				backingMap.remove(wv.key);
-		}
-
-		private V getReferenceObject(WeakReference<V> ref) {
-			return ref == null ? null : ref.get();
-		}
-
-		public V get(K key) {
-			return getReferenceObject(backingMap.get(key));
-		}
-
-		public V put(K key, V value) {
-			processQueue();
-			WeakValue<K, V> oldValue = backingMap.put(key, WeakValue.<K, V>create(key, value, queue));
-			return getReferenceObject(oldValue);
-		}
-
-		public V remove(K key) {
-			return getReferenceObject(backingMap.remove(key));
-		}
-
-		private static class WeakValue<K, V> extends WeakReference<V> {
-			private K key;
-
-			private WeakValue(K key, V value, ReferenceQueue<V> queue) {
-				super(value, queue);
-				this.key = key;
-			}
-
-			private static <K, V> WeakValue<K, V> create(K key, V value, ReferenceQueue<V> queue) {
-				return (value == null ? null : new WeakValue<K, V>(key, value, queue));
-			}
-
-			@Override
-			public boolean equals(Object obj) {
-				if (this == obj)
-					return true;
-				if (!(obj instanceof WeakValue))
-					return false;
-				Object ref1 = this.get();
-				Object ref2 = ((WeakValue) obj).get();
-				if (ref1 == ref2)
-					return true;
-				if ((ref1 == null) || (ref2 == null))
-					return false;
-				return ref1.equals(ref2);
-			}
-
-			@Override
-			public int hashCode() {
-				Object ref = this.get();
-				return (ref == null) ? 0 : ref.hashCode();
-			}
-		}
-	}
-
 	private final CrossServerCommunication handler;
 	private final byte localCh;
 	private final byte targetCh;
 	private final byte[] ipAddress;
 	private int port;
-	private final WeakValueMap<Integer, BlockingQueue<Pair<Byte, Object>>> blockingCalls;
-	private final AtomicInteger nextResponseId;
 
 	public CrossProcessCrossChannelCommunication(CrossServerCommunication self, byte localCh, byte remoteCh, byte[] ipAddress, int port) {
 		this.handler = self;
@@ -147,10 +72,6 @@ public class CrossProcessCrossChannelCommunication implements CrossChannelCommun
 		this.targetCh = remoteCh;
 		this.ipAddress = ipAddress;
 		this.port = port;
-		//prevents memory leaks in case responses time out and never reach us
-		this.blockingCalls = new WeakValueMap<Integer, BlockingQueue<Pair<Byte, Object>>>
-				(new ConcurrentHashMap<Integer, WeakValueMap.WeakValue<Integer, BlockingQueue<Pair<Byte, Object>>>>());
-		this.nextResponseId = new AtomicInteger(0);
 	}
 
 	@Override
