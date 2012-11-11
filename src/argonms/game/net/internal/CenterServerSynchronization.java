@@ -18,7 +18,7 @@
 
 package argonms.game.net.internal;
 
-import argonms.common.character.InterServerPartyOps;
+import argonms.common.character.CenterServerSynchronizationOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -38,19 +38,19 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author GoldenKevin
  */
-public class CenterServerSynchronization extends CrossProcessCommunication {
-	private final CrossServerCommunication handler;
+public class CenterServerSynchronization extends CrossProcessSynchronization {
+	private final CrossServerSynchronization handler;
 	private final WorldChannel self;
 	private final ConcurrentMap<Integer, PartyList> activeLocalParties;
 
-	public CenterServerSynchronization(CrossServerCommunication handler, WorldChannel self) {
+	public CenterServerSynchronization(CrossServerSynchronization handler, WorldChannel self) {
 		this.activeLocalParties = new ConcurrentHashMap<Integer, PartyList>();
 		this.handler = handler;
 		this.self = self;
 	}
 
 	private void writePartySynchronizationPacketHeader(LittleEndianWriter lew, byte opcode) {
-		lew.writeByte(RemoteCenterOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(RemoteCenterOps.CENTER_SERVER_SYNCHRONIZATION);
 		lew.writeByte(opcode);
 	}
 
@@ -60,7 +60,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void receivedPartySynchronziationPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
-			case InterServerPartyOps.CREATE: {
+			case CenterServerSynchronizationOps.PARTY_CREATE: {
 				int partyId = packet.readInt();
 				int leaderId = packet.readInt();
 				GameCharacter leaderPlayer = self.getPlayerById(leaderId);
@@ -73,7 +73,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				leaderPlayer.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
 				break;
 			}
-			case InterServerPartyOps.DISBAND: {
+			case CenterServerSynchronizationOps.PARTY_DISBAND: {
 				int partyId = packet.readInt();
 				PartyList party = activeLocalParties.remove(Integer.valueOf(partyId));
 				if (party == null)
@@ -90,7 +90,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.REMOVE_PLAYER: {
+			case CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER: {
 				int partyId = packet.readInt();
 				int leaverId = packet.readInt();
 				byte leaverCh = packet.readByte();
@@ -147,7 +147,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.ADD_PLAYER: {
+			case CenterServerSynchronizationOps.PARTY_ADD_PLAYER: {
 				int partyId = packet.readInt();
 				int joinerId = packet.readInt();
 				byte joinerCh = packet.readByte();
@@ -207,14 +207,14 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.JOIN_ERROR: {
+			case CenterServerSynchronizationOps.PARTY_JOIN_ERROR: {
 				int joinFailedPlayerId = packet.readInt();
 				GameCharacter joinFailedPlayer = self.getPlayerById(joinFailedPlayerId);
 				if (joinFailedPlayer != null)
 					joinFailedPlayer.getClient().getSession().send(GamePackets.writeSimplePartyListMessage(PartyListHandler.PARTY_FULL));
 				break;
 			}
-			case InterServerPartyOps.CHANGE_LEADER: {
+			case CenterServerSynchronizationOps.PARTY_CHANGE_LEADER: {
 				int partyId = packet.readInt();
 				int newLeader = packet.readInt();
 				PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
@@ -231,7 +231,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.FETCH_LIST: {
+			case CenterServerSynchronizationOps.PARTY_FETCH_LIST: {
 				int responseId = packet.readInt();
 				int leader = packet.readInt();
 				byte count = packet.readByte();
@@ -258,7 +258,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				consumer.add(new Pair<Byte, Object>(Byte.valueOf((byte) -1), members));
 				break;
 			}
-			case InterServerPartyOps.MEMBER_CONNECTED: {
+			case CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED: {
 				int partyId = packet.readInt();
 				int entererId = packet.readInt();
 				byte targetCh = packet.readByte();
@@ -316,7 +316,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.MEMBER_DISCONNECTED: {
+			case CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED: {
 				int partyId = packet.readInt();
 				int exiterId = packet.readInt();
 				byte lastCh = packet.readByte();
@@ -352,7 +352,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 				}
 				break;
 			}
-			case InterServerPartyOps.MEMBER_STAT_UPDATED: {
+			case CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED: {
 				int partyId = packet.readInt();
 				int updatedPlayerId = packet.readInt();
 				byte updatedPlayerCh = packet.readByte();
@@ -383,7 +383,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendMakeParty(GameCharacter creator) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + creator.getName().length());
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.CREATE);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CREATE);
 		lew.writeInt(creator.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeLengthPrefixedString(creator.getName());
@@ -395,7 +395,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendDisbandParty(int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.DISBAND);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_DISBAND);
 		lew.writeInt(partyId);
 
 		writePartySynchronizationPacket(lew.getBytes());
@@ -403,7 +403,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendLeaveParty(GameCharacter p, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + p.getName().length());
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.REMOVE_PLAYER);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(p.getId());
 		lew.writeByte(p.getClient().getChannel());
@@ -415,7 +415,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendJoinParty(GameCharacter p, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + p.getName().length());
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.ADD_PLAYER);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_ADD_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(p.getId());
 		lew.writeByte(p.getClient().getChannel());
@@ -428,7 +428,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendExpelPartyMember(PartyList.Member member, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + member.getName().length());
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.REMOVE_PLAYER);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(member.getPlayerId());
 		lew.writeByte(member.getChannel());
@@ -440,7 +440,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendChangePartyLeader(int partyId, int newLeader) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.CHANGE_LEADER);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CHANGE_LEADER);
 		lew.writeInt(partyId);
 		lew.writeInt(newLeader);
 
@@ -452,7 +452,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.FETCH_LIST);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_FETCH_LIST);
 		lew.writeInt(party.getId());
 		lew.writeInt(excludeMember.getId());
 		lew.writeByte(self.getChannelId());
@@ -480,7 +480,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendPartyMemberOnline(GameCharacter p, PartyList party) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.MEMBER_CONNECTED);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED);
 		lew.writeInt(p.getParty().getId());
 		lew.writeInt(p.getId());
 		lew.writeByte(self.getChannelId());
@@ -490,7 +490,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendPartyMemberOffline(GameCharacter exiter, boolean loggingOff) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.MEMBER_DISCONNECTED);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED);
 		lew.writeInt(exiter.getParty().getId());
 		lew.writeInt(exiter.getId());
 		lew.writeByte(self.getChannelId());
@@ -501,7 +501,7 @@ public class CenterServerSynchronization extends CrossProcessCommunication {
 
 	public void sendPartyLevelOrJobUpdate(GameCharacter p, boolean level) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
-		writePartySynchronizationPacketHeader(lew, InterServerPartyOps.MEMBER_STAT_UPDATED);
+		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED);
 		lew.writeInt(p.getParty().getId());
 		lew.writeInt(p.getId());
 		lew.writeByte(self.getChannelId());

@@ -70,10 +70,10 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.CHANNEL_PORT_CHANGE:
 				processChannelPortChange(packet);
 				break;
-			case CenterRemoteOps.INTER_CHANNEL_RELAY:
+			case CenterRemoteOps.CROSS_CHANNEL_SYNCHRONIZATION:
 				processInterChannelMessage(packet);
 				break;
-			case CenterRemoteOps.PARTY_SYNCHRONIZATION:
+			case CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION:
 				processPartySynchronization(packet);
 				break;
 			case CenterRemoteOps.CHATROOM_CREATED:

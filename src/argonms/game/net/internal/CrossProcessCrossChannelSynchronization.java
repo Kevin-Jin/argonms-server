@@ -37,7 +37,7 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author GoldenKevin
  */
-public class CrossProcessCrossChannelCommunication extends CrossProcessCommunication implements CrossChannelCommunication {
+public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchronization implements CrossChannelSynchronization {
 	private static final byte
 		INBOUND_PLAYER = 1,
 		INBOUND_PLAYER_ACCEPTED = 2,
@@ -60,13 +60,13 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		CHATROOM_TEXT = 19
 	;
 
-	private final CrossServerCommunication handler;
+	private final CrossServerSynchronization handler;
 	private final byte localCh;
 	private final byte targetCh;
 	private final byte[] ipAddress;
 	private int port;
 
-	public CrossProcessCrossChannelCommunication(CrossServerCommunication self, byte localCh, byte remoteCh, byte[] ipAddress, int port) {
+	public CrossProcessCrossChannelSynchronization(CrossServerSynchronization self, byte localCh, byte remoteCh, byte[] ipAddress, int port) {
 		this.handler = self;
 		this.localCh = localCh;
 		this.targetCh = remoteCh;
@@ -88,18 +88,18 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		this.port = port;
 	}
 
-	private void writeCrossProcessCrossChannelCommunicationPacketHeader(LittleEndianWriter lew, byte opcode) {
-		lew.writeByte(RemoteCenterOps.INTER_CHANNEL);
+	private void writeCrossProcessCrossChannelSynchronizationPacketHeader(LittleEndianWriter lew, byte opcode) {
+		lew.writeByte(RemoteCenterOps.CROSS_CHANNEL_SYNCHRONIZATION);
 		lew.writeByte(targetCh);
 		lew.writeByte(localCh);
 		lew.writeByte(opcode);
 	}
 
-	private void writeCrossProcessCrossChannelCommunicationPacket(byte[] packet) {
+	private void writeCrossProcessCrossChannelSynchronizationPacket(byte[] packet) {
 		GameServer.getInstance().getCenterInterface().getSession().send(packet);
 	}
 
-	public void receivedCrossProcessCrossChannelCommunicationPacket(LittleEndianReader packet) {
+	public void receivedCrossProcessCrossChannelSynchronizationPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case INBOUND_PLAYER:
 				receivedPlayerContext(packet);
@@ -152,7 +152,7 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendPlayerContext(int playerId, PlayerContinuation context) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, INBOUND_PLAYER);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, INBOUND_PLAYER);
 		lew.writeInt(playerId);
 		Map<Integer, BuffState.ItemState> activeItems = context.getActiveItems();
 		lew.writeByte((byte) activeItems.size());
@@ -187,7 +187,7 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		lew.writeShort(context.getEnergyCharge());
 		lew.writeInt(context.getChatroomId());
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedPlayerContext(LittleEndianReader packet) {
@@ -214,10 +214,10 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendChannelChangeAcceptance(int playerId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, INBOUND_PLAYER_ACCEPTED);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, INBOUND_PLAYER_ACCEPTED);
 		lew.writeInt(playerId);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedChannelChangeAcceptance(LittleEndianReader packet) {
@@ -232,11 +232,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + name.length());
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, PLAYER_SEARCH);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, PLAYER_SEARCH);
 		lew.writeInt(responseId);
 		lew.writeLengthPrefixedString(name);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedPlayerExistsCheck(LittleEndianReader packet) {
@@ -248,11 +248,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 
 	private void returnPlayerExistsResult(int responseId, boolean result) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, PLAYER_SEARCH_RESPONSE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, PLAYER_SEARCH_RESPONSE);
 		lew.writeInt(responseId);
 		lew.writeBool(result);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedPlayerExistsResult(LittleEndianReader packet) {
@@ -270,7 +270,7 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendPrivateChat(byte type, int[] recipients, String name, String message) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + recipients.length * 4 + name.length() + message.length());
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, MULTI_CHAT);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, MULTI_CHAT);
 		lew.writeByte(type);
 		lew.writeByte((byte) recipients.length);
 		for (byte i = 0; i < recipients.length; i++)
@@ -278,7 +278,7 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		lew.writeLengthPrefixedString(name);
 		lew.writeLengthPrefixedString(message);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedPrivateChat(LittleEndianReader packet) {
@@ -299,13 +299,13 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + recipient.length() + sender.length() + message.length());
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, WHISPER_CHAT);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, WHISPER_CHAT);
 		lew.writeInt(responseId);
 		lew.writeLengthPrefixedString(recipient);
 		lew.writeLengthPrefixedString(sender);
 		lew.writeLengthPrefixedString(message);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedWhisper(LittleEndianReader packet) {
@@ -319,11 +319,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 
 	private void returnWhisperResult(int responseId, boolean result) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, WHISPER_RESPONSE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, WHISPER_RESPONSE);
 		lew.writeInt(responseId);
 		lew.writeBool(result);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedWhisperResult(LittleEndianReader packet) {
@@ -341,12 +341,12 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public boolean sendSpouseChat(int recipient, String sender, String message) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12 + sender.length() + message.length());
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, SPOUSE_CHAT);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, SPOUSE_CHAT);
 		lew.writeInt(recipient);
 		lew.writeLengthPrefixedString(sender);
 		lew.writeLengthPrefixedString(message);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 		return false;
 	}
 
@@ -364,13 +364,13 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(18 + senderName.length());
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_INVITE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_INVITE);
 		lew.writeInt(responseId);
 		lew.writeInt(recipientId);
 		lew.writeInt(senderId);
 		lew.writeLengthPrefixedString(senderName);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedBuddyInvite(LittleEndianReader packet) {
@@ -384,11 +384,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 
 	private void returnBuddyInviteResult(int responseId, byte result) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_INVITE_RESPONSE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_INVITE_RESPONSE);
 		lew.writeInt(responseId);
 		lew.writeByte(result);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedBuddyInviteResult(LittleEndianReader packet) {
@@ -406,13 +406,13 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public int exchangeBuddyLogInNotifications(int sender, int[] recipients) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + recipients.length * 4);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_ONLINE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_ONLINE);
 		lew.writeInt(sender);
 		lew.writeByte((byte) recipients.length);
 		for (int i = 0; i < recipients.length; i++)
 			lew.writeInt(recipients[i]);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 		return 0;
 	}
 
@@ -429,14 +429,14 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + senders.size() * 4);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_ONLINE_RESPONSE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_ONLINE_RESPONSE);
 		lew.writeInt(recipient);
 		lew.writeByte((byte) senders.size());
 		for (Integer sender : senders)
 			lew.writeInt(sender.intValue());
 		lew.writeBool(bubble);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedReturnedBuddyLogInNotifications(LittleEndianReader packet) {
@@ -453,11 +453,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public boolean sendBuddyAccepted(int sender, int recipient) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_ACCEPTED);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_ACCEPTED);
 		lew.writeInt(sender);
 		lew.writeInt(recipient);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 		return false;
 	}
 
@@ -471,13 +471,13 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendBuddyLogOffNotifications(int sender, int[] recipients) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + recipients.length * 4);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_OFFLINE);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_OFFLINE);
 		lew.writeInt(sender);
 		lew.writeByte((byte) recipients.length);
 		for (Integer receiver : recipients)
 			lew.writeInt(receiver.intValue());
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedBuddyLogOffNotifications(LittleEndianReader packet) {
@@ -493,11 +493,11 @@ public class CrossProcessCrossChannelCommunication extends CrossProcessCommunica
 	@Override
 	public void sendBuddyDeleted(int sender, int recipient) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
-		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, BUDDY_DELETED);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_DELETED);
 		lew.writeInt(sender);
 		lew.writeInt(recipient);
 
-		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedBuddyDeleted(LittleEndianReader packet) {
