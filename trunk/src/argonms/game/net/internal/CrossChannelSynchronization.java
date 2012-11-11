@@ -28,7 +28,7 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author GoldenKevin
  */
-public interface CrossChannelCommunication {
+public interface CrossChannelSynchronization {
 	public byte[] getIpAddress() throws UnknownHostException;
 
 	public int getPort();

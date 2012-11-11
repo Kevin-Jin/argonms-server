@@ -22,7 +22,7 @@ import argonms.center.CenterServer;
 import argonms.center.Chatroom;
 import argonms.center.Party;
 import argonms.common.ServerType;
-import argonms.common.character.InterServerPartyOps;
+import argonms.common.character.CenterServerSynchronizationOps;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.DatabaseManager;
@@ -74,13 +74,13 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			case RemoteCenterOps.MODIFY_CHANNEL_PORT:
 				processChannelPortChange(packet);
 				break;
-			case RemoteCenterOps.INTER_CHANNEL:
-				processInterChannel(packet);
+			case RemoteCenterOps.CROSS_CHANNEL_SYNCHRONIZATION:
+				processCrossChannelSynchronization(packet);
 				break;
 			case RemoteCenterOps.INTER_CHANNEL_ALL:
 				processInterChannelAll(packet);
 				break;
-			case RemoteCenterOps.PARTY_SYNCHRONIZATION:
+			case RemoteCenterOps.CENTER_SERVER_SYNCHRONIZATION:
 				processPartySynchronization(packet);
 				break;
 			case RemoteCenterOps.CREATE_CHATROOM:
@@ -131,10 +131,10 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		CenterServer.getInstance().channelPortChanged(world, r.getServerId(), channel, newPort);
 	}
 
-	private void processInterChannel(LittleEndianReader packet) {
+	private void processCrossChannelSynchronization(LittleEndianReader packet) {
 		byte channel = packet.readByte();
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(packet.available() + 2);
-		lew.writeByte(CenterRemoteOps.INTER_CHANNEL_RELAY);
+		lew.writeByte(CenterRemoteOps.CROSS_CHANNEL_SYNCHRONIZATION);
 		lew.writeByte(channel);
 		lew.writeBytes(packet.readBytes(packet.available()));
 		byte[] message = lew.getBytes();
@@ -145,7 +145,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 	private void processInterChannelAll(LittleEndianReader packet) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(packet.available() + 2);
-		lew.writeByte(CenterRemoteOps.INTER_CHANNEL_RELAY);
+		lew.writeByte(CenterRemoteOps.CROSS_CHANNEL_SYNCHRONIZATION);
 		lew.writeByte((byte) -1);
 		lew.writeBytes(packet.readBytes(packet.available()));
 		byte[] message = lew.getBytes();
@@ -156,31 +156,31 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 	private void processPartySynchronization(LittleEndianReader packet) {
 		switch (packet.readByte()) {
-			case InterServerPartyOps.CREATE:
+			case CenterServerSynchronizationOps.PARTY_CREATE:
 				processPartyCreation(packet);
 				break;
-			case InterServerPartyOps.DISBAND:
+			case CenterServerSynchronizationOps.PARTY_DISBAND:
 				processPartyDisbandment(packet);
 				break;
-			case InterServerPartyOps.REMOVE_PLAYER:
+			case CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER:
 				processPartyMemberLeft(packet);
 				break;
-			case InterServerPartyOps.ADD_PLAYER:
+			case CenterServerSynchronizationOps.PARTY_ADD_PLAYER:
 				processPartyMemberJoined(packet);
 				break;
-			case InterServerPartyOps.CHANGE_LEADER:
+			case CenterServerSynchronizationOps.PARTY_CHANGE_LEADER:
 				processPartyLeaderChange(packet);
 				break;
-			case InterServerPartyOps.FETCH_LIST:
+			case CenterServerSynchronizationOps.PARTY_FETCH_LIST:
 				processPartyFetchList(packet);
 				break;
-			case InterServerPartyOps.MEMBER_CONNECTED:
+			case CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED:
 				processPartyMemberEnteredChannel(packet);
 				break;
-			case InterServerPartyOps.MEMBER_DISCONNECTED:
+			case CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED:
 				processPartyMemberExitedChannel(packet);
 				break;
-			case InterServerPartyOps.MEMBER_STAT_UPDATED:
+			case CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED:
 				processPartyMemberStatChanged(packet);
 				break;
 		}
@@ -194,9 +194,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		short creatorLevel = packet.readShort();
 		int partyId = CenterServer.getInstance().getPartyDb(r.getWorld()).makeNewParty(new Party.Member(creatorId, creatorName, creatorJob, creatorLevel, creatorCh));
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
-		lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+		lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 		lew.writeByte(creatorCh);
-		lew.writeByte(InterServerPartyOps.CREATE);
+		lew.writeByte(CenterServerSynchronizationOps.PARTY_CREATE);
 		lew.writeInt(partyId);
 		lew.writeInt(creatorId);
 		r.getSession().send(lew.getBytes());
@@ -216,9 +216,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						continue;
 
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.DISBAND);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_DISBAND);
 					lew.writeInt(partyId);
 					cgi.getSession().send(lew.getBytes());
 				}
@@ -285,9 +285,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						continue;
 
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(leaverChannel == channel.byteValue() ? 13 : (15 + leaverName.length()));
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.REMOVE_PLAYER);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
 					lew.writeInt(partyId);
 					lew.writeInt(leaverId);
 					lew.writeByte(leaverChannel);
@@ -352,9 +352,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 						//notify other party members
 						LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(joinerCh == channel.byteValue() ? 12 : (18 + joinerName.length()));
-						lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+						lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 						lew.writeByte(channel.byteValue());
-						lew.writeByte(InterServerPartyOps.ADD_PLAYER);
+						lew.writeByte(CenterServerSynchronizationOps.PARTY_ADD_PLAYER);
 						lew.writeInt(partyId);
 						lew.writeInt(joinerId);
 						lew.writeByte(joinerCh);
@@ -373,9 +373,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			}
 		} else {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
-			lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+			lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 			lew.writeByte(joinerCh);
-			lew.writeByte(InterServerPartyOps.JOIN_ERROR);
+			lew.writeByte(CenterServerSynchronizationOps.PARTY_JOIN_ERROR);
 			lew.writeInt(joinerId);
 			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED))
 				if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(joinerCh)))
@@ -400,9 +400,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						continue;
 
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.CHANGE_LEADER);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_CHANGE_LEADER);
 					lew.writeInt(partyId);
 					lew.writeInt(newLeader);
 					cgi.getSession().send(lew.getBytes());
@@ -452,9 +452,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		party.lockRead();
 		try {
 			LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-			lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+			lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 			lew.writeByte(responseCh);
-			lew.writeByte(InterServerPartyOps.FETCH_LIST);
+			lew.writeByte(CenterServerSynchronizationOps.PARTY_FETCH_LIST);
 			lew.writeInt(responseId);
 			lew.writeInt(party.getLeader());
 			Collection<Party.Member> members = party.getAllMembers();
@@ -501,9 +501,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 					//notify other party members
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.MEMBER_CONNECTED);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED);
 					lew.writeInt(partyId);
 					lew.writeInt(entererId);
 					lew.writeByte(targetCh);
@@ -543,9 +543,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						continue;
 
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.MEMBER_DISCONNECTED);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED);
 					lew.writeInt(partyId);
 					lew.writeInt(exiterId);
 					lew.writeByte(lastCh);
@@ -581,9 +581,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 						continue;
 
 					LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(updatedPlayerCh == channel.byteValue() ? 12 : 15);
-					lew.writeByte(CenterRemoteOps.PARTY_SYNCHRONIZATION);
+					lew.writeByte(CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION);
 					lew.writeByte(channel.byteValue());
-					lew.writeByte(InterServerPartyOps.MEMBER_STAT_UPDATED);
+					lew.writeByte(CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED);
 					lew.writeInt(partyId);
 					lew.writeInt(updatedPlayerId);
 					lew.writeByte(updatedPlayerCh);

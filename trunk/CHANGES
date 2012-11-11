@@ -2374,6 +2374,16 @@
 	* Implemented CrossServerCommunication methods for sending party packets to
 	the center server.
 
+2012-11-11  GoldenKevin  (revision 170)
+
+	* Refactored InterServerPartyOps so it can also replace top level opcodes
+	between game and center servers for chatrooms with sub opcodes for "center
+	server synchronization" once InterChannelCommunication is replaced.
+	Refactored any instances of "party synchronization" to "center server
+	synchronization."
+	* Instances of "cross channel communication" refactored to "cross channel
+	synchronization."
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

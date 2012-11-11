@@ -30,19 +30,19 @@ import java.util.concurrent.BlockingQueue;
  *
  * @author GoldenKevin
  */
-public class SameProcessCrossChannelCommunication implements CrossChannelCommunication {
-	private final CrossServerCommunication handler;
-	private SameProcessCrossChannelCommunication pipe;
+public class SameProcessCrossChannelSynchronization implements CrossChannelSynchronization {
+	private final CrossServerSynchronization handler;
+	private SameProcessCrossChannelSynchronization pipe;
 	private final byte localCh;
 	private final byte targetCh;
 
-	public SameProcessCrossChannelCommunication(CrossServerCommunication self, byte localCh, byte remoteCh) {
+	public SameProcessCrossChannelSynchronization(CrossServerSynchronization self, byte localCh, byte remoteCh) {
 		this.handler = self;
 		this.localCh = localCh;
 		this.targetCh = remoteCh;
 	}
 
-	public void connect(SameProcessCrossChannelCommunication other) {
+	public void connect(SameProcessCrossChannelSynchronization other) {
 		this.pipe = other;
 		other.pipe = this;
 	}
