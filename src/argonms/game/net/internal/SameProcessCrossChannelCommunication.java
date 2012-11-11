@@ -80,6 +80,33 @@ public class SameProcessCrossChannelCommunication implements CrossChannelCommuni
 	}
 
 	private boolean returnPlayerExistsResult(String name) {
-		return GameServer.getChannel(localCh).getPlayerByName(name) != null;
+		return handler.makePlayerExistsResult(name);
+	}
+
+	@Override
+	public void sendPrivateChat(byte type, int[] recipients, String name, String message) {
+		pipe.receivedPrivateChat(type, recipients, name, message);
+	}
+
+	private void receivedPrivateChat(byte type, int[] recipients, String name, String message) {
+		handler.receivedPrivateChat(type, recipients, name, message);
+	}
+
+	@Override
+	public void sendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(pipe.returnWhisperResult(recipient, sender, message))));
+	}
+
+	private boolean returnWhisperResult(String recipient, String sender, String message) {
+		return handler.makeWhisperResult(recipient, sender, message, targetCh);
+	}
+
+	@Override
+	public boolean sendSpouseChat(int recipient, String sender, String message) {
+		return pipe.receivedSpouseChat(recipient, sender, message);
+	}
+
+	private boolean receivedSpouseChat(int recipient, String sender, String message) {
+		return handler.receivedSpouseChat(recipient, sender, message);
 	}
 }

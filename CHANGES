@@ -2348,6 +2348,15 @@
 	* Implemented replacement method for InterChannelCommunication's
 	getChannelOfPlayer in CrossServerCommunication.
 
+2012-11-10  GoldenKevin  (revision 167)
+
+	* Implemented CrossServerCommunication methods for relaying all kinds of
+	chats that go beyond a player's map.
+	* Logic for returnPlayerExistsResult should not be repeated for both
+	implementations of CrossChannelCommunication.
+	* CrossServerCommunication.scanChannelOfPlayer early outs for same process
+	channels that returned a result of true.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
