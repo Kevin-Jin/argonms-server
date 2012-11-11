@@ -2369,6 +2369,11 @@
 	* Implemented CrossServerCommunication methods for relaying buddy list
 	related operations.
 
+2012-11-11  GoldenKevin  (revision 169)
+
+	* Implemented CrossServerCommunication methods for sending party packets to
+	the center server.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
