@@ -56,4 +56,10 @@ public interface CrossChannelSynchronization {
 	public void sendBuddyLogOffNotifications(int sender, int[] recipients);
 
 	public void sendBuddyDeleted(int sender, int recipient);
+
+	public void callSendChatroomInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, String invitee, int roomId, String inviter);
+
+	public boolean sendChatroomDecline(String invitee, String inviter);
+
+	public void sendChatroomText(String text, int roomId, int sender);
 }

@@ -2384,6 +2384,13 @@
 	* Instances of "cross channel communication" refactored to "cross channel
 	synchronization."
 
+2012-11-11  GoldenKevin  (revision 171)
+
+	* Fixed CrossServerSynchronization.fillPartyList.
+	* Refactored remaining instances of "party synchronization" to "center
+	server synchronization."
+	* Added support for chatrooms in CrossServerSynchronization.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

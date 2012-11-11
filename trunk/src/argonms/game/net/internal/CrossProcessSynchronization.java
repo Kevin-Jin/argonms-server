@@ -21,7 +21,7 @@ public abstract class CrossProcessSynchronization {
 		private final Map<K, WeakValue<K, V>> backingMap;
 		private final ReferenceQueue<V> queue;
 
-		public WeakValueMap(Map<K, WeakValue<K, V>> backingMap) {
+		private WeakValueMap(Map<K, WeakValue<K, V>> backingMap) {
 			this.backingMap = backingMap;
 			queue = new ReferenceQueue<V>();
 		}

@@ -117,7 +117,7 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 	}
 
 	private byte returnBuddyInviteResult(int recipientId, int senderId, String senderName) {
-		return handler.receivedBuddyInvite(recipientId, senderId, senderName);
+		return handler.makeBuddyInviteResult(recipientId, senderId, senderName);
 	}
 
 	@Override
@@ -163,5 +163,32 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	private void receivedBuddyDeleted(int sender, int recipient) {
 		handler.receivedBuddyDeleted(recipient, sender);
+	}
+
+	@Override
+	public void callSendChatroomInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, String invitee, int roomId, String inviter) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(returnPlayerExistsResult(invitee, roomId, inviter))));
+	}
+
+	private boolean returnPlayerExistsResult(String invitee, int roomId, String inviter) {
+		return handler.makeChatroomInviteResult(invitee, roomId, inviter);
+	}
+
+	@Override
+	public boolean sendChatroomDecline(String invitee, String inviter) {
+		return pipe.receivedChatroomDecline(invitee, inviter);
+	}
+
+	private boolean receivedChatroomDecline(String invitee, String inviter) {
+		return handler.receivedChatroomDecline(invitee, inviter);
+	}
+
+	@Override
+	public void sendChatroomText(String text, int roomId, int sender) {
+		pipe.receivedChatroomText(text, roomId, sender);
+	}
+
+	private void receivedChatroomText(String text, int roomId, int sender) {
+		handler.receivedChatroomText(text, roomId, sender);
 	}
 }
