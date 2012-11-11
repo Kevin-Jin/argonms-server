@@ -37,4 +37,10 @@ public interface CrossChannelCommunication {
 	public void sendChannelChangeAcceptance(int playerId);
 
 	public void callPlayerExistsCheck(BlockingQueue<Pair<Byte, Object>> resultConsumer, String name);
+
+	public void sendPrivateChat(byte type, int[] recipients, String name, String message);
+
+	public void sendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message);
+
+	public boolean sendSpouseChat(int recipient, String sender, String message);
 }

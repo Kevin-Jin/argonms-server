@@ -25,6 +25,7 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
 import argonms.game.character.BuffState;
+import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.field.entity.PlayerSkillSummon;
 import java.lang.ref.ReferenceQueue;
@@ -190,6 +191,18 @@ public class CrossProcessCrossChannelCommunication implements CrossChannelCommun
 			case PLAYER_SEARCH_RESPONSE:
 				receivedPlayerExistsResult(packet);
 				break;
+			case MULTI_CHAT:
+				receivedPrivateChat(packet);
+				break;
+			case WHISPER_CHAT:
+				receivedWhisper(packet);
+				break;
+			case WHISPER_RESPONSE:
+				receivedWhisperResult(packet);
+				break;
+			case SPOUSE_CHAT:
+				receivedSpouseChat(packet);
+				break;
 		}
 	}
 
@@ -287,7 +300,7 @@ public class CrossProcessCrossChannelCommunication implements CrossChannelCommun
 		int responseId = packet.readInt();
 		String name = packet.readLengthPrefixedString();
 
-		returnPlayerExistsResult(responseId, GameServer.getChannel(localCh).getPlayerByName(name) != null);
+		returnPlayerExistsResult(responseId, handler.makePlayerExistsResult(name));
 	}
 
 	private void returnPlayerExistsResult(int responseId, boolean result) {
@@ -309,5 +322,96 @@ public class CrossProcessCrossChannelCommunication implements CrossChannelCommun
 			return;
 
 		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(result)));
+	}
+
+	@Override
+	public void sendPrivateChat(byte type, int[] recipients, String name, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + recipients.length * 4 + name.length() + message.length());
+		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, MULTI_CHAT);
+		lew.writeByte(type);
+		lew.writeByte((byte) recipients.length);
+		for (byte i = 0; i < recipients.length; i++)
+			lew.writeInt(recipients[i]);
+		lew.writeLengthPrefixedString(name);
+		lew.writeLengthPrefixedString(message);
+
+		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+	}
+
+	private void receivedPrivateChat(LittleEndianReader packet) {
+		byte type = packet.readByte();
+		byte amount = packet.readByte();
+		int[] recipients = new int[amount];
+		for (byte i = 0; i < amount; i++)
+			recipients[i] = packet.readInt();
+		String name = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+
+		handler.receivedPrivateChat(type, recipients, name, message);
+	}
+
+	@Override
+	public void sendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message) {
+		int responseId = nextResponseId.incrementAndGet();
+		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + recipient.length() + sender.length() + message.length());
+		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, WHISPER_CHAT);
+		lew.writeInt(responseId);
+		lew.writeLengthPrefixedString(recipient);
+		lew.writeLengthPrefixedString(sender);
+		lew.writeLengthPrefixedString(message);
+
+		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+	}
+
+	private void receivedWhisper(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		String recipient = packet.readLengthPrefixedString();
+		String sender = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+
+		returnWhisperResult(responseId, handler.makeWhisperResult(recipient, sender, message, targetCh));
+	}
+
+	private void returnWhisperResult(int responseId, boolean result) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, WHISPER_RESPONSE);
+		lew.writeInt(responseId);
+		lew.writeBool(result);
+
+		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+	}
+
+	private void receivedWhisperResult(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		boolean result = packet.readBool();
+
+		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
+		if (consumer == null)
+			//timed out and garbage collected
+			return;
+
+		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(result)));
+	}
+
+	@Override
+	public boolean sendSpouseChat(int recipient, String sender, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12 + sender.length() + message.length());
+		writeCrossProcessCrossChannelCommunicationPacketHeader(lew, SPOUSE_CHAT);
+		lew.writeInt(recipient);
+		lew.writeLengthPrefixedString(sender);
+		lew.writeLengthPrefixedString(message);
+
+		writeCrossProcessCrossChannelCommunicationPacket(lew.getBytes());
+		return false;
+	}
+
+	private void receivedSpouseChat(LittleEndianReader packet) {
+		int recipient = packet.readInt();
+		String sender = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+
+		handler.receivedSpouseChat(recipient, sender, message);
 	}
 }
