@@ -156,7 +156,7 @@ public final class BuddyListHandler {
 			}
 			switch (rs.getByte(1)) {
 				case RemoteClient.STATUS_INGAME: {
-					byte result = GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyInvite(p, inviteeId);
+					byte result = GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInvite(p, inviteeId);
 					if (result == Byte.MAX_VALUE) {
 						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_HALF_OPEN));
 						client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
@@ -201,7 +201,7 @@ public final class BuddyListHandler {
 		client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 
 		if (isOnline(inviterId)) {
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyAccepted(p, inviterId);
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyAccepted(p, inviterId);
 		} else {
 			Connection con = null;
 			PreparedStatement ps = null;
@@ -231,7 +231,7 @@ public final class BuddyListHandler {
 		client.getSession().send(GamePackets.writeBuddyList(REMOVE, bList));
 
 		if (isOnline(deletedId)) {
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyDeleted(p, deletedId, channel);
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyDeleted(p, deletedId, channel);
 		} else {
 			Connection con = null;
 			PreparedStatement ps = null;

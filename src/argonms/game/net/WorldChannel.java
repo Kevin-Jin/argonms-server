@@ -34,7 +34,7 @@ import argonms.game.field.MapFactory;
 import argonms.game.net.external.ClientGamePacketProcessor;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
-import argonms.game.net.internal.InterChannelCommunication;
+import argonms.game.net.internal.CrossServerSynchronization;
 import argonms.game.script.EventManager;
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -50,7 +50,7 @@ import java.util.logging.Logger;
  */
 public class WorldChannel {
 	private static final Logger LOG = Logger.getLogger(WorldChannel.class.getName());
-	private static final int CHANNEL_CHANGE_TIMEOUT = 5000;
+	private static final int CHANNEL_CHANGE_TIMEOUT = 2000;
 
 	private final Map<Integer, PlayerContinuation> channelChangeData;
 	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
@@ -61,7 +61,7 @@ public class WorldChannel {
 	private final MapFactory mapFactory;
 	private EventManager eventManager;
 	private final PlayerLog<GameCharacter> storage;
-	private InterChannelCommunication worldComm;
+	private CrossServerSynchronization worldComm;
 
 	public WorldChannel(final byte world, final byte channel, int port) {
 		channelChangeData = new ConcurrentHashMap<Integer, PlayerContinuation>();
@@ -237,11 +237,11 @@ public class WorldChannel {
 		return eventManager;
 	}
 
-	public void createWorldComm(byte[] local) {
-		worldComm = new InterChannelCommunication(local, this);
+	public void createWorldComm() {
+		worldComm = new CrossServerSynchronization(this);
 	}
 
-	public InterChannelCommunication getInterChannelInterface() {
+	public CrossServerSynchronization getCrossServerInterface() {
 		return worldComm;
 	}
 

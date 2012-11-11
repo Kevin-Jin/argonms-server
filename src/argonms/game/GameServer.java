@@ -29,7 +29,6 @@ import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
-import argonms.common.util.TimeTool;
 import argonms.game.character.GameCharacter;
 import argonms.game.loading.beauty.BeautyDataLoader;
 import argonms.game.loading.map.MapDataLoader;
@@ -40,6 +39,7 @@ import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.WorldChannel;
+import argonms.game.net.internal.CrossServerSynchronization;
 import argonms.game.net.internal.GameCenterInterface;
 import argonms.game.script.NpcScriptManager;
 import argonms.game.script.PortalScriptManager;
@@ -152,20 +152,16 @@ public class GameServer implements LocalServer {
 		scriptsPath = System.getProperty("argonms.scripts.dir");
 
 		channels = new HashMap<Byte, WorldChannel>(chList.length);
-		List<Byte> localChannels = new ArrayList<Byte>(channels.size());
 		for (int i = 0; i < chList.length; i++) {
 			byte chNum = Byte.parseByte(chList[i]);
 			WorldChannel ch = new WorldChannel(world, chNum, Integer.parseInt(prop.getProperty("argonms.game." + serverId + ".channel." + chNum + ".port")));
+			ch.createWorldComm();
 			channels.put(Byte.valueOf(chNum), ch);
-			localChannels.add(Byte.valueOf(chNum));
 		}
+		Map<Byte, CrossServerSynchronization> initializedCss = new HashMap<Byte, CrossServerSynchronization>();
 		for (Entry<Byte, WorldChannel> entry : channels.entrySet()) {
-			byte[] selfExcluded = new byte[localChannels.size() - 1];
-			byte index = 0;
-			for (Byte b : localChannels)
-				if (!entry.getKey().equals(b))
-					selfExcluded[index++] = b.byteValue();
-			entry.getValue().createWorldComm(selfExcluded);
+			entry.getValue().getCrossServerInterface().initializeLocalChannels(initializedCss);
+			initializedCss.put(entry.getKey(), entry.getValue().getCrossServerInterface());
 		}
 
 		boolean mcdb = (wzType == DataFileType.MCDB);
@@ -316,7 +312,7 @@ public class GameServer implements LocalServer {
 			byte[] ip = InetAddress.getByName(host).getAddress();
 			remoteGameChannelMapping.put(Byte.valueOf(serverId), ports.keySet());
 			for (WorldChannel ch : channels.values())
-				ch.getInterChannelInterface().addRemoteChannels(ip, ports);
+				ch.getCrossServerInterface().addRemoteChannels(ip, ports);
 			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept shop server because its"
@@ -328,7 +324,7 @@ public class GameServer implements LocalServer {
 		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(serverId));
 		Set<Byte> remove = remoteGameChannelMapping.remove(Byte.valueOf(serverId));
 		for (WorldChannel ch : channels.values())
-			ch.getInterChannelInterface().removeRemoteChannels(remove);
+			ch.getCrossServerInterface().removeRemoteChannels(remove);
 	}
 
 	public void registerShop(String host, int port) {
@@ -341,7 +337,7 @@ public class GameServer implements LocalServer {
 
 	public void updateRemoteChannelPort(byte channel, int port) {
 		for (WorldChannel ch : channels.values())
-			ch.getInterChannelInterface().changeRemoteChannelPort(channel, port);
+			ch.getCrossServerInterface().changeRemoteChannelPort(channel, port);
 	}
 
 	@Override

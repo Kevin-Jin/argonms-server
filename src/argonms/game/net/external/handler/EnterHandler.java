@@ -84,10 +84,10 @@ public final class EnterHandler {
 			for (Entry<Integer, String> invite : bList.getInvites())
 				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
 		}
-		cserv.getInterChannelInterface().sendBuddyOnline(player);
+		cserv.getCrossServerInterface().sendExchangeBuddyLogInNotifications(player);
 		if (player.getParty() != null) {
 			gc.getSession().send(GamePackets.writePartyList(player.getParty()));
-			cserv.getInterChannelInterface().sendPartyMemberOnline(player, player.getParty());
+			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player, player.getParty());
 		}
 		/*if (player.getGuildId() > 0) {
 			cserv.getInterChannelInterface().setGuildMemberOnline(

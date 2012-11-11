@@ -21,10 +21,8 @@ package argonms.game.net.internal;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.net.internal.CenterRemotePacketProcessor;
 import argonms.common.net.internal.RemoteCenterInterface;
-import argonms.common.util.input.LittleEndianByteArrayReader;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
-import argonms.game.net.WorldChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -71,19 +69,10 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 				processChannelPortChange(packet);
 				break;
 			case CenterRemoteOps.CROSS_CHANNEL_SYNCHRONIZATION:
-				processInterChannelMessage(packet);
+				processCrossChannelSynchronization(packet);
 				break;
 			case CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION:
-				processPartySynchronization(packet);
-				break;
-			case CenterRemoteOps.CHATROOM_CREATED:
-				processChatroomCreated(packet);
-				break;
-			case CenterRemoteOps.CHATROOM_ROOM_CHANGED:
-				processAssignChatroom(packet);
-				break;
-			case CenterRemoteOps.CHATROOM_SLOT_CHANGED:
-				processChatroomAvatar(packet);
+				processCenterServerSynchronization(packet);
 				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
@@ -125,34 +114,13 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 		local.updateRemoteChannelPort(channel, newPort);
 	}
 
-	private void processInterChannelMessage(LittleEndianReader packet) {
+	private void processCrossChannelSynchronization(LittleEndianReader packet) {
 		byte channel = packet.readByte();
-		if (channel == (byte) -1) { //all channels
-			byte[] array = packet.readBytes(packet.available());
-			for (WorldChannel ch : local.getChannels().values())
-				ch.getInterChannelInterface().receivedPacket(new LittleEndianByteArrayReader(array));
-		} else {
-			GameServer.getChannel(channel).getInterChannelInterface().receivedPacket(packet);
-		}
+		GameServer.getChannel(channel).getCrossServerInterface().receivedCrossProcessCrossChannelSynchronizationPacket(packet);
 	}
 
-	private void processPartySynchronization(LittleEndianReader packet) {
+	private void processCenterServerSynchronization(LittleEndianReader packet) {
 		byte channel = packet.readByte();
-		GameServer.getChannel(channel).getInterChannelInterface().receivedPartyPacket(packet);
-	}
-
-	private void processChatroomCreated(LittleEndianReader packet) {
-		byte channel = packet.readByte();
-		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomCreated(packet);
-	}
-
-	private void processAssignChatroom(LittleEndianReader packet) {
-		byte channel = packet.readByte();
-		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomAssignment(packet);
-	}
-
-	private void processChatroomAvatar(LittleEndianReader packet) {
-		byte channel = packet.readByte();
-		GameServer.getChannel(channel).getInterChannelInterface().receivedChatroomAvatarChanged(packet);
+		GameServer.getChannel(channel).getCrossServerInterface().receivedCenterServerSynchronizationPacket(packet);
 	}
 }

@@ -61,20 +61,20 @@ public final class ChatHandler {
 		String message = packet.readLengthPrefixedString();
 		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
-			GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendPrivateChat(type, recipients, p, message);
+			GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendPrivateChat(type, recipients, p, message);
 	}
 
 	public static void handleClientCommand(LittleEndianReader reader, GameClient gc) {
 		switch (reader.readByte()) {
 			case COMMAND_FIND: {
 				String toFind = reader.readLengthPrefixedString();
-				byte channel = GameServer.getChannel(gc.getChannel()).getInterChannelInterface().getChannelOfPlayer(toFind);
+				byte channel = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().scanChannelOfPlayer(toFind);
 				if (channel == gc.getChannel()) {
 					gc.getSession().send(writeFindResultSameChannel(toFind, GameServer.getChannel(channel).getPlayerByName(toFind).getMapId()));
 				} else if (channel != 0) {
 					gc.getSession().send(writeFindResultDiffChannel(toFind, channel));
 				} else {
-					//TODO: try shop server (which is not interchannel...)
+					//TODO: try shop server
 					gc.getSession().send(writeWhisperOutcome(toFind, false));
 				}
 				break;
@@ -85,7 +85,7 @@ public final class ChatHandler {
 				GameCharacter p = gc.getPlayer();
 
 				if (!commandProcessed(p, message)) {
-					boolean result = GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendWhisper(recipient, p, message);
+					boolean result = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendWhisper(recipient, p, message);
 					gc.getSession().send(writeWhisperOutcome(recipient, result));
 				}
 				break;
@@ -98,7 +98,7 @@ public final class ChatHandler {
 		String message = packet.readLengthPrefixedString();
 		GameCharacter p = gc.getPlayer();
 		if (!commandProcessed(p, message))
-			GameServer.getChannel(gc.getChannel()).getInterChannelInterface().sendSpouseChat(recipient, p, message);
+			GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendSpouseChat(recipient, p, message);
 	}
 
 	private static byte[] writeMapChat(GameCharacter p, String message, byte show, boolean gm) {

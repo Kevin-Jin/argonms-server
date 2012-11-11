@@ -721,7 +721,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (rs.next())
-				p.party = GameServer.getChannel(c.getChannel()).getInterChannelInterface().sendFetchPartyList(p, rs.getInt(1));
+				p.party = GameServer.getChannel(c.getChannel()).getCrossServerInterface().sendFetchPartyList(p, rs.getInt(1));
 			rs.close();
 			ps.close();
 
@@ -914,7 +914,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 		getMap().sendToAll(GamePackets.writeShowLevelUp(this), this);
 		if (party != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, true);
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, true);
 		pushHpToParty();
 
 		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
@@ -925,7 +925,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		super.setLevel(newLevel);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 		if (party != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, true);
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, true);
 	}
 
 	@Override
@@ -934,7 +934,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getMap().sendToAll(GamePackets.writeShowJobChange(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 		if (party != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendPartyLevelOrJobUpdate(this, false);
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, false);
 	}
 
 	public int getCurrentStr() {
@@ -951,7 +951,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HAIR, Short.valueOf(hair)), false));
 		if (chatroom != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
@@ -960,7 +960,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.SKIN, Byte.valueOf(skin)), false));
 		if (chatroom != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
@@ -969,7 +969,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FACE, Short.valueOf(eyes)), false));
 		if (chatroom != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
 	}
 
 	@Override
@@ -1690,20 +1690,20 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		if (event != null)
 			event.playerDisconnected(this);
 		if (party != null)
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, false);
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendPartyMemberLogOffNotifications(this, false);
 		if (chatroom != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().chatroomPlayerChangingChannels(getId(), chatroom);
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().chatroomPlayerChangingChannels(getId(), chatroom);
 		prepareExitChannel(false);
 	}
 
 	public void prepareLogOff(boolean quickCleanup) {
 		if (event != null)
 			event.playerDisconnected(this);
-		GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendBuddyOffline(this);
+		GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyLogOffNotifications(this);
 		if (party != null)
-			GameServer.getChannel(client.getChannel()).getInterChannelInterface().sendPartyMemberOffline(this, true);
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendPartyMemberLogOffNotifications(this, true);
 		if (chatroom != null)
-			GameServer.getChannel(getClient().getChannel()).getInterChannelInterface().sendLeaveChatroom(this, chatroom);
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendLeaveChatroom(this);
 		prepareExitChannel(quickCleanup);
 	}
 

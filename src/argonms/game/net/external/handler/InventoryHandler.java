@@ -57,7 +57,7 @@ public final class InventoryHandler {
 			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false, true);
 			p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 			if (p.getChatRoom() != null)
-				GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
+				GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
@@ -74,7 +74,7 @@ public final class InventoryHandler {
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true, true);
 				p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 				if (p.getChatRoom() != null)
-					GameServer.getChannel(p.getClient().getChannel()).getInterChannelInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
+					GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
 			} else {
 				gc.getSession().send(GamePackets.writeInventoryNoChange());
 			}
