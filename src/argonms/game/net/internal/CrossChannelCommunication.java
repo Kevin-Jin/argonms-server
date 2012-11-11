@@ -21,6 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.util.collections.Pair;
 import argonms.game.character.PlayerContinuation;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -40,7 +41,19 @@ public interface CrossChannelCommunication {
 
 	public void sendPrivateChat(byte type, int[] recipients, String name, String message);
 
-	public void sendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message);
+	public void callSendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message);
 
 	public boolean sendSpouseChat(int recipient, String sender, String message);
+
+	public void callSendBuddyInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, int recipientId, int senderId, String senderName);
+
+	public int exchangeBuddyLogInNotifications(int sender, int[] recipients);
+
+	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble);
+
+	public boolean sendBuddyAccepted(int sender, int recipient);
+
+	public void sendBuddyLogOffNotifications(int sender, int[] recipients);
+
+	public void sendBuddyDeleted(int sender, int recipient);
 }

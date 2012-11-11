@@ -2357,6 +2357,18 @@
 	* CrossServerCommunication.scanChannelOfPlayer early outs for same process
 	channels that returned a result of true.
 
+2012-11-10  GoldenKevin  (revision 168)
+
+	* Early out checks in CrossServerCommunication methods similar to those in
+	scanChannelOfPlayer and sendWhisper now loop rather than check once. While
+	the existing code was sufficient for same process channels, this could also
+	halt any unnecessary packet sending if a response packet was received after
+	an earlier request.
+	* Fixed and improved error messages for timed out blocking
+	CrossServerCommunication calls.
+	* Implemented CrossServerCommunication methods for relaying buddy list
+	related operations.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -27,7 +27,10 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.BuddyListHandler;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -54,6 +57,8 @@ public class CrossServerCommunication {
 		PRIVATE_CHAT_TYPE_PARTY = 1,
 		PRIVATE_CHAT_TYPE_GUILD = 2
 	;
+
+	private static final int BLOCKING_CALL_TIMEOUT = 2000; //in milliseconds
 
 	private final LockableMap<Byte, CrossChannelCommunication> otherChannelsInWorld;
 	private final LockableMap<Byte, CrossProcessCrossChannelCommunication> remoteChannelsInWorld;
@@ -177,9 +182,9 @@ public class CrossServerCommunication {
 			int remaining = 0;
 			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
 				ccc.callPlayerExistsCheck(queue, name);
-				Pair<Byte, Object> result = queue.poll();
-				if (result != null && ((Boolean) result.right).booleanValue())
-					//immediately responded
+				Pair<Byte, Object> result;
+				//address any results that have since responded, for a possibility of early out
+				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
 					return result.left.byteValue();
 				remaining++;
 			}
@@ -188,7 +193,7 @@ public class CrossServerCommunication {
 			while (remaining > 0) {
 				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 				if (result == null) {
-					LOG.log(Level.FINE, "Cross process player search timeout");
+					LOG.log(Level.FINE, "Cross process player search timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 					return 0;
 				}
 				if (((Boolean) result.right).booleanValue())
@@ -301,10 +306,10 @@ public class CrossServerCommunication {
 		try {
 			int remaining = 0;
 			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
-				ccc.sendWhisper(queue, recipient, sender, message);
-				Pair<Byte, Object> result = queue.poll();
-				if (result != null && ((Boolean) result.right).booleanValue())
-					//immediately responded
+				ccc.callSendWhisper(queue, recipient, sender, message);
+				Pair<Byte, Object> result;
+				//address any results that have since responded, for a possibility of early out
+				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
 					return true;
 				remaining++;
 			}
@@ -313,7 +318,7 @@ public class CrossServerCommunication {
 			while (remaining > 0) {
 				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 				if (result == null) {
-					LOG.log(Level.FINE, "Cross process player search timeout");
+					LOG.log(Level.FINE, "Cross process whisper timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 					return false;
 				}
 				if (((Boolean) result.right).booleanValue())
@@ -363,5 +368,225 @@ public class CrossServerCommunication {
 
 		p.getClient().getSession().send(GamePackets.writeSpouseChatMessage(sender, message));
 		return true;
+	}
+
+	public byte sendBuddyInvite(GameCharacter sender, int recipientId) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		locks.readLock().lock();
+		try {
+			int remaining = 0;
+			for (CrossChannelCommunication ccc : otherChannelsInWorld.values()) {
+				ccc.callSendBuddyInvite(queue, recipientId, sender.getId(), sender.getName());
+				Pair<Byte, Object> result;
+				byte inviteResult;
+				//address any results that have since responded, for a possibility of early out
+				while ((result = queue.poll()) != null && (inviteResult = ((Byte) result.right).byteValue()) != -1)
+					return inviteResult;
+				remaining++;
+			}
+
+			long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+			while (remaining > 0) {
+				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				if (result == null) {
+					LOG.log(Level.FINE, "Cross process buddy invite timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+					return 0;
+				}
+				byte inviteResult = ((Byte) result.right).byteValue();
+				if (inviteResult != -1)
+					return inviteResult;
+			}
+			return 0;
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+			return 0;
+		} finally {
+			locks.readLock().unlock();
+		}
+	}
+
+	/* package-private */ byte receivedBuddyInvite(int recipientId, int senderId, String senderName) {
+		GameCharacter p = self.getPlayerById(recipientId);
+		if (p == null)
+			return -1;
+
+		BuddyList bList = p.getBuddyList();
+		if (bList.isFull())
+			return BuddyListHandler.THEIR_LIST_FULL;
+		if (bList.getBuddy(senderId) != null)
+			return BuddyListHandler.ALREADY_ON_LIST;
+		bList.addInvite(senderId, senderName);
+		p.getClient().getSession().send(GamePackets.writeBuddyInvite(senderId, senderName));
+		return Byte.MAX_VALUE;
+	}
+
+	private void sendReturnBuddyLogInNotifications(byte destCh, int recipient, List<Integer> senders, boolean bubble) {
+		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendReturnBuddyLogInNotifications(recipient, senders, bubble);
+	}
+
+	/* package-private */ void receivedReturnedBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble, byte srcCh) {
+		GameCharacter p = self.getPlayerById(recipient);
+		//in case we logged off or something like that?
+		if (p == null)
+			return;
+
+		BuddyList bList = p.getBuddyList();
+		for (Integer sender : senders) {
+			BuddyListEntry entry = bList.getBuddy(sender.intValue());
+			//in case we deleted the entry in the meantime...
+			if (entry == null)
+				continue;
+
+			entry.setChannel(srcCh);
+			if (bubble)
+				p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+		}
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+	}
+
+	public void sendExchangeBuddyLogInNotifications(GameCharacter p) {
+		Collection<BuddyListEntry> buddies = p.getBuddyList().getBuddies();
+		if (buddies.isEmpty())
+			return;
+		int[] recipients = new int[buddies.size()];
+		int i = 0, remaining = buddies.size();
+		for (BuddyListEntry buddy : buddies)
+			if (buddy.getStatus() == BuddyListHandler.STATUS_MUTUAL)
+				recipients[i++] = buddy.getId();
+		if (recipients.length != i) {
+			//just trim recipients of extra 0s
+			int[] temp = new int[i];
+			System.arraycopy(recipients, 0, temp, 0, i);
+			recipients = temp;
+		}
+
+		locks.readLock().lock();
+		try {
+			for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+				if ((remaining -= ccc.exchangeBuddyLogInNotifications(p.getId(), recipients)) <= 0)
+					break;
+		} finally {
+			locks.readLock().unlock();
+		}
+	}
+
+	/* package-private */ int receivedSentBuddyLogInNotifications(int sender, int[] recipients, byte srcCh) {
+		List<Integer> localRecipients = new ArrayList<Integer>();
+		for (int recipient : recipients) {
+			GameCharacter p = self.getPlayerById(recipient);
+			if (p == null)
+				continue;
+
+			localRecipients.add(Integer.valueOf(recipient));
+			BuddyList bList = p.getBuddyList();
+			BuddyListEntry entry = bList.getBuddy(sender);
+			//in case we deleted the entry in the meantime...
+			if (entry == null)
+				continue;
+
+			entry.setChannel(srcCh);
+			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+		}
+
+		sendReturnBuddyLogInNotifications(srcCh, sender, localRecipients, false);
+		return localRecipients.size();
+	}
+
+	public void sendBuddyAccepted(GameCharacter p, int recipient) {
+		locks.readLock().lock();
+		try {
+			for (CrossChannelCommunication ccc : otherChannelsInWorld.values())
+				if (ccc.sendBuddyAccepted(p.getId(), recipient))
+					break;
+		} finally {
+			locks.readLock().unlock();
+		}
+	}
+
+	/* package-private */ boolean receivedBuddyAccepted(int sender, int recipient, byte srcCh) {
+		GameCharacter p = self.getPlayerById(recipient);
+		if (p == null)
+			return false;
+
+		BuddyList bList = p.getBuddyList();
+		BuddyListEntry entry = bList.getBuddy(sender);
+		//in case we deleted the entry in the meantime...
+		if (entry == null)
+			return true;
+
+		entry.setStatus(BuddyListHandler.STATUS_MUTUAL);
+		entry.setChannel(srcCh);
+		p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+
+		sendReturnBuddyLogInNotifications(srcCh, sender, Collections.singletonList(Integer.valueOf(recipient)), true);
+		return true;
+	}
+
+	public void sendBuddyLogOffNotifications(GameCharacter p) {
+		Collection<BuddyListEntry> buddies = p.getBuddyList().getBuddies();
+		if (buddies.isEmpty())
+			return;
+		Map<Byte, List<Integer>> buddyChannels = new HashMap<Byte, List<Integer>>();
+		for (BuddyListEntry buddy : buddies) {
+			if (buddy.getChannel() == 0)
+				continue;
+
+			Byte ch = Byte.valueOf(buddy.getChannel());
+			List<Integer> buddiesOnChannel = buddyChannels.get(ch);
+			if (buddiesOnChannel == null) {
+				buddiesOnChannel = new ArrayList<Integer>();
+				buddyChannels.put(ch, buddiesOnChannel);
+			}
+			buddiesOnChannel.add(Integer.valueOf(buddy.getId()));
+		}
+		for (Map.Entry<Byte, List<Integer>> entry : buddyChannels.entrySet()) {
+			int[] recipients = new int[entry.getValue().size()];
+			int i = 0;
+			for (Integer recipient : entry.getValue())
+				recipients[i++] = recipient.intValue();
+			otherChannelsInWorld.getWhenSafe(entry.getKey()).sendBuddyLogOffNotifications(p.getId(), recipients);
+		}
+	}
+
+	/* package-private */ void receivedBuddyLogOffNotifications(int sender, int[] recipients) {
+		for (int recipient : recipients) {
+			GameCharacter p = self.getPlayerById(recipient);
+			//in case we logged off or something like that?
+			if (p == null)
+				continue;
+
+			BuddyList bList = p.getBuddyList();
+			BuddyListEntry entry = bList.getBuddy(sender);
+			//in case we deleted the entry in the meantime...
+			if (entry == null)
+				continue;
+
+			entry.setChannel((byte) 0);
+			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
+		}
+	}
+
+	public void sendBuddyDeleted(GameCharacter p, int recipient, byte destCh) {
+		otherChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendBuddyDeleted(p.getId(), recipient);
+	}
+
+	/* package-private */ void receivedBuddyDeleted(int recipient, int sender) {
+		GameCharacter p = self.getPlayerById(recipient);
+		//in case we logged off or something like that?
+		if (p == null)
+			return;
+
+		BuddyList bList = p.getBuddyList();
+		BuddyListEntry entry = bList.getBuddy(sender);
+		//in case we deleted the entry in the meantime...
+		if (entry == null)
+			return;
+
+		entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
+		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 	}
 }
