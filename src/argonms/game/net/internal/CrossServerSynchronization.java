@@ -23,6 +23,7 @@ import argonms.common.character.BuddyListEntry;
 import argonms.common.util.collections.LockableMap;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
+import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
@@ -428,7 +429,7 @@ public class CrossServerSynchronization {
 		}
 	}
 
-	/* package-private */ byte receivedBuddyInvite(int recipientId, int senderId, String senderName) {
+	/* package-private */ byte makeBuddyInviteResult(int recipientId, int senderId, String senderName) {
 		GameCharacter p = self.getPlayerById(recipientId);
 		if (p == null)
 			return -1;
@@ -636,17 +637,19 @@ public class CrossServerSynchronization {
 	}
 
 	/* package-private */ void fillPartyList(GameCharacter excludeMember, PartyList party) {
-		BlockingQueue<Pair<Byte, Object>> resultConsumer = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		partiesAndChatRooms.sendFillPartyList(queue, excludeMember, party);
+
 		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
 		try {
-			Pair<Byte, Object> result = resultConsumer.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 			if (result == null) {
 				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 				return;
 			}
 			party.setLeader(((Integer) result.right).intValue());
 
-			result = resultConsumer.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 			if (result == null) {
 				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 				return;
@@ -680,7 +683,120 @@ public class CrossServerSynchronization {
 		partiesAndChatRooms.sendPartyLevelOrJobUpdate(p, level);
 	}
 
-	/* package-private */ LockableMap<Byte, CrossChannelSynchronization> getChannelsInWorld() {
-		return allChannelsInWorld;
+	public void sendMakeChatroom(GameCharacter p) {
+		partiesAndChatRooms.sendMakeChatroom(p);
+	}
+
+	public void sendJoinChatroom(GameCharacter joiner, int roomId) {
+		partiesAndChatRooms.sendJoinChatroom(joiner, roomId);
+	}
+
+	public void sendLeaveChatroom(int roomId, int leaver) {
+		partiesAndChatRooms.sendLeaveChatroom(roomId, leaver);
+	}
+
+	public boolean sendChatroomInvite(String invitee, int roomId, String inviter) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		lockRead();
+		try {
+			int remaining = 0;
+			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
+				ccs.callSendChatroomInvite(queue, invitee, roomId, inviter);
+				Pair<Byte, Object> result;
+				//address any results that have since responded, for a possibility of early out
+				while ((result = queue.poll()) != null && ((Boolean) result.right).booleanValue())
+					return true;
+				remaining++;
+			}
+
+			long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+			while (remaining > 0) {
+				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				if (result == null) {
+					LOG.log(Level.FINE, "Cross process buddy invite timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+					return false;
+				}
+				if (((Boolean) result.right).booleanValue())
+					return true;
+			}
+			return false;
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+			return false;
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private */ boolean makeChatroomInviteResult(String invitee, int roomId, String inviter) {
+		GameCharacter p = self.getPlayerByName(invitee);
+		if (p == null)
+			return false;
+		p.getClient().getSession().send(GamePackets.writeChatroomInvite(inviter, roomId));
+		return true;
+	}
+
+	public void sendChatroomDecline(String invitee, String inviter) {
+		lockRead();
+		try {
+			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
+				if (ccs.sendChatroomDecline(invitee, inviter))
+					break;
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private */ boolean receivedChatroomDecline(String invitee, String inviter) {
+		GameCharacter p = self.getPlayerByName(inviter);
+		if (p == null)
+			return false;
+		p.getClient().getSession().send(GamePackets.writeChatroomInviteResponse(Chatroom.ACT_DECLINE, invitee, false));
+		return true;
+	}
+
+	public void sendChatroomText(String text, Chatroom room, int sender) {
+		Set<Byte> channels;
+		room.lockRead();
+		try {
+			channels = room.allChannels();
+		} finally {
+			room.unlockRead();
+		}
+
+		for (Byte ch : channels)
+			allChannelsInWorld.getWhenSafe(ch.byteValue()).sendChatroomText(text, room.getRoomId(), sender);
+	}
+
+	/* package-private */ void receivedChatroomText(String text, int roomId, int sender) {
+		Chatroom room = partiesAndChatRooms.getChatRoom(roomId);
+		if (room == null)
+			return;
+
+		room.lockRead();
+		try {
+			for (Byte pos : room.localChannelSlots()) {
+				int playerId = room.getAvatar(pos.byteValue()).getPlayerId();
+				GameCharacter p = self.getPlayerById(playerId);
+				if (playerId != sender && p != null)
+					p.getClient().getSession().send(GamePackets.writeChatroomText(text));
+			}
+		} finally {
+			room.unlockRead();
+		}
+	}
+
+	public void chatroomPlayerChangingChannels(int playerId, Chatroom room) {
+		partiesAndChatRooms.chatroomPlayerChangingChannels(playerId, room);
+	}
+
+	public void sendChatroomPlayerChangedChannels(GameCharacter p, int roomId) {
+		partiesAndChatRooms.sendChatroomPlayerChangedChannels(p.getId(), roomId);
+	}
+
+	public void sendChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
+		partiesAndChatRooms.sendChatroomPlayerLookUpdate(p, roomId);
 	}
 }

@@ -19,17 +19,23 @@
 package argonms.game.net.internal;
 
 import argonms.common.character.CenterServerSynchronizationOps;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
+import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.PartyListHandler;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,23 +48,25 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 	private final CrossServerSynchronization handler;
 	private final WorldChannel self;
 	private final ConcurrentMap<Integer, PartyList> activeLocalParties;
+	private final ConcurrentMap<Integer, Chatroom> localChatRooms;
 
 	public CenterServerSynchronization(CrossServerSynchronization handler, WorldChannel self) {
 		this.activeLocalParties = new ConcurrentHashMap<Integer, PartyList>();
+		this.localChatRooms = new ConcurrentHashMap<Integer, Chatroom>();
 		this.handler = handler;
 		this.self = self;
 	}
 
-	private void writePartySynchronizationPacketHeader(LittleEndianWriter lew, byte opcode) {
+	private void writeCenterServerSynchronizationPacketHeader(LittleEndianWriter lew, byte opcode) {
 		lew.writeByte(RemoteCenterOps.CENTER_SERVER_SYNCHRONIZATION);
 		lew.writeByte(opcode);
 	}
 
-	private void writePartySynchronizationPacket(byte[] packet) {
+	private void writeCenterServerSynchronizationPacket(byte[] packet) {
 		GameServer.getInstance().getCenterInterface().getSession().send(packet);
 	}
 
-	public void receivedPartySynchronziationPacket(LittleEndianReader packet) {
+	public void receivedCenterServerSynchronziationPacket(LittleEndianReader packet) {
 		switch (packet.readByte()) {
 			case CenterServerSynchronizationOps.PARTY_CREATE: {
 				int partyId = packet.readInt();
@@ -378,44 +386,53 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				}
 				break;
 			}
+			case CenterServerSynchronizationOps.CHATROOM_CREATED:
+				receivedChatroomCreated(packet);
+				break;
+			case CenterServerSynchronizationOps.CHATROOM_ROOM_CHANGED: 
+				receivedChatroomRoomChanged(packet);
+				break;
+			case CenterServerSynchronizationOps.CHATROOM_SLOT_CHANGED:
+				receivedChatroomSlotChanged(packet);
+				break;
 		}
 	}
 
 	public void sendMakeParty(GameCharacter creator) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + creator.getName().length());
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CREATE);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CREATE);
 		lew.writeInt(creator.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeLengthPrefixedString(creator.getName());
 		lew.writeShort(creator.getJob());
 		lew.writeShort(creator.getLevel());
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendDisbandParty(int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_DISBAND);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_DISBAND);
 		lew.writeInt(partyId);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendLeaveParty(GameCharacter p, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + p.getName().length());
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(p.getId());
 		lew.writeByte(p.getClient().getChannel());
 		lew.writeLengthPrefixedString(p.getName());
 		lew.writeBool(false);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendJoinParty(GameCharacter p, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + p.getName().length());
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_ADD_PLAYER);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_ADD_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(p.getId());
 		lew.writeByte(p.getClient().getChannel());
@@ -423,42 +440,42 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		lew.writeShort(p.getJob());
 		lew.writeShort(p.getLevel());
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendExpelPartyMember(PartyList.Member member, int partyId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + member.getName().length());
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_REMOVE_PLAYER);
 		lew.writeInt(partyId);
 		lew.writeInt(member.getPlayerId());
 		lew.writeByte(member.getChannel());
 		lew.writeLengthPrefixedString(member.getName());
 		lew.writeBool(true);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendChangePartyLeader(int partyId, int newLeader) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CHANGE_LEADER);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_CHANGE_LEADER);
 		lew.writeInt(partyId);
 		lew.writeInt(newLeader);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
-	private void fillPartyList(BlockingQueue<Pair<Byte, Object>> resultConsumer, GameCharacter excludeMember, PartyList party) {
+	/* package-private */ void sendFillPartyList(BlockingQueue<Pair<Byte, Object>> resultConsumer, GameCharacter excludeMember, PartyList party) {
 		int responseId = nextResponseId.incrementAndGet();
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_FETCH_LIST);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_FETCH_LIST);
 		lew.writeInt(party.getId());
 		lew.writeInt(excludeMember.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeInt(responseId);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public PartyList sendFetchPartyList(GameCharacter p, int partyId) {
@@ -480,34 +497,339 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 
 	public void sendPartyMemberOnline(GameCharacter p, PartyList party) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED);
 		lew.writeInt(p.getParty().getId());
 		lew.writeInt(p.getId());
 		lew.writeByte(self.getChannelId());
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendPartyMemberOffline(GameCharacter exiter, boolean loggingOff) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_DISCONNECTED);
 		lew.writeInt(exiter.getParty().getId());
 		lew.writeInt(exiter.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeBool(loggingOff);
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendPartyLevelOrJobUpdate(GameCharacter p, boolean level) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
-		writePartySynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED);
 		lew.writeInt(p.getParty().getId());
 		lew.writeInt(p.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeBool(level);
 		lew.writeShort(level ? p.getLevel() : p.getJob());
 
-		writePartySynchronizationPacket(lew.getBytes());
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	private static void writeChatroomAvatar(LittleEndianWriter lew, GameCharacter p, Map<Short, Integer> equips) {
+		lew.writeInt(p.getId());
+		lew.writeByte((byte) equips.size());
+		for (Map.Entry<Short, Integer> entry : equips.entrySet()) {
+			lew.writeShort(entry.getKey().shortValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte(p.getGender());
+		lew.writeByte(p.getSkinColor());
+		lew.writeInt(p.getEyes());
+		lew.writeInt(p.getHair());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeByte(p.getClient().getChannel());
+	}
+
+	public void sendMakeChatroom(GameCharacter creator) {
+		Map<Short, Integer> equips = creator.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20 + creator.getName().length() + equips.size() * 6);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.CHATROOM_CREATE);
+		writeChatroomAvatar(lew, creator, equips);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendJoinChatroom(GameCharacter joiner, int roomId) {
+		Map<Short, Integer> equips = joiner.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(24 + joiner.getName().length() + equips.size() * 6);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.CHATROOM_ADD_PLAYER);
+		lew.writeInt(roomId);
+		writeChatroomAvatar(lew, joiner, equips);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendLeaveChatroom(int roomId, int leaver) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.CHATROOM_REMOVE_PLAYER);
+		lew.writeInt(roomId);
+		lew.writeInt(leaver);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public Chatroom getChatRoom(int roomId) {
+		return localChatRooms.get(Integer.valueOf(roomId));
+	}
+
+	public void chatroomPlayerChangingChannels(int playerId, Chatroom room) {
+		Set<Byte> others;
+		room.lockRead();
+		try {
+			others = room.localChannelSlots();
+			others.remove(Byte.valueOf(room.positionOf(playerId)));
+		} finally {
+			room.unlockRead();
+		}
+		//if there are no other players in the chatroom on the
+		//channel, delete the chatroom from our cache
+		if (others.isEmpty())
+			localChatRooms.remove(Integer.valueOf(room.getRoomId()));
+	}
+
+	public void sendChatroomPlayerChangedChannels(int playerId, int roomId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.CHATROOM_UPDATE_AVATAR_CHANNEL);
+		lew.writeInt(playerId);
+		lew.writeInt(roomId);
+		lew.writeByte(self.getChannelId());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
+		Map<Short, Integer> equips = p.getInventory(Inventory.InventoryType.EQUIPPED).getItemIds();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(20 + 6 * equips.size());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.CHATROOM_UPDATE_AVATAR_LOOK);
+		lew.writeInt(p.getId());
+		lew.writeInt(roomId);
+		lew.writeByte((byte) equips.size());
+		for (Map.Entry<Short, Integer> entry : equips.entrySet()) {
+			lew.writeShort(entry.getKey().shortValue());
+			lew.writeInt(entry.getValue().intValue());
+		}
+		lew.writeByte(p.getSkinColor());
+		lew.writeInt(p.getEyes());
+		lew.writeInt(p.getHair());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedChatroomCreated(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int creatorId = packet.readInt();
+		GameCharacter p = self.getPlayerById(creatorId);
+		if (p == null)
+			return;
+
+		Chatroom room = new Chatroom(roomId, p);
+		localChatRooms.put(Integer.valueOf(roomId), room);
+		p.setChatRoom(room);
+	}
+
+	private void receivedChatroomRoomChanged(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		int playerId = packet.readInt();
+		byte position = packet.readByte();
+		GameCharacter p = self.getPlayerById(playerId);
+		if (roomId != 0) {
+			//this will be false if joiner was in the room before and just changed channels.
+			boolean firstTime = packet.readBool();
+			if (position == -1)
+				return; //room is full
+
+			Set<Byte> existingLocalSlots;
+			Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
+			if (room == null) { //first on this channel to join the chat room
+				room = new Chatroom(roomId);
+				for (byte pos = 0; pos < 3; pos++) {
+					byte channel = packet.readByte();
+					if (channel == 0)
+						continue;
+
+					int avatarPlayerId = packet.readInt();
+					Map<Short, Integer> equips = new HashMap<Short, Integer>();
+					for (byte i = packet.readByte(); i > 0; i--) {
+						short slot = packet.readShort();
+						int itemId = packet.readInt();
+						equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+					}
+					byte gender = packet.readByte();
+					byte skin = packet.readByte();
+					int eyes = packet.readInt();
+					int hair = packet.readInt();
+					String name = packet.readLengthPrefixedString();
+					room.setAvatar(pos, new Chatroom.Avatar(avatarPlayerId, gender, skin, eyes, hair, equips, name, channel), false);
+				}
+				//defer adding Chatroom to cache until after initialization to
+				//avoid write locking for room.setAvatar above
+				localChatRooms.put(Integer.valueOf(roomId), room);
+				existingLocalSlots = Collections.emptySet();
+			} else {
+				room.lockRead();
+				try {
+					existingLocalSlots = room.localChannelSlots();
+				} finally {
+					room.unlockRead();
+				}
+			}
+			Chatroom.Avatar a = new Chatroom.Avatar(p);
+			room.lockWrite();
+			try {
+				room.setAvatar(position, a, true);
+			} finally {
+				room.unlockWrite();
+			}
+			p.setChatRoom(room);
+
+			//Center server will not send us a CHATROOM_SLOT_CHANGED if the
+			//joiner is on the same channel as us, to save bandwidth.
+			//so send joiner's avatar to any other player in the chatroom on
+			//the channel
+			byte[] message = GamePackets.writeChatroomAvatar(firstTime ? Chatroom.ACT_OPEN : Chatroom.ACT_REFRESH_AVATAR, position, a, firstTime);
+			room.lockRead();
+			try {
+				for (Byte pos : existingLocalSlots) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+
+			if (firstTime) {
+				//send other avatars to joiner
+				p.getClient().getSession().send(GamePackets.writeChatroomJoin(position));
+				room.lockRead();
+				try {
+					for (byte pos = 0; pos < 3; pos++) {
+						a = room.getAvatar(pos);
+						if (position != pos && a != null)
+							p.getClient().getSession().send(GamePackets.writeChatroomAvatar(Chatroom.ACT_OPEN, pos, a, false));
+					}
+				} finally {
+					room.unlockRead();
+				}
+			} else {
+				//client doesn't update avatar tooltip for its own player
+				//after it changes channels...
+				p.getClient().getSession().send(GamePackets.writeChatroomAvatar(Chatroom.ACT_REFRESH_AVATAR, position, a, false));
+			}
+		} else { //left room
+			if (p == null)
+				return;
+
+			Chatroom room = p.getChatRoom();
+			p.setChatRoom(null);
+			if (room == null)
+				return;
+
+			room.lockWrite();
+			try {
+				room.setAvatar(position, null, true);
+			} finally {
+				room.unlockWrite();
+			}
+
+			//Center server will not send us a CHATROOM_SLOT_CHANGED if the
+			//leaver is on the same channel as us, to save bandwidth.
+			//so notify any other player in the chatroom on the channel
+			//that the slot is now unoccupied.
+			byte[] message = GamePackets.writeChatroomClear(position);
+			room.lockRead();
+			try {
+				for (Byte pos : room.localChannelSlots()) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+			//if there are no other players in the chatroom on the
+			//channel, delete the chatroom from our cache
+			room.lockRead();
+			try {
+				if (room.localChannelSlots().isEmpty())
+					localChatRooms.remove(Integer.valueOf(room.getRoomId()));
+			} finally {
+				room.unlockRead();
+			}
+		}
+	}
+
+	private void receivedChatroomSlotChanged(LittleEndianReader packet) {
+		int roomId = packet.readInt();
+		byte position = packet.readByte();
+		int playerId = packet.readInt();
+		Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
+		if (room == null)
+			return;
+		if (playerId != 0) {
+			byte channel = packet.readByte();
+			Map<Short, Integer> equips = new HashMap<Short, Integer>();
+			for (byte i = packet.readByte(); i > 0; i--) {
+				short slot = packet.readShort();
+				int itemId = packet.readInt();
+				equips.put(Short.valueOf(slot), Integer.valueOf(itemId));
+			}
+			byte gender = packet.readByte();
+			byte skin = packet.readByte();
+			int eyes = packet.readInt();
+			int hair = packet.readInt();
+			String name = packet.readLengthPrefixedString();
+			byte[] message;
+			Set<Byte> slotsToNotify;
+
+			room.lockWrite();
+			try {
+				Chatroom.Avatar a = room.getAvatar(position);
+				boolean firstTime = (a == null);
+				assert firstTime || a.getPlayerId() == playerId;
+				a = new Chatroom.Avatar(playerId, gender, skin, eyes, hair, equips, name, channel);
+				message = GamePackets.writeChatroomAvatar(firstTime ? Chatroom.ACT_OPEN : Chatroom.ACT_REFRESH_AVATAR, position, a, firstTime);
+				//Chatroom.Avatar is immutable...
+				room.setAvatar(position, a, channel == self.getChannelId());
+				slotsToNotify = room.localChannelSlots();
+			} finally {
+				room.unlockWrite();
+			}
+
+			slotsToNotify.remove(Byte.valueOf(position));
+			room.lockRead();
+			try {
+				for (Byte pos : slotsToNotify) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+			} finally {
+				room.unlockRead();
+			}
+		} else { //remove slot
+			room.lockWrite();
+			try {
+				room.setAvatar(position, null, false);
+			} finally {
+				room.unlockWrite();
+			}
+
+			byte[] message = GamePackets.writeChatroomClear(position);
+			room.lockRead();
+			try {
+				for (Byte pos : room.localChannelSlots()) {
+					GameCharacter other = self.getPlayerById(room.getAvatar(pos.byteValue()).getPlayerId());
+					if (other != null)
+						other.getClient().getSession().send(message);
+				}
+				assert !room.localChannelSlots().isEmpty();
+			} finally {
+				room.unlockRead();
+			}
+		}
 	}
 }

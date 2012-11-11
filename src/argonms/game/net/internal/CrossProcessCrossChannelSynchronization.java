@@ -146,6 +146,18 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 			case BUDDY_DELETED:
 				receivedBuddyDeleted(packet);
 				break;
+			case CHATROOM_INVITE:
+				receivedChatroomInvite(packet);
+				break;
+			case CHATROOM_INVITE_RESPONSE:
+				receivedChatroomInviteResult(packet);
+				break;
+			case CHATROOM_DECLINE:
+				receivedChatroomDecline(packet);
+				break;
+			case CHATROOM_TEXT:
+				receivedChatroomText(packet);
+				break;
 		}
 	}
 
@@ -379,7 +391,7 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		int sender = packet.readInt();
 		String senderName = packet.readLengthPrefixedString();
 
-		returnBuddyInviteResult(responseId, handler.receivedBuddyInvite(recipient, sender, senderName));
+		returnBuddyInviteResult(responseId, handler.makeBuddyInviteResult(recipient, sender, senderName));
 	}
 
 	private void returnBuddyInviteResult(int responseId, byte result) {
@@ -505,5 +517,87 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		int recipient = packet.readInt();
 
 		handler.receivedBuddyDeleted(recipient, sender);
+	}
+
+	@Override
+	public void callSendChatroomInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, String invitee, int roomId, String inviter) {
+		int responseId = nextResponseId.incrementAndGet();
+		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16 + invitee.length() + inviter.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CHATROOM_INVITE);
+		lew.writeLengthPrefixedString(invitee);
+		lew.writeInt(roomId);
+		lew.writeLengthPrefixedString(inviter);
+		lew.writeInt(responseId);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedChatroomInvite(LittleEndianReader packet) {
+		String invitee = packet.readLengthPrefixedString();
+		int roomId = packet.readInt();
+		String inviter = packet.readLengthPrefixedString();
+		int responseId = packet.readInt();
+
+		returnChatroomInviteResult(responseId, handler.makeChatroomInviteResult(invitee, roomId, inviter));
+	}
+
+	private void returnChatroomInviteResult(int responseId, boolean result) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CHATROOM_INVITE_RESPONSE);
+		lew.writeInt(responseId);
+		lew.writeBool(result);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedChatroomInviteResult(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		boolean result = packet.readBool();
+
+		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
+		if (consumer == null)
+			//timed out and garbage collected
+			return;
+
+		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(result)));
+	}
+
+	@Override
+	public boolean sendChatroomDecline(String invitee, String inviter) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8 + inviter.length() + invitee.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CHATROOM_DECLINE);
+		lew.writeLengthPrefixedString(inviter);
+		lew.writeLengthPrefixedString(invitee);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+		return false;
+	}
+
+	private void receivedChatroomDecline(LittleEndianReader packet) {
+		String inviter = packet.readLengthPrefixedString();
+		String invitee = packet.readLengthPrefixedString();
+
+		handler.receivedChatroomDecline(invitee, inviter);
+	}
+
+	@Override
+	public void sendChatroomText(String text, int roomId, int sender) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + text.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CHATROOM_TEXT);
+		lew.writeLengthPrefixedString(text);
+		lew.writeInt(roomId);
+		lew.writeInt(sender);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedChatroomText(LittleEndianReader packet) {
+		String text = packet.readLengthPrefixedString();
+		int roomId = packet.readInt();
+		int sender = packet.readInt();
+
+		handler.receivedChatroomText(text, roomId, sender);
 	}
 }
