@@ -23,6 +23,7 @@ import argonms.game.GameServer;
 import argonms.game.character.PlayerContinuation;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -93,7 +94,7 @@ public class SameProcessCrossChannelCommunication implements CrossChannelCommuni
 	}
 
 	@Override
-	public void sendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message) {
+	public void callSendWhisper(BlockingQueue<Pair<Byte, Object>> resultConsumer, String recipient, String sender, String message) {
 		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(pipe.returnWhisperResult(recipient, sender, message))));
 	}
 
@@ -108,5 +109,59 @@ public class SameProcessCrossChannelCommunication implements CrossChannelCommuni
 
 	private boolean receivedSpouseChat(int recipient, String sender, String message) {
 		return handler.receivedSpouseChat(recipient, sender, message);
+	}
+
+	@Override
+	public void callSendBuddyInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, int recipientId, int senderId, String senderName) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Byte.valueOf(pipe.returnBuddyInviteResult(recipientId, senderId, senderName))));
+	}
+
+	private byte returnBuddyInviteResult(int recipientId, int senderId, String senderName) {
+		return handler.receivedBuddyInvite(recipientId, senderId, senderName);
+	}
+
+	@Override
+	public int exchangeBuddyLogInNotifications(int sender, int[] recipients) {
+		return pipe.receivedSentBuddyLogInNotifications(sender, recipients);
+	}
+
+	private int receivedSentBuddyLogInNotifications(int sender, int[] recipients) {
+		return handler.receivedSentBuddyLogInNotifications(sender, recipients, targetCh);
+	}
+
+	@Override
+	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble) {
+		pipe.receivedReturnedBuddyLogInNotifications(recipient, senders, bubble);
+	}
+
+	private void receivedReturnedBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble) {
+		handler.receivedReturnedBuddyLogInNotifications(recipient, senders, bubble, targetCh);
+	}
+
+	@Override
+	public boolean sendBuddyAccepted(int sender, int recipient) {
+		return pipe.receivedBuddyAccepted(sender, recipient);
+	}
+
+	private boolean receivedBuddyAccepted(int sender, int recipient) {
+		return handler.receivedBuddyAccepted(sender, recipient, targetCh);
+	}
+
+	@Override
+	public void sendBuddyLogOffNotifications(int sender, int[] recipients) {
+		pipe.receivedBuddyLogOffNotifications(sender, recipients);
+	}
+
+	private void receivedBuddyLogOffNotifications(int sender, int[] recipients) {
+		handler.receivedBuddyLogOffNotifications(sender, recipients);
+	}
+
+	@Override
+	public void sendBuddyDeleted(int sender, int recipient) {
+		pipe.receivedBuddyDeleted(sender, recipient);
+	}
+
+	private void receivedBuddyDeleted(int sender, int recipient) {
+		handler.receivedBuddyDeleted(recipient, sender);
 	}
 }
