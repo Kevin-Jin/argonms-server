@@ -49,6 +49,8 @@ public interface CrossChannelSynchronization {
 
 	public void callSendBuddyInvite(BlockingQueue<Pair<Byte, Object>> resultConsumer, int recipientId, int senderId, String senderName);
 
+	public boolean sendBuddyInviteRetracted(int sender, int recipient);
+
 	public int exchangeBuddyLogInNotifications(int sender, int[] recipients);
 
 	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble);

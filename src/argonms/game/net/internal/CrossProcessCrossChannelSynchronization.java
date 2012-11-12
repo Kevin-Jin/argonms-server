@@ -51,18 +51,19 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		SPOUSE_CHAT = 8,
 		BUDDY_INVITE = 9,
 		BUDDY_INVITE_RESPONSE = 10,
-		BUDDY_ONLINE = 11,
-		BUDDY_ACCEPTED = 12,
-		BUDDY_ONLINE_RESPONSE = 13,
-		BUDDY_OFFLINE = 14,
-		BUDDY_DELETED = 15,
-		CHATROOM_INVITE = 16,
-		CHATROOM_INVITE_RESPONSE = 17,
-		CHATROOM_DECLINE = 18,
-		CHATROOM_TEXT = 19,
-		CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION = 20,
-		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS = 21,
-		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE = 22
+		BUDDY_INVITE_RETRACTION = 11,
+		BUDDY_ONLINE = 12,
+		BUDDY_ACCEPTED = 13,
+		BUDDY_ONLINE_RESPONSE = 14,
+		BUDDY_OFFLINE = 15,
+		BUDDY_DELETED = 16,
+		CHATROOM_INVITE = 17,
+		CHATROOM_INVITE_RESPONSE = 18,
+		CHATROOM_DECLINE = 19,
+		CHATROOM_TEXT = 20,
+		CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION = 21,
+		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS = 22,
+		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE = 23
 	;
 
 	private final CrossServerSynchronization handler;
@@ -135,6 +136,9 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 				break;
 			case BUDDY_INVITE_RESPONSE:
 				receivedBuddyInviteResult(packet);
+				break;
+			case BUDDY_INVITE_RETRACTION:
+				receivedBuddyInviteRetracted(packet);
 				break;
 			case BUDDY_ONLINE:
 				receivedSentBuddyLogInNotifications(packet);
@@ -405,7 +409,7 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		int sender = packet.readInt();
 		String senderName = packet.readLengthPrefixedString();
 
-		returnBuddyInviteResult(responseId, handler.makeBuddyInviteResult(recipient, sender, senderName));
+		returnBuddyInviteResult(responseId, handler.makeBuddyInviteResult(recipient, targetCh, sender, senderName));
 	}
 
 	private void returnBuddyInviteResult(int responseId, byte result) {
@@ -427,6 +431,24 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 			return;
 
 		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Byte.valueOf(result)));
+	}
+
+	@Override
+	public boolean sendBuddyInviteRetracted(int sender, int recipient) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_INVITE_RETRACTION);
+		lew.writeInt(sender);
+		lew.writeInt(recipient);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+		return false;
+	}
+
+	private void receivedBuddyInviteRetracted(LittleEndianReader packet) {
+		int sender = packet.readInt();
+		int recipient = packet.readInt();
+
+		handler.receivedBuddyInviteRetracted(recipient, sender);
 	}
 
 	@Override

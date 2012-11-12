@@ -2406,6 +2406,20 @@
 
 	* Implemented CrossChannelCommandTarget.
 
+2012-11-12  GoldenKevin  (revision 174)
+
+	* Rearranged !ban command arguments so ban reason can have spaces.
+	* Rewrote !shutdown command to be more faithful to its inspiration.
+	* Fixed bugs in chatroom invite and closing.
+	* Split up receivedCenterServerSynchronziationPacket so each party operation
+	gets its own method in CenterServerSynchronization.
+	* Fixed error when deleting a buddy who has been invited but has not
+	accepted the invite yet.
+	* Prevent players from inviting as a buddy a player who has already invited
+	himself/herself.
+	* Players may re-add another player that they have deleted from their buddy
+	list who still has himself/herself on their buddy list.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -118,7 +118,16 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 	}
 
 	private byte returnBuddyInviteResult(int recipientId, int senderId, String senderName) {
-		return handler.makeBuddyInviteResult(recipientId, senderId, senderName);
+		return handler.makeBuddyInviteResult(recipientId, targetCh, senderId, senderName);
+	}
+
+	@Override
+	public boolean sendBuddyInviteRetracted(int sender, int recipient) {
+		return pipe.receivedBuddyInviteRetracted(recipient, sender);
+	}
+
+	private boolean receivedBuddyInviteRetracted(int recipient, int sender) {
+		return handler.receivedBuddyInviteRetracted(recipient, sender);
 	}
 
 	@Override

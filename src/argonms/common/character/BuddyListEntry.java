@@ -28,16 +28,15 @@ public class BuddyListEntry {
 	private byte channel;
 	private byte status;
 
-	/**
-	 *
-	 * @param id
-	 * @param name
-	 * @param status
-	 */
-	public BuddyListEntry(int id, String name, byte status) {
+	public BuddyListEntry(int id, String name, byte status, byte channel) {
 		this.id = id;
 		this.name = name;
 		this.status = status;
+		this.channel = channel;
+	}
+
+	public BuddyListEntry(int id, String name, byte status) {
+		this(id, name, status, (byte) 0);
 	}
 
 	public int getId() {
