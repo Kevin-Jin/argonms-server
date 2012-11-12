@@ -26,6 +26,8 @@ import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
 import argonms.game.character.BuffState;
 import argonms.game.character.PlayerContinuation;
+import argonms.game.command.CommandTarget;
+import argonms.game.command.CrossChannelCommandTarget;
 import argonms.game.field.entity.PlayerSkillSummon;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -57,7 +59,10 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		CHATROOM_INVITE = 16,
 		CHATROOM_INVITE_RESPONSE = 17,
 		CHATROOM_DECLINE = 18,
-		CHATROOM_TEXT = 19
+		CHATROOM_TEXT = 19,
+		CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION = 20,
+		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS = 21,
+		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE = 22
 	;
 
 	private final CrossServerSynchronization handler;
@@ -157,6 +162,15 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 				break;
 			case CHATROOM_TEXT:
 				receivedChatroomText(packet);
+				break;
+			case CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION:
+				receivedCrossChannelCommandCharacterManipulation(packet);
+				break;
+			case CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS:
+				receivedCrossChannelCommandCharacterAccess(packet);
+				break;
+			case CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE:
+				receivedCrossChannelCommandCharacterAccessResult(packet);
 				break;
 		}
 	}
@@ -599,5 +613,67 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		int sender = packet.readInt();
 
 		handler.receivedChatroomText(text, roomId, sender);
+	}
+
+	@Override
+	public void sendCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION);
+		lew.writeLengthPrefixedString(recipient);
+		CrossChannelCommandTarget.serialize(updates, lew);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedCrossChannelCommandCharacterManipulation(LittleEndianReader packet) {
+		String recipient = packet.readLengthPrefixedString();
+		List<CommandTarget.CharacterManipulation> updates = CrossChannelCommandTarget.deserialize(packet);
+
+		handler.receivedCrossChannelCommandCharacterManipulation(recipient, updates);
+	}
+
+	@Override
+	public void callCrossChannelCommandCharacterAccess(BlockingQueue<Pair<Byte, Object>> resultConsumer, String target, CommandTarget.CharacterProperty key) {
+		int responseId = nextResponseId.incrementAndGet();
+		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11 + target.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS);
+		lew.writeInt(responseId);
+		lew.writeLengthPrefixedString(target);
+		lew.writeByte(key.byteValue());
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedCrossChannelCommandCharacterAccess(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		String target = packet.readLengthPrefixedString();
+		CommandTarget.CharacterProperty key = CommandTarget.CharacterProperty.valueOf(packet.readByte());
+
+		returnCrossChannelCommandCharacterAccessResult(responseId, handler.makeCrossChannelCommandCharacterAccessResult(target, key), key);
+	}
+
+	private void returnCrossChannelCommandCharacterAccessResult(int responseId, Object result, CommandTarget.CharacterProperty key) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + key.getSizeOfValue());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE);
+		lew.writeInt(responseId);
+		lew.writeByte(key.byteValue());
+		CrossChannelCommandTarget.serialize(key, result, lew);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedCrossChannelCommandCharacterAccessResult(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		CommandTarget.CharacterProperty key = CommandTarget.CharacterProperty.valueOf(packet.readByte());
+		Object result = CrossChannelCommandTarget.deserialize(key, packet);
+
+		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
+		if (consumer == null)
+			//timed out and garbage collected
+			return;
+
+		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), result));
 	}
 }

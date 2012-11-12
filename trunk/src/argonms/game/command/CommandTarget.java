@@ -151,13 +151,17 @@ public interface CommandTarget {
 		public byte byteValue() {
 			return serial;
 		}
+
+		public static CharacterManipulationKey valueOf(byte b) {
+			return lookup.get(Byte.valueOf(b));
+		}
 	}
 
 	public enum CharacterProperty {
-		MAP((byte) 1),
-		CHANNEL((byte) 2),
-		POSITION((byte) 3),
-		PLAYER_ID((byte) 4);
+		MAP((byte) 1, 5),
+		CHANNEL((byte) 2, 1),
+		POSITION((byte) 3, 4),
+		PLAYER_ID((byte) 4, 4);
 
 		private static final Map<Byte, CharacterProperty> lookup;
 
@@ -168,13 +172,23 @@ public interface CommandTarget {
 		}
 
 		private final byte serial;
+		private final int valueSize;
 
-		private CharacterProperty(byte serial) {
+		private CharacterProperty(byte serial, int valueSize) {
 			this.serial = serial;
+			this.valueSize = valueSize;
 		}
 
 		public byte byteValue() {
 			return serial;
+		}
+
+		public int getSizeOfValue() {
+			return valueSize;
+		}
+
+		public static CharacterProperty valueOf(byte b) {
+			return lookup.get(Byte.valueOf(b));
 		}
 	}
 

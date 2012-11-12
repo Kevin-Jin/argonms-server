@@ -27,6 +27,8 @@ import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
+import argonms.game.command.CommandTarget;
+import argonms.game.command.LocalChannelCommandTarget;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
@@ -821,5 +823,41 @@ public class CrossServerSynchronization {
 
 	public void sendChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
 		partiesAndChatRooms.sendChatroomPlayerLookUpdate(p, roomId);
+	}
+
+	public void sendCrossChannelCommandCharacterManipulation(byte destCh, String recipient, List<CommandTarget.CharacterManipulation> updates) {
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendCrossChannelCommandCharacterManipulation(recipient, updates);
+	}
+
+	/* package-private*/ void receivedCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates) {
+		GameCharacter p = self.getPlayerByName(recipient);
+		if (p != null)
+			new LocalChannelCommandTarget(p).mutate(updates);
+	}
+
+	public Object sendCrossChannelCommandCharacterAccess(byte destCh, String target, CommandTarget.CharacterProperty key) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).callCrossChannelCommandCharacterAccess(queue, target, key);
+		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+		try {
+			Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			if (result == null) {
+				LOG.log(Level.FINE, "Cross process cross channel command target character access timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+				return null;
+			}
+			return result.right;
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+			return null;
+		}
+	}
+
+	/* package-private*/ Object makeCrossChannelCommandCharacterAccessResult(String target, CommandTarget.CharacterProperty key) {
+		GameCharacter p = self.getPlayerByName(target);
+		if (p != null)
+			return new LocalChannelCommandTarget(p).access(key);
+		return null;
 	}
 }

@@ -20,6 +20,8 @@ package argonms.game.net.internal;
 
 import argonms.common.util.collections.Pair;
 import argonms.game.character.PlayerContinuation;
+import argonms.game.command.CommandTarget;
+import argonms.game.command.CommandTarget.CharacterProperty;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -62,4 +64,8 @@ public interface CrossChannelSynchronization {
 	public boolean sendChatroomDecline(String invitee, String inviter);
 
 	public void sendChatroomText(String text, int roomId, int sender);
+
+	public void sendCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates);
+
+	public void callCrossChannelCommandCharacterAccess(BlockingQueue<Pair<Byte, Object>> resultConsumer, String target, CharacterProperty key);
 }

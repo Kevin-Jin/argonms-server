@@ -2402,6 +2402,10 @@
 	* Shortened the channel change response timeout to match cross channel
 	synchronization blocking call timeout.
 
+2012-11-11  GoldenKevin  (revision 173)
+
+	* Implemented CrossChannelCommandTarget.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
