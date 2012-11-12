@@ -21,6 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.PlayerContinuation;
+import argonms.game.command.CommandTarget;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -190,5 +191,23 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	private void receivedChatroomText(String text, int roomId, int sender) {
 		handler.receivedChatroomText(text, roomId, sender);
+	}
+
+	@Override
+	public void sendCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates) {
+		pipe.receivedCrossChannelCommandCharacterManipulation(recipient, updates);
+	}
+
+	private void receivedCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates) {
+		handler.receivedCrossChannelCommandCharacterManipulation(recipient, updates);
+	}
+
+	@Override
+	public void callCrossChannelCommandCharacterAccess(BlockingQueue<Pair<Byte, Object>> resultConsumer, String target, CommandTarget.CharacterProperty key) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), pipe.returnCrossChannelCommandCharacterAccessResult(target, key)));
+	}
+
+	private Object returnCrossChannelCommandCharacterAccessResult(String target, CommandTarget.CharacterProperty key) {
+		return handler.makeCrossChannelCommandCharacterAccessResult(target, key);
 	}
 }

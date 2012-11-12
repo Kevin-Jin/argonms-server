@@ -158,7 +158,7 @@ public class CommandArguments implements Iterator<String> {
 
 		byte channel = GameServer.getChannel(caller.getChannel()).getCrossServerInterface().scanChannelOfPlayer(name);
 		if (channel != 0)
-			return new CrossChannelCommandTarget(channel, name);
+			return new CrossChannelCommandTarget(caller.getChannel(), channel, name);
 
 		if (Player.characterExists(name))
 			return new OfflineCharacterCommandTarget(name);
