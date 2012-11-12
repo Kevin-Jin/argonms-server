@@ -749,7 +749,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 					//notify other chatroom members
 					lew = new LittleEndianByteArrayWriter(12);
-					writeCenterServerSynchronizationPacketHeader(lew, leaver.getChannel(), CenterServerSynchronizationOps.CHATROOM_SLOT_CHANGED);
+					writeCenterServerSynchronizationPacketHeader(lew, channel.byteValue(), CenterServerSynchronizationOps.CHATROOM_SLOT_CHANGED);
 					lew.writeInt(roomId);
 					lew.writeByte(pos);
 					lew.writeInt(0);

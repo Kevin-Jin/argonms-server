@@ -59,10 +59,9 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCal
 	private String reason(boolean halt, boolean restart) {
 		if (restart)
 			return "restart";
-		else if (halt)
+		if (halt)
 			return "halt";
-		else
-			return "maintenance";
+		return "maintenance";
 	}
 
 	private String formatTime(int seconds) {
@@ -71,41 +70,62 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCal
 
 	@Override
 	public void execute(CommandCaller caller, CommandArguments args, CommandOutput resp) {
-		if (args.hasOpt("-c")) {
-			//TODO: cancel shutdown
-		} else {
-			boolean halt = false, restart = false;
-			if (args.hasOpt("-h")) {
-				halt = true;
-				args.next();
-			}
-			if (args.hasOpt("-r")) {
-				restart = true;
-				args.next();
-			}
-
+		boolean halt = false, restart = false, cancel = false;;
+		boolean option;
+		String param;
+		do {
 			if (!args.hasNext()) {
 				resp.printErr(getUsage());
 				return;
 			}
-			String param = args.next();
-
-			int seconds;
-			if (param.equalsIgnoreCase("NOW")) {
-				seconds = 0;
+			param = args.next();
+			if (param.equalsIgnoreCase("-H")) {
+				restart = false;
+				cancel = false;
+				halt = true;
+				option = true;
+			} else if (param.equalsIgnoreCase("-R")) {
+				halt = false;
+				cancel = false;
+				restart = true;
+				option = true;
+			} else if (param.equalsIgnoreCase("-C")) {
+				halt = false;
+				restart = false;
+				cancel = true;
+				option = false;
 			} else {
-				try {
-					seconds = Integer.parseInt(param);
-				} catch (NumberFormatException e) {
-					resp.printErr(getUsage());
-					return;
-				}
+				option = false;
 			}
-			//TODO: implement restart
-			String message = "The server is going down for " + reason(halt, restart) + " " + formatTime(seconds) + "!";
-			serverWideNotice(message);
-			LOG.log(Level.WARNING, message);
+		} while (option);
+
+		//TODO: support hh:mm for time
+		int seconds;
+		if (param.equalsIgnoreCase("NOW")) {
+			seconds = 0;
+		} else {
+			try {
+				seconds = Integer.parseInt(param);
+			} catch (NumberFormatException e) {
+				resp.printErr(getUsage());
+				return;
+			}
+		}
+
+		String message = null;
+		if (args.hasNext())
+			message = args.restOfString();
+
+		if (!cancel) {
+			String notice = "The server is going down for " + reason(halt, restart) + " " + formatTime(seconds) + "!\r\n" + message;
+			serverWideNotice(notice);
+			LOG.log(Level.WARNING, notice);
 			GameServer.getInstance().shutdown(halt, seconds * 1000);
+			if (restart) {
+				//TODO: implement restart
+			}
+		} else {
+			//TODO: implement cancel
 		}
 	}
 }

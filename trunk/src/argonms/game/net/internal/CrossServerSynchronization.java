@@ -186,7 +186,7 @@ public class CrossServerSynchronization {
 	}
 
 	public void receivedCenterServerSynchronizationPacket(LittleEndianReader packet) {
-		partiesAndChatRooms.receivedCenterServerSynchronziationPacket(packet);
+		partiesAndChatRooms.receivedCenterServerSynchronizationPacket(packet);
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
@@ -409,7 +409,7 @@ public class CrossServerSynchronization {
 		return true;
 	}
 
-	public byte sendBuddyInvite(GameCharacter sender, int recipientId) {
+	public Pair<Byte, Byte> sendBuddyInvite(GameCharacter sender, int recipientId) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
 		lockRead();
 		try {
@@ -417,11 +417,11 @@ public class CrossServerSynchronization {
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
 				ccs.callSendBuddyInvite(queue, recipientId, sender.getId(), sender.getName());
 				Pair<Byte, Object> result;
-				byte inviteResult;
+				Byte inviteResult;
 				//address any results that have since responded, for a possibility of early out
 				while ((result = queue.poll()) != null)
-					if ((inviteResult = ((Byte) result.right).byteValue()) != -1)
-						return inviteResult;
+					if (((inviteResult = (Byte) result.right).byteValue()) != -1)
+						return new Pair<Byte, Byte>(result.left, inviteResult);
 					else
 						remaining--;
 				remaining++;
@@ -432,25 +432,25 @@ public class CrossServerSynchronization {
 				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 				if (result == null) {
 					LOG.log(Level.FINE, "Cross process buddy invite timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
-					return 0;
+					return new Pair<Byte, Byte>(Byte.valueOf((byte) -1), Byte.valueOf((byte) -1));
 				}
-				byte inviteResult = ((Byte) result.right).byteValue();
-				if (inviteResult != -1)
-					return inviteResult;
+				Byte inviteResult = ((Byte) result.right);
+				if (inviteResult.byteValue() != -1)
+					return new Pair<Byte, Byte>(result.left, inviteResult);
 				remaining--;
 			}
-			return 0;
+			return new Pair<Byte, Byte>(Byte.valueOf((byte) -1), Byte.valueOf((byte) -1));
 		} catch (InterruptedException e) {
 			//propagate the interrupted status further up to our worker
 			//executor service and see if they care - we don't care about it
 			Thread.currentThread().interrupt();
-			return 0;
+			return new Pair<Byte, Byte>(Byte.valueOf((byte) -1), Byte.valueOf((byte) -1));
 		} finally {
 			unlockRead();
 		}
 	}
 
-	/* package-private */ byte makeBuddyInviteResult(int recipientId, int senderId, String senderName) {
+	/* package-private */ byte makeBuddyInviteResult(int recipientId, byte srcCh, int senderId, String senderName) {
 		GameCharacter p = self.getPlayerById(recipientId);
 		if (p == null)
 			return -1;
@@ -458,11 +458,38 @@ public class CrossServerSynchronization {
 		BuddyList bList = p.getBuddyList();
 		if (bList.isFull())
 			return BuddyListHandler.THEIR_LIST_FULL;
-		if (bList.getBuddy(senderId) != null)
-			return BuddyListHandler.ALREADY_ON_LIST;
+		BuddyListEntry existing = bList.getBuddy(senderId);
+		if (existing != null) {
+			assert (existing.getStatus() == BuddyListHandler.STATUS_HALF_OPEN);
+			existing.setStatus(BuddyListHandler.STATUS_MUTUAL);
+			existing.setChannel(srcCh);
+			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(existing));
+			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
+			return Byte.MIN_VALUE;
+		}
 		bList.addInvite(senderId, senderName);
 		p.getClient().getSession().send(GamePackets.writeBuddyInvite(senderId, senderName));
 		return Byte.MAX_VALUE;
+	}
+
+	public void sendBuddyInviteRetracted(GameCharacter p, int deletedId) {
+		lockRead();
+		try {
+			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
+				if (ccs.sendBuddyInviteRetracted(p.getId(), deletedId))
+					break;
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private */ boolean receivedBuddyInviteRetracted(int recipient, int sender) {
+		GameCharacter p = self.getPlayerById(recipient);
+		if (p == null)
+			return false;
+
+		p.getBuddyList().removeInvite(sender);
+		return true;
 	}
 
 	private void sendReturnBuddyLogInNotifications(byte destCh, int recipient, List<Integer> senders, boolean bubble) {
@@ -716,7 +743,7 @@ public class CrossServerSynchronization {
 		partiesAndChatRooms.sendLeaveChatroom(leaver.getChatRoom().getRoomId(), leaver.getId());
 	}
 
-	public boolean sendChatroomInvite(String invitee, int roomId, String inviter) {
+	public boolean sendChatroomInvite(String inviter, int roomId, String invitee) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
 		lockRead();
 		try {

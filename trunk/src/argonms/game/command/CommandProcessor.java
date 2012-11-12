@@ -215,7 +215,7 @@ public class CommandProcessor {
 		universalCommands.put("!ban", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {
-				return "Usage: !ban <target> <reason> [<expire date>|perm]";
+				return "Usage: !ban <target> [<expire date>|perm] <reason>";
 			}
 
 			@Override
@@ -231,12 +231,6 @@ public class CommandProcessor {
 					resp.printErr(getUsage());
 					return;
 				}
-
-				if (!args.hasNext()) {
-					resp.printErr(getUsage());
-					return;
-				}
-				String reason = args.next();
 
 				long expireTimestamp;
 				if (!args.hasNext()) {
@@ -272,6 +266,12 @@ public class CommandProcessor {
 					}
 					expireTimestamp = TimeTool.NO_EXPIRATION;
 				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String reason = args.restOfString();
 
 				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.BAN, new CommandTarget.BanValue(caller.getName(), reason, expireTimestamp))));
 			}
