@@ -37,8 +37,8 @@ import java.util.Set;
 public final class StatusEffectTools {
 	public static final byte
 		LEVEL_UP = 0,
-		PASSIVE_BUFF = 1,
-		ACTIVE_BUFF = 2, //energy charge + party buffs + beholder?
+		ACTIVE_BUFF = 1, //player activated buff himself - such as all buffs that apply to the caster only
+		PASSIVE_BUFF = 2, //something else activated buff for player - energy charge, party buffs, beholder, etc.
 		ITEM_GAIN = 3,
 		PET_LVL_UP = 3,
 		DRAGON_BLOOD = 5,
@@ -48,11 +48,16 @@ public final class StatusEffectTools {
 		MOB_BUFF = 11
 	;
 
-	private static byte[] getFirstPersonCastVisualEffect(GameCharacter p, StatusEffectsData e, byte stance) {
+	private static byte[] getFirstPersonCastEffect(GameCharacter p, byte effectType, StatusEffectsData e, byte stance) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				if (effectType == PASSIVE_BUFF)
+					return GamePackets.writeSelfVisualEffect(effectType, e.getDataId(), e.getLevel(), stance);
+		}
 		return null;
 	}
 
-	private static byte[] getFirstPersonCastEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+	private static byte[] getFirstPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
@@ -71,15 +76,15 @@ public final class StatusEffectTools {
 		return null;
 	}
 
-	private static byte[] getThirdPersonCastVisualEffect(GameCharacter p, StatusEffectsData e, byte stance) {
+	private static byte[] getThirdPersonCastEffect(GameCharacter p, byte effectType, StatusEffectsData e, byte stance) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
-				return GamePackets.writeBuffMapVisualEffect(p, PASSIVE_BUFF, e.getDataId(), e.getLevel(), stance);
+				return GamePackets.writeBuffMapVisualEffect(p, effectType, e.getDataId(), e.getLevel(), stance);
 		}
 		return null;
 	}
 
-	private static byte[] getThirdPersonCastEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+	private static byte[] getThirdPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
@@ -97,7 +102,7 @@ public final class StatusEffectTools {
 		return null;
 	}
 
-	private static byte[] getFirstPersonDispelVisualEffect(GameCharacter p) {
+	private static byte[] getFirstPersonCancelEffect(GameCharacter p) {
 		return null;
 	}
 
@@ -105,7 +110,7 @@ public final class StatusEffectTools {
 		return GamePackets.writeCancelStatusEffect(e.getEffects());
 	}
 
-	private static byte[] getThirdPersonDispelVisualEffect(GameCharacter p) {
+	private static byte[] getThirdPersonCancelEffect(GameCharacter p) {
 		return null;
 	}
 
@@ -128,18 +133,18 @@ public final class StatusEffectTools {
 		return updatedStats;
 	}
 
-	public static void applyEffectsAndShowVisuals(GameCharacter p, StatusEffectsData e, byte stance) {
+	public static void applyEffectsAndShowVisuals(GameCharacter p, byte effectType, StatusEffectsData e, byte stance) {
 		Map<PlayerStatusEffect, Short> updatedStats = applyEffects(p, e);
-		byte[] effect = getFirstPersonCastVisualEffect(p, e, stance);
+		byte[] effect = getFirstPersonCastEffect(p, effectType, e, stance);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
-		effect = getFirstPersonCastEffect(p, e, updatedStats);
+		effect = getFirstPersonApplyEffect(p, e, updatedStats);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
-		effect = getThirdPersonCastVisualEffect(p, e, stance);
+		effect = getThirdPersonCastEffect(p, effectType, e, stance);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
-		effect = getThirdPersonCastEffect(p, e, updatedStats);
+		effect = getThirdPersonApplyEffect(p, e, updatedStats);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
 	}
@@ -155,13 +160,13 @@ public final class StatusEffectTools {
 
 	public static void dispelEffectsAndShowVisuals(GameCharacter p, StatusEffectsData e) {
 		dispelEffects(p, e);
-		byte[] effect = getFirstPersonDispelVisualEffect(p);
+		byte[] effect = getFirstPersonCancelEffect(p);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
 		effect = getFirstPersonDispelEffect(p, e);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
-		effect = getThirdPersonDispelVisualEffect(p);
+		effect = getThirdPersonCancelEffect(p);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
 		effect = getThirdPersonDispelEffect(p, e, e.getEffects());

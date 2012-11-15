@@ -355,8 +355,8 @@ public final class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.FP_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -367,8 +367,8 @@ public final class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.IL_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -379,8 +379,8 @@ public final class DealDamageHandler {
 				if (absorbMp > 0) {
 					monster.loseMp(absorbMp);
 					player.gainMp(absorbMp);
-					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1));
-					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1), player);
+					player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1));
+					player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.CLERIC_MP_EATER, level, (byte) -1), player);
 				}
 			}
 		}
@@ -408,8 +408,8 @@ public final class DealDamageHandler {
 				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(player.getEnergyCharge()));
 				player.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0));
 				player.getMap().sendToAll(GamePackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
-				player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
-				player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.ACTIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
+				player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
+				player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
 			}
 		}
 	}
@@ -562,6 +562,7 @@ public final class DealDamageHandler {
 								skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
 						break;
 				}
+				break;
 			case AXE1H:
 			case AXE2H:
 				if (type == AttackType.MELEE)

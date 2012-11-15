@@ -169,7 +169,7 @@ public final class SkillTools {
 	public static void useCastSkill(final GameCharacter p, final int skillId, final byte skillLevel, byte stance) {
 		PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 		p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(skillCastCosts(p, e), true));
-		StatusEffectTools.applyEffectsAndShowVisuals(p, e, stance);
+		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.ACTIVE_BUFF, e, stance);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 				@Override
@@ -217,6 +217,35 @@ public final class SkillTools {
 			return true;
 		}
 		return false;
+	}
+
+	public static void applyPartyBuff(final GameCharacter p, final PlayerSkillEffectsData e) {
+		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		if (e.getDuration() > 0) {
+			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
+				@Override
+				public void run() {
+					cancelBuffSkill(p, e.getDataId(), e.getLevel());
+				}
+			}, e.getDuration()), e.getLevel(), System.currentTimeMillis() + e.getDuration());
+		}
+	}
+
+	public static void applyTimeLeap(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
+		if (!caster)
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		//TODO: apply time leap
+	}
+
+	public static void applyResurrection(GameCharacter p, PlayerSkillEffectsData e) {
+		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		//TODO: apply resurrection
+	}
+
+	public static void applyDispel(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
+		if (!caster)
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		//TODO: apply dispel
 	}
 
 	private static void cancelBuffSkill(GameCharacter p, int skillId, byte skillLevel) {

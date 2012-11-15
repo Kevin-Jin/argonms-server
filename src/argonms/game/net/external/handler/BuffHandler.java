@@ -32,10 +32,12 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
 import argonms.game.net.external.GameClient;
@@ -47,8 +49,8 @@ import java.awt.Point;
  * @author GoldenKevin
  */
 public final class BuffHandler {
-	private static boolean isAffected(byte bitset, byte index, byte partySize) {
-		return ((bitset & (1 << (6 + index - partySize))) != 0);
+	private static boolean isAffected(byte bitset, byte index) {
+		return ((bitset & (1 << (5 - index))) != 0);
 	}
 
 	public static void handleUseSkill(LittleEndianReader packet, GameClient gc) {
@@ -82,18 +84,127 @@ public final class BuffHandler {
 				stance = packet.readByte();
 				break;
 			}
-			case Skills.DISPEL: {
-				byte affected = packet.readByte();
+			case Skills.RAGE:
+			case Skills.IRON_WILL:
+			case Skills.SPEARMAN_HYPER_BODY:
+			case Skills.FP_MEDITATION:
+			case Skills.IL_MEDITATION:
+			case Skills.CLERIC_BLESS:
+			case Skills.CLERIC_HOLY_SYMBOL:
+			case Skills.HOLY_SHIELD:
+			case Skills.XBOW_MASTER_SHARP_EYES:
+			case Skills.BOW_MASTER_SHARP_EYES:
+			case Skills.SIN_HASTE:
+			case Skills.MESO_UP:
+			case Skills.DIT_HASTE:
+			case Skills.SPEED_INFUSION:
+			case Skills.HERO_MAPLE_WARRIOR:
+			case Skills.PALADIN_MAPLE_WARRIOR:
+			case Skills.DARK_KNIGHT_MAPLE_WARRIOR:
+			case Skills.FP_MAPLE_WARRIOR:
+			case Skills.IL_MAPLE_WARRIOR:
+			case Skills.BISHOP_MAPLE_WARRIOR:
+			case Skills.BOW_MASTER_MAPLE_WARRIOR:
+			case Skills.XBOW_MASTER_MAPLE_WARRIOR:
+			case Skills.NL_MAPLE_WARRIOR:
+			case Skills.SHADOWER_MAPLE_WARRIOR:
+			case Skills.BUCCANEER_MAPLE_WARRIOR:
+			case Skills.CORSAIR_MAPLE_WARRIOR: {
 				PartyList party = p.getParty();
-				byte partySize = party.getMembersCount();
-				for (byte i = 0; i < partySize; i++) {
-					if (isAffected(affected, i, partySize)) {
-						
+				if (party != null) {
+					PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+					byte affected = packet.readByte();
+					party.lockRead();
+					try {
+						PartyList.Member[] members = party.getAllMembers();
+						byte partySize = party.getMembersCount();
+						for (byte i = 0; i < partySize; i++) {
+							if (isAffected(affected, i)) {
+								GameCharacter memberPlayer = ((PartyList.LocalMember) members[i]).getPlayer();
+								if (p != memberPlayer && e.makeChanceResult())
+									SkillTools.applyPartyBuff(memberPlayer, e);
+							}
+						}
+					} finally {
+						party.unlockRead();
 					}
 				}
-				affected = packet.readByte();
 				break;
 			}
+			case Skills.TIME_LEAP: {
+				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+				PartyList party = p.getParty();
+				if (party != null) {
+					byte affected = packet.readByte();
+					party.lockRead();
+					try {
+						PartyList.Member[] members = party.getAllMembers();
+						byte partySize = party.getMembersCount();
+						for (byte i = 0; i < partySize; i++) {
+							if (isAffected(affected, i)) {
+								GameCharacter memberPlayer = ((PartyList.LocalMember) members[i]).getPlayer();
+								if (e.makeChanceResult())
+									SkillTools.applyTimeLeap(memberPlayer, p == memberPlayer, e);
+							}
+						}
+					} finally {
+						party.unlockRead();
+					}
+				}
+				break;
+			}
+			case Skills.BISHOP_RESURRECTION: {
+				PartyList party = p.getParty();
+				if (party != null) {
+					PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+					byte affected = packet.readByte();
+					party.lockRead();
+					try {
+						PartyList.Member[] members = party.getAllMembers();
+						byte partySize = party.getMembersCount();
+						for (byte i = 0; i < partySize; i++) {
+							if (isAffected(affected, i)) {
+								GameCharacter memberPlayer = ((PartyList.LocalMember) members[i]).getPlayer();
+								if (p != memberPlayer && e.makeChanceResult())
+									SkillTools.applyResurrection(memberPlayer, e);
+							}
+						}
+					} finally {
+						party.unlockRead();
+					}
+				}
+				break;
+			}
+			case Skills.DISPEL:
+				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+				PartyList party = p.getParty();
+				if (party != null) {
+					byte affected = packet.readByte();
+					party.lockRead();
+					try {
+						PartyList.Member[] members = party.getAllMembers();
+						byte partySize = party.getMembersCount();
+						for (byte i = 0; i < partySize; i++) {
+							if (isAffected(affected, i)) {
+								GameCharacter memberPlayer = ((PartyList.LocalMember) members[i]).getPlayer();
+								if (e.makeChanceResult())
+									SkillTools.applyDispel(memberPlayer, p == memberPlayer, e);
+							}
+						}
+					} finally {
+						party.unlockRead();
+					}
+				}
+
+				packet.readShort();
+				byte count = packet.readByte();
+				for (int i = 0; i < count; i++) {
+					int mobId = packet.readInt();
+					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobId);
+					if (m != null && e.makeChanceResult())
+						; //TODO: dispel mob's buffs
+				}
+				break;
 			default:
 				SkillStats skill = SkillDataLoader.getInstance().getSkill(skillId);
 				if (skill.isSummon()) {
