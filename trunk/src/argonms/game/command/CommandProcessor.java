@@ -134,19 +134,20 @@ public class CommandProcessor {
 				}
 
 				CommandTarget.MapValue destination = (CommandTarget.MapValue) warpTo.access(CommandTarget.CharacterProperty.MAP);
-				byte destChannel = ((Byte) warpTo.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
-				warpee.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, destination)));
+				byte destChannel = destination.channel;
 				if (destChannel == 0) {
-					resp.printOut(warpToName + " is currently offline. " + warpeeName + " has been warped to where he/she will spawn on next login.");
+					destination = new CommandTarget.MapValue(destination, CommandTarget.MapValue.NO_CHANNEL_CHANGE);
+					resp.printOut(warpToName + " is currently offline. " + warpeeName + " will be warped to where " + warpToName + " will spawn on next login.");
 				} else {
 					byte sourceChannel = ((Byte) warpee.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
 					if (sourceChannel == 0) {
-						resp.printOut(warpeeName + " is currently offline He/she will spawn on next login where " + warpToName + " is now.");
+						resp.printOut(warpeeName + " is currently offline. " + warpeeName + " will spawn on next login where " + warpToName + " is now.");
 					} else if (sourceChannel != destChannel) {
-						warpee.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_CHANNEL, Byte.valueOf(destChannel))));
-						resp.printOut(warpeeName + " has been transferred to channel " + destChannel + ".");
+						destination = new CommandTarget.MapValue(destination, destChannel);
+						resp.printOut(warpeeName + " will be transferred to channel " + destChannel + ".");
 					}
 				}
+				warpee.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, destination)));
 			}
 		}, "Teleport a player to another", UserPrivileges.GM));
 		universalCommands.put("!town", new TownCommandHandler());
@@ -496,15 +497,16 @@ public class CommandProcessor {
 					resp.printErr(getUsage());
 					return;
 				}
+				CommandTarget.MapValue map = (CommandTarget.MapValue) target.access(CommandTarget.CharacterProperty.MAP);
 				Point pos = (Point) target.access(CommandTarget.CharacterProperty.POSITION);
-				byte channel = ((Byte) target.access(CommandTarget.CharacterProperty.CHANNEL)).byteValue();
+				byte channel = map.channel;
 				StringBuilder sb = new StringBuilder();
 				sb.append("PlayerId=").append(target.access(CommandTarget.CharacterProperty.PLAYER_ID));
 				if (channel != 0)
 					sb.append("; Channel=").append(channel);
 				else
 					sb.append("; Offline");
-				sb.append("; Map=").append(((CommandTarget.MapValue) target.access(CommandTarget.CharacterProperty.MAP)).mapId);
+				sb.append("; Map=").append(map.mapId);
 				sb.append("; Position(").append(pos.x).append(",").append(pos.y).append(")");
 				resp.printOut(sb.toString());
 			}

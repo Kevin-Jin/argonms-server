@@ -396,7 +396,6 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 	private void processPartyFetchList(LittleEndianReader packet) {
 		int partyId = packet.readInt();
-		int excludePlayerId = packet.readInt();
 		byte responseCh = packet.readByte();
 		int responseId = packet.readInt();
 		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
@@ -437,11 +436,8 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			lew.writeInt(responseId);
 			lew.writeInt(party.getLeader());
 			Collection<Party.Member> members = party.getAllMembers();
-			lew.writeByte((byte) (members.size() - 1));
+			lew.writeByte((byte) members.size());
 			for (Party.Member member : members) {
-				if (member.getPlayerId() == excludePlayerId)
-					continue;
-
 				lew.writeInt(member.getPlayerId());
 				lew.writeByte(member.getChannel());
 				if (member.getChannel() == responseCh)
@@ -547,9 +543,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		party.lockRead();
 		try {
 			if (updateLevel)
-				party.getMember(updatedPlayerCh, updatedPlayerId).setLevel(newValue);
+				party.getMember(updatedPlayerId).setLevel(newValue);
 			else
-				party.getMember(updatedPlayerCh, updatedPlayerId).setJob(newValue);
+				party.getMember(updatedPlayerId).setJob(newValue);
 			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : party.allChannels()) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))

@@ -196,25 +196,27 @@ public class PartyList {
 	private final Map<Integer, LocalMember> localMembers;
 	//members on other channels
 	private final Map<Byte, Map<Integer, RemoteMember>> remoteMembers;
+	private final Member[] allMembers;
 	private volatile int leader;
 	private final Lock readLock, writeLock;
 
-	public PartyList(int partyId, GameCharacter init, boolean loggedOn, boolean leader) {
+	public PartyList(int partyId) {
 		this.id = partyId;
 		this.localMembers = new HashMap<Integer, LocalMember>();
 		this.remoteMembers = new HashMap<Byte, Map<Integer, RemoteMember>>();
+		this.allMembers = new Member[6];
+		for (int i = 0; i < 6; i++)
+			allMembers[i] = EmptyMember.getInstance();
 
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
+	}
 
-		if (leader)
-			this.leader = init.getId();
-
-		if (loggedOn)
-			addPlayer(new LocalMember(init));
-		else
-			addToOffline(new RemoteMember(new LocalMember(init), OFFLINE_CH));
+	public PartyList(int partyId, GameCharacter creator) {
+		this(partyId);
+		this.leader = creator.getId();
+		addPlayer(new LocalMember(creator), false);
 	}
 
 	public int getId() {
@@ -241,17 +243,40 @@ public class PartyList {
 	}
 
 	/**
-	 * This PartyList must be at least read locked while the returned List is in scope.
+	 * This PartyList must be at least read locked while the returned Member[] is in scope.
 	 * @return 
 	 */
-	public List<Member> getAllMembers() {
-		List<Member> all = new ArrayList<Member>();
-		all.addAll(localMembers.values());
-		for (Map<Integer, RemoteMember> otherChannel : remoteMembers.values())
-			all.addAll(otherChannel.values());
-		for (int i = all.size(); i < 6; i++)
-			all.add(EmptyMember.getInstance());
-		return all;
+	public Member[] getAllMembers() {
+		return allMembers;
+	}
+
+	private void removeFromAllMembersAndCollapse(int playerId) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == playerId) {
+				for (; i < 5 && allMembers[i + 1].getPlayerId() != 0; i++)
+					allMembers[i] = allMembers[i + 1];
+				allMembers[i] = EmptyMember.getInstance();
+				break;
+			}
+		}
+	}
+
+	private void addToAllMembers(Member member) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == 0) {
+				allMembers[i] = member;
+				break;
+			}
+		}
+	}
+
+	private void syncWithAllMembers(Member member) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == member.getPlayerId()) {
+				allMembers[i] = member;
+				break;
+			}
+		}
 	}
 
 	/**
@@ -290,7 +315,8 @@ public class PartyList {
 	 */
 	public void memberConnected(RemoteMember member) {
 		removeFromOffline(member);
-		addPlayer(member);
+		addPlayer(member, true);
+		syncWithAllMembers(member);
 	}
 
 	/**
@@ -302,16 +328,19 @@ public class PartyList {
 	public void memberConnected(GameCharacter p) {
 		LocalMember member = new LocalMember(p);
 		removeFromOffline(member);
-		addPlayer(member);
+		addPlayer(member, true);
+		syncWithAllMembers(member);
 	}
 
-	private void addToOffline(Member member) {
+	private RemoteMember addToOffline(Member member) {
 		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
 		if (others == null) {
 			others = new HashMap<Integer, RemoteMember>();
 			remoteMembers.put(Byte.valueOf(OFFLINE_CH), others);
 		}
-		others.put(Integer.valueOf(member.getPlayerId()), new RemoteMember(member, OFFLINE_CH));
+		RemoteMember offlineMember = new RemoteMember(member, OFFLINE_CH);
+		others.put(Integer.valueOf(member.getPlayerId()), offlineMember);
+		return offlineMember;
 	}
 
 	/**
@@ -322,7 +351,7 @@ public class PartyList {
 	 * @param pId 
 	 */
 	public void memberDisconnected(byte ch, int pId) {
-		addToOffline(removePlayer(ch, pId));
+		syncWithAllMembers(addToOffline(removePlayer(ch, pId, true)));
 	}
 
 	/**
@@ -332,7 +361,18 @@ public class PartyList {
 	 * @param p 
 	 */
 	public void memberDisconnected(GameCharacter p) {
-		addToOffline(removePlayer(p));
+		syncWithAllMembers(addToOffline(removePlayer(p, true)));
+	}
+
+	private void addPlayer(RemoteMember member, boolean transition) {
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(member.getChannel()));
+		if (others == null) {
+			others = new HashMap<Integer, RemoteMember>();
+			remoteMembers.put(Byte.valueOf(member.getChannel()), others);
+		}
+		others.put(Integer.valueOf(member.getPlayerId()), member);
+		if (!transition)
+			addToAllMembers(member);
 	}
 
 	/**
@@ -341,12 +381,13 @@ public class PartyList {
 	 * @param member 
 	 */
 	public void addPlayer(RemoteMember member) {
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(member.getChannel()));
-		if (others == null) {
-			others = new HashMap<Integer, RemoteMember>();
-			remoteMembers.put(Byte.valueOf(member.getChannel()), others);
-		}
-		others.put(Integer.valueOf(member.getPlayerId()), member);
+		addPlayer(member, false);
+	}
+
+	private void addPlayer(LocalMember member, boolean transition) {
+		localMembers.put(Integer.valueOf(member.getPlayerId()), member);
+		if (!transition)
+			addToAllMembers(member);
 	}
 
 	/**
@@ -355,7 +396,17 @@ public class PartyList {
 	 * @param member 
 	 */
 	public void addPlayer(LocalMember member) {
-		localMembers.put(Integer.valueOf(member.getPlayerId()), member);
+		addPlayer(member, false);
+	}
+
+	private RemoteMember removePlayer(byte ch, int playerId, boolean transition) {
+		if (!transition)
+			removeFromAllMembersAndCollapse(playerId);
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(ch));
+		RemoteMember member = others.remove(Integer.valueOf(playerId));
+		if (others.isEmpty())
+			remoteMembers.remove(Byte.valueOf(ch));
+		return member;
 	}
 
 	/**
@@ -366,11 +417,13 @@ public class PartyList {
 	 * @return 
 	 */
 	public RemoteMember removePlayer(byte ch, int playerId) {
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(ch));
-		RemoteMember member = others.remove(Integer.valueOf(playerId));
-		if (others.isEmpty())
-			remoteMembers.remove(Byte.valueOf(ch));
-		return member;
+		return removePlayer(ch, playerId, false);
+	}
+
+	private LocalMember removePlayer(GameCharacter p, boolean transition) {
+		if (!transition)
+			removeFromAllMembersAndCollapse(p.getId());
+		return localMembers.remove(Integer.valueOf(p.getId()));
 	}
 
 	/**
@@ -380,9 +433,14 @@ public class PartyList {
 	 * @return 
 	 */
 	public LocalMember removePlayer(GameCharacter p) {
-		return localMembers.remove(Integer.valueOf(p.getId()));
+		return removePlayer(p, false);
 	}
 
+	/**
+	 * This PartyList must be at least read locked when this method is called.
+	 * @param playerId
+	 * @return 
+	 */
 	public RemoteMember getOfflineMember(int playerId) {
 		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
 	}
@@ -393,14 +451,9 @@ public class PartyList {
 	 * @return 
 	 */
 	public Member getMember(int playerId) {
-		Member member = localMembers.get(Integer.valueOf(playerId));
-		if (member != null)
-			return member;
-		for (Map<Integer, RemoteMember> channel : remoteMembers.values()) {
-			member = channel.get(Integer.valueOf(playerId));
-			if (member != null)
-				return member;
-		}
+		for (int i = 0; i < 6; i++)
+			if (allMembers[i].getPlayerId() == playerId)
+				return allMembers[i];
 		return null;
 	}
 
@@ -415,6 +468,15 @@ public class PartyList {
 		if (channelMembers != null)
 			return channelMembers.get(Integer.valueOf(playerId));
 		return null;
+	}
+
+	/**
+	 * This PartyList must be at least read locked when this method is called.
+	 * @param position
+	 * @return 
+	 */
+	public Member getMember(byte position) {
+		return allMembers[position];
 	}
 
 	/**

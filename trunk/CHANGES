@@ -2420,6 +2420,16 @@
 	* Players may re-add another player that they have deleted from their buddy
 	list who still has himself/herself on their buddy list.
 
+2012-11-14  GoldenKevin  (revision 175)
+
+	* !tp command now gives all warnings to players before the warp is
+	actually performed.
+	* Disambiguated the subjects in !tp command warnings.
+	* PartyList member order should now be consistent for each channel's copy of
+	a party.
+	* PartyList members can now be accessed by index.
+	* Fixed DefaultNpcShopDataLoader.loadAll().
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

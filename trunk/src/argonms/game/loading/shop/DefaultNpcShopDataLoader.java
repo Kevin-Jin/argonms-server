@@ -74,7 +74,7 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 		List<NpcShop.ShopSlot> items;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `npcid`,`itemid`,`price` FROM `shopitems` ORDER BY `shopid`,`position` ASC");
+			ps = con.prepareStatement("SELECT `npcid`,`itemid`,`price` FROM `shopitems` ORDER BY `npcid`,`position` ASC");
 			rs = ps.executeQuery();
 			boolean more = false;
 			while (more || rs.next()) {
@@ -86,7 +86,7 @@ public class DefaultNpcShopDataLoader extends NpcShopDataLoader {
 				loadedShops.put(Integer.valueOf(npcId), new NpcShop.DefaultNpcShopStock(items));
 			}
 		} catch (SQLException ex) {
-			LOG.log(Level.WARNING, "Could not load all shop data from MCDB.", ex);
+			LOG.log(Level.WARNING, "Could not load all shop data.", ex);
 			return false;
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);

@@ -28,17 +28,28 @@ import java.util.Map;
  */
 public interface CommandTarget {
 	public static class MapValue {
+		public static byte NO_CHANNEL_CHANGE = -1;
+
 		public final int mapId;
 		public final byte spawnPoint;
+		public final byte channel;
 
-		public MapValue(int mapId, byte portal) {
+		public MapValue(int mapId, byte portal, byte channel) {
 			this.mapId = mapId;
 			this.spawnPoint = portal;
+			this.channel = channel;
+		}
+
+		public MapValue(MapValue toCopy, byte channel) {
+			this(toCopy.mapId, toCopy.spawnPoint, channel);
+		}
+
+		public MapValue(int mapId, byte portal) {
+			this(mapId, portal, NO_CHANNEL_CHANGE);
 		}
 
 		public MapValue(int mapId) {
-			this.mapId = mapId;
-			this.spawnPoint = 0;
+			this(mapId, (byte) 0);
 		}
 	}
 
@@ -158,7 +169,7 @@ public interface CommandTarget {
 	}
 
 	public enum CharacterProperty {
-		MAP((byte) 1, 5),
+		MAP((byte) 1, 6),
 		CHANNEL((byte) 2, 1),
 		POSITION((byte) 3, 4),
 		PLAYER_ID((byte) 4, 4);

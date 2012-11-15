@@ -176,22 +176,21 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
-	/* package-private */ void sendFillPartyList(BlockingQueue<Pair<Byte, Object>> resultConsumer, GameCharacter excludeMember, PartyList party) {
+	/* package-private */ void sendFillPartyList(BlockingQueue<Pair<Byte, Object>> resultConsumer, PartyList party) {
 		int responseId = nextResponseId.incrementAndGet();
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_FETCH_LIST);
 		lew.writeInt(party.getId());
-		lew.writeInt(excludeMember.getId());
 		lew.writeByte(self.getChannelId());
 		lew.writeInt(responseId);
 
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
-	public PartyList sendFetchPartyList(GameCharacter p, int partyId) {
-		PartyList newParty = new PartyList(partyId, p, false, false);
+	public PartyList sendFetchPartyList(int partyId) {
+		PartyList newParty = new PartyList(partyId);
 		PartyList party;
 		//prevent any concurrent accessors from using an uninitialized PartyList
 		newParty.lockWrite();
@@ -199,7 +198,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			party = activeLocalParties.putIfAbsent(Integer.valueOf(partyId), newParty);
 			if (party == null) {
 				party = newParty;
-				handler.fillPartyList(p, party);
+				handler.fillPartyList(party);
 			}
 		} finally {
 			newParty.unlockWrite();
@@ -337,7 +336,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		if (leaderPlayer == null)
 			return;
 
-		PartyList party = new PartyList(partyId, leaderPlayer, true, true);
+		PartyList party = new PartyList(partyId, leaderPlayer);
 		activeLocalParties.put(Integer.valueOf(partyId), party);
 		leaderPlayer.setParty(party);
 		leaderPlayer.getClient().getSession().send(GamePackets.writePartyCreated(partyId));
@@ -423,7 +422,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		byte joinerCh = packet.readByte();
 		if (joinerCh == self.getChannelId()) {
 			GameCharacter joiningPlayer = self.getPlayerById(joinerId);
-			PartyList newParty = new PartyList(partyId, joiningPlayer, true, false);
+			PartyList newParty = new PartyList(partyId);
 			PartyList party = activeLocalParties.putIfAbsent(Integer.valueOf(partyId), newParty);
 			if (party == null) {
 				//only can happen if the leader changed channels or
@@ -431,7 +430,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				party = newParty;
 				party.lockWrite();
 				try {
-					handler.fillPartyList(joiningPlayer, party);
+					handler.fillPartyList(party);
 				} finally {
 					party.unlockWrite();
 				}
@@ -534,8 +533,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		byte targetCh = packet.readByte();
 
 		if (targetCh == self.getChannelId()) {
-			GameCharacter enteringPlayer = self.getPlayerById(entererId);
-			PartyList newParty = new PartyList(partyId, enteringPlayer, true, false);
+			PartyList newParty = new PartyList(partyId);
 			PartyList party = activeLocalParties.putIfAbsent(Integer.valueOf(partyId), newParty);
 			if (party == null) {
 				//this should never happen, since we always call
@@ -544,7 +542,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				party = newParty;
 				party.lockWrite();
 				try {
-					handler.fillPartyList(enteringPlayer, party);
+					handler.fillPartyList(party);
 				} finally {
 					party.unlockWrite();
 				}

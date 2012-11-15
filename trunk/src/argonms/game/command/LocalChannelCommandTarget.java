@@ -68,7 +68,10 @@ public class LocalChannelCommandTarget implements CommandTarget {
 			switch (update.getKey()) {
 				case CHANGE_MAP: {
 					MapValue value = (MapValue) update.getValue();
-					target.changeMap(value.mapId, value.spawnPoint);
+					if (value.channel == MapValue.NO_CHANNEL_CHANGE || value.channel == target.getClient().getChannel())
+						target.changeMap(value.mapId, value.spawnPoint);
+					else
+						target.changeMapAndChannel(value.mapId, value.spawnPoint, value.channel);
 					break;
 				}
 				case CHANGE_CHANNEL:
@@ -265,7 +268,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 	public Object access(CharacterProperty key) {
 		switch (key) {
 			case MAP:
-				return new MapValue(target.getMapId(), target.getMap().nearestSpawnPoint(target.getPosition()));
+				return new MapValue(target.getMapId(), target.getMap().nearestSpawnPoint(target.getPosition()), target.getClient().getChannel());
 			case CHANNEL:
 				return Byte.valueOf(target.getClient().getChannel());
 			case POSITION:

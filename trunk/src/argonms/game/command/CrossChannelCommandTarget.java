@@ -68,6 +68,7 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					MapValue value = (MapValue) update.getValue();
 					lew.writeInt(value.mapId);
 					lew.writeByte(value.spawnPoint);
+					lew.writeByte(value.channel);
 					break;
 				}
 				case CHANGE_CHANNEL:
@@ -152,7 +153,8 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case CHANGE_MAP: {
 					int mapId = packet.readInt();
 					byte spawnPoint = packet.readByte();
-					value = new MapValue(mapId, spawnPoint);
+					byte channel = packet.readByte();
+					value = new MapValue(mapId, spawnPoint, channel);
 					break;
 				}
 				case CHANGE_CHANNEL:
@@ -236,6 +238,7 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				MapValue value = (MapValue) val;
 				lew.writeInt(value.mapId);
 				lew.writeByte(value.spawnPoint);
+				lew.writeByte(value.channel);
 				break;
 			}
 			case POSITION:
@@ -252,7 +255,8 @@ public class CrossChannelCommandTarget implements CommandTarget {
 			case MAP: {
 				int mapId = packet.readInt();
 				byte spawnPoint = packet.readByte();
-				return new MapValue(mapId, spawnPoint);
+				byte channel = packet.readByte();
+				return new MapValue(mapId, spawnPoint, channel);
 			}
 			case POSITION:
 				return packet.readPos();
@@ -263,7 +267,6 @@ public class CrossChannelCommandTarget implements CommandTarget {
 		}
 	}
 
-	//TODO: use blocking retrievals through CrossServerSynchronization
 	@Override
 	public Object access(CharacterProperty key) {
 		switch (key) {
