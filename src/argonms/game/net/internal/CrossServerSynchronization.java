@@ -684,9 +684,9 @@ public class CrossServerSynchronization {
 		partiesAndChatRooms.sendChangePartyLeader(partyId, newLeader);
 	}
 
-	/* package-private */ void fillPartyList(GameCharacter excludeMember, PartyList party) {
+	/* package-private */ void fillPartyList(PartyList party) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
-		partiesAndChatRooms.sendFillPartyList(queue, excludeMember, party);
+		partiesAndChatRooms.sendFillPartyList(queue, party);
 
 		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
 		try {
@@ -702,7 +702,7 @@ public class CrossServerSynchronization {
 				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 				return;
 			}
-			for (Object mem : (PartyList.Member[]) result.right) {
+			for (PartyList.Member mem : (PartyList.Member[]) result.right) {
 				if (mem instanceof PartyList.LocalMember)
 					party.addPlayer((PartyList.LocalMember) mem);
 				else if (mem instanceof PartyList.RemoteMember)
@@ -715,8 +715,8 @@ public class CrossServerSynchronization {
 		}
 	}
 
-	public PartyList sendFetchPartyList(GameCharacter p, int partyId) {
-		return partiesAndChatRooms.sendFetchPartyList(p, partyId);
+	public PartyList sendFetchPartyList(int partyId) {
+		return partiesAndChatRooms.sendFetchPartyList(partyId);
 	}
 
 	public void sendPartyMemberLogInNotifications(GameCharacter p, PartyList party) {

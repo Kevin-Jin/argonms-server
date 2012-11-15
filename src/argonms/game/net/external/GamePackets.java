@@ -943,7 +943,7 @@ public final class GamePackets {
 	private static void writePartyList(PartyList party, LittleEndianWriter lew, boolean leaving) {
 		party.lockRead();
 		try {
-			List<PartyList.Member> partyMembers = party.getAllMembers();
+			PartyList.Member[] partyMembers = party.getAllMembers();
 
 			for (PartyList.Member member : partyMembers)
 				lew.writeInt(member.getPlayerId());

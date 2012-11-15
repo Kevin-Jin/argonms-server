@@ -721,7 +721,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (rs.next())
-				p.party = GameServer.getChannel(c.getChannel()).getCrossServerInterface().sendFetchPartyList(p, rs.getInt(1));
+				p.party = GameServer.getChannel(c.getChannel()).getCrossServerInterface().sendFetchPartyList(rs.getInt(1));
 			rs.close();
 			ps.close();
 
@@ -1663,6 +1663,21 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public boolean changeMap(int mapid) {
 		return changeMap(mapid, (byte) 0);
+	}
+
+	public void changeMapAndChannel(int mapid, byte initialPortal, byte channel) {
+		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
+		if (goTo != null) {
+			leaveMapRoutines();
+			map.removePlayer(this);
+			map = goTo;
+			setPosition(map.getPortalPosition(initialPortal));
+			setFoothold((short) 0);
+			//party members will get new map when we connect to new channel
+			if (event != null)
+				event.playerChangedMap(this);
+			GameServer.getChannel(client.getChannel()).requestChannelChange(this, channel);
+		}
 	}
 
 	private void prepareExitChannel(boolean quickCleanup) {

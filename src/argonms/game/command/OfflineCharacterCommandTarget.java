@@ -422,7 +422,7 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
 			switch (key) {
 				case MAP:
-					return new MapValue(getIntValueInCharactersTable("map"), getByteValueInCharactersTable("spawnpoint"));
+					return new MapValue(getIntValueInCharactersTable("map"), getByteValueInCharactersTable("spawnpoint"), (byte) 0);
 				case CHANNEL:
 					return Byte.valueOf((byte) 0);
 				case POSITION:

@@ -18,11 +18,10 @@
 
 package argonms.center;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -86,25 +85,25 @@ public class Party {
 
 	//we want to keep playerChannels and channelPlayers sync'd, so use a single
 	//lock for the entire Party instance rather than two ConcurrentHashMaps
-	private final Map<Integer, Byte> playerChannels;
+	private final Map<Integer, Member> allMembers;
 	private final Map<Byte, Map<Integer, Member>> channelMembers;
 	private final Lock readLock, writeLock;
 	private volatile int leader;
 
-	public Party(Member leader) {
-		this();
-
-		this.leader = leader.getPlayerId();
-		//no locking necessary as long as we don't leak this reference
-		addPlayer(leader);
-	}
-
 	public Party() {
-		playerChannels = new HashMap<Integer, Byte>();
+		allMembers = new LinkedHashMap<Integer, Member>(6);
 		channelMembers = new HashMap<Byte, Map<Integer, Member>>();
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
+	}
+
+	public Party(Member creator) {
+		this();
+
+		this.leader = creator.getPlayerId();
+		//no locking necessary as long as we don't leak this reference
+		addPlayer(creator, false);
 	}
 
 	/**
@@ -124,10 +123,7 @@ public class Party {
 	 * @return 
 	 */
 	public Collection<Member> getAllMembers() {
-		List<Member> all = new ArrayList<Member>(playerChannels.size());
-		for (Map<Integer, Member> channel : channelMembers.values())
-			all.addAll(channel.values());
-		return all;
+		return allMembers.values();
 	}
 
 	/**
@@ -143,14 +139,10 @@ public class Party {
 	 * @return 
 	 */
 	public boolean isFull() {
-		return playerChannels.size() >= 6;
+		return allMembers.size() >= 6;
 	}
 
-	/**
-	 * This Party must be write locked when this method is called.
-	 * @param member 
-	 */
-	public void addPlayer(Member member) {
+	private void addPlayer(Member member, boolean transition) {
 		Byte oCh = Byte.valueOf(member.getChannel());
 		Integer oId = Integer.valueOf(member.getPlayerId());
 
@@ -161,7 +153,31 @@ public class Party {
 		}
 		othersOnChannel.put(Integer.valueOf(member.getPlayerId()), member);
 
-		playerChannels.put(oId, oCh);
+		if (!transition)
+			allMembers.put(oId, member);
+	}
+
+	/**
+	 * This Party must be write locked when this method is called.
+	 * @param member 
+	 */
+	public void addPlayer(Member member) {
+		addPlayer(member, false);
+	}
+
+	public boolean removePlayer(int playerId, boolean transition) {
+		boolean success;
+		Member removed = !transition ? allMembers.remove(Integer.valueOf(playerId)) : allMembers.get(Integer.valueOf(playerId));
+		if (removed != null) {
+			success = true;
+			Map<Integer, Member> others = channelMembers.get(Byte.valueOf(removed.getChannel()));
+			others.remove(Integer.valueOf(playerId));
+			if (others.isEmpty())
+				channelMembers.remove(Byte.valueOf(removed.getChannel()));
+		} else {
+			success = false;
+		}
+		return success;
 	}
 
 	/**
@@ -170,18 +186,7 @@ public class Party {
 	 * @return true if the player was removed, false otherwise
 	 */
 	public boolean removePlayer(int playerId) {
-		boolean success;
-		Byte ch = playerChannels.remove(Integer.valueOf(playerId));
-		if (ch != null) {
-			success = true;
-			Map<Integer, Member> others = channelMembers.get(ch);
-			others.remove(Integer.valueOf(playerId));
-			if (others.isEmpty())
-				channelMembers.remove(ch);
-		} else {
-			success = false;
-		}
-		return success;
+		return removePlayer(playerId, false);
 	}
 
 	/**
@@ -192,15 +197,12 @@ public class Party {
 	 */
 	public boolean setMemberChannel(int playerId, byte newCh) {
 		boolean success = false;
-		Byte oldCh = playerChannels.get(Integer.valueOf(playerId));
-		if (oldCh != null && channelMembers.containsKey(oldCh)) {
-			Member mem = channelMembers.get(oldCh).get(Integer.valueOf(playerId));
-			if (mem != null) {
-				removePlayer(playerId);
-				mem.setChannel(newCh);
-				addPlayer(mem);
-				success = true;
-			}
+		Member mem = allMembers.get(Integer.valueOf(playerId));
+		if (mem != null) {
+			removePlayer(playerId, true);
+			mem.setChannel(newCh);
+			addPlayer(mem, true);
+			success = true;
 		}
 		return success;
 	}
@@ -224,8 +226,8 @@ public class Party {
 	 * This Party must be at least read locked when this method is called.
 	 * @return 
 	 */
-	public Member getMember(byte channel, int playerId) {
-		return channelMembers.get(Byte.valueOf(channel)).get(Integer.valueOf(playerId));
+	public Member getMember(int playerId) {
+		return allMembers.get(Integer.valueOf(playerId));
 	}
 
 	public void lockRead() {
