@@ -29,7 +29,7 @@ import argonms.game.loading.skill.SkillDataLoader;
 public final class DiseaseTools {
 	public static void applyDebuff(final GameCharacter p, final short mobSkillId, final byte skillLevel) {
 		MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(mobSkillId).getLevel(skillLevel);
-		StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
+		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1);
 		p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {

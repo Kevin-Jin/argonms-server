@@ -119,7 +119,7 @@ public final class ItemTools {
 		if (!statChanges.isEmpty())
 			p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(statChanges, false));
 		if (e.getDuration() > 0) { //buff item
-			StatusEffectTools.applyEffectsAndShowVisuals(p, e, (byte) -1);
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1);
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 				@Override
 				public void run() {

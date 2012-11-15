@@ -2430,6 +2430,14 @@
 	* PartyList members can now be accessed by index.
 	* Fixed DefaultNpcShopDataLoader.loadAll().
 
+2012-11-15  GoldenKevin  (revision 176)
+
+	* Fixed mastery level for swords being too high if skill points were also
+	allocated to mastery skills for axes.
+	* Implemented party buffs. Dispel, resurrection, time leap party skills as
+	well as map buffs will be implemented soon.
+	* Refactored several identifiers in StatusEffectTools.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
