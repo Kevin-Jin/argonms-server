@@ -39,11 +39,8 @@ public enum MonsterStatusEffect { //byte numbers are from left to right
 	FREEZE				(0x00000100),
 	POISON				(0x00000200),
 	SEAL				(0x00000400),
-	TAUNT				(0x00000800),
-	WEAPON_ATTACK_UP	(0x00001000),
-	WEAPON_DEFENSE_UP	(0x00002000),
-	MAGIC_ATTACK_UP		(0x00004000),
-	MAGIC_DEFENSE_UP	(0x00008000),
+	TAUNT_1				(0x00004000), //lower defense?
+	TAUNT_2				(0x00008000), //increase exp + drop rate?
 
 	//byte 3
 	DOOM				(0x00010000),

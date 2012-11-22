@@ -24,6 +24,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.loading.StatusEffectsData;
+import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.ClientSession;
 import argonms.common.util.Scheduler;
@@ -87,8 +88,8 @@ public class Mob extends AbstractEntity {
 	private volatile boolean aggroAware, hasAggro;
 	private volatile ScheduledFuture<?> removeAfter;
 	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
-	private final ConcurrentMap<Short, ScheduledFuture<?>> skillCancels;
-	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseCancels;
+	private final ConcurrentMap<Short, ScheduledFuture<?>> skillFutures;
+	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseFutures;
 	private final AtomicInteger spawnedSummons;
 	private volatile byte spawnEffect, deathEffect;
 	private final AtomicInteger venomUseCount;
@@ -105,8 +106,8 @@ public class Mob extends AbstractEntity {
 		this.damagesReadLock = lock.readLock();
 		this.damagesWriteLock = lock.writeLock();
 		this.activeEffects = new ConcurrentSkipListMap<MonsterStatusEffect, MonsterStatusEffectValues>();
-		this.skillCancels = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
-		this.diseaseCancels = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
+		this.skillFutures = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
+		this.diseaseFutures = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
 		this.spawnedSummons = new AtomicInteger(0);
 		this.deathEffect = stats.getDeathAnimation();
 		this.venomUseCount = new AtomicInteger(0);
@@ -185,9 +186,9 @@ public class Mob extends AbstractEntity {
 	}
 
 	public void died(GameCharacter killer) {
-		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+		for (ScheduledFuture<?> cancelTask : skillFutures.values())
 			cancelTask.cancel(false);
-		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+		for (ScheduledFuture<?> cancelTask : diseaseFutures.values())
 			cancelTask.cancel(false);
 		if (removeAfter != null)
 			removeAfter.cancel(false);
@@ -230,9 +231,9 @@ public class Mob extends AbstractEntity {
 	}
 
 	public void fireDeathEventNoRewards() {
-		for (ScheduledFuture<?> cancelTask : skillCancels.values())
+		for (ScheduledFuture<?> cancelTask : skillFutures.values())
 			cancelTask.cancel(false);
-		for (ScheduledFuture<?> cancelTask : diseaseCancels.values())
+		for (ScheduledFuture<?> cancelTask : diseaseFutures.values())
 			cancelTask.cancel(false);
 		if (removeAfter != null)
 			removeAfter.cancel(false);
@@ -430,10 +431,10 @@ public class Mob extends AbstractEntity {
 	public void addCancelEffectTask(StatusEffectsData e, ScheduledFuture<?> cancelTask) {
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
-				skillCancels.put(Short.valueOf((short) e.getDataId()), cancelTask);
+				skillFutures.put(Short.valueOf((short) e.getDataId()), cancelTask);
 				break;
 			case PLAYER_SKILL:
-				diseaseCancels.put(Integer.valueOf(e.getDataId()), cancelTask);
+				diseaseFutures.put(Integer.valueOf(e.getDataId()), cancelTask);
 				break;
 		}
 	}
@@ -454,10 +455,10 @@ public class Mob extends AbstractEntity {
 		ScheduledFuture<?> cancelTask;
 		switch (e.getSourceType()) {
 			case MOB_SKILL:
-				cancelTask = skillCancels.remove(Short.valueOf((short) e.getDataId()));
+				cancelTask = skillFutures.remove(Short.valueOf((short) e.getDataId()));
 				break;
 			case PLAYER_SKILL:
-				cancelTask = diseaseCancels.remove(Integer.valueOf(e.getDataId()));
+				cancelTask = diseaseFutures.remove(Integer.valueOf(e.getDataId()));
 				break;
 			default:
 				cancelTask = null;
@@ -472,11 +473,22 @@ public class Mob extends AbstractEntity {
 	}
 
 	public boolean isSkillActive(short skillid) {
-		return skillCancels.containsKey(Short.valueOf(skillid));
+		return skillFutures.containsKey(Short.valueOf(skillid));
 	}
 
-	public boolean isDebuffActive(int mobSkillId) {
-		return diseaseCancels.containsKey(Integer.valueOf(mobSkillId));
+	public boolean isDebuffActive(int playerSkillId) {
+		return diseaseFutures.containsKey(Integer.valueOf(playerSkillId));
+	}
+
+	public boolean areEffectsActive(MonsterStatusEffectsData e) {
+		switch (e.getSourceType()) {
+			case PLAYER_SKILL:
+				return diseaseFutures.containsKey(Integer.valueOf(e.getDataId()));
+			case MOB_SKILL:
+				return skillFutures.containsKey(Short.valueOf((short) e.getDataId()));
+			default:
+				return false;
+		}
 	}
 
 	public int getSpawnedSummons() {
@@ -561,7 +573,7 @@ public class Mob extends AbstractEntity {
 
 	private interface Attacker {
 		public long totalDamage();
-		public void distributeExp(long share, GameCharacter killer);
+		public void distributeExp(long share, GameCharacter killer); //TODO: taunt, curse
 		public void addDamage(GameCharacter c, int gain);
 		public long getHighestDamage();
 		public GameCharacter getHighestDamageAttacker();

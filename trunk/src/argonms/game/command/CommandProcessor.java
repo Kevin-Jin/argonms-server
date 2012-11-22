@@ -94,7 +94,7 @@ public class CommandProcessor {
 				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CANCEL_DEBUFFS, new PlayerStatusEffect[] {
 						PlayerStatusEffect.CURSE, PlayerStatusEffect.DARKNESS,
 						PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL,
-						PlayerStatusEffect.WEAKEN
+						PlayerStatusEffect.WEAKNESS
 				}));
 				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_HP, Short.valueOf((short) 30000))); //receiver will limit this to their max HP
 				changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_MP, Short.valueOf((short) 30000))); //receiver will limit this to their max MP

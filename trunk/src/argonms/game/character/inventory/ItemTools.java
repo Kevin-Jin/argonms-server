@@ -95,7 +95,7 @@ public final class ItemTools {
 				DiseaseTools.cancelDebuff(p, (short) v.getSource(), v.getLevelWhenCast());
 		}
 		if (e.curesWeakness()) {
-			PlayerStatusEffectValues v = p.getEffectValue(PlayerStatusEffect.WEAKEN);
+			PlayerStatusEffectValues v = p.getEffectValue(PlayerStatusEffect.WEAKNESS);
 			if (v != null)
 				DiseaseTools.cancelDebuff(p, (short) v.getSource(), v.getLevelWhenCast());
 		}

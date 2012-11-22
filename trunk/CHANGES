@@ -2438,6 +2438,21 @@
 	well as map buffs will be implemented soon.
 	* Refactored several identifiers in StatusEffectTools.
 
+2012-11-22  GoldenKevin  (revision 177)
+
+	* Implemented Dispel player skill.
+	* Implemented non-party AOE player buffs (Echo of Hero, GM Haste, GM Holy
+	Symbol, GM Bless, GM Hyper Body).
+	* Added stubs for remaining party/AOE player skills.
+	* More constants are added to MobSkills class to reduce number of magic
+	numbers in MobSkillEffectsData class.
+	* Corrected some code for weapon attack up, weapon defense up, magic attack
+	up, magic defense up, avoid up, and area of effect mob skills.
+	* Corrected some code for Taunt and Time Leap player skills.
+	* Fixed mob buffs expiring immediately.
+	* Re-casted mob skills now have the existing effects and cancel timer
+	canceled before the new effects and cancel timer are applied.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

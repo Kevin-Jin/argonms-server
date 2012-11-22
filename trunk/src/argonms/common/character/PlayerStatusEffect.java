@@ -96,7 +96,7 @@ public enum PlayerStatusEffect { //byte numbers are from left to right
 	SUMMON			(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
 	PICKPOCKET		(0x0800000000000000L, (byte) 4),
 	MESO_GUARD		(0x1000000000000000L, (byte) 4),
-	WEAKEN			(0x4000000000000000L, (byte) 4),
+	WEAKNESS		(0x4000000000000000L, (byte) 4),
 	CURSE			(0x8000000000000000L, (byte) 4)
 	;
 
@@ -124,7 +124,7 @@ public enum PlayerStatusEffect { //byte numbers are from left to right
 			case POISON:
 			case SEAL:
 			case DARKNESS:
-			case WEAKEN:
+			case WEAKNESS:
 			case CURSE:
 				return true;
 			default:

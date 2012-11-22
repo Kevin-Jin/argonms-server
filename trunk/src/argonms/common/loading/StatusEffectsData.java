@@ -20,6 +20,8 @@ package argonms.common.loading;
 
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.field.MonsterStatusEffect;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -196,6 +198,7 @@ public interface StatusEffectsData {
 
 	public interface MonsterStatusEffectsData extends StatusEffectsData {
 		public Set<MonsterStatusEffect> getMonsterEffects();
+		public Rectangle getBoundingBox(Point posFrom, boolean facingLeft);
 		public int getX();
 		public int getY();
 	}
