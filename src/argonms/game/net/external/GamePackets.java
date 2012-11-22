@@ -846,7 +846,7 @@ public final class GamePackets {
 			case POISON:
 			case SEAL:
 			case DARKNESS:
-			case WEAKEN:
+			case WEAKNESS:
 			case CURSE:
 				lew.writeShort((short) v.getSource());
 				lew.writeShort(v.getModifier());

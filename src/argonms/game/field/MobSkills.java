@@ -24,11 +24,28 @@ package argonms.game.field;
  */
 public final class MobSkills {
 	public static final int
-		HEAL = 114,
+		WATK_UP = 100,
+		MATK_UP = 101,
+		WDEF_UP = 102,
+		MDEF_UP = 103,
+		WATK_UP_AOE = 110,
+		MATK_UP_AOE = 111,
+		WDEF_UP_AOE = 112,
+		MDEF_UP_AOE = 113,
+		HEAL_AOE = 114,
+		SPEED_UP_AOE = 115,
+		SEAL = 120,
+		DARKEN = 121,
+		WEAKEN = 122,
+		STUN = 123,
+		CURSE = 124,
+		POISON = 125,
+		SLOW = 126,
 		DISPEL = 127,
 		SEDUCE = 128,
 		BANISH = 129,
 		MIST = 131,
+		CRAZY_SKULL = 132, //Ariant Coliseum
 		PHYSICAL_IMMUNITY = 140,
 		MAGIC_IMMUNITY = 141,
 		SUMMON = 200

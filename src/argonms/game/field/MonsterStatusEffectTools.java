@@ -20,6 +20,7 @@ package argonms.game.field;
 
 import argonms.common.character.Skills;
 import argonms.common.field.MonsterStatusEffect;
+import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.util.Rng;
 import argonms.common.util.Scheduler;
@@ -29,9 +30,11 @@ import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.skill.MobSkillEffectsData;
+import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Random;
 
@@ -55,10 +58,15 @@ public final class MonsterStatusEffectTools {
 	}
 
 	private static int applyEffects(Map<MonsterStatusEffect, Short> updatedStats, Mob m, GameCharacter p, MonsterStatusEffectsData e) {
+		if (m.areEffectsActive(e))
+			m.removeCancelEffectTask(e);
 		for (MonsterStatusEffect buff : e.getMonsterEffects()) {
-			MonsterStatusEffectValues value = applyEffect(m, e, buff);
-			updatedStats.put(buff, Short.valueOf(value.getModifier()));
-			m.addToActiveEffects(buff, value);
+			MonsterStatusEffectValues v = m.getEffectValue(buff);
+			if (v != null)
+				dispelEffect(m, buff, v);
+			v = applyEffect(m, e, buff);
+			updatedStats.put(buff, Short.valueOf(v.getModifier()));
+			m.addToActiveEffects(buff, v);
 		}
 		switch (e.getSourceType()) {
 			case MOB_SKILL: {
@@ -67,17 +75,17 @@ public final class MonsterStatusEffectTools {
 				switch (e.getDataId()) {
 					case MobSkills.MIST:
 						Mist mist = new Mist(m, skill);
-						p.getMap().spawnMist(mist, skill.getX() * 10, null);
+						m.getMap().spawnMist(mist, skill.getX() * 10, null);
 						return e.getDuration();
 					case MobSkills.SUMMON:
 						short limit = skill.getSummonLimit();
 						if (limit == 5000)
-							limit = (short) (30 + p.getMap().getPlayerCount() * 2);
+							limit = (short) (30 + m.getMap().getPlayerCount() * 2);
 						if (m.getSpawnedSummons() < limit) {
 							Random generator = Rng.getGenerator();
 							for (Integer oMobId : skill.getSummons().values()) {
 								int mobId = oMobId.intValue();
-								Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId), p.getMap());
+								Mob summon = new Mob(MobDataLoader.getInstance().getMobStats(mobId), m.getMap());
 								int ypos, xpos;
 								xpos = m.getPosition().x;
 								ypos = m.getPosition().y;
@@ -101,7 +109,7 @@ public final class MonsterStatusEffectTools {
 								}
 								// Get spawn coordinates (This fixes monster lock)
 								// TODO get map left and right wall. Any suggestions?
-								switch (p.getMap().getDataId()) {
+								switch (m.getMap().getDataId()) {
 									case 220080001: //Pap map
 										if (xpos < -890)
 											xpos = (int)(-890 + Math.ceil(generator.nextDouble() * 150));
@@ -117,7 +125,7 @@ public final class MonsterStatusEffectTools {
 								}
 								summon.setPosition(new Point(xpos, ypos));
 								summon.setSpawnEffect(skill.getSummonEffect());
-								p.getMap().spawnMonster(summon);
+								m.getMap().spawnMonster(summon);
 								m.addToSpawnedSummons();
 							}
 						}
@@ -125,7 +133,7 @@ public final class MonsterStatusEffectTools {
 					default:
 						if (!e.getEffects().isEmpty())
 							DiseaseTools.applyDebuff(p, (short) skill.getDataId(), skill.getLevel());
-						return 0;
+						return e.getDuration();
 				}
 			}
 			case PLAYER_SKILL: {
@@ -133,18 +141,18 @@ public final class MonsterStatusEffectTools {
 				switch (e.getDataId()) {
 					case Skills.BLIND:
 					case Skills.HAMSTRING:
-						duration = e.getY() * 1000;
+						duration = e.getY();
 						break;
 					case Skills.SWORD_ICE_CHARGE:
 					case Skills.BW_BLIZZARD_CHARGE:
 						//freeze skills have weird times...
-						duration = e.getY() * 1000 * 2;
+						duration = e.getY() * 2;
 						break;
 					case Skills.POISON_MIST: {
 						MonsterStatusEffectValues value = applyEffect(m, e, MonsterStatusEffect.POISON);
 						updatedStats.put(MonsterStatusEffect.POISON, Short.valueOf((short) 1));
 						m.addToActiveEffects(MonsterStatusEffect.POISON, value);
-						duration = e.getX() * 1000;
+						duration = e.getX();
 						break;
 					}
 					default:
@@ -158,21 +166,29 @@ public final class MonsterStatusEffectTools {
 		}
 	}
 
-	public static void applyEffectsAndShowVisuals(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
+	private static void applyEffectsAndShowVisualsInternal(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
 		Map<MonsterStatusEffect, Short> updatedStats = new EnumMap<MonsterStatusEffect, Short>(MonsterStatusEffect.class);
 		int duration = applyEffects(updatedStats, m, p, e);
 		byte[] effect = getCastEffect(m, e, updatedStats);
 		if (m.isVisible() && effect != null)
-			p.getMap().sendToAll(effect);
+			m.getMap().sendToAll(effect);
 		m.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {
-				dispelEffectsAndShowVisuals(m, p, e);
+				dispelEffectsAndShowVisuals(m, e);
 			}
 		}, duration));
 	}
 
-	public static void dispelEffectsAndShowVisuals(Mob m, GameCharacter p, MonsterStatusEffectsData e) {
+	public static void applyEffectsAndShowVisuals(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
+		if (e.getSourceType() == StatusEffectsData.EffectSource.MOB_SKILL && ((MobSkillEffectsData) e).isAoe())
+			for (MapEntity neighbor : m.getMap().getMapEntitiesInRect(e.getBoundingBox(m.getPosition(), m.getStance() % 2 != 0), EnumSet.of(MapEntity.EntityType.MONSTER)))
+				applyEffectsAndShowVisualsInternal((Mob) neighbor, p, e);
+		else
+			applyEffectsAndShowVisualsInternal(m, p, e);
+	}
+
+	public static void dispelEffectsAndShowVisuals(Mob m, MonsterStatusEffectsData e) {
 		m.removeCancelEffectTask(e);
 		switch (e.getSourceType()) {
 			case MOB_SKILL: {
@@ -195,7 +211,7 @@ public final class MonsterStatusEffectTools {
 		}
 		byte[] effect = getDispelEffect(m, e);
 		if (m.isVisible() && effect != null)
-			p.getMap().sendToAll(effect);
+			m.getMap().sendToAll(effect);
 	}
 
 	private static MonsterStatusEffectValues applyEffect(Mob m, MonsterStatusEffectsData e, MonsterStatusEffect buff) {
@@ -208,13 +224,16 @@ public final class MonsterStatusEffectTools {
 				mod = (short) e.getY();
 				break;
 			case MATK:
+				mod = (short) e.getX();
 				break;
 			case MDEF:
+				mod = (short) e.getX();
 				break;
 			case ACC:
 				mod = (short) e.getX();
 				break;
 			case AVOID:
+				mod = (short) e.getX();
 				break;
 			case SPEED:
 				mod = (short) e.getX();
@@ -231,20 +250,11 @@ public final class MonsterStatusEffectTools {
 			case SEAL:
 				mod = 1;
 				break;
-			case TAUNT:
-				mod = (short) e.getX();
+			case TAUNT_1:
+				mod = (short) (100 - e.getX());
 				break;
-			case WEAPON_ATTACK_UP:
-				mod = (short) e.getX();
-				break;
-			case WEAPON_DEFENSE_UP:
-				mod = (short) e.getX();
-				break;
-			case MAGIC_ATTACK_UP:
-				mod = (short) e.getX();
-				break;
-			case MAGIC_DEFENSE_UP:
-				mod = (short) e.getX();
+			case TAUNT_2:
+				mod = (short) (100 - e.getX());
 				break;
 			case DOOM:
 				mod = 1;
@@ -292,15 +302,9 @@ public final class MonsterStatusEffectTools {
 				break;
 			case SEAL:
 				break;
-			case TAUNT:
+			case TAUNT_1:
 				break;
-			case WEAPON_ATTACK_UP:
-				break;
-			case WEAPON_DEFENSE_UP:
-				break;
-			case MAGIC_ATTACK_UP:
-				break;
-			case MAGIC_DEFENSE_UP:
+			case TAUNT_2:
 				break;
 			case DOOM:
 				break;
@@ -314,6 +318,16 @@ public final class MonsterStatusEffectTools {
 				break;
 			case INERTMOB:
 				break;
+		}
+	}
+
+	public static void applyDispel(Mob m, PlayerSkillEffectsData e) {
+		//"Dispel can override: W.Attack+, M.Att+, W.Defence+, M.Defence+, Accuracy+, Avoidability+, Speed+ and Super Avoidability
+		//Dispel can NOT override: Damage Reflection, Cancel W.Attack and Cancel M.Attack"
+		for (MonsterStatusEffect buff : new MonsterStatusEffect[] { MonsterStatusEffect.WATK, MonsterStatusEffect.WDEF, MonsterStatusEffect.MATK, MonsterStatusEffect.MDEF, MonsterStatusEffect.ACC, MonsterStatusEffect.AVOID, MonsterStatusEffect.SPEED }) {
+			MonsterStatusEffectValues v = m.getEffectValue(buff);
+			if (v != null)
+				MonsterStatusEffectTools.dispelEffectsAndShowVisuals(m, v.getEffectsData());
 		}
 	}
 

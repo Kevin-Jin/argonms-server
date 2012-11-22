@@ -258,7 +258,8 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 				case Skills.NL_TAUNT:
 				case Skills.SHADOWER_TAUNT:
-					monsterDiseases.add(MonsterStatusEffect.TAUNT);
+					monsterDiseases.add(MonsterStatusEffect.TAUNT_1);
+					monsterDiseases.add(MonsterStatusEffect.TAUNT_2);
 					break;
 				case Skills.COLD_BEAM:
 				case Skills.ICE_STRIKE:
@@ -445,6 +446,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return damage;
 	}
 
+	@Override
 	public Rectangle getBoundingBox(Point posFrom, boolean facingLeft) {
 		int ltx, lty, rbx, rby;
 		if (facingLeft) {

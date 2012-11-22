@@ -52,6 +52,7 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 	private PlayerStatusEffect playerDisease;
 	private short summonLimit;
 	private byte summonEffect;
+	private boolean aoe;
 
 	protected MobSkillEffectsData(short skillid, byte level) {
 		this.maxHpPerc = 100;
@@ -60,42 +61,46 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		this.level = level;
 		this.prop = 100;
 		switch (skillid) {
-			case 100:
-			case 110:
-				monsterBuff = MonsterStatusEffect.WEAPON_ATTACK_UP;
+			case MobSkills.WATK_UP_AOE:
+				aoe = true;
+			case MobSkills.WATK_UP:
+				monsterBuff = MonsterStatusEffect.WATK;
 				break;
-			case 101:
-			case 111:
-				monsterBuff = MonsterStatusEffect.MAGIC_ATTACK_UP;
+			case MobSkills.MATK_UP_AOE:
+				aoe = true;
+			case MobSkills.MATK_UP:
+				monsterBuff = MonsterStatusEffect.MATK;
 				break;
-			case 102:
-			case 112:
-				monsterBuff = MonsterStatusEffect.WEAPON_DEFENSE_UP;
+			case MobSkills.WDEF_UP_AOE:
+				aoe = true;
+			case MobSkills.WDEF_UP:
+				monsterBuff = MonsterStatusEffect.WDEF;
 				break;
-			case 103:
-			case 113:
-				monsterBuff = MonsterStatusEffect.MAGIC_DEFENSE_UP;
+			case MobSkills.MDEF_UP_AOE:
+				aoe = true;
+			case MobSkills.MDEF_UP:
+				monsterBuff = MonsterStatusEffect.MDEF;
 				break;
 
-			case 120:
+			case MobSkills.SEAL:
 				playerDisease = PlayerStatusEffect.SEAL;
 				break;
-			case 121:
+			case MobSkills.DARKEN:
 				playerDisease = PlayerStatusEffect.DARKNESS;
 				break;
-			case 122:
-				playerDisease = PlayerStatusEffect.WEAKEN;
+			case MobSkills.WEAKEN:
+				playerDisease = PlayerStatusEffect.WEAKNESS;
 				break;
-			case 123:
+			case MobSkills.STUN:
 				playerDisease = PlayerStatusEffect.STUN;
 				break;
-			case 124:
+			case MobSkills.CURSE:
 				playerDisease = PlayerStatusEffect.CURSE;
 				break;
-			case 125:
+			case MobSkills.POISON:
 				playerDisease = PlayerStatusEffect.POISON;
 				break;
-			case 126:
+			case MobSkills.SLOW:
 				playerDisease = PlayerStatusEffect.SLOW;
 				break;
 
@@ -175,6 +180,7 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return y;
 	}
 
+	@Override
 	public Rectangle getBoundingBox(Point posFrom, boolean facingLeft) {
 		int ltx, lty, rbx, rby;
 		if (facingLeft) {
@@ -216,6 +222,10 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 
 	public Map<Byte, Integer> getSummons() {
 		return summons;
+	}
+
+	public boolean isAoe() {
+		return aoe;
 	}
 
 	@Override

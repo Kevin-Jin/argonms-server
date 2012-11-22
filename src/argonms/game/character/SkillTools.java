@@ -18,6 +18,7 @@
 
 package argonms.game.character;
 
+import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -219,7 +220,7 @@ public final class SkillTools {
 		return false;
 	}
 
-	public static void applyPartyBuff(final GameCharacter p, final PlayerSkillEffectsData e) {
+	public static void applyAoeBuff(final GameCharacter p, final PlayerSkillEffectsData e) {
 		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
 		if (e.getDuration() > 0) {
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
@@ -245,7 +246,24 @@ public final class SkillTools {
 	public static void applyDispel(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
 		if (!caster)
 			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
-		//TODO: apply dispel
+		//"Dispel can cure: Weakness, Poison, Seal, Curse and Darkness
+		//Dispel can NOT cure: Confusion, Zombify, Seduction, Ice Seduction, Implanted bombs, Freezing, Darkness Damage and Stun"
+		for (PlayerStatusEffect debuff : new PlayerStatusEffect[] { PlayerStatusEffect.POISON, PlayerStatusEffect.SEAL, PlayerStatusEffect.DARKNESS, PlayerStatusEffect.WEAKNESS, PlayerStatusEffect.CURSE }) {
+			PlayerStatusEffectValues v = p.getEffectValue(debuff);
+			if (v != null)
+				StatusEffectTools.dispelEffectsAndShowVisuals(p, v.getEffectsData());
+		}
+	}
+
+	public static void applyHealAndDispel(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
+		if (!caster)
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		//TODO: apply heal and dispel
+	}
+
+	public static void applyGmResurrection(GameCharacter p, PlayerSkillEffectsData e) {
+		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+		//TODO: apply GM res
 	}
 
 	private static void cancelBuffSkill(GameCharacter p, int skillId, byte skillLevel) {

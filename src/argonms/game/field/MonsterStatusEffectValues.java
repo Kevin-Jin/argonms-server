@@ -49,4 +49,8 @@ public class MonsterStatusEffectValues {
 	public short getModifier() {
 		return mod;
 	}
+
+	public MonsterStatusEffectsData getEffectsData() {
+		return e;
+	}
 }

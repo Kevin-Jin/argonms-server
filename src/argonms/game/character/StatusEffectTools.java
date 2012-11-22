@@ -126,9 +126,9 @@ public final class StatusEffectTools {
 			PlayerStatusEffectValues v = p.getEffectValue(buff);
 			if (v != null)
 				dispelEffect(p, buff, v);
-			PlayerStatusEffectValues value = applyEffect(p, e, buff);
-			updatedStats.put(buff, Short.valueOf(value.getModifier()));
-			p.addToActiveEffects(buff, value);
+			v = applyEffect(p, e, buff);
+			updatedStats.put(buff, Short.valueOf(v.getModifier()));
+			p.addToActiveEffects(buff, v);
 		}
 		return updatedStats;
 	}
@@ -346,7 +346,7 @@ public final class StatusEffectTools {
 				break;
 			case MESO_GUARD:
 				break;
-			case WEAKEN:
+			case WEAKNESS:
 				break;
 			case CURSE:
 				break;
@@ -490,7 +490,7 @@ public final class StatusEffectTools {
 				break;
 			case MESO_GUARD:
 				break;
-			case WEAKEN:
+			case WEAKNESS:
 				break;
 			case CURSE:
 				break;
