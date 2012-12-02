@@ -1436,7 +1436,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	public void setSkillLevel(int skill, byte level, byte masterLevel) {
 		SkillEntry skillLevel;
 		SkillEntry newSkillLevel = new SkillEntry(level, masterLevel == -1 ? 0 : masterLevel);
-		if (level != 0)
+		if (level != 0 || masterLevel != -1)
 			skillLevel = skillEntries.putIfAbsent(Integer.valueOf(skill), new SkillEntry(level, masterLevel));
 		else
 			skillLevel = skillEntries.remove(Integer.valueOf(skill));
