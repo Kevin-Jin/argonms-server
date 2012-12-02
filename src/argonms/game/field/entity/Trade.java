@@ -192,9 +192,9 @@ public class Trade extends Miniroom {
 
 	public void addItem(GameCharacter p, byte slot, InventorySlot item) {
 		byte pos = positionOf(p);
-		items[pos][slot] = item;
+		items[pos][slot - 1] = item;
 		p.getClient().getSession().send(writeItemAdd((byte) 0, slot, item));
-		pos = (byte) (pos == 0 ? 1 : 0);
+		pos = (byte) ((pos + 1) % 2);
 		getPlayerByPosition(pos).getClient().getSession().send(writeItemAdd((byte) 1, slot, item));
 	}
 
@@ -202,7 +202,7 @@ public class Trade extends Miniroom {
 		byte pos = positionOf(p);
 		int newMesos = (mesos[pos] += gain);
 		p.getClient().getSession().send(writeMesoSet((byte) 0, newMesos));
-		pos = (byte) (pos == 0 ? 1 : 0);
+		pos = (byte) ((pos + 1) % 2);
 		getPlayerByPosition(pos).getClient().getSession().send(writeMesoSet((byte) 1, newMesos));
 	}
 

@@ -162,7 +162,7 @@ if (player.isQuestStarted(6141)) {
 				break;
 		}
 	}
-} else if (Math.floor(player.getJob() / 100) == 3) {
+} else if (Math.floor(player.getJob() / 100) == 4) {
 	let selection = npc.askMenu("Do you have anything you want to know about thieves?\r\n"
 			+ "#L0##bWhat are the basic characters of a Thief?#k#l\r\n"
 			+ "#L1##bWhat are the weapons that the Thieves use?#k#l\r\n"

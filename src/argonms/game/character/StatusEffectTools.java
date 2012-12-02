@@ -175,7 +175,7 @@ public final class StatusEffectTools {
 	}
 
 	private static PlayerStatusEffectValues applyEffect(final GameCharacter p, StatusEffectsData e, PlayerStatusEffect buff) {
-		short mod = -1;
+		short mod = 0;
 		switch (buff) {
 			case SUMMON:
 				break;
@@ -258,8 +258,10 @@ public final class StatusEffectTools {
 			case FINAL_ATTACK:
 				break;
 			case WATK:
-				mod = ((BuffsData) e).getWatk();
-				p.addWatk(mod);
+				if (!e.getEffects().contains(PlayerStatusEffect.SUMMON)) {
+					mod = ((BuffsData) e).getWatk();
+					p.addWatk(mod);
+				}
 				break;
 			case WDEF:
 				mod = ((BuffsData) e).getWdef();
@@ -414,7 +416,8 @@ public final class StatusEffectTools {
 			case FINAL_ATTACK:
 				break;
 			case WATK:
-				p.addWatk(-value.getModifier());
+				if (!value.getEffectsData().getEffects().contains(PlayerStatusEffect.SUMMON))
+					p.addWatk(-value.getModifier());
 				break;
 			case WDEF:
 				p.addWdef(-value.getModifier());

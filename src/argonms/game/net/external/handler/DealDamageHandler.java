@@ -121,7 +121,7 @@ public final class DealDamageHandler {
 				}
 				attack.ammoItemId = slot.getDataId();
 			}
-			switch (e.getDataId()) { //skills that do not show visible projectiles
+			switch (attack.skill) { //skills that do not show visible projectiles
 				case Skills.ARROW_RAIN:
 				case Skills.ARROW_ERUPTION:
 				case Skills.ENERGY_ORB:
@@ -144,7 +144,7 @@ public final class DealDamageHandler {
 
 		final PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		if (e != null) {
-			switch (e.getDataId()) {
+			switch (attack.skill) {
 				case Skills.POISON_MIST:
 					final Mist mist = new Mist(p, e);
 					ScheduledFuture<?> poisonSchedule = Scheduler.getInstance().runRepeatedly(new Runnable() {
@@ -418,18 +418,18 @@ public final class DealDamageHandler {
 	private static void applyAttack(AttackInfo attack, final GameCharacter player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();
-		if (attackEffect != null) { //attack skills
+		if (attackEffect != null && attack.skill != 0) { //attack skills
 			//apply skill costs
-			if (attackEffect.getDataId() != Skills.HEAL) {
+			if (attack.skill != Skills.HEAL) {
 				//heal is both an attack (against undead) and a cast skill (healing)
 				//so just apply skill costs in the cast skill part
 				if (player.isAlive())
-					SkillTools.useAttackSkill(player, attackEffect.getDataId(), attackEffect.getLevel());
+					SkillTools.useAttackSkill(player, attack.skill, attackEffect.getLevel());
 				else
 					player.getClient().getSession().send(GamePackets.writeEnableActions());
 			}
 			//perform meso explosion
-			if (attackEffect.getDataId() == Skills.MESO_EXPLOSION) {
+			if (attack.skill == Skills.MESO_EXPLOSION) {
 				int delay = 0;
 				for (int meso : attack.mesoExplosion) {
 					final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
@@ -459,10 +459,10 @@ public final class DealDamageHandler {
 				player.checkMonsterAggro(monster);
 
 				//specially handled attack skills
-				switch (attackEffect.getDataId()) {
+				switch (attack.skill) {
 					case Skills.DRAIN:
 					case Skills.ENERGY_DRAIN:
-						int addHp = (int) ((double) totDamageToOneMonster * (double) SkillDataLoader.getInstance().getSkill(attackEffect.getDataId()).getLevel(player.getSkillLevel(attackEffect.getDataId())).getX() / 100.0);
+						int addHp = (int) ((double) totDamageToOneMonster * (double) SkillDataLoader.getInstance().getSkill(attack.skill).getLevel(player.getSkillLevel(attack.skill)).getX() / 100.0);
 						addHp = Math.min(monster.getMaxHp(), Math.min(addHp, player.getCurrentMaxHp() / 2));
 						player.gainHp(addHp);
 						break;
@@ -494,7 +494,7 @@ public final class DealDamageHandler {
 						break;
 				}
 				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {
-					switch (attackEffect.getDataId()) { //TODO: this is probably not an exhaustive list...
+					switch (attack.skill) { //TODO: this is probably not an exhaustive list...
 						case 0:
 						case Skills.DOUBLE_STAB:
 						case Skills.SAVAGE_BLOW:
