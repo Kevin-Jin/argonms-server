@@ -64,9 +64,9 @@ public final class StatusEffectTools {
 					case Skills.CHAKRA:
 						break;
 					case Skills.DASH:
-						return GamePackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration(), (short) 0);
 					default:
-						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration(), (short) 0);
 				}
 			case ITEM:
 				return GamePackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());

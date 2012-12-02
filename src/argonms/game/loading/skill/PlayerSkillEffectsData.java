@@ -73,6 +73,50 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 			case Skills.WRATH_OF_THE_OCTOPI:
 				effects.add(PlayerStatusEffect.SUMMON);
 				break;
+			case Skills.FP_SEAL:
+			case Skills.IL_SEAL:
+				monsterDiseases.add(MonsterStatusEffect.SEAL);
+				break;
+			case Skills.DOOM:
+				monsterDiseases.add(MonsterStatusEffect.DOOM);
+				break;
+			case Skills.SHADOW_WEB:
+				monsterDiseases.add(MonsterStatusEffect.SHADOW_WEB);
+				break;
+			case Skills.NL_NINJA_AMBUSH:
+			case Skills.SHADOWER_NINJA_AMBUSH:
+				monsterDiseases.add(MonsterStatusEffect.NINJA_AMBUSH);
+				break;
+			case Skills.SWORD_COMA:
+			case Skills.AXE_COMA:
+			case Skills.SHOUT:
+			case Skills.CHARGED_BLOW:
+			case Skills.ASSAULTER:
+			case Skills.BOOMERANG_STEP:
+			case Skills.BACKSPIN_BLOW:
+			case Skills.DOUBLE_UPPERCUT:
+			case Skills.DEMOLITION:
+			case Skills.SNATCH:
+			case Skills.BARRAGE:
+			case Skills.BLANK_SHOT:
+				monsterDiseases.add(MonsterStatusEffect.STUN);
+				break;
+			case Skills.ICE_STRIKE:
+			case Skills.IL_BLIZZARD:
+			case Skills.ICE_SPLITTER:
+				monsterDiseases.add(MonsterStatusEffect.FREEZE);
+				isFreeze = true;
+				break;
+			case Skills.PARALYZE:
+				monsterDiseases.add(MonsterStatusEffect.SPEED);
+				break;
+			case Skills.POISON_BREATH:
+			case Skills.FP_ELEMENT_COMPOSITION:
+				monsterDiseases.add(MonsterStatusEffect.POISON);
+				break;
+			case Skills.HYPNOTIZE:
+				monsterDiseases.add(MonsterStatusEffect.INERTMOB);
+				break;
 			case Skills.HIDE:
 				effects.add(PlayerStatusEffect.HIDE);
 				//kinda hacky, but hide doesn't have a duration
@@ -236,24 +280,10 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 
 				case Skills.DISORDER:
-					monsterDiseases.add(MonsterStatusEffect.WATK);
-					break;
 				case Skills.THREATEN:
 					monsterDiseases.add(MonsterStatusEffect.WATK);
 					break;
-				case Skills.SWORD_COMA:
-				case Skills.AXE_COMA:
-				case Skills.SHOUT:
-				case Skills.CHARGED_BLOW:
 				case Skills.ARROW_BOMB:
-				case Skills.ASSAULTER:
-				case Skills.BOOMERANG_STEP:
-				case Skills.BACKSPIN_BLOW:
-				case Skills.DOUBLE_UPPERCUT:
-				case Skills.DEMOLITION:
-				case Skills.SNATCH:
-				case Skills.BARRAGE:
-				case Skills.BLANK_SHOT:
 					monsterDiseases.add(MonsterStatusEffect.STUN);
 					break;
 				case Skills.NL_TAUNT:
@@ -262,25 +292,17 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					monsterDiseases.add(MonsterStatusEffect.TAUNT_2);
 					break;
 				case Skills.COLD_BEAM:
-				case Skills.ICE_STRIKE:
 				case Skills.IL_ELEMENT_COMPOSITION:
-				case Skills.IL_BLIZZARD:
 				case Skills.XBOW_BLIZZARD:
-				case Skills.ICE_SPLITTER:
 					monsterDiseases.add(MonsterStatusEffect.FREEZE);
 					isFreeze = true;
 					break;
-				case Skills.PARALYZE:
+				case Skills.HAMSTRING:
+					effects.add(PlayerStatusEffect.HAMSTRING);
+					//intentional fallthrough to speed mob debuff
 				case Skills.FP_SLOW:
 				case Skills.IL_SLOW:
 					monsterDiseases.add(MonsterStatusEffect.SPEED);
-					break;
-				case Skills.POISON_BREATH:
-				case Skills.FP_ELEMENT_COMPOSITION:
-					monsterDiseases.add(MonsterStatusEffect.POISON);
-					break;
-				case Skills.DOOM:
-					monsterDiseases.add(MonsterStatusEffect.DOOM);
 					break;
 				case Skills.SILVER_HAWK:
 				case Skills.GOLDEN_EAGLE:
@@ -292,27 +314,9 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					effects.add(PlayerStatusEffect.SUMMON);
 					monsterDiseases.add(MonsterStatusEffect.FREEZE);
 					break;
-				case Skills.FP_SEAL:
-				case Skills.IL_SEAL:
-					monsterDiseases.add(MonsterStatusEffect.SEAL);
-					break;
-				case Skills.SHADOW_WEB:
-					monsterDiseases.add(MonsterStatusEffect.SHADOW_WEB);
-					break;
-				case Skills.HAMSTRING:
-					effects.add(PlayerStatusEffect.HAMSTRING);
-					monsterDiseases.add(MonsterStatusEffect.SPEED);
-					break;
 				case Skills.BLIND:
 					effects.add(PlayerStatusEffect.BLIND);
 					monsterDiseases.add(MonsterStatusEffect.ACC);
-					break;
-				case Skills.NL_NINJA_AMBUSH:
-				case Skills.SHADOWER_NINJA_AMBUSH:
-					monsterDiseases.add(MonsterStatusEffect.NINJA_AMBUSH);
-					break;
-				case Skills.HYPNOTIZE:
-					monsterDiseases.add(MonsterStatusEffect.INERTMOB);
 					break;
 			}
 		}
@@ -335,8 +339,6 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 
 				case Skills.DISORDER:
-					monsterDiseases.add(MonsterStatusEffect.WDEF);
-					break;
 				case Skills.THREATEN:
 					monsterDiseases.add(MonsterStatusEffect.WDEF);
 					break;

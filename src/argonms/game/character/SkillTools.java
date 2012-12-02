@@ -29,6 +29,7 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Scheduler;
+import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
@@ -235,12 +236,15 @@ public final class SkillTools {
 	public static void applyTimeLeap(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
 		if (!caster)
 			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
-		//TODO: apply time leap
+		p.cancelCooldowns();
+		//Time Leap's cooldown should always be applied after this method returns
 	}
 
 	public static void applyResurrection(GameCharacter p, PlayerSkillEffectsData e) {
 		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
-		//TODO: apply resurrection
+		p.setHp(p.getCurrentMaxHp()); //TODO: resurrect always restores full HP?
+		p.setStance((byte) 0);
+		//TODO: any other packets? maybe empty movement packet or p.getShowExistingSpawnMessage()?
 	}
 
 	public static void applyDispel(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
@@ -258,12 +262,24 @@ public final class SkillTools {
 	public static void applyHealAndDispel(GameCharacter p, boolean caster, PlayerSkillEffectsData e) {
 		if (!caster)
 			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
-		//TODO: apply heal and dispel
+
+		if (p.getHp() == 0)
+			p.setStance((byte) 0);
+		p.setHp(p.getCurrentMaxHp());
+
+		//just cancel all debuffs and not just the ones Bishop Dispel cancels
+		for (Map.Entry<Short, MobSkillState> s : p.activeMobSkillsList().entrySet())
+			DiseaseTools.cancelDebuff(p, s.getKey().shortValue(), s.getValue().level);
 	}
 
-	public static void applyGmResurrection(GameCharacter p, PlayerSkillEffectsData e) {
-		StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
-		//TODO: apply GM res
+	public static int applyHeal(GameCharacter p, boolean caster, PlayerSkillEffectsData e, int recover) {
+		if (!caster)
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.PASSIVE_BUFF, e, (byte) -1);
+
+		short start = p.getHp();
+		p.gainHp(recover);
+		//TODO: correct heal EXP reward formula?
+		return 20 * (p.getHp() - start) / (8 * p.getLevel() + 190);
 	}
 
 	private static void cancelBuffSkill(GameCharacter p, int skillId, byte skillLevel) {

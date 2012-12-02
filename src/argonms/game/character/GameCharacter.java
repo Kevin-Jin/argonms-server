@@ -77,6 +77,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1462,6 +1463,15 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void removeCooldown(int skill) {
 		cooldowns.remove(Integer.valueOf(skill)).cancel();
+	}
+
+	public void cancelCooldowns() {
+		for (Iterator<Map.Entry<Integer, Cooldown>> iter = cooldowns.entrySet().iterator(); iter.hasNext(); ) {
+			Map.Entry<Integer, Cooldown> cooldown = iter.next();
+			iter.remove();
+			cooldown.getValue().cancel();
+			getClient().getSession().send(CommonPackets.writeCooldown(cooldown.getKey().intValue(), (short) 0));
+		}
 	}
 
 	@Override

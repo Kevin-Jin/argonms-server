@@ -44,6 +44,7 @@ import argonms.game.field.MonsterStatusEffectTools;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.loading.skill.SkillStats;
@@ -120,7 +121,7 @@ public final class DealDamageHandler {
 				}
 				attack.ammoItemId = slot.getDataId();
 			}
-			switch (attack.skill) { //skills that do not show visible projectiles
+			switch (e.getDataId()) { //skills that do not show visible projectiles
 				case Skills.ARROW_RAIN:
 				case Skills.ARROW_ERUPTION:
 				case Skills.ENERGY_ORB:
@@ -143,7 +144,7 @@ public final class DealDamageHandler {
 
 		final PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		if (e != null) {
-			switch (attack.skill) {
+			switch (e.getDataId()) {
 				case Skills.POISON_MIST:
 					final Mist mist = new Mist(p, e);
 					ScheduledFuture<?> poisonSchedule = Scheduler.getInstance().runRepeatedly(new Runnable() {
@@ -400,13 +401,13 @@ public final class DealDamageHandler {
 							player.removeCancelEffectTask(effects);
 							player.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
 							Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
-							player.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0));
+							player.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0, (short) 0));
 							player.getMap().sendToAll(GamePackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
 						}
 					}, e.getDuration()), level, System.currentTimeMillis() + e.getDuration());
 				}
 				Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf(player.getEnergyCharge()));
-				player.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0));
+				player.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0, (short) 0));
 				player.getMap().sendToAll(GamePackets.writeBuffMapPirateEffect(player, updatedStats, 0, 0), player);
 				player.getClient().getSession().send(GamePackets.writeSelfVisualEffect(StatusEffectTools.PASSIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1));
 				player.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(player, StatusEffectTools.PASSIVE_BUFF, Skills.ENERGY_CHARGE, level, (byte) -1), player);
@@ -419,7 +420,7 @@ public final class DealDamageHandler {
 		final GameMap map = player.getMap();
 		if (attackEffect != null) { //attack skills
 			//apply skill costs
-			if (attack.skill != Skills.HEAL) {
+			if (attackEffect.getDataId() != Skills.HEAL) {
 				//heal is both an attack (against undead) and a cast skill (healing)
 				//so just apply skill costs in the cast skill part
 				if (player.isAlive())
@@ -428,7 +429,7 @@ public final class DealDamageHandler {
 					player.getClient().getSession().send(GamePackets.writeEnableActions());
 			}
 			//perform meso explosion
-			if (attack.skill == Skills.MESO_EXPLOSION) {
+			if (attackEffect.getDataId() == Skills.MESO_EXPLOSION) {
 				int delay = 0;
 				for (int meso : attack.mesoExplosion) {
 					final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
@@ -458,10 +459,10 @@ public final class DealDamageHandler {
 				player.checkMonsterAggro(monster);
 
 				//specially handled attack skills
-				switch (attack.skill) {
+				switch (attackEffect.getDataId()) {
 					case Skills.DRAIN:
 					case Skills.ENERGY_DRAIN:
-						int addHp = (int) ((double) totDamageToOneMonster * (double) SkillDataLoader.getInstance().getSkill(attack.skill).getLevel(player.getSkillLevel(attack.skill)).getX() / 100.0);
+						int addHp = (int) ((double) totDamageToOneMonster * (double) SkillDataLoader.getInstance().getSkill(attackEffect.getDataId()).getLevel(player.getSkillLevel(attackEffect.getDataId())).getX() / 100.0);
 						addHp = Math.min(monster.getMaxHp(), Math.min(addHp, player.getCurrentMaxHp() / 2));
 						player.gainHp(addHp);
 						break;
@@ -488,12 +489,12 @@ public final class DealDamageHandler {
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
 							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
-								if (monster.getElementalResistance(SkillDataLoader.getInstance().getSkill(attack.skill).getElement()) <= Element.EFFECTIVENESS_NORMAL)
+								if (monster.getElementalResistance(SkillDataLoader.getInstance().getSkill(attackEffect.getDataId()).getElement()) <= Element.EFFECTIVENESS_NORMAL)
 									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;
 				}
 				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {
-					switch (attack.skill) { //TODO: this is probably not an exhaustive list...
+					switch (attackEffect.getDataId()) { //TODO: this is probably not an exhaustive list...
 						case 0:
 						case Skills.DOUBLE_STAB:
 						case Skills.SAVAGE_BLOW:
@@ -728,10 +729,19 @@ public final class DealDamageHandler {
 		}
 
 		public PlayerSkillEffectsData getAttackEffect(GameCharacter p) {
-			if (skill == 0)
+			int skillId;
+			if (skill != 0) {
+				skillId = skill;
+			} else if (summonId != 0) {
+				PlayerSkillSummon summon = (PlayerSkillSummon) p.getMap().getEntityById(EntityType.SUMMON, summonId);
+				if (summon == null)
+					return null;
+				skillId = summon.getSkillId();
+			} else {
 				return null;
-			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(skill);
-			byte skillLevel = p.getSkillLevel(skill);
+			}
+			SkillStats skillStats = SkillDataLoader.getInstance().getSkill(skillId);
+			byte skillLevel = p.getSkillLevel(skillId);
 			if (skillLevel == 0)
 				return null;
 			return skillStats.getLevel(skillLevel);

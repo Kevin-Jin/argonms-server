@@ -32,6 +32,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectTools;
@@ -65,10 +66,10 @@ public final class BuffHandler {
 			case Skills.DARK_KNIGHT_MONSTER_MAGNET: {
 				int amount = packet.readInt();
 				for (int i = 0; i < amount; i++) {
-					int mobEntId = packet.readInt();
+					int mobId = packet.readInt();
 					byte success = packet.readByte();
-					p.getMap().sendToAll(writeMonsterMagnetSuccess(mobEntId, success), p);
-					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobEntId);
+					p.getMap().sendToAll(writeMonsterMagnetSuccess(mobId, success), p);
+					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobId);
 					if (m != null) {
 						GameCharacter controller = m.getController();
 						if (controller != null) {
@@ -84,9 +85,105 @@ public final class BuffHandler {
 				stance = packet.readByte();
 				break;
 			}
-			case Skills.HEAL:
-				//TODO: implement cleric heal
+			case Skills.ARMOR_CRASH:
+			case Skills.MAGIC_CRASH:
+			case Skills.POWER_CRASH: {
+				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+				packet.readInt();
+				byte count = packet.readByte();
+				for (int i = 0; i < count; i++) {
+					int mobId = packet.readInt();
+					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobId);
+					if (m != null && e.makeChanceResult()) {
+						//TODO: implement crash
+					}
+				}
 				break;
+			}
+			case Skills.HEAL: {
+				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+				//TODO: correct heal formula?
+				int recover = e.getHpRecoverRate() * p.getCurrentMaxHp() / 100;
+				byte affected = packet.readByte();
+				if (affected != (byte) 0x80) { //most significant bit is not set
+					PartyList party = p.getParty();
+					assert party != null;
+					int expGained = 0;
+					party.lockRead();
+					try {
+						PartyList.Member[] members = party.getAllMembers();
+						byte partySize = party.getMembersCount();
+						for (byte i = 0; i < partySize; i++) {
+							if (isAffected(affected, i)) {
+								GameCharacter memberPlayer = ((PartyList.LocalMember) members[i]).getPlayer();
+								if (p != memberPlayer)
+									expGained += SkillTools.applyHeal(memberPlayer, false, e, recover);
+							}
+						}
+					} finally {
+						party.unlockRead();
+					}
+					if (expGained != 0)
+						p.gainExp(expGained, true, false);
+				}
+				SkillTools.applyHeal(p, true, e, recover);
+				break;
+			}
+			case Skills.MYSTIC_DOOR: {
+				Point position = packet.readPos();
+				//TODO: implement mystic door
+				break;
+			}
+			case Skills.SMOKESCREEN: {
+				//TODO: implement smokescreen
+				break;
+			}
+			case Skills.MP_RECOVERY: {
+				//TODO: implement MP recovery
+				break;
+			}
+			case Skills.BATTLE_SHIP: {
+				//TODO: implement battleship
+				break;
+			}
+			case Skills.NL_NINJA_AMBUSH:
+			case Skills.SHADOWER_NINJA_AMBUSH:
+				//TODO: implement ninja ambush - attack every second until expires
+				//intentional fallthrough to mob debuff handling
+			case Skills.THREATEN:
+			case Skills.FP_SLOW:
+			case Skills.IL_SLOW:
+			case Skills.FP_SEAL:
+			case Skills.IL_SEAL:
+			case Skills.DOOM:
+			case Skills.SHADOW_WEB: {
+				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
+				byte count = packet.readByte();
+				for (int i = 0; i < count; i++) {
+					int mobId = packet.readInt();
+					Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, mobId);
+					if (m != null)
+						MonsterStatusEffectTools.applyEffectsAndShowVisuals(m, p, e);
+				}
+				break;
+			}
+			case Skills.HERO_HEROS_WILL:
+			case Skills.DARK_KNIGHT_HEROS_WILL:
+			case Skills.PALADIN_HEROS_WILL:
+			case Skills.FP_HEROS_WILL:
+			case Skills.IL_HEROS_WILL:
+			case Skills.BISHOP_HEROS_WILL:
+			case Skills.BOW_MASTER_HEROS_WILL:
+			case Skills.MARKSMAN_HEROS_WILL:
+			case Skills.NL_HEROS_WILL:
+			case Skills.SHADOWER_HEROS_WILL:
+			case Skills.BUCCANEER_PIRATES_RAGE:
+			case Skills.CORSAIR_PIRATES_RAGE: {
+				PlayerStatusEffectValues v = p.getEffectValue(PlayerStatusEffect.SEDUCE);
+				if (v != null)
+					StatusEffectTools.dispelEffectsAndShowVisuals(p, v.getEffectsData());
+				break;
+			}
 			case Skills.RAGE:
 			case Skills.IRON_WILL:
 			case Skills.SPEARMAN_HYPER_BODY:
@@ -113,9 +210,10 @@ public final class BuffHandler {
 			case Skills.SHADOWER_MAPLE_WARRIOR:
 			case Skills.BUCCANEER_MAPLE_WARRIOR:
 			case Skills.CORSAIR_MAPLE_WARRIOR: {
-				PartyList party = p.getParty();
 				byte affected = packet.readByte();
-				if (party != null) {
+				if (affected != (byte) 0x80) { //most significant bit is not set
+					PartyList party = p.getParty();
+					assert party != null;
 					PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 					party.lockRead();
 					try {
@@ -131,14 +229,15 @@ public final class BuffHandler {
 					} finally {
 						party.unlockRead();
 					}
-				} //else assert (affected & 0xFF) == 0b10000000;
+				}
 				break;
 			}
 			case Skills.TIME_LEAP: {
 				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-				PartyList party = p.getParty();
 				byte affected = packet.readByte();
-				if (party != null) {
+				if (affected != (byte) 0x80) { //most significant bit is not set
+					PartyList party = p.getParty();
+					assert party != null;
 					party.lockRead();
 					try {
 						PartyList.Member[] members = party.getAllMembers();
@@ -153,14 +252,15 @@ public final class BuffHandler {
 					} finally {
 						party.unlockRead();
 					}
-				} //else assert (affected & 0xFF) == 0b10000000;
+				}
 				SkillTools.applyTimeLeap(p, true, e);
 				break;
 			}
 			case Skills.BISHOP_RESURRECTION: {
-				PartyList party = p.getParty();
 				byte affected = packet.readByte();
-				if (party != null) {
+				if (affected != (byte) 0x80) { //most significant bit is not set
+					PartyList party = p.getParty();
+					assert party != null;
 					PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
 					party.lockRead();
 					try {
@@ -176,15 +276,16 @@ public final class BuffHandler {
 					} finally {
 						party.unlockRead();
 					}
-				} //else assert (affected & 0xFF) == 0b10000000;
+				}
 				//can't apply resurrect to self, so don't bother
 				break;
 			}
 			case Skills.DISPEL: {
 				PlayerSkillEffectsData e = SkillDataLoader.getInstance().getSkill(skillId).getLevel(skillLevel);
-				PartyList party = p.getParty();
 				byte affected = packet.readByte();
-				if (party != null) {
+				if (affected != (byte) 0x80) { //most significant bit is not set
+					PartyList party = p.getParty();
+					assert party != null;
 					party.lockRead();
 					try {
 						PartyList.Member[] members = party.getAllMembers();
@@ -199,10 +300,10 @@ public final class BuffHandler {
 					} finally {
 						party.unlockRead();
 					}
-				} //else assert (affected & 0xFF) == 0b10000000;
+				}
 				SkillTools.applyDispel(p, true, e);
 
-				packet.readShort();
+				/*short delay = */packet.readShort();
 				byte count = packet.readByte();
 				for (int i = 0; i < count; i++) {
 					int mobId = packet.readInt();
@@ -246,7 +347,7 @@ public final class BuffHandler {
 					GameCharacter target = (GameCharacter) p.getMap().getEntityById(EntityType.PLAYER, playerId);
 					//assert p != target;
 					if (target != null)
-						SkillTools.applyGmResurrection(target, e);
+						SkillTools.applyResurrection(target, e);
 				}
 				break;
 			}
@@ -273,6 +374,7 @@ public final class BuffHandler {
 				}
 				break;
 		}
+		/*short delay = */packet.readShort();
 		SkillTools.useCastSkill(p, skillId, skillLevel, stance);
 	}
 

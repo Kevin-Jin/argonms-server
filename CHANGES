@@ -2453,6 +2453,20 @@
 	* Re-casted mob skills now have the existing effects and cancel timer
 	canceled before the new effects and cancel timer are applied.
 
+2012-11-23  GoldenKevin  (revision 178)
+
+	* Implemented Heal + Dispel GM skill; Bishop and GM Resurrection skills; and
+	Time Leap, Threaten, Slow, Doom, Shadow Web, Ninja Ambush, Hero's Will, and
+	Pirate's Rage player skills.
+	* Added stubs for remaining specially handled buff skills.
+	* Fixed Silver Hawk and Golden Eagle stun.
+	* Fixed Seal, Coma, Shout, Charged Blow, Assaulter, Boomerang Step, Backspin
+	Blow, Double Uppercut, Demolition, Snatch, Barrage, Blank Shot, Ice Strike,
+	Blizzard (wizard), Ice Splitter, Paralyze, Poison Breath, Element
+	Composition (fire/poison), and Hypnotize.
+	* Added delay parameter for all status effect packets just for consistency
+	(although it doesn't really seem to delay anything).
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
