@@ -137,7 +137,7 @@ public class PlayerContinuation {
 						p.removeCancelEffectTask(e);
 						p.removeFromActiveEffects(PlayerStatusEffect.ENERGY_CHARGE);
 						Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.ENERGY_CHARGE, Short.valueOf((short) 0));
-						p.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0));
+						p.getClient().getSession().send(GamePackets.writeUsePirateSkill(updatedStats, 0, 0, (short) 0));
 						p.getMap().sendToAll(GamePackets.writeBuffMapPirateEffect(p, updatedStats, 0, 0), p);
 					}
 				}, skillState.endTime - System.currentTimeMillis()), skillState.level, skillState.endTime);

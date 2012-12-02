@@ -143,16 +143,15 @@ public final class MovementHandler {
 		if (monster == null)
 			return;
 
-		List<LifeMovementFragment> res = null;
+		List<LifeMovementFragment> res;
 		boolean useSkill = packet.readBool();
 		byte skill = packet.readByte();
 		short skillId = (short) (packet.readByte() & 0xFF);
 		byte skillLevel = packet.readByte();
-		byte skill3 = packet.readByte();
-		byte skill4 = packet.readByte();
+		short delay = packet.readShort();
 
 		Skill skillToUse = null;
-		MobSkillEffectsData skillToUseEffect = null;
+		MobSkillEffectsData skillToUseEffect;
 
 		//TODO: I don't think we should apply a debuff again if it is already active to the player
 		//this useSkill and skillId/skillLevel part is probably all wrong...
@@ -214,7 +213,7 @@ public final class MovementHandler {
 		/*Point initialPos = */packet.readPos();
 		/*Point finalPos = */packet.readPos();
 		updatePosition(res, monster, -1);
-		player.getMap().monsterMoved(player, monster, res, useSkill, skill, skillId, skillLevel, skill3, skill4, startPos);
+		player.getMap().monsterMoved(player, monster, res, useSkill, skill, skillId, skillLevel, delay, startPos);
 	}
 
 	public static void handleMoveNpc(LittleEndianReader packet, GameClient gc) {

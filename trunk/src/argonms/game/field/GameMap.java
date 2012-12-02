@@ -653,8 +653,8 @@ public class GameMap {
 		sendToAll(writeSummonMovement(p, s, moves, startPos), p);
 	}
 
-	public void monsterMoved(GameCharacter p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte s2, byte s3, byte s4, Point startPos) {
-		sendToAll(writeMonsterMovement(m, useSkill, skill, skillId, s2, s3, s4, startPos, moves), p);
+	public void monsterMoved(GameCharacter p, Mob m, List<LifeMovementFragment> moves, boolean useSkill, byte skill, short skillId, byte skillLevel, short delay, Point startPos) {
+		sendToAll(writeMonsterMovement(m, useSkill, skill, skillId, skillLevel, delay, startPos, moves), p);
 	}
 
 	public void damageMonster(GameCharacter p, Mob m, int damage) {
@@ -887,7 +887,7 @@ public class GameMap {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeMonsterMovement(Mob m, boolean useSkill, byte skill, short skillId, byte skillLevel, byte s3, byte s4, Point startPos, List<LifeMovementFragment> moves) {
+	private static byte[] writeMonsterMovement(Mob m, boolean useSkill, byte skill, short skillId, byte skillLevel, short delay, Point startPos, List<LifeMovementFragment> moves) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MOVE_MONSTER);
 		lew.writeInt(m.getId());
@@ -895,8 +895,7 @@ public class GameMap {
 		lew.writeByte(skill);
 		lew.writeByte((byte) skillId);
 		lew.writeByte(skillLevel);
-		lew.writeByte(s3);
-		lew.writeByte(s4); //or is this just 0?
+		lew.writeShort(delay);
 		lew.writePos(startPos);
 		GamePackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();

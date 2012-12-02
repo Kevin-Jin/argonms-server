@@ -131,7 +131,7 @@ public final class GamePackets {
 		return writeUpdatePlayerStats(EMPTY_STATUPDATE, true);
 	}
 
-	public static byte[] writeUseSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+	public static byte[] writeUseSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration, short delay) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
@@ -146,13 +146,13 @@ public final class GamePackets {
 			lew.writeInt(duration);
 		}
 		lew.writeShort((short) 0);
-		lew.writeShort((short) 0); //additional info
+		lew.writeShort(delay);
 		lew.writeByte((byte) 0); //# of times skill was cast
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeUsePirateSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration) {
+	public static byte[] writeUsePirateSkill(Map<PlayerStatusEffect, Short> stats, int skillId, int duration, short delay) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.FIRST_PERSON_APPLY_STATUS_EFFECT);
@@ -177,7 +177,7 @@ public final class GamePackets {
 			}
 			lew.writeShort((short) duration);
 		}
-		lew.writeShort((short) 0);
+		lew.writeShort(delay);
 		lew.writeByte((byte) 0); //# of times skill was cast
 
 		return lew.getBytes();
@@ -206,7 +206,7 @@ public final class GamePackets {
 	}
 
 	public static byte[] writeUseItem(Map<PlayerStatusEffect, Short> stats, int itemId, int duration) {
-		return writeUseSkill(stats, -itemId, duration);
+		return writeUseSkill(stats, -itemId, duration, (short) 0);
 	}
 
 	public static byte[] writeCancelStatusEffect(Set<PlayerStatusEffect> stats) {
