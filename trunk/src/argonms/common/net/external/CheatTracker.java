@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -123,12 +124,14 @@ public abstract class CheatTracker {
 
 	private final Lock loadLock;
 	private final Map<String, Long> timeLog;
+	private final AtomicBoolean banned;
 	private int totalPoints;
 	private boolean infractionsLoaded;
 
 	private CheatTracker() {
 		this.loadLock = new ReentrantLock();
 		this.timeLog = new ConcurrentHashMap<String, Long>();
+		this.banned = new AtomicBoolean(false);
 		this.totalPoints = 0;
 		this.infractionsLoaded = false;
 	}
@@ -184,6 +187,9 @@ public abstract class CheatTracker {
 	//ban a player if they exceed the tolerance. it's pointless to just choose
 	//one as they can be easily bypassed individually.
 	private void ban(Connection con) throws SQLException {
+		if (!banned.compareAndSet(false, true))
+			return;
+
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
@@ -223,6 +229,9 @@ public abstract class CheatTracker {
 	}
 
 	private void addInfraction(Infraction reason, Assigner type, String reporter, String message, long overrideExpire, short overridePoints, boolean dcOnBan) {
+		if (banned.get())
+			return;
+
 		long now = System.currentTimeMillis();
 		short points = overridePoints == -1 ? reason.points() : overridePoints;
 		loadLock.lock();

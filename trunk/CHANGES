@@ -2453,7 +2453,7 @@
 	* Re-casted mob skills now have the existing effects and cancel timer
 	canceled before the new effects and cancel timer are applied.
 
-2012-11-23  GoldenKevin  (revision 178)
+2012-12-02  GoldenKevin  (revision 178)
 
 	* Implemented Heal + Dispel GM skill; Bishop and GM Resurrection skills; and
 	Time Leap, Threaten, Slow, Doom, Shadow Web, Ninja Ambush, Hero's Will, and
@@ -2466,6 +2466,18 @@
 	Composition (fire/poison), and Hypnotize.
 	* Added delay parameter for all status effect packets just for consistency
 	(although it doesn't really seem to delay anything).
+
+2012-12-02  GoldenKevin  (revision 179)
+
+	* Fixed mob's elemental resistance not being changed by Doom.
+	* Fixed duplicate ban entries in SQL.
+	* Fixed	gained 0 exp messages.
+	* Fixed !shutdown command help text.
+	* Removed cheat detection in MovementHandler.handleMoveMob that banned
+	players who were attacked by auto-aggro monsters controlled by another
+	player in the map.
+	* Fixed selling items to shops causing inventory to go back to equip tab.
+	* Fixed race condition when allocating SP.
 
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are

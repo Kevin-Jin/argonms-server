@@ -65,8 +65,9 @@ public final class NpcMiniroomHandler {
 	;
 
 	private static final byte
-		TRANSACTION_SUCCESS = 0,
-		TRANSACTION_INVENTORY_FULL = 3
+		TRANSACTION_ADD_ITEM = 0,
+		TRANSACTION_INVENTORY_FULL = 3,
+		TRANSACTION_CHANGE_ITEM = 8
 	;
 
 	public static void handleNpcShopAction(LittleEndianReader packet, GameClient gc) {
@@ -131,7 +132,7 @@ public final class NpcMiniroomHandler {
 						short pos = s.shortValue();
 						gc.getSession().send(GamePackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
 					}
-					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
+					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_ADD_ITEM));
 					p.itemCountChanged(itemId);
 				} else {
 					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_INVENTORY_FULL));
@@ -168,7 +169,7 @@ public final class NpcMiniroomHandler {
 				}
 				p.itemCountChanged(itemId);
 				p.gainMesos(price, false);
-				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
+				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_CHANGE_ITEM));
 				break;
 			}
 			case ACT_RECHARGE: {
@@ -189,7 +190,7 @@ public final class NpcMiniroomHandler {
 				item.setQuantity(slotMax);
 				p.gainMesos(-rechargeCost, false);
 				gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, item));
-				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_SUCCESS));
+				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_CHANGE_ITEM));
 				break;
 			}
 			case ACT_EXIT_SHOP: {

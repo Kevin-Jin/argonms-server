@@ -105,25 +105,25 @@ public final class StatAllocationHandler {
 		GameCharacter p = gc.getPlayer();
 		/*int time = */packet.readInt();
 		int skillId = packet.readInt();
-		byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
-		if (newLevel <= p.getMasterSkillLevel(skillId)) {
-			if (Skills.isBeginnerSkill(skillId)) {
-				p.setSkillLevel(skillId, newLevel, (byte) -1);
-			} else {
-				p.writeLockStats();
-				try {
+		p.writeLockStats();
+		try {
+			byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
+			if (newLevel <= p.getMasterSkillLevel(skillId)) {
+				if (Skills.isBeginnerSkill(skillId)) {
+					p.setSkillLevel(skillId, newLevel, (byte) -1);
+				} else {
 					if (p.getSp() > 0) {
 						p.setSp((short) (p.getSp() - 1));
 						p.setSkillLevel(skillId, newLevel, (byte) -1);
 					} else {
 						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
 					}
-				} finally {
-					p.writeUnlockStats();
 				}
+			} else {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
 			}
-		} else {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
+		} finally {
+			p.writeUnlockStats();
 		}
 	}
 

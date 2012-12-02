@@ -36,12 +36,12 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCal
 
 	@Override
 	public String getHelpMessage() {
-		return "Look up the WZ data ID of an object based on its name.";
+		return "Starts a timer to restart or shutdown the server. Gives all players a warning beforehand, with an optional message.";
 	}
 
 	@Override
 	public String getUsage() {
-		return "Usage: !shutdown [-r|-h|-c] <seconds countdown>|now";
+		return "Usage: !shutdown [-r|-h|-c] <seconds countdown>|now [<message>]";
 	}
 
 	@Override

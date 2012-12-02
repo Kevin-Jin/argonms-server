@@ -832,7 +832,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void gainExp(int gain, boolean isKiller, boolean fromQuest) {
-		if (level < GlobalConstants.MAX_LEVEL) {
+		if (gain != 0 && level < GlobalConstants.MAX_LEVEL) {
 			getClient().getSession().send(GamePackets.writeShowExpGain(gain, isKiller, fromQuest));
 
 			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);

@@ -413,6 +413,8 @@ public class Mob extends AbstractEntity {
 	}
 
 	public byte getElementalResistance(Element elem) {
+		if (activeEffects.containsKey(MonsterStatusEffect.DOOM))
+			return Element.EFFECTIVENESS_NORMAL;
 		return stats.getElementalResistance(elem);
 	}
 
