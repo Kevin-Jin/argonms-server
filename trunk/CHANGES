@@ -2492,6 +2492,22 @@
 	right slot in a trade window.
 	* Fixed weapon attack being buffed when a summon is spawned.
 
+2012-12-08  GoldenKevin  (revision 181)
+
+	* Players using the "Hide" skill can no longer be located using the /find
+	client command and any whispers to such players will return the error
+	message that the player could not be found.
+	* Kyrin now gives SP for the Pirate first job advancement.
+	* Implemented skill macros.
+	* Changed ban expiration calculation methods so the ban is lifted as soon
+	as the total infraction points dips below the tolerance level.
+	* Added !eventuil, !notice, and !ticker commands.
+	* !rate, !shutdown, and !who commands apply to the entire world rather than
+	just the current game server.
+	* Fixed NullPointerException when entering portals to maps not in the WZ
+	files.
+	* Fixed dropping equipped items not updating the avatar.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

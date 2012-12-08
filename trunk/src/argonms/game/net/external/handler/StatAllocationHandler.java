@@ -23,6 +23,7 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.SkillMacro;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
@@ -125,6 +126,22 @@ public final class StatAllocationHandler {
 		} finally {
 			p.writeUnlockStats();
 		}
+	}
+
+	public static void handleSkillMacroAssign(LittleEndianReader packet, GameClient gc) {
+		GameCharacter p = gc.getPlayer();
+		byte count = packet.readByte();
+		SkillMacro[] macros = new SkillMacro[count];
+		for (byte i = 0; i < count; i++) {
+			String name = packet.readLengthPrefixedString();
+			boolean silent = packet.readBool();
+			int skill1 = packet.readInt();
+			int skill2 = packet.readInt();
+			int skill3 = packet.readInt();
+
+			macros[i] = new SkillMacro(name, silent, skill1, skill2, skill3);
+		}
+		p.setMacros(macros);
 	}
 
 	private StatAllocationHandler() {

@@ -70,4 +70,12 @@ public interface CrossChannelSynchronization {
 	public void sendCrossChannelCommandCharacterManipulation(String recipient, List<CommandTarget.CharacterManipulation> updates);
 
 	public void callCrossChannelCommandCharacterAccess(BlockingQueue<Pair<Byte, Object>> resultConsumer, String target, CharacterProperty key);
+
+	public void sendWorldWideNotice(byte style, String message);
+
+	public void sendServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message);
+
+	public void sendServerRateChange(byte type, short newRate);
+
+	public void callRetrieveConnectedPlayersList(BlockingQueue<Pair<Byte, Object>> resultConsumer, byte privilegeLevelLimit);
 }

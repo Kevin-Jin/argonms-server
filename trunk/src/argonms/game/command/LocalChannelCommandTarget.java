@@ -33,7 +33,11 @@ import argonms.game.character.DiseaseTools;
 import argonms.game.character.ExpTables;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.StorageInventory;
+import argonms.game.field.MobSkills;
+import argonms.game.loading.skill.MobSkillEffectsData;
+import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import java.util.Calendar;
 import java.util.List;
@@ -258,6 +262,15 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					Calendar cal = TimeTool.currentDateTime();
 					cal.setTimeInMillis(value.expireTimestamp);
 					CheatTracker.get(target.getClient()).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
+					break;
+				}
+				case STUN: {
+					boolean start = ((Boolean) update.getValue()).booleanValue();
+					MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(MobSkills.STUN).getLevel((byte) 1);
+					if (start)
+						StatusEffectTools.applyEffectsAndShowVisuals(target, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1, Integer.MAX_VALUE);
+					else //stop
+						StatusEffectTools.dispelEffectsAndShowVisuals(target, e);
 					break;
 				}
 			}

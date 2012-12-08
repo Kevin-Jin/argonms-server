@@ -57,7 +57,7 @@ import java.util.logging.Logger;
 public abstract class CheatTracker {
 	private static final Logger LOG = Logger.getLogger(CheatTracker.class.getName());
 
-	private static final short TOLERANCE = 10000;
+	public static final short TOLERANCE = 10000;
 
 	private static LockableMap<RemoteClient, OnlineCheatTracker> recent;
 

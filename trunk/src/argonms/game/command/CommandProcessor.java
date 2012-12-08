@@ -21,6 +21,7 @@ package argonms.game.command;
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.util.TimeTool;
+import argonms.game.GameRegistry;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.command.CommandDefinition.CommandAction;
@@ -511,6 +512,9 @@ public class CommandProcessor {
 				resp.printOut(sb.toString());
 			}
 		}, "Show location info of a player", UserPrivileges.GM));
+		universalCommands.put("!eventutil", new EventCommands.EventUtilCommandHandler());
+		universalCommands.put("!notice", new NoticeCommands.NoticeCommandHandler());
+		universalCommands.put("!ticker", new NoticeCommands.TickerCommandHandler());
 		universalCommands.put("!rate", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {
@@ -539,21 +543,19 @@ public class CommandProcessor {
 					return;
 				}
 
+				byte type;
 				if (key.equalsIgnoreCase("exp")) {
-					GameServer.getVariables().setExpRate(rate);
-					resp.printOut("The exp rate of this game server has been set to "
-							+ rate + ". Changes will be reverted on the next server restart.");
+					type = GameRegistry.RATE_EXP;
 				} else if (key.equalsIgnoreCase("meso")) {
-					GameServer.getVariables().setMesoRate(rate);
-					resp.printOut("The meso rate of this game server has been set to "
-							+ rate + ". Changes will be reverted on the next server restart.");
+					type = GameRegistry.RATE_MESO;
 				} else if (key.equalsIgnoreCase("drop")) {
-					GameServer.getVariables().setDropRate(rate);
-					resp.printOut("The drop rate of this game server has been set to "
-							+ rate + ". Changes will be reverted on the next server restart.");
+					type = GameRegistry.RATE_DROP;
 				} else {
 					resp.printErr(getUsage());
+					return;
 				}
+				GameServer.getChannel(caller.getChannel()).getCrossServerInterface().sendServerRateChange(type, rate);
+				resp.printOut("Note that changes made to each game server will be reverted the next time it is restarted.");
 			}
 		}, "Change the exp, meso, or drop rate of this game server",
 				UserPrivileges.SUPER_GM));
@@ -600,13 +602,7 @@ public class CommandProcessor {
 					}
 				}
 
-				StringBuilder sb = new StringBuilder();
-				for (GameCharacter c : GameServer.getChannel(caller.getChannel()).getConnectedPlayers())
-					if (c.getPrivilegeLevel() >= privilegeLevelLimit)
-						sb.append(c.getName()).append(",");
-				if (sb.length() > 0) //remove terminal delimiter
-					sb.delete(sb.length() - 1, sb.length());
-				resp.printOut("Connected users: " + sb);
+				resp.printOut("Connected users: " + GameServer.getChannel(caller.getChannel()).getCrossServerInterface().retrieveConnectedPlayersList(privilegeLevelLimit));
 			}
 		}, "List all online users in this channel (and optionally filter them by privilege level)",
 				UserPrivileges.GM));

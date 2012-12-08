@@ -143,7 +143,8 @@ public interface CommandTarget {
 		MAX_ALL_EQUIP_STATS((byte) 35),
 		MAX_INVENTORY_SLOTS((byte) 36),
 		MAX_BUDDY_LIST_SLOTS((byte) 37),
-		BAN((byte) 38);
+		BAN((byte) 38),
+		STUN((byte) 39);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

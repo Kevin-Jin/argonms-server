@@ -24,23 +24,23 @@ package argonms.game.character;
  */
 public class SkillMacro {
 	private final String name;
-	private final boolean shout;
+	private final boolean silent;
 	private final int skill1, skill2, skill3;
 
-	public SkillMacro(String name, boolean shout, int sk1, int sk2, int sk3) {
+	public SkillMacro(String name, boolean silent, int skill1, int skill2, int skill3) {
 		this.name = name;
-		this.shout = shout;
-		this.skill1 = sk1;
-		this.skill2 = sk2;
-		this.skill3 = sk3;
+		this.silent = silent;
+		this.skill1 = skill1;
+		this.skill2 = skill2;
+		this.skill3 = skill3;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public boolean shout() {
-		return shout;
+	public boolean isSilent() {
+		return silent;
 	}
 
 	public int getFirstSkill() {

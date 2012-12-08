@@ -157,6 +157,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.QUEST_ACTION:
 				NpcHandler.handleQuestAction(reader, gc);
 				break;
+			case ClientRecvOps.SKILL_MACRO:
+				StatAllocationHandler.handleSkillMacroAssign(reader, gc);
+				break;
 			case ClientRecvOps.PARTYCHAT:
 				ChatHandler.handlePrivateChat(reader, gc);
 				break;

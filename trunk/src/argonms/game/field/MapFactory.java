@@ -52,6 +52,9 @@ public class MapFactory {
 		GameMap map = maps.get(oId);
 		if (map == null) {
 			map = newMap(mapid);
+			if (map == null)
+				return null;
+
 			GameMap existing = maps.putIfAbsent(oId, map);
 			if (existing != null)
 				//some other thread was loading the same map and beat us in

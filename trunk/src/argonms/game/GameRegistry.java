@@ -23,6 +23,12 @@ package argonms.game;
  * @author GoldenKevin
  */
 public class GameRegistry {
+	public static final byte
+		RATE_EXP = 1,
+		RATE_DROP = 2,
+		RATE_MESO = 3
+	;
+
 	private boolean itemExpires;
 	private boolean buffCooldowns;
 	private short expRate, dropRate, mesoRate;

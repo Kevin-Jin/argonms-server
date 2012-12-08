@@ -78,10 +78,10 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	@Override
 	public void callPlayerExistsCheck(BlockingQueue<Pair<Byte, Object>> resultConsumer, String name) {
-		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(pipe.returnPlayerExistsResult(name))));
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Byte.valueOf(pipe.returnPlayerExistsResult(name))));
 	}
 
-	private boolean returnPlayerExistsResult(String name) {
+	private byte returnPlayerExistsResult(String name) {
 		return handler.makePlayerExistsResult(name);
 	}
 
@@ -218,5 +218,41 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 
 	private Object returnCrossChannelCommandCharacterAccessResult(String target, CommandTarget.CharacterProperty key) {
 		return handler.makeCrossChannelCommandCharacterAccessResult(target, key);
+	}
+
+	@Override
+	public void sendWorldWideNotice(byte style, String message) {
+		pipe.receivedWorldWideNotice(style, message);
+	}
+
+	private void receivedWorldWideNotice(byte style, String message) {
+		handler.receivedWorldWideNotice(style, message);
+	}
+
+	@Override
+	public void sendServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message) {
+		pipe.receivedServerShutdown(halt, restart, cancel, seconds, message);
+	}
+
+	private void receivedServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message) {
+		handler.receivedServerShutdown(halt, restart, cancel, seconds, message);
+	}
+
+	@Override
+	public void sendServerRateChange(byte type, short newRate) {
+		pipe.receivedServerRateChange(type, newRate);
+	}
+
+	private void receivedServerRateChange(byte type, short newRate) {
+		handler.receivedServerRateChange(type, newRate);
+	}
+
+	@Override
+	public void callRetrieveConnectedPlayersList(BlockingQueue<Pair<Byte, Object>> resultConsumer, byte privilegeLevelLimit) {
+		resultConsumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), pipe.returnRetrieveConnectedPlayersListResult(privilegeLevelLimit)));
+	}
+
+	private Object returnRetrieveConnectedPlayersListResult(byte privilegeLevelLimit) {
+		return handler.makeRetrieveConnectedPlayersListResult(privilegeLevelLimit);
 	}
 }

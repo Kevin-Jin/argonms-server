@@ -20,20 +20,12 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.game.GameServer;
-import argonms.game.character.GameCharacter;
-import argonms.game.net.WorldChannel;
-import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.ChatHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCaller> {
-	private static final Logger LOG = Logger.getLogger(ShutdownCommandHandler.class.getName());
-
 	@Override
 	public String getHelpMessage() {
 		return "Starts a timer to restart or shutdown the server. Gives all players a warning beforehand, with an optional message.";
@@ -47,25 +39,6 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCal
 	@Override
 	public byte minPrivilegeLevel() {
 		return UserPrivileges.ADMIN;
-	}
-
-	private void serverWideNotice(String message) {
-		byte[] packet = GamePackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), message, (byte) -1, true);
-		for (WorldChannel chn : GameServer.getInstance().getChannels().values())
-			for (GameCharacter p : chn.getConnectedPlayers())
-				p.getClient().getSession().send(packet);
-	}
-
-	private String reason(boolean halt, boolean restart) {
-		if (restart)
-			return "restart";
-		if (halt)
-			return "halt";
-		return "maintenance";
-	}
-
-	private String formatTime(int seconds) {
-		return ((seconds == 0) ? "NOW" : ("in " + seconds + " seconds"));
 	}
 
 	@Override
@@ -116,16 +89,6 @@ public class ShutdownCommandHandler extends AbstractCommandDefinition<CommandCal
 		if (args.hasNext())
 			message = args.restOfString();
 
-		if (!cancel) {
-			String notice = "The server is going down for " + reason(halt, restart) + " " + formatTime(seconds) + "!\r\n" + message;
-			serverWideNotice(notice);
-			LOG.log(Level.WARNING, notice);
-			GameServer.getInstance().shutdown(halt, seconds * 1000);
-			if (restart) {
-				//TODO: implement restart
-			}
-		} else {
-			//TODO: implement cancel
-		}
+		GameServer.getChannel(caller.getChannel()).getCrossServerInterface().sendServerShutdown(halt, restart, cancel, seconds, message);
 	}
 }
