@@ -101,7 +101,12 @@ public class LoginClient extends RemoteClient {
 		ResultSet irs;
 
 		try {
-			ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000)");
+			//load only non-expired infractions - even though the ban
+			//may have been given with infractions that have already
+			//expired, the longest lasting infraction will still remain
+			//the same, and we could just choose the most outstanding
+			//points from the active infractions to send to the client
+			ips = con.prepareStatement("SELECT `expiredate`,`reason`,`severity` FROM `infractions` WHERE `accountid` = ? AND `pardoned` = 0 AND `expiredate` > (UNIX_TIMESTAMP() * 1000) ORDER BY `expiredate` DESC");
 			rbps = con.prepareStatement("DELETE FROM `bans` WHERE `banid` = ?");
 			//there could be multiple bans (account bans, some mac, and others IP)
 			//if that's the case, load all of them and calculate the longest lasting
@@ -109,29 +114,31 @@ public class LoginClient extends RemoteClient {
 			//of the infractions of all bans.
 			while (rs.next()) {
 				boolean release = true;
-				//load only non-expired infractions - even though the ban
-				//may have been given with infractions that have already
-				//expired, the longest lasting infraction will still remain
-				//the same, and we could just choose the most outstanding
-				//points from the active infractions to send to the client
+				int totalPoints = 0;
 				ips.setInt(1, rs.getInt(2));
 				irs = null;
 				try {
 					irs = ips.executeQuery();
 					while (irs.next()) {
-						release = false;
 						long infractionExpire = irs.getLong(1);
 						CheatTracker.Infraction infractionReason = CheatTracker.Infraction.valueOf(irs.getByte(2));
-						//ban expire time is based on the longest lasting
-						//infraction instead of stacking infraction durations
-						if (infractionExpire > banExpire)
+						short severity = irs.getShort(3);
+
+						//ban expire time is based on the shortest amount of
+						//time before total points goes below tolerance.
+						//assume ResultSet is iterated in order of `expiredate`
+						//descending
+						if (release && (totalPoints += severity) >= CheatTracker.TOLERANCE) {
 							banExpire = infractionExpire;
+							release = false;
+						}
+
 						//meanwhile, the ban reason sent the client doesn't have
 						//to be paired up to the longest lasting ban. instead,
 						//send the reason that is most responsible for the ban
 						//(i.e. the reason that has the highest sum of points)
 						Integer runningPoints = infractionPoints.get(infractionReason);
-						int updatedPoints = ((runningPoints != null ? runningPoints.intValue() : 0) + irs.getShort(3));
+						int updatedPoints = ((runningPoints != null ? runningPoints.intValue() : 0) + severity);
 						infractionPoints.put(infractionReason, Integer.valueOf(updatedPoints));
 						if (updatedPoints > highestPoints) {
 							highestPoints = updatedPoints;

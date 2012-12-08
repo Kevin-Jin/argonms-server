@@ -301,7 +301,7 @@ CREATE TABLE `skillmacros` (
   `characterid` INT(11) NOT NULL,
   `position` TINYINT(1) NOT NULL,
   `name` VARCHAR(12) NOT NULL,
-  `shout` TINYINT(1) NOT NULL,
+  `silent` TINYINT(1) NOT NULL,
   `skill1` INT(11) NOT NULL,
   `skill2` INT(11) NOT NULL,
   `skill3` INT(11) NOT NULL,

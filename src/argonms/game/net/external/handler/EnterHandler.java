@@ -163,19 +163,18 @@ public final class EnterHandler {
 		return lew.getBytes();
 	}
 
-	private static byte[] writeMacros(List<SkillMacro> macros) {
+	private static byte[] writeMacros(SkillMacro[] macros) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.SKILL_MACRO);
-		synchronized(macros) {
-			lew.writeByte((byte) macros.size()); // number of macros
-			for (SkillMacro macro : macros) {
-				lew.writeLengthPrefixedString(macro.getName());
-				lew.writeBool(macro.shout());
-				lew.writeInt(macro.getFirstSkill());
-				lew.writeInt(macro.getSecondSkill());
-				lew.writeInt(macro.getThirdSkill());
-			}
+		lew.writeByte((byte) macros.length);
+		for (byte i = 0; i < macros.length; i++) {
+			SkillMacro macro = macros[i];
+			lew.writeLengthPrefixedString(macro.getName());
+			lew.writeBool(macro.isSilent());
+			lew.writeInt(macro.getFirstSkill());
+			lew.writeInt(macro.getSecondSkill());
+			lew.writeInt(macro.getThirdSkill());
 		}
 
 		return lew.getBytes();

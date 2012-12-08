@@ -24,6 +24,7 @@ import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.BuffsData;
 import argonms.common.util.Scheduler;
 import argonms.game.field.entity.PlayerSkillSummon;
+import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
 import java.util.EnumMap;
@@ -57,21 +58,21 @@ public final class StatusEffectTools {
 		return null;
 	}
 
-	private static byte[] getFirstPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+	private static byte[] getFirstPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats, int duration) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
 					case Skills.CHAKRA:
 						break;
 					case Skills.DASH:
-						return GamePackets.writeUsePirateSkill(updatedStats, e.getDataId(), e.getDuration(), (short) 0);
+						return GamePackets.writeUsePirateSkill(updatedStats, e.getDataId(), duration, (short) 0);
 					default:
-						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), e.getDuration(), (short) 0);
+						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), duration, (short) 0);
 				}
 			case ITEM:
-				return GamePackets.writeUseItem(updatedStats, e.getDataId(), e.getDuration());
+				return GamePackets.writeUseItem(updatedStats, e.getDataId(), duration);
 			case MOB_SKILL:
-				return GamePackets.writeGiveDebuff(updatedStats, (short) e.getDataId(), e.getLevel(), e.getDuration(), (short) 900);
+				return GamePackets.writeGiveDebuff(updatedStats, (short) e.getDataId(), e.getLevel(), duration, (short) 900);
 		}
 		return null;
 	}
@@ -84,16 +85,16 @@ public final class StatusEffectTools {
 		return null;
 	}
 
-	private static byte[] getThirdPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats) {
+	private static byte[] getThirdPersonApplyEffect(GameCharacter p, StatusEffectsData e, Map<PlayerStatusEffect, Short> updatedStats, int duration) {
 		switch (e.getSourceType()) {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
 					case Skills.CHAKRA:
 						break;
 					case Skills.DASH:
-						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), e.getDuration());
+						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), duration);
 					default:
-						if (e.getDuration() > 0)
+						if (duration > 0)
 							return GamePackets.writeBuffMapEffect(p, updatedStats);
 				}
 			case MOB_SKILL:
@@ -133,20 +134,24 @@ public final class StatusEffectTools {
 		return updatedStats;
 	}
 
-	public static void applyEffectsAndShowVisuals(GameCharacter p, byte effectType, StatusEffectsData e, byte stance) {
+	public static void applyEffectsAndShowVisuals(GameCharacter p, byte effectType, StatusEffectsData e, byte stance, int duration) {
 		Map<PlayerStatusEffect, Short> updatedStats = applyEffects(p, e);
 		byte[] effect = getFirstPersonCastEffect(p, effectType, e, stance);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
-		effect = getFirstPersonApplyEffect(p, e, updatedStats);
+		effect = getFirstPersonApplyEffect(p, e, updatedStats, duration);
 		if (effect != null)
 			p.getClient().getSession().send(effect);
 		effect = getThirdPersonCastEffect(p, effectType, e, stance);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
-		effect = getThirdPersonApplyEffect(p, e, updatedStats);
+		effect = getThirdPersonApplyEffect(p, e, updatedStats, duration);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
+	}
+
+	public static void applyEffectsAndShowVisuals(GameCharacter p, byte effectType, StatusEffectsData e, byte stance) {
+		applyEffectsAndShowVisuals(p, effectType, e, stance, e.getDuration());
 	}
 
 	public static void dispelEffects(GameCharacter p, StatusEffectsData e) {

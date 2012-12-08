@@ -90,6 +90,13 @@ public final class InventoryHandler {
 				inv.remove(src);
 				toDrop = item;
 				gc.getSession().send(GamePackets.writeInventoryClearSlot(type, src));
+				if (src < 0) {
+					//dropped an equipped equip
+					p.equipChanged((Equip) toDrop, false, true);
+					p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
+					if (p.getChatRoom() != null)
+						GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
+				}
 			} else {
 				item.setQuantity(newQty);
 				toDrop = item.clone();

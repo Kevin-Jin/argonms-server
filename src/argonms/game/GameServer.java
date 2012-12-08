@@ -39,6 +39,7 @@ import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.WorldChannel;
+import argonms.game.net.external.GamePackets;
 import argonms.game.net.internal.CrossServerSynchronization;
 import argonms.game.net.internal.GameCenterInterface;
 import argonms.game.script.NpcScriptManager;
@@ -312,7 +313,7 @@ public class GameServer implements LocalServer {
 			byte[] ip = InetAddress.getByName(host).getAddress();
 			remoteGameChannelMapping.put(Byte.valueOf(serverId), ports.keySet());
 			for (WorldChannel ch : channels.values())
-				ch.getCrossServerInterface().addRemoteChannels(ip, ports);
+				ch.getCrossServerInterface().addRemoteChannels(serverId, ip, ports);
 			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept shop server because its"
@@ -368,6 +369,13 @@ public class GameServer implements LocalServer {
 			if (entry.getValue().getPlayerByName(characterName) != null)
 				return entry.getKey().byteValue();
 		return -1;
+	}
+
+	public void serverWideMessage(byte style, String message) {
+		byte[] packet = GamePackets.writeServerMessage(style, message, (byte) -1, true);
+		for (WorldChannel chn : GameServer.getInstance().getChannels().values())
+			for (GameCharacter p : chn.getConnectedPlayers())
+				p.getClient().getSession().send(packet);
 	}
 
 	public GameRegistry getRegistry() {

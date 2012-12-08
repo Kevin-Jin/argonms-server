@@ -86,7 +86,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -127,7 +126,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private short mapChair;
 
 	private final ConcurrentMap<Byte, KeyBinding> bindings;
-	private final List<SkillMacro> skillMacros;
+	private volatile SkillMacro[] skillMacros;
 	private final ConcurrentMap<Integer, SkillEntry> skillEntries;
 	private final ConcurrentMap<Integer, Cooldown> cooldowns;
 	private final ConcurrentMap<PlayerStatusEffect, PlayerStatusEffectValues> activeEffects;
@@ -157,7 +156,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();
-		skillMacros = new CopyOnWriteArrayList<SkillMacro>();
 		skillEntries = new ConcurrentHashMap<Integer, SkillEntry>();
 		cooldowns = new ConcurrentHashMap<Integer, Cooldown>();
 		activeEffects = new ConcurrentHashMap<PlayerStatusEffect, PlayerStatusEffectValues>();
@@ -410,15 +408,18 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.executeUpdate();
 			ps.close();
 
-			byte position = 0;
 			ps = con.prepareStatement("INSERT INTO `skillmacros` "
-					+ "(`characterid`,`position`,`name`,`shout`,`skill1`,`skill2`,`skill3`) "
+					+ "(`characterid`,`position`,`name`,`silent`,`skill1`,`skill2`,`skill3`) "
 					+ "VALUES (?,?,?,?,?,?,?)");
 			ps.setInt(1, getDataId());
-			for (SkillMacro macro : skillMacros) {
-				ps.setByte(2, position++);
+			for (byte pos = 0; pos < skillMacros.length; pos++) {
+				SkillMacro macro = skillMacros[pos];
+				if (macro.getName().isEmpty() && !macro.isSilent() && macro.getFirstSkill() == 0 && macro.getSecondSkill() == 0 && macro.getThirdSkill() == 0)
+					continue; //placeholder macro
+
+				ps.setByte(2, pos);
 				ps.setString(3, macro.getName());
-				ps.setBoolean(4, macro.shout());
+				ps.setBoolean(4, macro.isSilent());
 				ps.setInt(5, macro.getFirstSkill());
 				ps.setInt(6, macro.getSecondSkill());
 				ps.setInt(7, macro.getThirdSkill());
@@ -690,15 +691,23 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `name`,`shout`,`skill1`,`skill2`,`skill3` "
-					+ "FROM `skillmacros` WHERE `characterid` = ? ORDER BY `position`");
+			ps = con.prepareStatement("SELECT `position`,`name`,`silent`,`skill1`,`skill2`,`skill3` "
+					+ "FROM `skillmacros` WHERE `characterid` = ? ORDER BY `position` DESC");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
-			while (rs.next()) {
-				p.skillMacros.add(new SkillMacro(rs.getString(1),
-						rs.getBoolean(2), rs.getInt(3), rs.getInt(4),
-						rs.getInt(5)));
+			byte macroPos = 0;
+			for (boolean first = true; rs.next(); first = false) {
+				macroPos = rs.getByte(1);
+				if (first)
+					p.skillMacros = new SkillMacro[macroPos + 1];
+				p.skillMacros[macroPos] = new SkillMacro(rs.getString(2),
+						rs.getBoolean(3), rs.getInt(4), rs.getInt(5),
+						rs.getInt(6));
 			}
+			if (p.skillMacros == null)
+				p.skillMacros = new SkillMacro[0]; //no macros
+			for (macroPos--; macroPos >= 0; macroPos--)
+				p.skillMacros[macroPos] = new SkillMacro("", false, 0, 0, 0); //placeholder macro
 			rs.close();
 			ps.close();
 
@@ -1406,8 +1415,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
 	}
 
-	public List<SkillMacro> getMacros() {
+	public SkillMacro[] getMacros() {
 		return skillMacros;
+	}
+
+	public void setMacros(SkillMacro[] newMacros) {
+		skillMacros = newMacros;
 	}
 
 	@Override

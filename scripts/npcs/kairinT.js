@@ -58,13 +58,13 @@ function checkSecondJobAdvancementQuest() {
 		return true;
 	} else if (player.isQuestCompleted(2191)) {
 		npc.sayNext("Okay, as promised, you will now become a #bBrawler#k.");
-		player.setJob(510);
 		player.gainSp(1);
-		player.gainUseInventorySlots(4);
+		player.setJob(510);
 		let hpinc = 200 + Math.floor(Math.random() * 50); //Extra HP Given
 		let mpinc = 150 + Math.floor(Math.random() * 25); //Extra MP Given
 		player.increaseMaxHp(hpinc);
 		player.increaseMaxMp(mpinc);
+		player.gainUseInventorySlots(4);
 		npc.sayNext("Okay, from here on out, you are a #bBrawler#k. Brawlers rule the world with the power of their bare fists... which means they need to train their body more than others. If you have any trouble training, I'll be more than happy to help.");
 		npc.sayNext("I have just given you a skill book that entails Brawler skills, you'll find it very helpful. You have also gained additional slots for Use items, a full row in fact. I also boosted your MaxHP and MaxMP. Check it out for yourself.");
 		npc.sayNext("Brawlers need to be a powerful force, but that doesn't mean they have the right to bully the weak. True Brawlers use their immense power in positive ways, which is much harder than just training to gain strength. I hope you follow this creed as you leave your mark in this world as a Brawler. I will see you when you have accomplished everything you can as a Brawler. I'll be waiting for you here.");
@@ -72,13 +72,13 @@ function checkSecondJobAdvancementQuest() {
 		return true;
 	} else if (player.isQuestCompleted(2192)) {
 		npc.sayNext("I knew you'd pass the test! You had some impressive moves in there. Not bad at all! Now, as promised, you will now become a #bGunslinger#k.");
-		player.setJob(520);
 		player.gainSp(1);
-		player.gainUseInventorySlots(4);
+		player.setJob(520);
 		let hpinc = 200 + Math.floor(Math.random() * 50); //Extra HP Given
 		let mpinc = 150 + Math.floor(Math.random() * 25); //Extra MP Given
 		player.increaseMaxHp(hpinc);
 		player.increaseMaxMp(mpinc);
+		player.gainUseInventorySlots(4);
 		npc.sayNext("From here on out, you are a #bGunslinger#k. Gunslingers are notable for their long-range attacks with sniper-like accuracy and, of course, using Guns as their primary weapon. You should continue training to truly master your skills. If you are having trouble, I'll be there to help.");
 		npc.sayNext("I have just given you a skill book that entails Gunslinger skills, you'll find it very helpful. You have also gained additional slots for Use items, a full row in fact. I also boosted your MaxHP and MaxMP. Check it out for yourself.");
 		npc.sayNext("Gunslingers are deadly at ranged combat, but that doesn't mean they have the right to bully the weak. Gunslingers will need to use their immense power in positive ways, which is actually hard than just training to gain strength. I hope you follow this creed as you leave your mark in this world as a Gunslinger. I will see you when you have accomplished everything you can as a Gunslinger. I'll be waiting for you here.");
@@ -100,6 +100,12 @@ if (player.getJob() != 500 || player.getLevel() < 30 || !checkSecondJobAdvanceme
 					if (selection == 1) {
 						npc.sayNext("Welcome to the band of Pirates! You may have to spend some time as a wanderer at first, but better days will certainly dawn upon you, sooner than you think! In the mean time, let me share some of my abilities with you.");
 
+						if (player.getLevel() >= 30) { //For the rare "too high level" instance.
+							npc.sayNext("I think you've made the job advancement way too late. Usually, for beginners under Level 29 that were late in making job advancements, we compensate them with lost Skill Points, that weren't rewarded, but...I think you're a little too late for that. I am so sorry, but there's nothing I can do.");
+							player.gainSp(1);
+						} else {
+							player.gainSp((player.getLevel() - 10) * 3 + 1); //Make up any SP for over-leveling like in GMS
+						}
 						player.setJob(500);
 						//don't bother checking whether the inventories are full.
 						//1. the user's inventory is not expected to be full by now, and

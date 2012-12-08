@@ -68,7 +68,7 @@ public final class ChatHandler {
 		switch (reader.readByte()) {
 			case COMMAND_FIND: {
 				String toFind = reader.readLengthPrefixedString();
-				byte channel = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().scanChannelOfPlayer(toFind);
+				byte channel = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().scanChannelOfPlayer(toFind, true);
 				if (channel == gc.getChannel()) {
 					gc.getSession().send(writeFindResultSameChannel(toFind, GameServer.getChannel(channel).getPlayerByName(toFind).getMapId()));
 				} else if (channel != 0) {

@@ -63,21 +63,32 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		CHATROOM_TEXT = 20,
 		CROSS_CHANNEL_COMMAND_CHARACTER_MANIPULATION = 21,
 		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS = 22,
-		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE = 23
+		CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE = 23,
+		SYNCHRONIZED_NOTICE = 24,
+		SYNCHRONIZED_SHUTDOWN = 25,
+		SYNCHRONIZED_RATE_CHANGE = 26,
+		WHO_COMMAND = 27,
+		WHO_COMMAND_RESPONSE = 28
 	;
 
 	private final CrossServerSynchronization handler;
 	private final byte localCh;
 	private final byte targetCh;
+	private final byte serverId;
 	private final byte[] ipAddress;
 	private int port;
 
-	public CrossProcessCrossChannelSynchronization(CrossServerSynchronization self, byte localCh, byte remoteCh, byte[] ipAddress, int port) {
+	public CrossProcessCrossChannelSynchronization(CrossServerSynchronization self, byte localCh, byte remoteCh, byte serverId, byte[] ipAddress, int port) {
 		this.handler = self;
 		this.localCh = localCh;
 		this.targetCh = remoteCh;
+		this.serverId = serverId;
 		this.ipAddress = ipAddress;
 		this.port = port;
+	}
+
+	public byte getServerId() {
+		return serverId;
 	}
 
 	@Override
@@ -175,6 +186,21 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 				break;
 			case CROSS_CHANNEL_COMMAND_CHARACTER_ACCESS_RESPONSE:
 				receivedCrossChannelCommandCharacterAccessResult(packet);
+				break;
+			case SYNCHRONIZED_NOTICE:
+				receivedWorldWideNotice(packet);
+				break;
+			case SYNCHRONIZED_SHUTDOWN:
+				receivedServerShutdown(packet);
+				break;
+			case SYNCHRONIZED_RATE_CHANGE:
+				receivedServerRateChange(packet);
+				break;
+			case WHO_COMMAND:
+				receivedRetrieveConnectedPlayersList(packet);
+				break;
+			case WHO_COMMAND_RESPONSE:
+				receivedRetrieveConnectedPlayersListResult(packet);
 				break;
 		}
 	}
@@ -276,25 +302,25 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		returnPlayerExistsResult(responseId, handler.makePlayerExistsResult(name));
 	}
 
-	private void returnPlayerExistsResult(int responseId, boolean result) {
+	private void returnPlayerExistsResult(int responseId, byte result) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
 		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, PLAYER_SEARCH_RESPONSE);
 		lew.writeInt(responseId);
-		lew.writeBool(result);
+		lew.writeByte(result);
 
 		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	private void receivedPlayerExistsResult(LittleEndianReader packet) {
 		int responseId = packet.readInt();
-		boolean result = packet.readBool();
+		byte result = packet.readByte();
 
 		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
 		if (consumer == null)
 			//timed out and garbage collected
 			return;
 
-		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Boolean.valueOf(result)));
+		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Byte.valueOf(result)));
 	}
 
 	@Override
@@ -690,6 +716,104 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		int responseId = packet.readInt();
 		CommandTarget.CharacterProperty key = CommandTarget.CharacterProperty.valueOf(packet.readByte());
 		Object result = CrossChannelCommandTarget.deserialize(key, packet);
+
+		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
+		if (consumer == null)
+			//timed out and garbage collected
+			return;
+
+		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), result));
+	}
+
+	@Override
+	public void sendWorldWideNotice(byte style, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + message.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, SYNCHRONIZED_NOTICE);
+		lew.writeByte(style);
+		lew.writeLengthPrefixedString(message);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedWorldWideNotice(LittleEndianReader packet) {
+		byte style = packet.readByte();
+		String message = packet.readLengthPrefixedString();
+
+		handler.receivedWorldWideNotice(style, message);
+	}
+
+	@Override
+	public void sendServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + message.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, SYNCHRONIZED_SHUTDOWN);
+		lew.writeBool(halt);
+		lew.writeBool(restart);
+		lew.writeBool(cancel);
+		lew.writeInt(seconds);
+		lew.writeLengthPrefixedString(message);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedServerShutdown(LittleEndianReader packet) {
+		boolean halt = packet.readBool();
+		boolean restart = packet.readBool();
+		boolean cancel = packet.readBool();
+		int seconds = packet.readInt();
+		String message = packet.readLengthPrefixedString();
+
+		handler.receivedServerShutdown(halt, restart, cancel, seconds, message);
+	}
+
+	@Override
+	public void sendServerRateChange(byte type, short newRate) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, SYNCHRONIZED_RATE_CHANGE);
+		lew.writeByte(type);
+		lew.writeShort(newRate);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedServerRateChange(LittleEndianReader packet) {
+		byte type = packet.readByte();
+		short newRate = packet.readShort();
+
+		handler.receivedServerRateChange(type, newRate);
+	}
+
+	@Override
+	public void callRetrieveConnectedPlayersList(BlockingQueue<Pair<Byte, Object>> resultConsumer, byte privilegeLevelLimit) {
+		int responseId = nextResponseId.incrementAndGet();
+		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, WHO_COMMAND);
+		lew.writeInt(responseId);
+		lew.writeByte(privilegeLevelLimit);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedRetrieveConnectedPlayersList(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		byte privilegeLevelLimit = packet.readByte();
+
+		returnRetrieveConnectedPlayersListResult(responseId, handler.makeRetrieveConnectedPlayersListResult(privilegeLevelLimit));
+	}
+
+	private void returnRetrieveConnectedPlayersListResult(int responseId, String result) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + result.length());
+		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, WHO_COMMAND_RESPONSE);
+		lew.writeInt(responseId);
+		lew.writeLengthPrefixedString(result);
+
+		writeCrossProcessCrossChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedRetrieveConnectedPlayersListResult(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		String result = packet.readLengthPrefixedString();
 
 		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
 		if (consumer == null)

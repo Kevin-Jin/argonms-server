@@ -23,7 +23,7 @@ package argonms.game.field;
  * @author GoldenKevin
  */
 public final class MobSkills {
-	public static final int
+	public static final short
 		WATK_UP = 100,
 		MATK_UP = 101,
 		WDEF_UP = 102,

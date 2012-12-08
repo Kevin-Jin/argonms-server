@@ -139,6 +139,9 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					lew.writeLong(value.expireTimestamp);
 					break;
 				}
+				case STUN:
+					lew.writeBool(((Boolean) update.getValue()).booleanValue());
+					break;
 			}
 		}
 	}
@@ -226,6 +229,9 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					value = new BanValue(banner, reason, expireTimestamp);
 					break;
 				}
+				case STUN:
+					value = Boolean.valueOf(packet.readBool());
+					break;
 			}
 			updates.add(new CharacterManipulation(key, value));
 		}

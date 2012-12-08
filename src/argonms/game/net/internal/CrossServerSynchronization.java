@@ -23,6 +23,8 @@ import argonms.common.character.BuddyListEntry;
 import argonms.common.util.collections.LockableMap;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
+import argonms.game.GameRegistry;
+import argonms.game.GameServer;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
@@ -32,6 +34,7 @@ import argonms.game.command.LocalChannelCommandTarget;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.net.external.handler.ChatHandler;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +64,12 @@ public class CrossServerSynchronization {
 		PRIVATE_CHAT_TYPE_BUDDY = 0,
 		PRIVATE_CHAT_TYPE_PARTY = 1,
 		PRIVATE_CHAT_TYPE_GUILD = 2
+	;
+
+	private static final byte
+		SCAN_PLAYER_CHANNEL_NO_MATCH = 0,
+		SCAN_PLAYER_CHANNEL_HIDDEN = 1,
+		SCAN_PLAYER_CHANNEL_FOUND = 2
 	;
 
 	/* package-private */ static final int BLOCKING_CALL_TIMEOUT = 2000; //in milliseconds
@@ -146,11 +155,11 @@ public class CrossServerSynchronization {
 		return new Pair<byte[], Integer>(css.getIpAddress(), Integer.valueOf(css.getPort()));
 	}
 
-	public void addRemoteChannels(byte[] host, Map<Byte, Integer> ports) {
+	public void addRemoteChannels(byte serverId, byte[] host, Map<Byte, Integer> ports) {
 		lockWrite();
 		try {
 			for (Map.Entry<Byte, Integer> port : ports.entrySet()) {
-				CrossProcessCrossChannelSynchronization cpccs = new CrossProcessCrossChannelSynchronization(this, self.getChannelId(), port.getKey().byteValue(), host, port.getValue().intValue());
+				CrossProcessCrossChannelSynchronization cpccs = new CrossProcessCrossChannelSynchronization(this, self.getChannelId(), port.getKey().byteValue(), serverId, host, port.getValue().intValue());
 				remoteChannelsInWorld.put(port.getKey(), cpccs);
 				allChannelsInWorld.put(port.getKey(), cpccs);
 			}
@@ -174,7 +183,9 @@ public class CrossServerSynchronization {
 	public void changeRemoteChannelPort(byte channel, int port) {
 		lockWrite();
 		try {
-			remoteChannelsInWorld.get(Byte.valueOf(channel)).setPort(port);
+			CrossProcessCrossChannelSynchronization cpccs = remoteChannelsInWorld.get(Byte.valueOf(channel));
+			if (cpccs != null)
+				cpccs.setPort(port);
 		} finally {
 			unlockWrite();
 		}
@@ -206,20 +217,24 @@ public class CrossServerSynchronization {
 		self.performChannelChange(playerId);
 	}
 
-	public byte scanChannelOfPlayer(String name) {
+	public byte scanChannelOfPlayer(String name, boolean ignoreHidden) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
 		lockRead();
 		try {
 			int remaining = 0;
+			byte findResult;
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
 				ccs.callPlayerExistsCheck(queue, name);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null)
-					if (((Boolean) result.right).booleanValue())
-						return result.left.byteValue();
-					else
+				while ((result = queue.poll()) != null) {
+					if ((findResult = ((Byte) result.right).byteValue()) == SCAN_PLAYER_CHANNEL_NO_MATCH)
 						remaining--;
+					else if (!ignoreHidden || findResult == SCAN_PLAYER_CHANNEL_FOUND)
+						return result.left.byteValue();
+					else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
+						return 0;
+				}
 				remaining++;
 			}
 
@@ -230,9 +245,12 @@ public class CrossServerSynchronization {
 					LOG.log(Level.FINE, "Cross process player search timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 					return 0;
 				}
-				if (((Boolean) result.right).booleanValue())
+				if ((findResult = ((Byte) result.right).byteValue()) == SCAN_PLAYER_CHANNEL_NO_MATCH)
+					remaining--;
+				else if (!ignoreHidden || findResult == SCAN_PLAYER_CHANNEL_FOUND)
 					return result.left.byteValue();
-				remaining--;
+				else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
+					return 0;
 			}
 			return 0;
 		} catch (InterruptedException e) {
@@ -245,8 +263,13 @@ public class CrossServerSynchronization {
 		}
 	}
 
-	/* package-private */ boolean makePlayerExistsResult(String name) {
-		return self.getPlayerByName(name) != null;
+	/* package-private */ byte makePlayerExistsResult(String name) {
+		GameCharacter p = self.getPlayerByName(name);
+		if (p == null)
+			return SCAN_PLAYER_CHANNEL_NO_MATCH;
+		if (!p.isVisible())
+			return SCAN_PLAYER_CHANNEL_HIDDEN;
+		return SCAN_PLAYER_CHANNEL_FOUND;
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
@@ -361,7 +384,8 @@ public class CrossServerSynchronization {
 				}
 				if (((Boolean) result.right).booleanValue())
 					return true;
-				remaining--;
+				else
+					remaining--;
 			}
 			return false;
 		} catch (InterruptedException e) {
@@ -380,7 +404,7 @@ public class CrossServerSynchronization {
 			return false;
 
 		p.getClient().getSession().send(GamePackets.writeWhisperMessage(sender, message, srcCh));
-		return true;
+		return p.isVisible();
 	}
 
 	public void sendSpouseChat(String spouse, GameCharacter p, String message) {
@@ -414,10 +438,10 @@ public class CrossServerSynchronization {
 		lockRead();
 		try {
 			int remaining = 0;
+			Byte inviteResult;
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
 				ccs.callSendBuddyInvite(queue, recipientId, sender.getId(), sender.getName());
 				Pair<Byte, Object> result;
-				Byte inviteResult;
 				//address any results that have since responded, for a possibility of early out
 				while ((result = queue.poll()) != null)
 					if (((inviteResult = (Byte) result.right).byteValue()) != -1)
@@ -434,10 +458,10 @@ public class CrossServerSynchronization {
 					LOG.log(Level.FINE, "Cross process buddy invite timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 					return new Pair<Byte, Byte>(Byte.valueOf((byte) -1), Byte.valueOf((byte) -1));
 				}
-				Byte inviteResult = ((Byte) result.right);
-				if (inviteResult.byteValue() != -1)
+				if (((inviteResult = (Byte) result.right).byteValue()) != -1)
 					return new Pair<Byte, Byte>(result.left, inviteResult);
-				remaining--;
+				else
+					remaining--;
 			}
 			return new Pair<Byte, Byte>(Byte.valueOf((byte) -1), Byte.valueOf((byte) -1));
 		} catch (InterruptedException e) {
@@ -769,7 +793,8 @@ public class CrossServerSynchronization {
 				}
 				if (((Boolean) result.right).booleanValue())
 					return true;
-				remaining--;
+				else
+					remaining--;
 			}
 			return false;
 		} catch (InterruptedException e) {
@@ -886,5 +911,143 @@ public class CrossServerSynchronization {
 		if (p != null)
 			return new LocalChannelCommandTarget(p).access(key);
 		return null;
+	}
+
+	public void sendWorldWideNotice(byte style, String message) {
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(self.getChannelId())).sendWorldWideNotice(style, message);
+		Set<Byte> triedGameServers = new HashSet<Byte>();
+		lockRead();
+		try {
+			for (CrossProcessCrossChannelSynchronization ccs : remoteChannelsInWorld.values()) {
+				if (!triedGameServers.contains(Byte.valueOf(ccs.getServerId()))) {
+					ccs.sendWorldWideNotice(style, message);
+					triedGameServers.add(Byte.valueOf(ccs.getServerId()));
+				}
+			}
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private*/ void receivedWorldWideNotice(byte style, String message) {
+		if (style == ChatHandler.TextStyle.TICKER.byteValue())
+			GameServer.getVariables().setNewsTickerMessage(message);
+
+		GameServer.getInstance().serverWideMessage(style, message);
+	}
+
+	public void sendServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message) {
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(self.getChannelId())).sendServerShutdown(halt, restart, cancel, seconds, message);
+		Set<Byte> triedGameServers = new HashSet<Byte>();
+		lockRead();
+		try {
+			for (CrossProcessCrossChannelSynchronization ccs : remoteChannelsInWorld.values()) {
+				if (!triedGameServers.contains(Byte.valueOf(ccs.getServerId()))) {
+					ccs.sendServerShutdown(halt, restart, cancel, seconds, message);
+					triedGameServers.add(Byte.valueOf(ccs.getServerId()));
+				}
+			}
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private*/ void receivedServerShutdown(boolean halt, boolean restart, boolean cancel, int seconds, String message) {
+		String reason;
+		if (restart)
+			reason = "restart";
+		else if (halt)
+			reason = "halt";
+		else
+			reason = "maintenance";
+		String formattedTime = ((seconds == 0) ? "NOW" : ("in " + seconds + " seconds"));
+
+		if (!cancel) {
+			String notice = "The server is going down for " + reason + " " + formattedTime + "!\r\n" + message;
+			GameServer.getInstance().serverWideMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), notice);
+			LOG.log(Level.WARNING, notice);
+			GameServer.getInstance().shutdown(halt, seconds * 1000);
+			if (restart) {
+				//TODO: implement restart
+			}
+		} else {
+			//TODO: implement cancel
+		}
+	}
+
+	public void sendServerRateChange(byte type, short newRate) {
+		allChannelsInWorld.getWhenSafe(Byte.valueOf(self.getChannelId())).sendServerRateChange(type, newRate);
+		Set<Byte> triedGameServers = new HashSet<Byte>();
+		lockRead();
+		try {
+			for (CrossProcessCrossChannelSynchronization ccs : remoteChannelsInWorld.values()) {
+				if (!triedGameServers.contains(Byte.valueOf(ccs.getServerId()))) {
+					ccs.sendServerRateChange(type, newRate);
+					triedGameServers.add(Byte.valueOf(ccs.getServerId()));
+				}
+			}
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private*/ void receivedServerRateChange(byte type, short newRate) {
+		String str = null;
+		switch (type) {
+			case GameRegistry.RATE_EXP:
+				GameServer.getVariables().setExpRate(newRate);
+				str = "EXP";
+				break;
+			case GameRegistry.RATE_DROP:
+				GameServer.getVariables().setDropRate(newRate);
+				str = "drop";
+				break;
+			case GameRegistry.RATE_MESO:
+				GameServer.getVariables().setMesoRate(newRate);
+				str = "meso";
+				break;
+		}
+		GameServer.getInstance().serverWideMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), "This world's " + str + " rate has been set to " + newRate + ".");
+	}
+
+	public String retrieveConnectedPlayersList(byte privilegeLevelLimit) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		StringBuilder sb = new StringBuilder();
+		lockRead();
+		try {
+			int remaining = 0;
+			for (CrossChannelSynchronization ccs : allChannelsInWorld.values()) {
+				ccs.callRetrieveConnectedPlayersList(queue, privilegeLevelLimit);
+				remaining++;
+			}
+
+			long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+			while (remaining > 0) {
+				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				if (result == null) {
+					LOG.log(Level.FINE, "Cross process connected players list retrieval timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+					return null;
+				}
+				sb.append(result.right);
+				remaining--;
+			}
+
+			return sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+			return null;
+		} finally {
+			unlockRead();
+		}
+	}
+
+	/* package-private*/ String makeRetrieveConnectedPlayersListResult(byte privilegeLevelLimit) {
+		StringBuilder sb = new StringBuilder();
+		for (GameCharacter c : GameServer.getChannel(self.getChannelId()).getConnectedPlayers())
+			if (c.getPrivilegeLevel() >= privilegeLevelLimit)
+				sb.append(c.getName()).append(',');
+		return sb.toString();
 	}
 }
