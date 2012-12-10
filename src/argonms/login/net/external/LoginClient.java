@@ -188,7 +188,7 @@ public class LoginClient extends RemoteClient {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			ps = con.prepareStatement("SELECT `accountid` FROM `bans` WHERE `banid` = ?");
+			ps = con.prepareStatement("SELECT `banid`,`accountid` FROM `bans` WHERE `banid` = ?");
 			ps.setInt(1, banId);
 			rs = ps.executeQuery();
 			banStatus = loadBanStatusInternal(con, rs);

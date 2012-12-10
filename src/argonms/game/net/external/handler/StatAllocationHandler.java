@@ -111,11 +111,11 @@ public final class StatAllocationHandler {
 			byte newLevel = (byte) (p.getSkillLevel(skillId) + 1);
 			if (newLevel <= p.getMasterSkillLevel(skillId)) {
 				if (Skills.isBeginnerSkill(skillId)) {
-					p.setSkillLevel(skillId, newLevel, (byte) -1);
+					p.setSkillLevel(skillId, newLevel, (byte) -1, false);
 				} else {
 					if (p.getSp() > 0) {
 						p.setSp((short) (p.getSp() - 1));
-						p.setSkillLevel(skillId, newLevel, (byte) -1);
+						p.setSkillLevel(skillId, newLevel, (byte) -1, false);
 					} else {
 						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate non-existant SP");
 					}

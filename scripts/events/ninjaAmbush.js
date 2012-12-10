@@ -17,26 +17,25 @@
  */
 
 /**
- * Logic for managing an instance map for Pirate's 2nd job advancement quest -
- * How to become a Brawler (Quest 2191) and How to Become a Gunslinger (Quest
- * 2192) - and logic for handling the time limit.
+ * Logic for managing an instance map for a quest that allows Night Lords to
+ * obtain the 4th job skill Ninja Ambush - The Night Warrior (Quest 6141) - and
+ * logic for handling the time limit.
  *
  * @author GoldenKevin
  */
 
-let player, map;
+let player;
 
 function init(attachment) {
-	let destination;
-	[player, destination] = attachment;
+	player = attachment;
 
-	//create a new instance of the map so we don't have to deal with multiple
-	//players in the channel trying to complete the same challenge.
-	map = event.makeMap(destination);
+	//create a new instance of the map so we don't have to deal with clearing
+	//the map and respawning six Dark Lord's Discliples in the right positions
+	map = event.makeMap(910300000);
 	player.changeMap(map);
 
-	map.showTimer(10 * 60);
-	event.startTimer("kick", 10 * 60 * 1000);
+	map.showTimer(5 * 60);
+	event.startTimer("kick", 5 * 60 * 1000);
 
 	player.setEvent(event);
 }
@@ -52,7 +51,7 @@ function playerChangedMap(player, destination) {
 function timerExpired(key) {
 	switch (key) {
 		case "kick":
-			player.changeMap(120000101); //let playerChangedMap handle destroy
+			player.changeMap(103000000); //let playerChangedMap handle destroy
 			break;
 	}
 }

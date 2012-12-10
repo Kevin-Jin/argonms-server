@@ -479,6 +479,7 @@ public class CommandProcessor {
 				}
 			}
 		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
+		universalCommands.put("!clearinv", new ClearInventoryCommandHandler());
 		universalCommands.put("!info", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {
@@ -512,9 +513,9 @@ public class CommandProcessor {
 				resp.printOut(sb.toString());
 			}
 		}, "Show location info of a player", UserPrivileges.GM));
-		universalCommands.put("!eventutil", new EventCommands.EventUtilCommandHandler());
-		universalCommands.put("!notice", new NoticeCommands.NoticeCommandHandler());
-		universalCommands.put("!ticker", new NoticeCommands.TickerCommandHandler());
+		universalCommands.put("!eventutil", new EventCommandHandlers.EventUtilCommandHandler());
+		universalCommands.put("!notice", new NoticeCommandHandlers.NoticeCommandHandler());
+		universalCommands.put("!ticker", new NoticeCommandHandlers.TickerCommandHandler());
 		universalCommands.put("!rate", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {

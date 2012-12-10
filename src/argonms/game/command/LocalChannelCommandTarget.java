@@ -184,7 +184,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					break;
 				case SET_SKILL_LEVEL: {
 					SkillValue value = (SkillValue) update.getValue();
-					target.setSkillLevel(value.skillId, value.skillLevel, value.skillMasterLevel);
+					target.setSkillLevel(value.skillId, value.skillLevel, value.skillMasterLevel, false);
 					break;
 				}
 				case ADD_ITEM: {
@@ -271,6 +271,19 @@ public class LocalChannelCommandTarget implements CommandTarget {
 						StatusEffectTools.applyEffectsAndShowVisuals(target, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1, Integer.MAX_VALUE);
 					else //stop
 						StatusEffectTools.dispelEffectsAndShowVisuals(target, e);
+					break;
+				}
+				case CLEAR_INVENTORY_SLOTS: {
+					InventorySlotRangeValue value = (InventorySlotRangeValue) update.getValue();
+					Inventory inv = target.getInventory(value.type);
+					short upperBound = (short) Math.min(value.endSlot, inv.getMaxSlots());
+					for (short slot = value.startSlot; slot <= upperBound; slot++) {
+						InventorySlot removed = inv.remove(slot);
+						if (removed != null) {
+							target.getClient().getSession().send(GamePackets.writeInventoryClearSlot(value.type, slot));
+							target.itemCountChanged(removed.getDataId());
+						}
+					}
 					break;
 				}
 			}

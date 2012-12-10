@@ -176,19 +176,28 @@ public class QuestRewards {
 	}
 
 	//TODO: check if we can fit all items in the player's inventory.
-	private void awardItems(GameCharacter p) {
-		boolean findRandomItem = (sumItemProbs != 0);
+	private void awardItems(GameCharacter p, int selection) {
+		boolean findRandomItem = (sumItemProbs > 0);
+		int selectableItemIndex = 0;
 		int random = findRandomItem ? Rng.getGenerator().nextInt(sumItemProbs) : 0, runningProbs = 0;
 
 		for (QuestItemStats item : items) {
 			boolean give = canGiveItem(p, item);
 			if (item.getProb() != 0 && give) {
-				if (findRandomItem && random < (runningProbs += item.getProb()))
-					//use this item - leave give = true and don't look for more random items
-					findRandomItem = false;
-				else
-					//don't give this item
-					give = false;
+				if (item.getProb() == -1) {
+					//items List better keep the order of the item rewards in
+					//Quest.wz/Act.img...
+					if (selectableItemIndex != selection)
+						give = false;
+					selectableItemIndex++;
+				} else {
+					if (findRandomItem && random < (runningProbs += item.getProb()))
+						//use this item - leave give = true and don't look for more random items
+						findRandomItem = false;
+					else
+						//don't give this item
+						give = false;
+				}
 			}
 			if (give) {
 				short quantity = item.getCount();
@@ -206,7 +215,7 @@ public class QuestRewards {
 				|| endDate != 0 && System.currentTimeMillis() >= endDate
 				|| !jobs.isEmpty() && !jobs.contains(Short.valueOf(p.getJob())))
 			return -1; //Nexon fails. This should only be in Quest.wz/Check.img. T.T
-		awardItems(p);
+		awardItems(p, selection);
 		for (Entry<Short, Byte> entry : questChanges.entrySet()) {
 			switch (entry.getValue().byteValue()) {
 				case QuestEntry.STATE_STARTED:
@@ -239,7 +248,7 @@ public class QuestRewards {
 	protected static class SkillReward {
 		private final List<Short> compatibleJobs;
 		private int skillId;
-		private int currentLevel, masterLevel;
+		private byte currentLevel, masterLevel;
 		private boolean onlyMasterLevel;
 
 		protected SkillReward(int skillId, byte skillLevel, byte masterLevel, boolean onlyMasterLevel) {
@@ -257,7 +266,7 @@ public class QuestRewards {
 		protected void applyTo(GameCharacter p) {
 			if (!compatibleJobs.contains(Short.valueOf(p.getJob())))
 				return;
-			//TODO: what the hell do all these variables mean???
+			p.setSkillLevel(skillId, currentLevel, masterLevel, onlyMasterLevel);
 		}
 	}
 }

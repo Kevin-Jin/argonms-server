@@ -220,7 +220,7 @@ public class ScriptPlayer {
 	public void maxSkills() {
 		for (int skillid : Skills.ALL) {
 			byte masterLevel = SkillDataLoader.getInstance().getSkill(skillid).maxLevel();
-			getPlayer().setSkillLevel(skillid, masterLevel, masterLevel);
+			getPlayer().setSkillLevel(skillid, masterLevel, masterLevel, false);
 		}
 	}
 

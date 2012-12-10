@@ -1445,19 +1445,31 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * @param skill
 	 * @param level
 	 * @param masterLevel set to -1 if you do not wish to change the max level
+	 * @param onlyMasterLevel if true, only set the current skill level to the
+	 * level parameter if the skill has not been leveled up yet.
 	 */
-	public void setSkillLevel(int skill, byte level, byte masterLevel) {
+	public void setSkillLevel(int skill, byte level, byte masterLevel, boolean onlyMasterLevel) {
+		byte defaultMasterLevel;
+		if (masterLevel == -1)
+			if (!Skills.isFourthJob(skill))
+				defaultMasterLevel = SkillDataLoader.getInstance().getSkill(skill).maxLevel();
+			else
+				defaultMasterLevel = 0;
+		else
+			defaultMasterLevel = masterLevel;
+
 		SkillEntry skillLevel;
-		SkillEntry newSkillLevel = new SkillEntry(level, masterLevel == -1 ? 0 : masterLevel);
+		SkillEntry newSkillLevel = new SkillEntry(level, defaultMasterLevel);
 		if (level != 0 || masterLevel != -1)
-			skillLevel = skillEntries.putIfAbsent(Integer.valueOf(skill), new SkillEntry(level, masterLevel));
+			skillLevel = skillEntries.putIfAbsent(Integer.valueOf(skill), newSkillLevel);
 		else
 			skillLevel = skillEntries.remove(Integer.valueOf(skill));
 
 		if (skillLevel == null) {
 			skillLevel = newSkillLevel;
 		} else {
-			skillLevel.changeCurrentLevel(level);
+			if (!onlyMasterLevel)
+				skillLevel.changeCurrentLevel(level);
 			if (masterLevel != -1)
 				skillLevel.changeMasterLevel(masterLevel);
 		}
@@ -1645,8 +1657,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			miniroom.leaveRoom(this);
 			miniroom = null;
 		}
-		if (mapChair != 0)
-			map.leaveChair(mapChair);
+		if (getItemChair() != 0)
+			setItemChair(0);
+		else
+			setMapChair((short) 0);
 		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
 		if (v != null)
 			SkillTools.cancelBuffSkill(this, v.getSource());

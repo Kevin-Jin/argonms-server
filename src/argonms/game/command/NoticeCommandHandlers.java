@@ -26,7 +26,7 @@ import argonms.game.net.external.handler.ChatHandler;
  *
  * @author GoldenKevin
  */
-public class NoticeCommands {
+public class NoticeCommandHandlers {
 	public static class NoticeCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
