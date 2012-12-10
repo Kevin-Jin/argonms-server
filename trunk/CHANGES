@@ -2508,6 +2508,23 @@
 	files.
 	* Fixed dropping equipped items not updating the avatar.
 
+2012-12-08  GoldenKevin  (revision 182)
+
+	* Fixed wrongful infractions and inability to start or complete quests with
+	the GM jobs even though these actions are allowed by a clean client.
+	* Implemented quests that change a skill level (i.e. fourth job skills
+	quests that don't actually hand out skillbooks).
+	* Implemented quest for gaining Ninja Ambush skill for Night Lords.
+	* Fixed quests that allow a user to choose their item reward.
+	* SQL procedures `updateranks` and `fetchranks` now skip accounts that are
+	IP banned.
+	* Fixed chair being displayed with players that were teleported while
+	sitting on a chair item.
+	* Added !clearinv command.
+	* Fixed extraneous rows in `inventoryitems` database table when using !give
+	on offline players.
+	* Fixed SQLException when logging into a MAC banned character.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

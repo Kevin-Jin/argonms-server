@@ -19,6 +19,7 @@
 package argonms.game.loading.quest;
 
 import argonms.common.GlobalConstants;
+import argonms.common.character.PlayerJob;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
@@ -158,7 +159,7 @@ public class QuestChecks {
 				|| p.getLevel() < minLevel || p.getLevel() > maxLevel
 				|| p.getMesos() < minMesos)
 			return false;
-		if (!reqJobs.isEmpty() && !reqJobs.contains(Short.valueOf(p.getJob())))
+		if (!reqJobs.isEmpty() && !reqJobs.contains(Short.valueOf(p.getJob())) && !PlayerJob.isGameMaster(p.getJob()))
 			return false;
 		for (QuestItemStats item : reqItems) {
 			int itemId = item.getItemId();

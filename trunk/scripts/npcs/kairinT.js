@@ -22,7 +22,8 @@
  *   Hidden Chamber: Kyrin's Training Room (Map 912010200)
  *
  * Pirate job advancement NPC.
- * Admits pirates into the second job advancement challenge.
+ * Admits pirates into the second job advancement challenge - How to become a
+ * Brawler (Quest 2191) and How to Become a Gunslinger (Quest 2192).
  *
  * @author GoldenKevin (content from DelphiMS r418)
  */

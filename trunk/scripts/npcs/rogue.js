@@ -34,7 +34,10 @@ if (player.isQuestStarted(6141)) {
 	} else if (selection == 1) {
 		//TODO: implement instance maps - only warp if empty
 		//player.changeMap(910300000);
-		npc.say("Someone is already inside. Try again later.");
+		if (npc.getEvent("ninjaAmbush") != null)
+			npc.say("Someone is already inside. Try again later.");
+		else
+			npc.makeEvent("ninjaAmbush", player);
 	}
 } else if (player.getJob() == 0) {
 	npc.sayNext("Want to be a thief? There are some standards to meet, because we can't just accept EVERYONE in ... #bYour level should be at least 10#k. Let's see...");

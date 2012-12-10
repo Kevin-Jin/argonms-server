@@ -370,7 +370,7 @@ BEGIN
           SELECT DISTINCT `c`.`id`
           FROM `characters` `c`
           LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
           WHERE (
             `a`.`gm` = 0
             AND ((`c`.`job` = 0 AND `c`.`level` >= 10) OR (`c`.`job` <> 0))
@@ -396,7 +396,7 @@ BEGIN
           SELECT DISTINCT `c`.`id`
           FROM `characters` `c`
           LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
           WHERE
             `c`.`world` = `value`
             AND `a`.`gm` = 0
@@ -422,7 +422,7 @@ BEGIN
           SELECT DISTINCT `c`.`id`
           FROM `characters` `c`
           LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+          LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
           WHERE
             (`c`.`job` DIV 100) = `value`
             AND `a`.`gm` = 0
@@ -475,7 +475,7 @@ BEGIN
     WHEN 'overall' THEN
       SELECT `c`.`overallrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
       LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
       WHERE
         (ISNULL(`lowerbound`) OR `c`.`overallrankcurrentpos` >= `lowerbound`)
         AND (ISNULL(`upperbound`) OR `c`.`overallrankcurrentpos` <= `upperbound`)
@@ -486,7 +486,7 @@ BEGIN
     WHEN 'world' THEN
       SELECT `c`.`worldrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
       LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
       WHERE
         `c`.`world` = `value`
         AND (ISNULL(`lowerbound`) OR `c`.`worldrankcurrentpos` >= `lowerbound`)
@@ -498,7 +498,7 @@ BEGIN
     WHEN 'job' THEN
       SELECT `c`.`jobrankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`level`,`c`.`exp` FROM `characters` `c`
       LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
       WHERE
         (`c`.`job` DIV 100) = `value`
         AND (ISNULL(`lowerbound`) OR `c`.`jobrankcurrentpos` >= `lowerbound`)
@@ -510,7 +510,7 @@ BEGIN
     WHEN 'fame' THEN
       SELECT `c`.`famerankcurrentpos`,`c`.`id`,`c`.`name`,`c`.`world`,`c`.`job`,`c`.`fame`,`c`.`level`,`c`.`exp` FROM `characters` `c`
       LEFT JOIN `accounts` `a` ON `a`.`id` = `c`.`accountid`
-      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid`
+      LEFT JOIN `bans` `b` ON `a`.`id` = `b`.`accountid` OR `a`.`recentip` = `b`.`ip`
       WHERE
         `c`.`fame` > 0
         AND (ISNULL(`lowerbound`) OR `c`.`famerankcurrentpos` >= `lowerbound`)

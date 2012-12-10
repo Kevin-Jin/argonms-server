@@ -118,7 +118,7 @@ public final class PlayerJob {
 		return (getJobPath(jobid) == CLASS_PIRATE);
 	}
 
-	public static boolean isModerator(short jobid) {
+	public static boolean isGameMaster(short jobid) {
 		return (getJobPath(jobid) == CLASS_GAMEMASTER);
 	}
 

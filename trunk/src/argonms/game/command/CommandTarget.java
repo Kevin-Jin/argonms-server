@@ -18,6 +18,7 @@
 
 package argonms.game.command;
 
+import argonms.common.character.inventory.Inventory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +88,17 @@ public interface CommandTarget {
 		}
 	}
 
+	public static class InventorySlotRangeValue {
+		public final Inventory.InventoryType type;
+		public final short startSlot, endSlot;
+
+		public InventorySlotRangeValue(Inventory.InventoryType type, short startSlot, short endSlot) {
+			this.type = type;
+			this.startSlot = startSlot;
+			this.endSlot = endSlot;
+		}
+	}
+
 	public static class CharacterManipulation {
 		private final CharacterManipulationKey key;
 		private final Object value;
@@ -144,7 +156,8 @@ public interface CommandTarget {
 		MAX_INVENTORY_SLOTS((byte) 36),
 		MAX_BUDDY_LIST_SLOTS((byte) 37),
 		BAN((byte) 38),
-		STUN((byte) 39);
+		STUN((byte) 39),
+		CLEAR_INVENTORY_SLOTS((byte) 40);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

@@ -19,6 +19,7 @@
 package argonms.game.command;
 
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
@@ -142,6 +143,13 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case STUN:
 					lew.writeBool(((Boolean) update.getValue()).booleanValue());
 					break;
+				case CLEAR_INVENTORY_SLOTS: {
+					InventorySlotRangeValue value = (InventorySlotRangeValue) update.getValue();
+					lew.writeByte(value.type.byteValue());
+					lew.writeShort(value.startSlot);
+					lew.writeShort(value.endSlot);
+					break;
+				}
 			}
 		}
 	}
@@ -232,6 +240,13 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case STUN:
 					value = Boolean.valueOf(packet.readBool());
 					break;
+				case CLEAR_INVENTORY_SLOTS: {
+					Inventory.InventoryType type = Inventory.InventoryType.valueOf(packet.readByte());
+					short startSlot = packet.readShort();
+					short endSlot = packet.readShort();
+					value = new InventorySlotRangeValue(type, startSlot, endSlot);
+					break;
+				}
 			}
 			updates.add(new CharacterManipulation(key, value));
 		}

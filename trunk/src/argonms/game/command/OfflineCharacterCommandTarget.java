@@ -334,6 +334,13 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 
 						InventoryTools.addToInventory(inventories.get(type), value.itemId, value.quantity);
 
+						ps = con.prepareStatement("DELETE FROM `inventoryitems` WHERE "
+								+ "`characterid` = ? AND `inventorytype` = ?");
+						ps.setInt(1, characterId);
+						ps.setByte(2, type.byteValue());
+						ps.executeUpdate();
+						ps.close();
+
 						Player.commitInventory(characterId, accountId, pets, con, inventories);
 						break;
 					}
@@ -392,6 +399,46 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						Calendar cal = TimeTool.currentDateTime();
 						cal.setTimeInMillis(value.expireTimestamp);
 						CheatTracker.get(target).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
+						break;
+					}
+					case STUN:
+						break;
+					case CLEAR_INVENTORY_SLOTS: {
+						InventorySlotRangeValue value = (InventorySlotRangeValue) update.getValue();
+						Pet[] pets = new Pet[3];
+
+						ps = con.prepareStatement("SELECT `accountid`,`id`,`" + value.type.toString().toLowerCase() + "slots` FROM `characters` WHERE `name` = ?");
+						ps.setString(1, target);
+						rs = ps.executeQuery();
+						rs.next(); //assert this is true
+						int accountId = rs.getInt(1);
+						int characterId = rs.getInt(2);
+						Map<Inventory.InventoryType, Inventory> inventories = Collections.singletonMap(value.type, new Inventory(rs.getShort(2)));
+						rs.close();
+						ps.close();
+
+						ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE "
+								+ "`characterid` = ? AND `inventorytype` = ?");
+						ps.setInt(1, characterId);
+						ps.setByte(2, value.type.byteValue());
+						rs = ps.executeQuery();
+						Player.loadInventory(pets, con, rs, inventories);
+						rs.close();
+						ps.close();
+
+						Inventory inv = inventories.get(value.type);
+						short upperBound = (short) Math.min(value.endSlot, inv.getMaxSlots());
+						for (short slot = value.startSlot; slot <= upperBound; slot++)
+							inv.remove(slot);
+
+						ps = con.prepareStatement("DELETE FROM `inventoryitems` WHERE "
+								+ "`characterid` = ? AND `inventorytype` = ?");
+						ps.setInt(1, characterId);
+						ps.setByte(2, value.type.byteValue());
+						ps.executeUpdate();
+						ps.close();
+
+						Player.commitInventory(characterId, accountId, pets, con, inventories);
 						break;
 					}
 				}

@@ -34,6 +34,7 @@ if (player.getName() != npc.getNpcName()) {
 } else {
 	/*if (last transform was less than 24 hours ago) {
 		//TODO: limit appearance change to once per day
+		//need to implement player variables.
 		npc.say("You may transform your other self only once a day. Please try again tomorrow.");
 	} else {*/
 		let selection = npc.askYesNo("Will you transform your other self's appearance to your current state? You may transform your other self once a day.");

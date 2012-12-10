@@ -362,7 +362,7 @@ public final class WorldlistHandler {
 	private static void writeCharEntry(LittleEndianWriter lew, LoginCharacter p) {
 		CommonPackets.writeCharStats(lew, p);
 		CommonPackets.writeAvatar(lew, p, false);
-		if (!PlayerJob.isModerator(p.getJob()) && p.getPrivilegeLevel() <= UserPrivileges.USER) {
+		if (!PlayerJob.isGameMaster(p.getJob()) && p.getPrivilegeLevel() <= UserPrivileges.USER) {
 			lew.writeBool(true);
 			lew.writeInt(p.getWorldRank());
 			lew.writeInt(p.getWorldRankChange());

@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author GoldenKevin
  */
-public class EventCommands {
+public class EventCommandHandlers {
 	public static class EventUtilCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
