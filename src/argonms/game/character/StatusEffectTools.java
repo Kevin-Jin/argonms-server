@@ -96,7 +96,12 @@ public final class StatusEffectTools {
 					default:
 						if (duration > 0)
 							return GamePackets.writeBuffMapEffect(p, updatedStats);
+						break;
 				}
+			case ITEM:
+				if (duration > 0)
+					return GamePackets.writeBuffMapEffect(p, updatedStats);
+				break;
 			case MOB_SKILL:
 				return GamePackets.writeDebuffMapEffect(p, updatedStats, (short) e.getDataId(), e.getLevel(), (short) 900);
 		}
@@ -121,12 +126,10 @@ public final class StatusEffectTools {
 
 	public static Map<PlayerStatusEffect, Short> applyEffects(GameCharacter p, StatusEffectsData e) {
 		Map<PlayerStatusEffect, Short> updatedStats = new EnumMap<PlayerStatusEffect, Short>(PlayerStatusEffect.class);
-		if (p.areEffectsActive(e))
-			p.removeCancelEffectTask(e);
 		for (PlayerStatusEffect buff : e.getEffects()) {
 			PlayerStatusEffectValues v = p.getEffectValue(buff);
 			if (v != null)
-				dispelEffect(p, buff, v);
+				dispelEffectsAndShowVisuals(p, v.getEffectsData());
 			v = applyEffect(p, e, buff);
 			updatedStats.put(buff, Short.valueOf(v.getModifier()));
 			p.addToActiveEffects(buff, v);
@@ -183,16 +186,21 @@ public final class StatusEffectTools {
 		short mod = 0;
 		switch (buff) {
 			case SUMMON:
+				mod = 1;
 				break;
 			case PUPPET:
 				PlayerSkillSummon summon = p.getSummonBySkill(e.getDataId());
 				summon.setHp((short) ((PlayerSkillEffectsData) e).getX());
 				break;
 			case SLOW:
+				mod = (short) ((MobSkillEffectsData) e).getX();
+				p.setBaseSpeed((byte) mod);
 				break;
 			case HOMING_BEACON:
+				mod = 1;
 				break;
 			case MORPH:
+				mod = (short) (((BuffsData) e).getMorph() + p.getGender() * 100);
 				break;
 			case RECOVERY: {
 				//TODO: get packet for showing HP recovered (blue numbers above
@@ -218,37 +226,48 @@ public final class StatusEffectTools {
 				break;
 			}
 			case MAPLE_WARRIOR:
+				//TODO: server side buff all stats with %
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case POWER_STANCE:
+				mod = (short) ((PlayerSkillEffectsData) e).getProp();
 				break;
 			case SHARP_EYES:
+				mod = (short) (((PlayerSkillEffectsData) e).getX() << 8 | ((PlayerSkillEffectsData) e).getY());
 				break;
 			case MANA_REFLECTION:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case SEDUCE:
-				break;
-			case DRAGON_ROAR:
+				mod = 1;
 				break;
 			case SHADOW_STARS:
+				mod = -1;
 				break;
 			case INFINITY:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case HOLY_SHIELD:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case HAMSTRING:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case BLIND:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case CONCENTRATE:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
+				p.addWatk(mod);
 				break;
 			case ECHO_OF_HERO:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				p.addWatk(mod);
 				p.addMatk(mod);
 				break;
-			case GHOST_MORPH:
-				break;
 			case ENERGY_CHARGE:
+				assert false;
+				mod = p.getEnergyCharge();
 				break;
 			case DASH_SPEED:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
@@ -259,8 +278,7 @@ public final class StatusEffectTools {
 				p.addJump(mod);
 				break;
 			case MONSTER_RIDING:
-				break;
-			case FINAL_ATTACK:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case WATK:
 				if (!e.getEffects().contains(PlayerStatusEffect.SUMMON)) {
@@ -273,8 +291,10 @@ public final class StatusEffectTools {
 				p.addWdef(mod);
 				break;
 			case MATK:
-				mod = ((BuffsData) e).getMatk();
-				p.addMatk(mod);
+				if (!e.getEffects().contains(PlayerStatusEffect.SUMMON)) {
+					mod = ((BuffsData) e).getMatk();
+					p.addMatk(mod);
+				}
 				break;
 			case MDEF:
 				mod = ((BuffsData) e).getMdef();
@@ -304,6 +324,7 @@ public final class StatusEffectTools {
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case DARKSIGHT:
+				mod = 1;
 				break;
 			case HIDE:
 				mod = 0;
@@ -311,8 +332,10 @@ public final class StatusEffectTools {
 				p.getMap().hidePlayer(p);
 				break;
 			case BOOSTER:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case POWER_GUARD:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case HYPER_BODY_HP:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
@@ -323,39 +346,55 @@ public final class StatusEffectTools {
 				p.recalculateMaxMp(mod);
 				break;
 			case INVINCIBLE:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case SPEED_INFUSION:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case SOUL_ARROW:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case STUN:
+				mod = 1;
 				break;
 			case POISON:
+				mod = (short) ((MobSkillEffectsData) e).getX();
 				break;
 			case SEAL:
+				mod = 1;
 				break;
 			case DARKNESS:
+				mod = 1;
 				break;
 			case COMBO:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case CHARGE:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case DRAGON_BLOOD:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case HOLY_SYMBOL:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case MESO_UP:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case SHADOW_PARTNER:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case PICKPOCKET:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case MESO_GUARD:
+				mod = (short) ((PlayerSkillEffectsData) e).getX();
 				break;
 			case WEAKNESS:
+				mod = 1;
 				break;
 			case CURSE:
+				mod = 1;
 				break;
 		}
 		return new PlayerStatusEffectValues(e, mod);
@@ -369,6 +408,7 @@ public final class StatusEffectTools {
 				p.removeFromSummons(value.getSource());
 				break;
 			case SLOW:
+				p.setBaseSpeed((byte) 100);
 				break;
 			case HOMING_BEACON:
 				break;
@@ -388,8 +428,6 @@ public final class StatusEffectTools {
 				break;
 			case SEDUCE:
 				break;
-			case DRAGON_ROAR:
-				break;
 			case SHADOW_STARS:
 				break;
 			case INFINITY:
@@ -401,14 +439,14 @@ public final class StatusEffectTools {
 			case BLIND:
 				break;
 			case CONCENTRATE:
+				p.addWatk(-value.getModifier());
 				break;
 			case ECHO_OF_HERO:
 				p.addWatk(-value.getModifier());
 				p.addMatk(-value.getModifier());
 				break;
-			case GHOST_MORPH:
-				break;
 			case ENERGY_CHARGE:
+				assert false;
 				break;
 			case DASH_SPEED:
 				p.addSpeed(-value.getModifier());
@@ -418,8 +456,6 @@ public final class StatusEffectTools {
 				break;
 			case MONSTER_RIDING:
 				break;
-			case FINAL_ATTACK:
-				break;
 			case WATK:
 				if (!value.getEffectsData().getEffects().contains(PlayerStatusEffect.SUMMON))
 					p.addWatk(-value.getModifier());
@@ -428,7 +464,8 @@ public final class StatusEffectTools {
 				p.addWdef(-value.getModifier());
 				break;
 			case MATK:
-				p.addMatk(-value.getModifier());
+				if (!value.getEffectsData().getEffects().contains(PlayerStatusEffect.SUMMON))
+					p.addMatk(-value.getModifier());
 				break;
 			case MDEF:
 				p.addMdef(-value.getModifier());

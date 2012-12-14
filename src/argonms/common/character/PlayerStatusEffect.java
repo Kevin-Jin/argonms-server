@@ -27,7 +27,7 @@ package argonms.common.character;
 public enum PlayerStatusEffect { //byte numbers are from left to right
 	//byte 1
 	SLOW			(0x0000000000000001L, (byte) 5),
-	HOMING_BEACON	(0x0000000000000001L, (byte) 5),
+	HOMING_BEACON	(0x0000000000000001L, (byte) 5), //TODO: doesn't seem right
 	MORPH			(0x0000000000000002L, (byte) 5),
 	RECOVERY		(0x0000000000000004L, (byte) 5),
 	MAPLE_WARRIOR	(0x0000000000000008L, (byte) 5),
@@ -35,7 +35,6 @@ public enum PlayerStatusEffect { //byte numbers are from left to right
 	SHARP_EYES		(0x0000000000000020L, (byte) 5),
 	MANA_REFLECTION	(0x0000000000000040L, (byte) 5),
 	SEDUCE			(0x0000000000000080L, (byte) 5),
-	DRAGON_ROAR		(0x0000000000000080L, (byte) 5),
 
 	//byte 2
 	SHADOW_STARS	(0x0000000000000100L, (byte) 6),
@@ -47,14 +46,13 @@ public enum PlayerStatusEffect { //byte numbers are from left to right
 	ECHO_OF_HERO	(0x0000000000008000L, (byte) 6),
 
 	//byte 3
-	GHOST_MORPH		(0x0000000000020000L, (byte) 7),
+	INVINCIBLILITY	(0x0000000000040000L, (byte) 7), //Mu Lung Dojo
 
 	//byte 4
 	ENERGY_CHARGE	(0x0000000008000000L, (byte) 8),
 	DASH_SPEED		(0x0000000010000000L, (byte) 8),
 	DASH_JUMP		(0x0000000020000000L, (byte) 8),
 	MONSTER_RIDING	(0x0000000040000000L, (byte) 8),
-	FINAL_ATTACK	(0x0000000080000000L, (byte) 8),
 
 	//byte 5
 	WATK			(0x0000000100000000L, (byte) 1),

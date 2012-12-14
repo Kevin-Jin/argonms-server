@@ -23,6 +23,7 @@ import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventorySlot.ItemType;
@@ -30,6 +31,7 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.Ring;
 import argonms.common.field.MonsterStatusEffect;
+import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
@@ -318,6 +320,8 @@ public final class GamePackets {
 				lew.writeByte((byte) 0);
 			}
 			lew.writeShort(statupdate.getValue().shortValue());
+			if (statupdate.getKey() == PlayerStatusEffect.MORPH)
+				lew.writeByte((byte) 0);
 		}
 		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
@@ -366,9 +370,9 @@ public final class GamePackets {
 			updateMask |= key.longValue();
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
-		for (Short statupdate : stats.values()) {
-			if (skillId == MobSkills.MIST)
-				lew.writeShort(statupdate.shortValue());
+		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
+			if (statupdate.getKey() == PlayerStatusEffect.POISON)
+				lew.writeShort(statupdate.getValue().shortValue());
 			lew.writeShort(skillId);
 			lew.writeShort(skillLevel);
 		}
@@ -827,6 +831,11 @@ public final class GamePackets {
 		switch (key) {
 			default: //give no value at all
 				break;
+			case SPEED:
+				if (v.getSourceType() == StatusEffectsData.EffectSource.PLAYER_SKILL &&
+						(v.getSource() == Skills.SIN_HASTE || v.getSource() == Skills.DIT_HASTE || v.getSource() == Skills.GM_HASTE || v.getSource() == Skills.SUPER_GM_HASTE))
+					break;
+				//fallthrough for non-haste sources
 			case COMBO: //TODO: save (combo + 1) in v.mod!!
 			case JUMP:
 				lew.writeByte((byte) v.getModifier());
@@ -836,14 +845,11 @@ public final class GamePackets {
 			case RECOVERY:
 			case MAPLE_WARRIOR:
 			case POWER_STANCE:
-			case SHARP_EYES:
 			case MANA_REFLECTION:
-			case DRAGON_ROAR:
 				lew.writeShort(v.getModifier());
 				break;
 			case SEDUCE: //all debuffs besides slow (glitch in global, SLOW doesn't display properly and if you try, it error 38s)
 			case STUN:
-			case POISON:
 			case SEAL:
 			case DARKNESS:
 			case WEAKNESS:
@@ -856,6 +862,11 @@ public final class GamePackets {
 				break;
 			case SHADOW_STARS:
 				lew.writeInt(v.getModifier());
+				break;
+			case POISON:
+				lew.writeShort(v.getModifier());
+				lew.writeShort((short) v.getSource());
+				lew.writeShort(v.getLevelWhenCast());
 				break;
 		}
 	}

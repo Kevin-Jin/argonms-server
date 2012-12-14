@@ -73,6 +73,9 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 			case Skills.WRATH_OF_THE_OCTOPI:
 				effects.add(PlayerStatusEffect.SUMMON);
 				break;
+			case Skills.HOMING_BEACON:
+				effects.add(PlayerStatusEffect.HOMING_BEACON);
+				break;
 			case Skills.FP_SEAL:
 			case Skills.IL_SEAL:
 				monsterDiseases.add(MonsterStatusEffect.SEAL);
@@ -332,10 +335,6 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 				case Skills.DASH:
 					effects.add(PlayerStatusEffect.DASH_JUMP);
-					break;
-				case Skills.BOW_MASTER_SHARP_EYES:
-				case Skills.XBOW_MASTER_SHARP_EYES:
-					effects.add(PlayerStatusEffect.SHARP_EYES);
 					break;
 
 				case Skills.DISORDER:

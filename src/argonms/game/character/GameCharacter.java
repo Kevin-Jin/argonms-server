@@ -109,6 +109,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private GameClient client;
 
 	private volatile short maxHp, maxMp;
+	private volatile byte baseSpeed;
 	private volatile int addStr, addDex, addInt, addLuk, addMaxHp, addMaxMp,
 			addWatk, addWdef, addMatk, addMdef, addAcc, addAvo, addHands, addSpeed, addJump;
 
@@ -1294,6 +1295,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		addJump += inc;
 	}
 
+	public void setBaseSpeed(byte newVal) {
+		baseSpeed = newVal;
+	}
+
+	public short getSpeed() {
+		return (short) Math.min(baseSpeed == 100 ? (100 + addSpeed) : baseSpeed, 140);
+	}
+
 	public GameMap getMap() {
 		return map;
 	}
@@ -1570,19 +1579,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return diseaseFutures.containsKey(Short.valueOf(mobSkillId));
 	}
 
-	public boolean areEffectsActive(StatusEffectsData e) {
-		switch (e.getSourceType()) {
-			case PLAYER_SKILL:
-				return skillFutures.containsKey(Integer.valueOf(e.getDataId()));
-			case ITEM:
-				return itemEffectFutures.containsKey(Integer.valueOf(e.getDataId()));
-			case MOB_SKILL:
-				return diseaseFutures.containsKey(Short.valueOf((short) e.getDataId()));
-			default:
-				return false;
-		}
-	}
-
 	public Map<Integer, SkillState> activeSkillsList() {
 		Map<Integer, SkillState> list = new HashMap<Integer, SkillState>();
 		for (Entry<Integer, Pair<SkillState, ScheduledFuture<?>>> activeSkill : skillFutures.entrySet())
@@ -1659,7 +1655,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 		if (getItemChair() != 0)
 			setItemChair(0);
-		else
+		else if (mapChair != 0)
 			setMapChair((short) 0);
 		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
 		if (v != null)

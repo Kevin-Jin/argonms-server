@@ -32,6 +32,8 @@ function init(attachment) {
 	//create a new instance of the map so we don't have to deal with clearing
 	//the map and respawning six Dark Lord's Discliples in the right positions
 	map = event.makeMap(910300000);
+	//out00 portal is broken - go to /scripts/portals/ninjaAmbush.js for details
+	map.overridePortal("out00", "ninjaAmbush");
 	player.changeMap(map);
 
 	map.showTimer(5 * 60);
