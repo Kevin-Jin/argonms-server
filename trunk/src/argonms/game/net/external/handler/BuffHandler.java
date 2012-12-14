@@ -314,7 +314,7 @@ public final class BuffHandler {
 				break;
 			}
 			case Skills.ECHO_OF_HERO:
-			case Skills.GM_HASTE:
+			case Skills.SUPER_GM_HASTE:
 			case Skills.GM_HOLY_SYMBOL:
 			case Skills.GM_BLESS:
 			case Skills.GM_HYPER_BODY: {

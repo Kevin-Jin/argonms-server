@@ -2525,6 +2525,19 @@
 	on offline players.
 	* Fixed SQLException when logging into a MAC banned character.
 
+2012-12-08  GoldenKevin  (revision 183)
+
+	* The map used for the quest for gaining the Ninja Ambush skill now can be
+	exited.
+	* Fixed Speed Pill, Sharp Eyes, and Poison crashing other players in map.
+	* Fixed Sharp Eyes, Power Stance, and much more buff effects.
+	* Fixed Slow and Poison player debuff effects.
+	* Some pirate morph skills and morph items now work.
+	* Fixed magic attack being buffed when a summon is spawned.
+	* Any buff source (item or skill) that shares at least one of the same
+	effects as a buff that has just been casted will be canceled.
+	* Fixed false positive infractions when using Power Guard.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

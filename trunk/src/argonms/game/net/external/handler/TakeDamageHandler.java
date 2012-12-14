@@ -114,8 +114,8 @@ public final class TakeDamageHandler {
 					p.getMap().sendToAll(writeHurtMonster(m, hurtDmg, false));
 				}
 				stance = packet.readByte();
-				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.POWER_STANCE) && !p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power stance without having buff cast");
+				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.POWER_STANCE) && !p.isEffectActive(PlayerStatusEffect.POWER_GUARD) && !p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use stance without having buff cast");
 					return;
 				}
 			}
