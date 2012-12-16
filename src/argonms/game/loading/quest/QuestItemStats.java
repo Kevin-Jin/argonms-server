@@ -41,7 +41,7 @@ public class QuestItemStats {
 		this.gender = 2;
 	}
 
-	protected int getItemId() {
+	public int getItemId() {
 		return itemId;
 	}
 

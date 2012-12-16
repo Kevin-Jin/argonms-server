@@ -124,7 +124,7 @@ public class QuestEntry {
 		}
 	}
 
-	public int killedMob(Integer mobId, short max) {
+	public int mobKilled(Integer mobId, short max) {
 		return clampedAdd(mobCount.get(mobId), 1, 0, max);
 	}
 
