@@ -229,11 +229,8 @@ public class QuestChecks {
 		return Collections.unmodifiableMap(reqMobs);
 	}
 
-	public Map<Integer, Short> getReqItems() {
-		Map<Integer, Short> reqItemCounts = new HashMap<Integer, Short>();
-		for (QuestItemStats qis : reqItems)
-			reqItemCounts.put(Integer.valueOf(qis.getItemId()), Short.valueOf(qis.getCount()));
-		return reqItemCounts;
+	public List<QuestItemStats> getReqItems() {
+		return Collections.unmodifiableList(reqItems);
 	}
 
 	public List<Integer> getReqPets() {

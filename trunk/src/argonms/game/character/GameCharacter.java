@@ -60,6 +60,7 @@ import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.quest.QuestChecks;
 import argonms.game.loading.quest.QuestChecks.QuestRequirementType;
 import argonms.game.loading.quest.QuestDataLoader;
+import argonms.game.loading.quest.QuestItemStats;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
@@ -768,10 +769,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 						QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 						if (qc != null) {
 							for (Entry<Integer, Short> mob : qc.getReqMobCounts().entrySet())
+								//mob progress cannot be undone, so it's safe to do this
 								if (status.getMobCount(mob.getKey().intValue()) < mob.getValue().shortValue())
 									p.addToWatchedList(questId, QuestRequirementType.MOB, mob.getKey());
-							for (Integer itemId : qc.getReqItems().keySet())
-								p.addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
+							for (QuestItemStats item : qc.getReqItems())
+								p.addToWatchedList(questId, QuestRequirementType.ITEM, item.getItemId());
 							for (Integer petId : qc.getReqPets())
 								p.addToWatchedList(questId, QuestRequirementType.PET, petId);
 							for (Short reqQuestId : qc.getReqQuests().keySet())
@@ -1948,12 +1950,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			Set<Integer> reqMobs;
 			if (qc != null) {
 				Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
-				Map<Integer, Short> reqItems = qc.getReqItems();
 				reqMobs = reqMobCounts.keySet();
-				for (Integer mobId : reqMobCounts.keySet())
+				for (Integer mobId : reqMobs)
 					addToWatchedList(questId, QuestRequirementType.MOB, mobId);
-				for (Integer itemId : reqItems.keySet())
-					addToWatchedList(questId, QuestRequirementType.ITEM, itemId);
+				for (QuestItemStats item : qc.getReqItems())
+					addToWatchedList(questId, QuestRequirementType.ITEM, Integer.valueOf(item.getItemId()));
 				for (Integer petId : qc.getReqPets())
 					addToWatchedList(questId, QuestRequirementType.PET, petId);
 				for (Short reqQuestId : qc.getReqQuests().keySet())
@@ -2005,12 +2006,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			Set<Integer> reqMobs;
 			if (qc != null) {
 				Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
-				Map<Integer, Short> reqItems = qc.getReqItems();
 				reqMobs = reqMobCounts.keySet();
-				for (Integer itemId : reqItems.keySet())
-					removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
-				for (Integer mobId : reqMobCounts.keySet())
+				for (Integer mobId : reqMobs)
 					removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+				for (QuestItemStats item : qc.getReqItems())
+					removeFromWatchedList(questId, QuestRequirementType.ITEM, Integer.valueOf(item.getItemId()));
 				for (Integer petId : qc.getReqPets())
 					removeFromWatchedList(questId, QuestRequirementType.PET, petId);
 				for (Short reqQuestId : qc.getReqQuests().keySet())
@@ -2067,12 +2067,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			Set<Integer> reqMobs;
 			if (qc != null) {
 				Map<Integer, Short> reqMobCounts = qc.getReqMobCounts();
-				Map<Integer, Short> reqItems = qc.getReqItems();
 				reqMobs = reqMobCounts.keySet();
-				for (Integer itemId : reqItems.keySet())
-					removeFromWatchedList(questId, QuestRequirementType.ITEM, itemId);
-				for (Integer mobId : reqMobCounts.keySet())
+				for (Integer mobId : reqMobs)
 					removeFromWatchedList(questId, QuestRequirementType.MOB, mobId);
+				for (QuestItemStats item : qc.getReqItems())
+					removeFromWatchedList(questId, QuestRequirementType.ITEM, Integer.valueOf(item.getItemId()));
 				for (Integer petId : qc.getReqPets())
 					removeFromWatchedList(questId, QuestRequirementType.PET, petId);
 				for (Short reqQuestId : qc.getReqQuests().keySet())
@@ -2103,25 +2102,26 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		try {
 			Short oId = Short.valueOf(questId);
 			Map<Number, List<Short>> watchedQuests = questSubscriptions.get(QuestRequirementType.QUEST);
-			if (watchedQuests != null) {
-				List<Short> watchingQuests = watchedQuests.get(Short.valueOf(questId));
-				if (watchingQuests != null) {
-					for (Short quest : watchingQuests) {
-						questId = quest.shortValue();
-						//completeReqs can never be null because in order for us to
-						//add something to questReqWatching, it had to be not null
-						Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
-						if (questReq.get(oId).byteValue() == newStatus) {
-							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
-								if (!completableQuests.contains(Short.valueOf(questId))) {
-									completableQuests.add(Short.valueOf(questId));
-									getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
-								}
-							} else {
-								completableQuests.remove(Short.valueOf(questId));
-							}
-						}
-					}
+			if (watchedQuests == null)
+				return;
+
+			List<Short> watchingQuests = watchedQuests.get(Short.valueOf(questId));
+			if (watchingQuests == null)
+				return;
+
+			for (Short quest : watchingQuests) {
+				questId = quest.shortValue();
+				//completeReqs can never be null because in order for us to
+				//add something to questSubscriptions, it had to be not null
+				Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
+				if (questReq.get(oId).byteValue() != newStatus || !QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+					completableQuests.remove(quest);
+					continue;
+				}
+
+				if (!completableQuests.contains(quest)) {
+					completableQuests.add(quest);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
 				}
 			}
 		} finally {
@@ -2133,26 +2133,24 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		writeLockQuests();
 		try {
 			Map<Number, List<Short>> watchedItems = questSubscriptions.get(QuestRequirementType.ITEM);
-			if (watchedItems != null) {
-				Integer oId = Integer.valueOf(itemId);
-				List<Short> watchingQuests = watchedItems.get(oId);
-				if (watchingQuests != null) {
-					for (Short quest : watchingQuests) {
-						short questId = quest.shortValue();
-						//completeReqs can never be null because in order for us to
-						//add something to questReqWatching, it had to be not null
-						Map<Integer, Short> itemReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqItems();
-						if (InventoryTools.hasItem(this, itemId, itemReq.get(oId).intValue())) {
-							if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
-								if (!completableQuests.contains(Short.valueOf(questId))) {
-									completableQuests.add(Short.valueOf(questId));
-									getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
-								}
-							} else {
-								completableQuests.remove(Short.valueOf(questId));
-							}
-						}
-					}
+			if (watchedItems == null)
+				return;
+
+			Integer oId = Integer.valueOf(itemId);
+			List<Short> watchingQuests = watchedItems.get(oId);
+			if (watchingQuests == null)
+				return;
+
+			for (Short quest : watchingQuests) {
+				short questId = quest.shortValue();
+				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+					completableQuests.remove(quest);
+					continue;
+				}
+
+				if (!completableQuests.contains(quest)) {
+					completableQuests.add(quest);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
 				}
 			}
 		} finally {
@@ -2164,19 +2162,22 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		writeLockQuests();
 		try {
 			Map<Number, List<Short>> watchedPets = questSubscriptions.get(QuestRequirementType.PET);
-			if (watchedPets != null) {
-				List<Short> watchingQuests = watchedPets.get(Integer.valueOf(petItemId));
-				if (watchingQuests != null) {
-					for (Short questId : watchingQuests) {
-						if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
-							if (!completableQuests.contains(questId)) {
-								completableQuests.add(questId);
-								getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
-							}
-						} else {
-							completableQuests.remove(questId);
-						}
-					}
+			if (watchedPets == null)
+				return;
+
+			List<Short> watchingQuests = watchedPets.get(Integer.valueOf(petItemId));
+			if (watchingQuests == null)
+				return;
+
+			for (Short questId : watchingQuests) {
+				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+					completableQuests.remove(questId);
+					continue;
+				}
+
+				if (!completableQuests.contains(questId)) {
+					completableQuests.add(questId);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 				}
 			}
 		} finally {
@@ -2188,17 +2189,19 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		writeLockQuests();
 		try {
 			Map<Number, List<Short>> watchedPetTameness = questSubscriptions.get(QuestRequirementType.PET_TAMENESS);
-			if (watchedPetTameness != null) {
-				List<Short> watchingQuests = watchedPetTameness.get(null);
-				for (Short questId : watchingQuests) {
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
-						if (!completableQuests.contains(questId)) {
-							completableQuests.add(questId);
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
-						}
-					} else {
-						completableQuests.remove(questId);
-					}
+			if (watchedPetTameness == null)
+				return;
+
+			List<Short> watchingQuests = watchedPetTameness.get(null);
+			for (Short questId : watchingQuests) {
+				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+					completableQuests.remove(questId);
+					continue;
+				}
+
+				if (!completableQuests.contains(questId)) {
+					completableQuests.add(questId);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 				}
 			}
 		} finally {
@@ -2210,17 +2213,19 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		writeLockQuests();
 		try {
 			Map<Number, List<Short>> watchingMesos = questSubscriptions.get(QuestRequirementType.MESOS);
-			if (watchingMesos != null) {
-				List<Short> watchingQuests = watchingMesos.get(null);
-				for (Short questId : watchingQuests) {
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
-						if (!completableQuests.contains(questId)) {
-							completableQuests.add(questId);
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
-						}
-					} else {
-						completableQuests.remove(questId);
-					}
+			if (watchingMesos == null)
+				return;
+
+			List<Short> watchingQuests = watchingMesos.get(null);
+			for (Short questId : watchingQuests) {
+				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+					completableQuests.remove(questId);
+					continue;
+				}
+
+				if (!completableQuests.contains(questId)) {
+					completableQuests.add(questId);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
 				}
 			}
 		} finally {
@@ -2228,37 +2233,43 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 	}
 
-	public void killedMob(short questId, int mobId) {
+	public void mobKilled(int mobId) {
 		writeLockQuests();
 		try {
-			QuestEntry status = questStatuses.get(Short.valueOf(questId));
-			if (status != null) {
-				//if we don't remove the mob from the watch list before this is next
-				//called for the same questId and mobId (e.g. we used a skill that
-				//attacks more than one monster), we actually show the client an
-				//improper fraction in the quest progress. not really a big deal
-				Integer oId = Integer.valueOf(mobId);
-				short mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqMobCounts().get(oId);
-				int progress = status.killedMob(oId, mobReq);
-				getClient().getSession().send(GamePackets.writeQuestProgress(questId, status.getData()));
-				if (progress == mobReq) {
-					removeFromWatchedList(questId, QuestRequirementType.MOB, oId);
-					if (QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
-						//completableQuests should not contain questId anyway, but
-						//check it here just for symmetry
-						if (!completableQuests.contains(Short.valueOf(questId))) {
-							completableQuests.add(Short.valueOf(questId));
-							getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId));
-						}
-					} else {
-						//completableQuests should not contain questId anyway, but
-						//remove it here just for symmetry
-						completableQuests.remove(Short.valueOf(questId));
-					}
-				}
-			} else { //shouldn't ever happen
+			Map<Number, List<Short>> watchedMobs = questSubscriptions.get(QuestRequirementType.MOB);
+			if (watchedMobs == null)
+				return;
 
+			Integer oId = Integer.valueOf(mobId);
+			List<Short> watchingQuests = watchedMobs.get(oId);
+			if (watchingQuests == null)
+				return;
+
+			List<Short> mobReqCompleteQuests = new ArrayList<Short>();
+			for (Short questId : watchingQuests) {
+				QuestEntry status = questStatuses.get(questId);
+				short mobReq = QuestDataLoader.getInstance().getCompleteReqs(questId.shortValue()).getReqMobCounts().get(oId);
+				int progress = status.mobKilled(oId, mobReq);
+				if (progress == mobReq)
+					mobReqCompleteQuests.add(questId);
+				getClient().getSession().send(GamePackets.writeQuestProgress(questId.shortValue(), status.getData()));
+				if (progress != mobReq || !QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+					//completableQuests should not contain questId (mob progress
+					//cannot be undone), but remove it here anyway just for symmetry
+					completableQuests.remove(questId);
+					continue;
+				}
+
+				//completableQuests should not contain questId (mob progress
+				//cannot be undone), but check it here anyway just for symmetry
+				if (!completableQuests.contains(questId)) {
+					completableQuests.add(questId);
+					getClient().getSession().send(GamePackets.writeShowQuestReqsFulfilled(questId.shortValue()));
+				}
 			}
+			for (Short questId : mobReqCompleteQuests)
+				//mob progress cannot be undone, so it's safe to do this
+				removeFromWatchedList(questId.shortValue(), QuestRequirementType.MOB, oId);
 		} finally {
 			writeUnlockQuests();
 		}
@@ -2266,58 +2277,27 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public List<MobDeathListener> getMobDeathListeners(final int mobEntityId, final int mobId) {
 		List<MobDeathListener> mobSubscribers = new ArrayList<MobDeathListener>();
-		writeLockQuests();
-		try {
-			Map<Number, List<Short>> watchedMobs = questSubscriptions.get(QuestRequirementType.MOB);
-			if (watchedMobs != null) {
-				final List<Short> watchingQuests = watchedMobs.get(Integer.valueOf(mobId));
-				if (watchingQuests != null) {
-					Set<Short> alreadyHooked = mobDeathQuestHooks.get(Integer.valueOf(mobEntityId));
-					if (alreadyHooked == null) {
-						alreadyHooked = new HashSet<Short>();
-						mobDeathQuestHooks.put(Integer.valueOf(mobEntityId), alreadyHooked);
-					}
-					for (final Short quest : watchingQuests) {
-						if (alreadyHooked.contains(quest))
-							continue;
+		final WeakReference<GameCharacter> futureSelf = new WeakReference<GameCharacter>(this);
+		final int mobMap = getMapId();
+		mobSubscribers.add(new MobDeathListener() {
+			@Override
+			public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
+				GameCharacter ourself = futureSelf.get();
+				if (ourself == null || ourself.isClosed()
+						|| highestDamager != ourself
+						//I think we had to be the highest damager and
+						//we had to kill it to be recognized for the kill
+						|| last != highestDamager
+						|| ourself.getMapId() != mobMap)
+					return;
 
-						final Set<Short> hookQuests = alreadyHooked;
-						final short questId = quest.shortValue();
-						final int mobMap = getMapId();
-						//hopefully, this will prevent any memory leaks.
-						final WeakReference<GameCharacter> futureSelf = new WeakReference<GameCharacter>(this);
-						mobSubscribers.add(new MobDeathListener() {
-							//TODO: special cases when we have party and we distribute
-							//mob kill to all users.
-							@Override
-							public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
-								GameCharacter ourself = futureSelf.get();
-								if (ourself == null || ourself.isClosed()
-										|| highestDamager != ourself
-										//I think we had to be the highest damager and
-										//we had to kill it to be recognized for the kill
-										|| last != highestDamager
-										|| ourself.getMapId() != mobMap)
-									return;
-
-								ourself.killedMob(questId, mobId);
-								writeLockQuests();
-								try {
-									hookQuests.remove(quest);
-									if (hookQuests.isEmpty())
-										mobDeathQuestHooks.remove(Integer.valueOf(mobEntityId));
-								} finally {
-									writeUnlockQuests();
-								}
-							}
-						});
-						alreadyHooked.add(quest);
-					}
-				}
+				if (party == null)
+					ourself.mobKilled(mobId);
+				else
+					for (GameCharacter mem : party.getLocalMembersInMap(mobMap))
+						mem.mobKilled(mobId);
 			}
-		} finally {
-			writeUnlockQuests();
-		}
+		});
 		return mobSubscribers;
 	}
 
