@@ -101,7 +101,7 @@ public final class DealDamageHandler {
 			if (!shadowStars) { //consume ammo if shadow claw is not active
 				InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
 				if (slot == null || slot.getQuantity() < useQty) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant ranged weapon ammunition");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent ranged weapon ammunition");
 					return;
 				}
 				attack.ammoItemId = slot.getDataId();
@@ -116,7 +116,7 @@ public final class DealDamageHandler {
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
 				InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
 				if (slot == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistant cash shop stars");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent cash shop stars");
 					return;
 				}
 				attack.ammoItemId = slot.getDataId();

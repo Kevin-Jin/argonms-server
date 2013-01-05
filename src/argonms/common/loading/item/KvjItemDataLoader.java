@@ -130,14 +130,17 @@ public class KvjItemDataLoader extends ItemDataLoader {
 
 	@Override
 	public boolean canLoad(int itemid) {
-		return loaded.contains(Integer.valueOf(itemid)) || getFile(itemid).exists();
+		File f;
+		return (loaded.contains(Integer.valueOf(itemid)) || (f = getFile(itemid)) != null && f.exists());
 	}
 
 	private File getFile(int iid) {
 		File f;
 		String id = String.format("%08d", iid);
 		String cat = InventoryTools.getCategoryName(iid);
-		if (cat.equals("Pet"))
+		if (cat == null)
+			f = null;
+		else if (cat.equals("Pet"))
 			f = new File(new StringBuilder(dataPath).append("Item.wz").append(File.separator).append(cat).append(File.separator).append(String.format("%07d", iid)).append(".img.kvj").toString());
 		else if (cat.equals("Equip"))
 			f = new File(new StringBuilder(dataPath).append("Character.wz").append(File.separator).append(InventoryTools.getCharCat(iid)).append(File.separator).append(id).append(".img.kvj").toString());

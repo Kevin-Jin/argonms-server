@@ -603,7 +603,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
-				LOG.log(Level.WARNING, "Client requested to load a non-existant character w/ id {0} (account {1}).",
+				LOG.log(Level.WARNING, "Client requested to load a nonexistent character w/ id {0} (account {1}).",
 						new Object[] { id, c.getAccountId() });
 				return null;
 			}
@@ -1850,6 +1850,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 	}
 
+	public boolean canCompleteQuest(short questId) {
+		return QuestDataLoader.getInstance().completeRequirementError(this, questId) == 0;
+	}
+
 	/**
 	 * Quests must be write locked when this method is called.
 	 * @param questId
@@ -1863,7 +1867,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			watched = Collections.synchronizedMap(new HashMap<Number, List<Short>>());
 			questSubscriptions.put(type, watched);
 		}
-		if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+		if (canCompleteQuest(questId))
 			completableQuests.add(Short.valueOf(questId));
 		List<Short> questList = watched.get(id);
 		if (questList == null) {
@@ -1888,7 +1892,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		} else {
 			questList = watched.get(null);
 		}
-		if (QuestDataLoader.getInstance().canCompleteQuest(this, questId))
+		if (canCompleteQuest(questId))
 			completableQuests.add(Short.valueOf(questId));
 		questList.add(Short.valueOf(questId));
 	}
@@ -1943,7 +1947,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * Only recognize that the quest is started on the server without notifying the client
 	 * @param questId
 	 */
-	public void localStartQuest(short questId) {
+	public byte localStartQuest(short questId) {
+		byte error = (byte) -QuestDataLoader.getInstance().startedQuest(this, questId);
+		if (error != 0)
+			return error;
+
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		writeLockQuests();
 		try {
@@ -1975,10 +1983,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		} finally {
 			writeUnlockQuests();
 		}
-		QuestDataLoader.getInstance().startedQuest(this, questId);
 
 		//see if one req of another quest was starting this one...
 		questStatusChanged(questId, QuestEntry.STATE_STARTED);
+
+		return 0;
 	}
 
 	/**
@@ -1987,9 +1996,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * @param npcId
 	 */
 	public void startQuest(short questId, int npcId) {
-		localStartQuest(questId);
+		byte error = localStartQuest(questId);
+		if (error != 0) {
+			//most likely an inventory full error - so no infraction
+			getClient().getSession().send(GamePackets.writeQuestActionError(questId, error));
+			return;
+		}
 		getClient().getSession().send(GamePackets.writeQuestProgress(questId, ""));
-		//TODO: check if quest start is not success
 		getClient().getSession().send(GamePackets.writeQuestStartSuccess(questId, npcId));
 	}
 
@@ -2000,6 +2013,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * @param selection
 	 */
 	public short localCompleteQuest(short questId, int selection) {
+		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
+		if (next < 0)
+			return next;
+
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		writeLockQuests();
 		try {
@@ -2032,7 +2049,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		} finally {
 			writeUnlockQuests();
 		}
-		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
 
 		//see if one req of another quest was completing this one...
 		questStatusChanged(questId, QuestEntry.STATE_COMPLETED);
@@ -2048,8 +2064,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 */
 	public void completeQuest(short questId, int npcId, int selection) {
 		short nextQuest = localCompleteQuest(questId, selection);
-		getClient().getSession().send(GamePackets.writeQuestCompleted(questId, questStatuses.get(Short.valueOf(questId))));
-		getClient().getSession().send(GamePackets.writeQuestStartNext(questId, npcId, nextQuest));
+		if (nextQuest < 0) {
+			//most likely an inventory full error - so no infraction
+			getClient().getSession().send(GamePackets.writeQuestActionError(questId, (byte) -nextQuest));
+			return;
+		}
+		getClient().getSession().send(GamePackets.writeQuestComplete(questId, questStatuses.get(Short.valueOf(questId))));
+		getClient().getSession().send(GamePackets.writeQuestCompleteSuccess(questId, npcId, nextQuest));
 		getClient().getSession().send(GamePackets.writeShowSelfQuestEffect());
 		getMap().sendToAll(GamePackets.writeShowQuestEffect(this));
 	}
@@ -2114,7 +2135,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				//completeReqs can never be null because in order for us to
 				//add something to questSubscriptions, it had to be not null
 				Map<Short, Byte> questReq = QuestDataLoader.getInstance().getCompleteReqs(questId).getReqQuests();
-				if (questReq.get(oId).byteValue() != newStatus || !QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+				if (questReq.get(oId).byteValue() != newStatus || !canCompleteQuest(questId)) {
 					completableQuests.remove(quest);
 					continue;
 				}
@@ -2143,7 +2164,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 			for (Short quest : watchingQuests) {
 				short questId = quest.shortValue();
-				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId)) {
+				if (!canCompleteQuest(questId)) {
 					completableQuests.remove(quest);
 					continue;
 				}
@@ -2170,7 +2191,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				return;
 
 			for (Short questId : watchingQuests) {
-				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+				if (!canCompleteQuest(questId.shortValue())) {
 					completableQuests.remove(questId);
 					continue;
 				}
@@ -2194,7 +2215,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 			List<Short> watchingQuests = watchedPetTameness.get(null);
 			for (Short questId : watchingQuests) {
-				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+				if (!canCompleteQuest(questId.shortValue())) {
 					completableQuests.remove(questId);
 					continue;
 				}
@@ -2218,7 +2239,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 			List<Short> watchingQuests = watchingMesos.get(null);
 			for (Short questId : watchingQuests) {
-				if (!QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+				if (!canCompleteQuest(questId.shortValue())) {
 					completableQuests.remove(questId);
 					continue;
 				}
@@ -2253,7 +2274,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				if (progress == mobReq)
 					mobReqCompleteQuests.add(questId);
 				getClient().getSession().send(GamePackets.writeQuestProgress(questId.shortValue(), status.getData()));
-				if (progress != mobReq || !QuestDataLoader.getInstance().canCompleteQuest(this, questId.shortValue())) {
+				if (progress != mobReq || !canCompleteQuest(questId.shortValue())) {
 					//completableQuests should not contain questId (mob progress
 					//cannot be undone), but remove it here anyway just for symmetry
 					completableQuests.remove(questId);
@@ -2332,7 +2353,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	 * requirements and can be completed right now.
 	 */
 	public boolean isQuestActive(short questId) {
-		return isQuestStarted(questId) && !QuestDataLoader.getInstance().canCompleteQuest(this, questId);
+		return isQuestStarted(questId) && !canCompleteQuest(questId);
 	}
 
 	public boolean isQuestCompleted(short questId) {

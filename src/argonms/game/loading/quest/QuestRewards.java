@@ -18,6 +18,7 @@
 
 package argonms.game.loading.quest;
 
+import argonms.common.character.PlayerJob;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
@@ -27,11 +28,13 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
 import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
+import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.net.external.GamePackets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +132,7 @@ public class QuestRewards {
 		return null;
 	}
 
-	private boolean canGiveItem(GameCharacter p, QuestItemStats item) {
+	private boolean applicableItem(GameCharacter p, QuestItemStats item) {
 		return item.jobMatch(p.getJob()) && item.genderMatch(p.getGender()) && item.notExpired();
 	}
 
@@ -175,20 +178,29 @@ public class QuestRewards {
 		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
 	}
 
-	//TODO: check if we can fit all items in the player's inventory.
-	private void awardItems(GameCharacter p, int selection) {
+	private boolean awardItems(GameCharacter p, int selection) {
 		boolean findRandomItem = (sumItemProbs > 0);
 		int selectableItemIndex = 0;
 		int random = findRandomItem ? Rng.getGenerator().nextInt(sumItemProbs) : 0, runningProbs = 0;
 
+		List<Pair<Pair<Integer, Short>, Integer>> itemsToGain = new ArrayList<Pair<Pair<Integer, Short>, Integer>>();
+		List<Pair<Integer, Short>> itemsToLose = new ArrayList<Pair<Integer, Short>>();
+		//fails if there are multiple rewards of the same itemid, but that never happens!
+		Map<InventoryType, Integer> netEmptySlotRemovals = new EnumMap<InventoryType, Integer>(InventoryType.class);
+		netEmptySlotRemovals.put(InventoryType.EQUIP, Integer.valueOf(0));
+		netEmptySlotRemovals.put(InventoryType.USE, Integer.valueOf(0));
+		netEmptySlotRemovals.put(InventoryType.SETUP, Integer.valueOf(0));
+		netEmptySlotRemovals.put(InventoryType.ETC, Integer.valueOf(0));
+		netEmptySlotRemovals.put(InventoryType.CASH, Integer.valueOf(0));
+
 		for (QuestItemStats item : items) {
-			boolean give = canGiveItem(p, item);
-			if (item.getProb() != 0 && give) {
+			boolean applicable = applicableItem(p, item);
+			if (item.getProb() != 0 && applicable) {
 				if (item.getProb() == -1) {
 					//items List better keep the order of the item rewards in
 					//Quest.wz/Act.img...
 					if (selectableItemIndex != selection)
-						give = false;
+						applicable = false;
 					selectableItemIndex++;
 				} else {
 					if (findRandomItem && random < (runningProbs += item.getProb()))
@@ -196,26 +208,44 @@ public class QuestRewards {
 						findRandomItem = false;
 					else
 						//don't give this item
-						give = false;
+						applicable = false;
 				}
 			}
-			if (give) {
+			if (applicable) {
 				short quantity = item.getCount();
-				if (quantity > 0)
-					giveItem(p, item.getItemId(), quantity, item.getPeriod());
-				else
-					takeItem(p, item.getItemId(), quantity);
+				InventoryType type = InventoryTools.getCategory(item.getItemId());
+
+				Pair<Integer, Short> idAndQty = new Pair<Integer, Short>(Integer.valueOf(item.getItemId()), Short.valueOf(quantity));
+				if (quantity > 0) {
+					itemsToGain.add(new Pair<Pair<Integer, Short>, Integer>(idAndQty, Integer.valueOf(item.getPeriod())));
+					netEmptySlotRemovals.put(type, Integer.valueOf(netEmptySlotRemovals.get(type).intValue() + InventoryTools.slotsNeeded(p.getInventory(type), item.getItemId(), quantity, false)));
+				} else {
+					itemsToLose.add(idAndQty);
+					netEmptySlotRemovals.put(type, Integer.valueOf(netEmptySlotRemovals.get(type).intValue() - InventoryTools.slotsFreed(p.getInventory(type), item.getItemId(), -quantity)));
+				}
 			}
 		}
+
+		for (Map.Entry<InventoryType, Integer> netEmptySlotChange : netEmptySlotRemovals.entrySet())
+			if (p.getInventory(netEmptySlotChange.getKey()).freeSlots() < netEmptySlotChange.getValue().intValue())
+				return false;
+
+		for (Pair<Integer, Short> itemToLose : itemsToLose)
+			takeItem(p, itemToLose.left.intValue(), itemToLose.right.shortValue());
+		for (Pair<Pair<Integer, Short>, Integer> itemToGain : itemsToGain)
+			giveItem(p, itemToGain.left.left.intValue(), itemToGain.left.right.shortValue(), itemToGain.right.intValue());
+		return true;
 	}
 
 	public short giveRewards(GameCharacter p, int selection) {
-		//TODO: What do I do with selection?
+		//some requirements are repeated in the act data - we might as well recheck them
+		if (endDate != 0 && System.currentTimeMillis() >= endDate)
+			return -QuestEntry.QUEST_ACTION_ERROR_EXPIRED;
 		if (minLevel != 0 && p.getLevel() < minLevel
-				|| endDate != 0 && System.currentTimeMillis() >= endDate
-				|| !jobs.isEmpty() && !jobs.contains(Short.valueOf(p.getJob())))
-			return -1; //Nexon fails. This should only be in Quest.wz/Check.img. T.T
-		awardItems(p, selection);
+				|| !jobs.isEmpty() && !jobs.contains(Short.valueOf(p.getJob())) && !PlayerJob.isGameMaster(p.getJob()))
+			return -QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
+		if (!awardItems(p, selection))
+			return -QuestEntry.QUEST_ACTION_ERROR_INVENTORY_FULL;
 		for (Entry<Short, Byte> entry : questChanges.entrySet()) {
 			switch (entry.getValue().byteValue()) {
 				case QuestEntry.STATE_STARTED:

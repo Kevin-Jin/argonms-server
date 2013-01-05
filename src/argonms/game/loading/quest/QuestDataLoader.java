@@ -73,28 +73,29 @@ public abstract class QuestDataLoader {
 		return retSkills;
 	}
 
-	public boolean canStartQuest(GameCharacter p, short questId) {
+	public byte startRequirementError(GameCharacter p, short questId) {
 		QuestChecks qc = startReqs.get(Short.valueOf(questId));
 		if (qc != null)
-			return qc.passesRequirements(p);
+			return qc.requirementError(p);
 		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements
 		//hope that questId is a real quest because we can't check if it is.
-		return true;
+		return 0;
 	}
 
-	public void startedQuest(GameCharacter p, short questId) {
+	public short startedQuest(GameCharacter p, short questId) {
 		QuestRewards qr = startRewards.get(Short.valueOf(questId));
 		if (qr != null)
-			qr.giveRewards(p, -1);
+			return qr.giveRewards(p, -1);
+		return 0;
 	}
 
-	public boolean canCompleteQuest(GameCharacter p, short questId) {
+	public byte completeRequirementError(GameCharacter p, short questId) {
 		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
 		if (qc != null)
-			return qc.passesRequirements(p);
+			return qc.requirementError(p);
 		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements
 		//hope that questId is a real quest because we can't check if it is.
-		return true;
+		return 0;
 	}
 
 	public short finishedQuest(GameCharacter p, short questId, int selection) {

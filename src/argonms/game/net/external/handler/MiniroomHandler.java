@@ -273,7 +273,7 @@ public final class MiniroomHandler {
 		Inventory inv = p.getInventory(type);
 		InventorySlot item = inv.get(slot);
 		if (item == null || item.getQuantity() < quantity) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistant item");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistent item");
 			return;
 		}
 		InventorySlot itemToPut;
@@ -297,7 +297,7 @@ public final class MiniroomHandler {
 			Trade room = (Trade) p.getMiniRoom();
 			room.addMesos(p, mesosAmt);
 		} else {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistant mesos");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistent mesos");
 		}
 	}
 

@@ -467,7 +467,7 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeQuestCompleted(short questId, QuestEntry status) {
+	public static byte[] writeQuestComplete(short questId, QuestEntry status) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
@@ -577,10 +577,10 @@ public final class GamePackets {
 	}
 
 	public static byte[] writeQuestStartSuccess(short questId, int npcId) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 
-		lew.writeShort(ClientSendOps.QUEST_START);
-		lew.writeByte(QuestEntry.QUEST_START_SUCCESS);
+		lew.writeShort(ClientSendOps.QUEST_ACTION);
+		lew.writeByte(QuestEntry.QUEST_ACTION_SUCCESS);
 		lew.writeShort(questId);
 		lew.writeInt(npcId);
 		lew.writeShort((short) 0);
@@ -588,22 +588,22 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeQuestStartNext(short questId, int npcId, short next) {
+	public static byte[] writeQuestCompleteSuccess(short questId, int npcId, short nextQuest) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 
-		lew.writeShort(ClientSendOps.QUEST_START);
-		lew.writeByte(QuestEntry.QUEST_START_SUCCESS);
+		lew.writeShort(ClientSendOps.QUEST_ACTION);
+		lew.writeByte(QuestEntry.QUEST_ACTION_SUCCESS);
 		lew.writeShort(questId);
 		lew.writeInt(npcId);
-		lew.writeShort(next);
+		lew.writeShort(nextQuest);
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeQuestStartError(short questId, byte errorType) {
+	public static byte[] writeQuestActionError(short questId, byte errorType) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
 
-		lew.writeShort(ClientSendOps.QUEST_START);
+		lew.writeShort(ClientSendOps.QUEST_ACTION);
 		lew.writeByte(errorType);
 		lew.writeShort(questId);
 		lew.writeInt(0);

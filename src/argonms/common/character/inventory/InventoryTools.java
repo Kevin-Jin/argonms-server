@@ -113,30 +113,51 @@ public final class InventoryTools {
 		equipCache = new HashMap<Integer, Equip>();
 	}
 
-	public static boolean canFitEntirely(Inventory inv, int itemid, int remQty, boolean breakRechargeableStack) {
-		if (remQty > 0) {
-			if (!isRechargeable(itemid) || breakRechargeableStack) {
-				//TODO: getPersonalSlotMax, but this is in argonms.common. X.X
-				short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
-				for (Short s : inv.getItemSlots(itemid)) {
-					InventorySlot slot = inv.get(s.shortValue());
-					if (slot.getQuantity() < slotMax)
-						remQty -= (slotMax - slot.getQuantity());
-				}
-				if (remQty > 0) {
-					int slotsNeeded = ((remQty - 1) / slotMax) + 1; //ceiling of (remQty / slotMax)
-					if (inv.freeSlots() < slotsNeeded)
-						return false;
-				}
-			} else {
-				//rechargeables can go beyond even a personal slot max (e.g. if
-				//the personal slot max of the giving player is higher than the
-				//receiving player because of higher claw/gun mastery for).
-				//the item will be stacked to the given quantity in one slot.
-				return inv.freeSlots() > 0;
-			}
+	public static int slotsNeeded(Inventory inv, int itemid, int remQty, boolean breakRechargeableStack) {
+		if (remQty <= 0)
+			return 0;
+
+		if (isRechargeable(itemid) && !breakRechargeableStack)
+			//rechargeables can go beyond even a personal slot max (e.g. if
+			//the personal slot max of the giving player is higher than the
+			//receiving player because of higher claw/gun mastery for).
+			//the item will be stacked to the given quantity in one slot.
+			return 1;
+
+		//TODO: use getPersonalSlotMax, but this is in argonms.common. X.X
+		short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
+		for (Short s : inv.getItemSlots(itemid)) {
+			InventorySlot slot = inv.get(s.shortValue());
+			if (slot.getQuantity() < slotMax)
+				remQty -= (slotMax - slot.getQuantity());
+			if (remQty <= 0)
+				break;
 		}
-		return true;
+		if (remQty <= 0)
+			return 0;
+
+		return ((remQty - 1) / slotMax) + 1; //ceiling of (remQty / slotMax)
+	}
+
+	public static boolean canFitEntirely(Inventory inv, int itemid, int remQty, boolean breakRechargeableStack) {
+		return inv.freeSlots() >= slotsNeeded(inv, itemid, remQty, breakRechargeableStack);
+	}
+
+	public static int slotsFreed(Inventory inv, int itemid, int remQty) {
+		if (remQty <= 0)
+			return 0;
+
+		int slots = 0;
+		for (Short s : inv.getItemSlots(itemid)) {
+			InventorySlot slot = inv.get(s.shortValue());
+			remQty -= slot.getQuantity();
+			if (remQty < 0)
+				break;
+			slots++;
+			if (remQty == 0)
+				break;
+		}
+		return slots;
 	}
 
 	public static InventorySlot makeItemWithId(int itemid) {

@@ -57,7 +57,7 @@ public final class BuddyListHandler {
 		THEIR_LIST_FULL = 0x0C,
 		ALREADY_ON_LIST = 0x0D,
 		NO_GM_INVITES = 0x0E,
-		NON_EXISTANT = 0x0F,
+		NONEXISTENT = 0x0F,
 		REMOVE = 0x12,
 		BUDDY_LOGGED_IN = 0x14,
 		CAPACITY_CHANGE = 0x15
@@ -150,7 +150,7 @@ public final class BuddyListHandler {
 			ps.setString(1, invitee);
 			rs = ps.executeQuery();
 			if (!rs.next() || rs.getByte(2) != client.getWorld()) {
-				client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NON_EXISTANT));
+				client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NONEXISTENT));
 				return;
 			}
 			if (rs.getByte(5) > p.getPrivilegeLevel()) {
@@ -209,7 +209,7 @@ public final class BuddyListHandler {
 		GameCharacter p = client.getPlayer();
 		BuddyList bList = p.getBuddyList();
 		if (!bList.isInInvites(inviterId)) {
-			client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NON_EXISTANT));
+			client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NONEXISTENT));
 			return;
 		}
 		String name = bList.removeInvite(inviterId);
@@ -249,7 +249,7 @@ public final class BuddyListHandler {
 		}
 		BuddyListEntry removed = bList.removeBuddy(deletedId);
 		if (removed == null) {
-			client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NON_EXISTANT));
+			client.getSession().send(GamePackets.writeSimpleBuddyListMessage(NONEXISTENT));
 			return;
 		}
 		byte channel = removed.getChannel();
