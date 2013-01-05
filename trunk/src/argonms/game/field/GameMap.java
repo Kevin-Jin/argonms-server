@@ -918,7 +918,7 @@ public class GameMap {
 		}
 
 		public int nextEntId() {
-			//reserve eId of 0 = non-existant entity
+			//reserve eId of 0 = nonexistent entity
 			while (entities.containsKey(Integer.valueOf(++nextEntId)) || nextEntId == 0); //avoid collisions/entId=0 when the entity id overflows
 			return nextEntId;
 		}

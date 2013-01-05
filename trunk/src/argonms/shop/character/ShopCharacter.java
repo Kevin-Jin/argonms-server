@@ -119,7 +119,7 @@ public class ShopCharacter extends LoggedInPlayer {
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
-				LOG.log(Level.WARNING, "Client requested to load a non-existant character w/ id {0} (account {1}).",
+				LOG.log(Level.WARNING, "Client requested to load a nonexistent character w/ id {0} (account {1}).",
 						new Object[] { id, c.getAccountId() });
 				return null;
 			}

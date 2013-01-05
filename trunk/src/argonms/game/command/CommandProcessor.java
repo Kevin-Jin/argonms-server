@@ -20,6 +20,7 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.util.TimeTool;
 import argonms.game.GameRegistry;
 import argonms.game.GameServer;
@@ -384,6 +385,11 @@ public class CommandProcessor {
 					itemId = Integer.parseInt(param);
 					//TODO: check if item is valid. Throw NumberFormatException if not
 				} catch (NumberFormatException e) {
+					resp.printErr(param + " is not a valid itemid.");
+					resp.printErr(getUsage());
+					return;
+				}
+				if (!ItemDataLoader.getInstance().canLoad(itemId)) {
 					resp.printErr(param + " is not a valid itemid.");
 					resp.printErr(getUsage());
 					return;

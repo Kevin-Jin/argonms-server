@@ -153,18 +153,19 @@ public class QuestChecks {
 		return false;
 	}
 
-	public boolean passesRequirements(GameCharacter p) {
-		if (System.currentTimeMillis() >= endDate
-				|| p.getFame() < minFame || !hasPet(p)
+	public byte requirementError(GameCharacter p) {
+		if (System.currentTimeMillis() >= endDate)
+			return QuestEntry.QUEST_ACTION_ERROR_EXPIRED;
+		if (p.getMesos() < minMesos)
+			return QuestEntry.QUEST_ACTION_ERROR_INSUFFICIENT_FUNDS;
+		if (p.getFame() < minFame || !hasPet(p)
 				|| p.getLevel() < minLevel || p.getLevel() > maxLevel
-				|| p.getMesos() < minMesos)
-			return false;
-		if (!reqJobs.isEmpty() && !reqJobs.contains(Short.valueOf(p.getJob())) && !PlayerJob.isGameMaster(p.getJob()))
-			return false;
+				|| !reqJobs.isEmpty() && !reqJobs.contains(Short.valueOf(p.getJob())) && !PlayerJob.isGameMaster(p.getJob()))
+			return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 		for (QuestItemStats item : reqItems) {
 			int itemId = item.getItemId();
 			if (!p.getInventory(InventoryTools.getCategory(itemId)).hasItem(itemId, item.getCount()))
-				return false;
+				return QuestEntry.QUEST_ACTION_ERROR_INVENTORY_FULL;
 		}
 		Map<Short, QuestEntry> statuses = p.getAllQuests();
 		QuestEntry status;
@@ -174,10 +175,10 @@ public class QuestChecks {
 				status = statuses.get(entry.getKey());
 				if (status != null) {
 					if (entry.getValue().byteValue() != status.getState())
-						return false;
+						return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 				} else {
 					if (entry.getValue().byteValue() != QuestEntry.STATE_NOT_STARTED)
-						return false;
+						return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 				}
 			}
 		} finally {
@@ -189,21 +190,20 @@ public class QuestChecks {
 		status = statuses.get(Short.valueOf(questId));
 		if (!reqMobs.isEmpty()) {
 			if (status == null)
-				return false;
+				return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 			for (Entry<Integer, Short> entry : reqMobs.entrySet()) {
-				if (status.getMobCount(entry.getKey().intValue())
-						< entry.getValue().shortValue())
-					return false;
+				if (status.getMobCount(entry.getKey().intValue()) < entry.getValue().shortValue())
+					return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 			}
 		}
 		if (repeatInterval != -1) {
 			if (status != null && status.getState() == QuestEntry.STATE_COMPLETED)
 				//repeatInterval is in minutes, so convert it to milliseconds
 				if (System.currentTimeMillis() < status.getCompletionTime() + (long) repeatInterval * 60000)
-					return false;
+					return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 		}
 		if (reqPetTameness != 0) {
-			//TODO: WHICH PET DO WE CHECK?
+			//TODO: which pet do we check?
 		}
 		if (reqMountTameness != 0) {
 			//TODO: check mount tameness
@@ -214,7 +214,7 @@ public class QuestChecks {
 		if (maxPop != 0) {
 			//TODO: check world population
 		}
-		return true;
+		return 0;
 	}
 
 	public String getStartScriptName() {

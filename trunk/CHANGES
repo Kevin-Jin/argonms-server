@@ -2547,6 +2547,15 @@
 	instantiation and initialization (loop) of a temporary Map.
 	* A mob kill now advances the progress of a quest for everyone in the party.
 
+2013-01-05  GoldenKevin  (revision 185)
+
+	* Quests will not complete or start if players do not have enough inventory
+	space to receive an item.
+	* Quest start and completion refactoring - error messages are now given to
+	players.
+	* !give command gives an error if a nonexistent item is entered.
+	* Fixed "existent" typos.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
