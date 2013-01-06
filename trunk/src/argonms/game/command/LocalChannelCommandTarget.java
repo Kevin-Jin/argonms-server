@@ -28,10 +28,12 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
 import argonms.common.util.TimeTool;
+import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.ExpTables;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.MapMemoryVariable;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.StorageInventory;
@@ -72,6 +74,10 @@ public class LocalChannelCommandTarget implements CommandTarget {
 			switch (update.getKey()) {
 				case CHANGE_MAP: {
 					MapValue value = (MapValue) update.getValue();
+					if (value.mapId == MapValue.FREE_MARKET_MAP_ID && target.getRememberedMap(MapMemoryVariable.FREE_MARKET).left.intValue() == GlobalConstants.NULL_MAP)
+						target.rememberMap(MapMemoryVariable.FREE_MARKET);
+					if (value.mapId == MapValue.JAIL_MAP_ID && target.getRememberedMap(MapMemoryVariable.JAIL).left.intValue() == GlobalConstants.NULL_MAP)
+						target.rememberMap(MapMemoryVariable.JAIL);
 					if (value.channel == MapValue.NO_CHANNEL_CHANGE || value.channel == target.getClient().getChannel())
 						target.changeMap(value.mapId, value.spawnPoint);
 					else
@@ -284,6 +290,13 @@ public class LocalChannelCommandTarget implements CommandTarget {
 							target.itemCountChanged(removed.getDataId());
 						}
 					}
+					break;
+				}
+				case RETURN_TO_REMEMBERED_MAP: {
+					MapMemoryVariable value = (MapMemoryVariable) update.getValue();
+					Pair<Integer, Byte> location = target.resetRememberedMap(value);
+					if (location.left.intValue() != GlobalConstants.NULL_MAP && location.right.byteValue() != -1)
+						target.changeMap(location.left.intValue(), location.right.byteValue());
 					break;
 				}
 			}

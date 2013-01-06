@@ -27,6 +27,7 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.TimeTool;
 import argonms.game.character.ExpTables;
+import argonms.game.character.MapMemoryVariable;
 import argonms.game.loading.map.MapDataLoader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -171,6 +172,20 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 				switch (update.getKey()) {
 					case CHANGE_MAP: {
 						MapValue value = (MapValue) update.getValue();
+
+						if (value.mapId == MapValue.FREE_MARKET_MAP_ID || value.mapId == MapValue.JAIL_MAP_ID) {
+							int map = getIntValueInCharactersTable("map");
+							byte spawnPoint = getByteValueInCharactersTable("spawnpoint");
+
+							ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,`key`,`value`,`spawnpoint`) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE `characterid` = `characterid`");
+							ps.setInt(1, Player.getIdFromName(target));
+							ps.setString(2, value.mapId == MapValue.FREE_MARKET_MAP_ID ? MapMemoryVariable.FREE_MARKET.toString() : MapMemoryVariable.JAIL.toString());
+							ps.setInt(3, map);
+							ps.setByte(4, spawnPoint);
+							ps.executeUpdate();
+							ps.close();
+						}
+
 						ps = con.prepareStatement("UPDATE `characters` SET `map` = ?, `spawnpoint` = ? WHERE `name` = ?");
 						ps.setInt(1, value.mapId);
 						ps.setByte(2, value.spawnPoint);
@@ -439,6 +454,39 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						ps.close();
 
 						Player.commitInventory(characterId, accountId, pets, con, inventories);
+						break;
+					}
+					case RETURN_TO_REMEMBERED_MAP: {
+						MapMemoryVariable value = (MapMemoryVariable) update.getValue();
+						int characterId = Player.getIdFromName(target);
+						int mapId = GlobalConstants.NULL_MAP;
+						byte spawnPoint = -1;
+
+						ps = con.prepareStatement("SELECT `value`,`spawnpoint` FROM `mapmemory` WHERE `characterid` = ? AND `key` = ?");
+						ps.setInt(1, characterId);
+						ps.setString(2, value.toString());
+						rs = ps.executeQuery();
+						if (rs.next()) {
+							mapId = rs.getInt(1);
+							spawnPoint = rs.getByte(2);
+						}
+						rs.close();
+						ps.close();
+
+						if (mapId != GlobalConstants.NULL_MAP && spawnPoint != -1) {
+							ps = con.prepareStatement("DELETE FROM `mapmemory` WHERE `characterid` = ? AND `key` = ?");
+							ps.setInt(1, characterId);
+							ps.setString(2, value.toString());
+							ps.executeUpdate();
+							ps.close();
+
+							ps = con.prepareStatement("UPDATE `characters` SET `map` = ?, `spawnpoint` = ? WHERE `name` = ?");
+							ps.setInt(1, mapId);
+							ps.setByte(2, spawnPoint);
+							ps.setString(3, target);
+							ps.executeUpdate();
+							ps.close();
+						}
 						break;
 					}
 				}

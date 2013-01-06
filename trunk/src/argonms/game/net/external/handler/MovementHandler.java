@@ -88,6 +88,7 @@ public final class MovementHandler {
 	}
 
 	public static void handleMovePlayer(LittleEndianReader packet, GameClient gc) {
+		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis());
 		/*byte portalCount = */packet.readByte();
 		Point startPos = packet.readPos();
 		List<LifeMovementFragment> res = parseMovement(packet);

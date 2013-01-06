@@ -20,7 +20,7 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -31,7 +31,7 @@ public class TownCommandHandler extends AbstractCommandDefinition<CommandCaller>
 	private final Map<String, Integer> lookup;
 
 	public TownCommandHandler() {
-		lookup = new HashMap<String, Integer>();
+		lookup = new LinkedHashMap<String, Integer>();
 		lookup.put("southperry", Integer.valueOf(60000));
 		lookup.put("amherst", Integer.valueOf(1010000));
 		lookup.put("henesys", Integer.valueOf(100000000));
@@ -44,6 +44,7 @@ public class TownCommandHandler extends AbstractCommandDefinition<CommandCaller>
 		lookup.put("nautilus harbor", Integer.valueOf(120000000));
 		lookup.put("gm map", Integer.valueOf(180000000));
 		lookup.put("orbis", Integer.valueOf(200000000));
+		lookup.put("happyville", Integer.valueOf(209000000));
 		lookup.put("el nath", Integer.valueOf(211000000));
 		lookup.put("ludibrium", Integer.valueOf(220000000));
 		lookup.put("omega sector", Integer.valueOf(221000000));
@@ -56,6 +57,7 @@ public class TownCommandHandler extends AbstractCommandDefinition<CommandCaller>
 		lookup.put("new leaf city", Integer.valueOf(600000000));
 		lookup.put("mushroom shrine", Integer.valueOf(800000000));
 		lookup.put("showa town", Integer.valueOf(801000000));
+		lookup.put("free market", Integer.valueOf(CommandTarget.MapValue.FREE_MARKET_MAP_ID));
 	}
 
 	@Override

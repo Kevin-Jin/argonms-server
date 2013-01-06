@@ -20,6 +20,7 @@ package argonms.game.script.binding;
 
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.game.character.MapMemoryVariable;
 import argonms.game.net.external.GameClient;
 import org.mozilla.javascript.Scriptable;
 
@@ -28,11 +29,18 @@ import org.mozilla.javascript.Scriptable;
  * @author GoldenKevin
  */
 public class ScriptPortal extends PlayerScriptInteraction {
+	private byte portalId;
 	private boolean warped;
 
-	public ScriptPortal(GameClient gameClient, Scriptable globalScope) {
+	public ScriptPortal(byte portalId, GameClient gameClient, Scriptable globalScope) {
 		super(gameClient, globalScope);
+		this.portalId = portalId;
 		this.warped = true;
+	}
+
+	@Override
+	public void rememberMap(String variable) {
+		getClient().getPlayer().rememberMap(MapMemoryVariable.valueOf(variable), portalId);
 	}
 
 	public void showHint(String hint, short width, short height) {
