@@ -23,6 +23,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
+import argonms.game.character.MapMemoryVariable;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -150,6 +151,11 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					lew.writeShort(value.endSlot);
 					break;
 				}
+				case RETURN_TO_REMEMBERED_MAP: {
+					MapMemoryVariable value = (MapMemoryVariable) update.getValue();
+					lew.writeLengthPrefixedString(value.toString());
+					break;
+				}
 			}
 		}
 	}
@@ -245,6 +251,10 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					short startSlot = packet.readShort();
 					short endSlot = packet.readShort();
 					value = new InventorySlotRangeValue(type, startSlot, endSlot);
+					break;
+				}
+				case RETURN_TO_REMEMBERED_MAP: {
+					value = MapMemoryVariable.valueOf(packet.readLengthPrefixedString());
 					break;
 				}
 			}

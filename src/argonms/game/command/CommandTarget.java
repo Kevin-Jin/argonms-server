@@ -29,6 +29,9 @@ import java.util.Map;
  */
 public interface CommandTarget {
 	public static class MapValue {
+		public static final int FREE_MARKET_MAP_ID = 910000000;
+		public static final int JAIL_MAP_ID = 209000000; //happyville
+
 		public static byte NO_CHANNEL_CHANGE = -1;
 
 		public final int mapId;
@@ -157,7 +160,8 @@ public interface CommandTarget {
 		MAX_BUDDY_LIST_SLOTS((byte) 37),
 		BAN((byte) 38),
 		STUN((byte) 39),
-		CLEAR_INVENTORY_SLOTS((byte) 40);
+		CLEAR_INVENTORY_SLOTS((byte) 40),
+		RETURN_TO_REMEMBERED_MAP((byte) 41);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

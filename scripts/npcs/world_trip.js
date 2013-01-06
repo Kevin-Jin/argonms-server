@@ -39,13 +39,13 @@
  */
 
 if (map.getId() == 800000000) {
-	let returnMap = npc.getRememberedMap("WORLD_TOUR");
+	let [returnMap, spawnPoint] = npc.getRememberedMap("WORLD_TOUR");
 	let selection = npc.askMenu("How's the traveling? Are you enjoying it?\r\n"
 			+ "#b#L0#Yes, I'm done with traveling. Can I go back to #m" + returnMap + "#? #l\r\n"
 			+ "#b#L1#No, I'd like to continue exploring this place.#l");
 	if (selection == 0) {
 		npc.sayNext("Alright. I'll now take you back to where you were before the visit to Japan. If you ever feel like traveling again down the road, please let me know!");
-		player.changeMap(returnMap);
+		player.changeMap(returnMap, spawnPoint);
 		npc.resetRememberedMap("WORLD_TOUR");
 	} else if (selection == 1) {
 		npc.say("OK. If you ever change your mind, please let me know.");

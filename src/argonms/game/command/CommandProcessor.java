@@ -25,6 +25,7 @@ import argonms.common.util.TimeTool;
 import argonms.game.GameRegistry;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.MapMemoryVariable;
 import argonms.game.command.CommandDefinition.CommandAction;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -215,6 +216,52 @@ public class CommandProcessor {
 				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, new CommandTarget.MapValue(mapId, spawnPoint))));
 			}
 		}, "Warp a player to a specific map and spawn point", UserPrivileges.GM));
+		universalCommands.put("!jail", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
+			@Override
+			public String getUsage() {
+				return "Usage: !jail <target>";
+			}
+
+			@Override
+			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+				String targetName = args.extractTarget(null, null);
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, caller);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.CHANGE_MAP, new CommandTarget.MapValue(CommandTarget.MapValue.JAIL_MAP_ID))));
+			}
+		}, "Disclipline a player by sending them to a map they cannot leave from", UserPrivileges.GM));
+		universalCommands.put("!unjail", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
+			@Override
+			public String getUsage() {
+				return "Usage: !unjail <target>";
+			}
+
+			@Override
+			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+				String targetName = args.extractTarget(null, null);
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, caller);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.RETURN_TO_REMEMBERED_MAP, MapMemoryVariable.JAIL)));
+			}
+		}, "Allow a jailed player to resume playing where they were before being jailed", UserPrivileges.GM));
 		universalCommands.put("!ban", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {
@@ -654,6 +701,93 @@ public class CommandProcessor {
 		universalCommands.put("!shutdown", new ShutdownCommandHandler());
 		universalCommands.put("!help", new CommandDefinition<CommandCaller>(new HelpCommandHandler(),
 				"List available commands and their descriptions. Specify a command to read only its description", UserPrivileges.USER));
+		universalCommands.put("!cpu", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
+			@Override
+			public String getUsage() {
+				return "Usage: !cpu";
+			}
+
+			@Override
+			public void doAction(final CommandCaller caller, CommandArguments args, final CommandOutput resp) {
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							java.lang.management.ThreadMXBean threadProxy = java.lang.management.ManagementFactory.getThreadMXBean();
+							java.lang.management.OperatingSystemMXBean osProxy = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+							java.lang.management.RuntimeMXBean runtimeProxy = java.lang.management.ManagementFactory.getRuntimeMXBean();
+							int nCPUs = osProxy.getAvailableProcessors();
+							long prevUpTime = 0L;
+							Map<Long, Long> prevThreadCpuTime = null;
+							long upTime;
+							Map<Long, Long> threadCpuTime;
+							long[] threadIds;
+							java.util.Comparator<argonms.common.util.collections.Pair<Long, Float>> comparator = new java.util.Comparator<argonms.common.util.collections.Pair<Long, Float>>() {
+								@Override
+								public int compare(argonms.common.util.collections.Pair<Long, Float> o1, argonms.common.util.collections.Pair<Long, Float> o2) {
+									return o1.right.compareTo(o2.right);
+								}
+							};
+							java.util.Set<argonms.common.util.collections.Pair<Long, Float>> sortedPercentages;
+							while (!caller.isDisconnected()) {
+								upTime = runtimeProxy.getUptime();
+								threadCpuTime = new java.util.HashMap<Long, Long>();
+								threadIds = threadProxy.getAllThreadIds();
+								for (int i = 0; i < threadIds.length; i++) {
+									long threadId = threadIds[i];
+									if (threadId != -1) {
+										threadCpuTime.put(Long.valueOf(threadId), Long.valueOf(threadProxy.getThreadCpuTime(threadId)));
+									} else {
+										threadCpuTime.put(Long.valueOf(threadId), Long.valueOf(0L));
+									}
+								}
+								sortedPercentages = new java.util.TreeSet<argonms.common.util.collections.Pair<Long, Float>>(comparator);
+								if (prevUpTime > 0L && upTime > prevUpTime) {
+									// elapsedTime is in ms
+									long elapsedTime = upTime - prevUpTime;
+									for (int i = 0; i < threadIds.length; i++) {
+										Long threadId = Long.valueOf(threadIds[i]);
+										Long lastTime = prevThreadCpuTime.get(threadId);
+										if (lastTime != null) {
+											long elapsedCpu = threadCpuTime.get(threadId).longValue() - lastTime.longValue(); // in
+																																// ns
+											// cpuUsage could go higher than
+											// 100% because elapsedTime
+											// and elapsedCpu are not fetched
+											// simultaneously. Limit to
+											// 99% to avoid Chart showing a
+											// scale from 0% to 200%.
+											float cpuUsage = Math.min(99F, elapsedCpu / (elapsedTime * 1000000F * nCPUs));
+											if (cpuUsage - 1 > 0)
+												sortedPercentages.add(new argonms.common.util.collections.Pair<Long, Float>(threadId, Float.valueOf(cpuUsage)));
+										}
+									}
+								}
+								for (argonms.common.util.collections.Pair<Long, Float> entry : sortedPercentages) {
+									java.lang.management.ThreadInfo info = threadProxy.getThreadInfo(entry.left.longValue(), Integer.MAX_VALUE);
+									StackTraceElement[] calls = info.getStackTrace();
+									StringBuilder out = new StringBuilder().append(entry.right).append("%: ").append(info.getThreadName());
+									if (calls.length > 0) {
+										out.append(" - ");
+										for (int j = 0; j < calls.length; j++)
+											out.append(calls[j]).append(", ");
+										out.delete(out.length() - 2, out.length());
+									}
+									resp.printOut(out.toString());
+									resp.printOut("--------------------------------");
+								}
+								prevThreadCpuTime = threadCpuTime;
+								prevUpTime = upTime;
+								Thread.sleep(1000);
+
+							}
+						} catch (Exception ex) {
+							ex.printStackTrace();
+						}
+					}
+				}, "thread-prober").start();
+			}
+		}, "", UserPrivileges.ADMIN));
 	}
 
 	public void process(GameCharacter p, String line) {

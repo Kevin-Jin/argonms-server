@@ -116,7 +116,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private final LockableList<Mob> controllingMobs;
 	private GameMap map;
-	private final ConcurrentMap<MapMemoryVariable, Integer> rememberedMaps;
+	private final ConcurrentMap<MapMemoryVariable, Pair<Integer, Byte>> rememberedMaps;
 
 	private BuddyList buddies;
 	private int guild;
@@ -141,7 +141,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private final Map<Short, QuestEntry> questStatuses;
 	private final Map<QuestRequirementType, Map<Number, List<Short>>> questSubscriptions;
 	private final Set<Short> completableQuests;
-	private final Map<Integer, Set<Short>> mobDeathQuestHooks;
 
 	private Miniroom miniroom;
 	private final Map<MiniroomType, Map<MinigameResult, AtomicInteger>> minigameStats;
@@ -166,13 +165,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		diseaseFutures = new ConcurrentHashMap<Short, Pair<MobSkillState, ScheduledFuture<?>>>();
 		summons = new ConcurrentHashMap<Integer, PlayerSkillSummon>();
 		controllingMobs = new LockableList<Mob>(new ArrayList<Mob>());
-		rememberedMaps = new ConcurrentHashMap<MapMemoryVariable, Integer>();
+		rememberedMaps = new ConcurrentHashMap<MapMemoryVariable, Pair<Integer, Byte>>();
 
 		questStatuses = new HashMap<Short, QuestEntry>();
 		questSubscriptions = new EnumMap<QuestRequirementType, Map<Number, List<Short>>>(QuestRequirementType.class);
 		completableQuests = new HashSet<Short>();
 
-		mobDeathQuestHooks = new HashMap<Integer, Set<Short>>();
 		minigameStats = Collections.synchronizedMap(new EnumMap<MiniroomType, Map<MinigameResult, AtomicInteger>>(MiniroomType.class));
 		famesThisMonth = Collections.synchronizedMap(new HashMap<Integer, Long>());
 		//doesn't need to be synchronized because we only add/remove entries
@@ -300,11 +298,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.executeUpdate();
 			ps.close();
 
-			ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,`key`,`value`) VALUES (?,?,?)");
+			ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,`key`,`value`,`spawnpoint`) VALUES (?,?,?,?)");
 			ps.setInt(1, getDataId());
-			for (Entry<MapMemoryVariable, Integer> entry : rememberedMaps.entrySet()) {
+			for (Entry<MapMemoryVariable, Pair<Integer, Byte>> entry : rememberedMaps.entrySet()) {
 				ps.setString(2, entry.getKey().toString());
-				ps.setInt(3, entry.getValue().intValue());
+				ps.setInt(3, entry.getValue().left.intValue());
+				ps.setByte(4, entry.getValue().right.byteValue());
 				ps.addBatch();
 			}
 			ps.executeBatch();
@@ -636,11 +635,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs.close();
 			ps.close();
 
-			ps = con.prepareStatement("SELECT `key`,`value` FROM `mapmemory` WHERE `characterid` = ?");
+			ps = con.prepareStatement("SELECT `key`,`value`,`spawnpoint` FROM `mapmemory` WHERE `characterid` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			while (rs.next())
-				p.rememberedMaps.put(MapMemoryVariable.valueOf(rs.getString(1)), Integer.valueOf(rs.getInt(2)));
+				p.rememberedMaps.put(MapMemoryVariable.valueOf(rs.getString(1)), new Pair<Integer, Byte>(Integer.valueOf(rs.getInt(2)), Byte.valueOf(rs.getByte(3))));
 			rs.close();
 			ps.close();
 
@@ -935,7 +934,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	@Override
 	public void setLevel(short newLevel) {
+		boolean levelUp = newLevel > getLevel();
 		super.setLevel(newLevel);
+		if (levelUp)
+			getMap().sendToAll(GamePackets.writeShowLevelUp(this), this);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, true);
@@ -944,7 +946,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public void setJob(short newJob) {
 		super.setJob(newJob);
-		getMap().sendToAll(GamePackets.writeShowJobChange(this));
+		getMap().sendToAll(GamePackets.writeShowJobChange(this), this);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, false);
@@ -961,7 +963,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public void setHair(short newHair) {
 		super.setHair(newHair);
-		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this), this);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HAIR, Short.valueOf(hair)), false));
 		if (chatroom != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
@@ -970,7 +972,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public void setSkin(byte newSkin) {
 		super.setSkin(newSkin);
-		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this), this);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.SKIN, Byte.valueOf(skin)), false));
 		if (chatroom != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
@@ -979,7 +981,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public void setEyes(short newEyes) {
 		super.setEyes(newEyes);
-		getMap().sendToAll(GamePackets.writeUpdateAvatar(this));
+		getMap().sendToAll(GamePackets.writeUpdateAvatar(this), this);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.FACE, Short.valueOf(eyes)), false));
 		if (chatroom != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(this, chatroom.getRoomId());
@@ -1322,18 +1324,26 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return (map != null ? map.getDataId() : super.getMapId());
 	}
 
+	public void rememberMap(MapMemoryVariable key, byte spawnPoint) {
+		rememberedMaps.put(key, new Pair<Integer, Byte>(Integer.valueOf(getMapId()), Byte.valueOf(spawnPoint)));
+	}
+
 	public void rememberMap(MapMemoryVariable key) {
-		rememberedMaps.put(key, Integer.valueOf(getMapId()));
+		rememberMap(key, map.nearestSpawnPoint(getPosition()));
 	}
 
-	public int getRememberedMap(MapMemoryVariable key) {
-		Integer mapId = rememberedMaps.get(key);
-		return (mapId != null ? mapId.intValue() : GlobalConstants.NULL_MAP);
+	public Pair<Integer, Byte> getRememberedMap(MapMemoryVariable key) {
+		Pair<Integer, Byte> location = rememberedMaps.get(key);
+		if (location == null)
+			location = new Pair<Integer, Byte>(Integer.valueOf(GlobalConstants.NULL_MAP), Byte.valueOf((byte) -1));
+		return location;
 	}
 
-	public int resetRememberedMap(MapMemoryVariable key) {
-		Integer mapId = rememberedMaps.remove(key);
-		return (mapId != null ? mapId.intValue() : GlobalConstants.NULL_MAP);
+	public Pair<Integer, Byte> resetRememberedMap(MapMemoryVariable key) {
+		Pair<Integer, Byte> location = rememberedMaps.remove(key);
+		if (location == null)
+			location = new Pair<Integer, Byte>(Integer.valueOf(GlobalConstants.NULL_MAP), Byte.valueOf((byte) -1));
+		return location;
 	}
 
 	public BuddyList getBuddyList() {

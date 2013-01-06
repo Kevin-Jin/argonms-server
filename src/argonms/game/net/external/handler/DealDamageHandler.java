@@ -69,6 +69,7 @@ public final class DealDamageHandler {
 	private enum AttackType { MELEE, RANGED, MAGIC, SUMMON, CHARGE }
 
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
+		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE, attack.skill)), p);
@@ -77,6 +78,7 @@ public final class DealDamageHandler {
 
 	//bow/arrows, claw/stars, guns/bullets (projectiles)
 	public static void handleRangedAttack(LittleEndianReader packet, GameClient gc) {
+		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
 
@@ -137,6 +139,7 @@ public final class DealDamageHandler {
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
+		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		final GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
@@ -169,6 +172,7 @@ public final class DealDamageHandler {
 		}
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE, attack.skill)), p);
+		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		applyAttack(attack, p);
 	}
 

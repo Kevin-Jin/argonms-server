@@ -47,7 +47,7 @@ public class PortalScriptManager {
 		portalPath = scriptPath + "portals" + GlobalConstants.DIR_DELIMIT;
 	}
 
-	public boolean runScript(String scriptName, GameCharacter p) {
+	public boolean runScript(String scriptName, byte portalId, GameCharacter p) {
 		Context cx = Context.enter();
 		try {
 			FileReader reader = new FileReader(portalPath + scriptName + ".js");
@@ -55,7 +55,7 @@ public class PortalScriptManager {
 			cx.setOptimizationLevel(1);
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			cx.getWrapFactory().setJavaPrimitiveWrap(false);
-			ScriptPortal portalManager = new ScriptPortal(p.getClient(), globalScope);
+			ScriptPortal portalManager = new ScriptPortal(portalId, p.getClient(), globalScope);
 			globalScope.put("portal", globalScope, Context.javaToJS(portalManager, globalScope));
 			globalScope.put("player", globalScope, Context.javaToJS(new ScriptPlayer(p), globalScope));
 			globalScope.put("map", globalScope, Context.javaToJS(new ScriptField(p.getMap(), globalScope), globalScope));

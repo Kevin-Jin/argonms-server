@@ -2556,6 +2556,20 @@
 	* !give command gives an error if a nonexistent item is entered.
 	* Fixed "existent" typos.
 
+2013-01-06  GoldenKevin  (revision 186)
+
+	* Send level up packet to map when player's level is changed through !stat 
+	command.
+	* Do not send job change or avatar change packets back to client that had
+	their job or avatar changed.
+	* `mapmemory` table now stores spawn points. GameCharacter methods and
+	script bindings updated accordingly.
+	* Added "free market" and "happyville" to list of warpable maps for the
+	!town command.
+	* Added !jail command.
+	* Accumulate infractions if a player tries replenishing HP without a pause
+	after flinching (attacking, getting hurt, or casting skills) or moving.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

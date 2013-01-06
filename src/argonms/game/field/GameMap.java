@@ -671,30 +671,30 @@ public class GameMap {
 	}
 
 	public boolean enterPortal(GameCharacter p, String portalName) {
-		for (PortalData portal : stats.getPortals().values())
-			if (portal.getPortalName().equals(portalName))
-				return enterPortal(p, portal);
+		for (Entry<Byte, PortalData> portal : stats.getPortals().entrySet())
+			if (portal.getValue().getPortalName().equals(portalName))
+				return enterPortal(p, portal.getKey().byteValue(), portal.getValue());
 		return false;
 	}
 
 	public boolean enterPortal(GameCharacter p, byte portalId) {
 		PortalData portal = stats.getPortals().get(Byte.valueOf(portalId));
-		return (portal != null ? enterPortal(p, portal) : false);
+		return (portal != null ? enterPortal(p, portalId, portal) : false);
 	}
 
-	private boolean enterPortal(GameCharacter p, PortalData portal) {
+	private boolean enterPortal(GameCharacter p, byte portalId, PortalData portal) {
 		String scriptName = portalOverrides.get(portal.getPortalName());
 		if (scriptName == null || scriptName.isEmpty())
 			scriptName = portal.getScript();
 		if (scriptName != null && !scriptName.isEmpty()) {
-			return PortalScriptManager.getInstance().runScript(scriptName, p);
+			return PortalScriptManager.getInstance().runScript(scriptName, portalId, p);
 		} else {
 			int tm = portal.getTargetMapId();
 			GameMap toMap = GameServer.getChannel(p.getClient().getChannel()).getMapFactory().getMap(tm);
 			if (tm != GlobalConstants.NULL_MAP && toMap != null) {
-				byte portalId = toMap.getPortalIdByName(portal.getTargetName());
-				if (portalId != -1)
-					return p.changeMap(tm, portalId);
+				byte targetPortalId = toMap.getPortalIdByName(portal.getTargetName());
+				if (targetPortalId != -1)
+					return p.changeMap(tm, targetPortalId);
 			}
 		}
 		return false;

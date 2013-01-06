@@ -18,6 +18,7 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.MapMemoryVariable;
 import argonms.game.net.external.GameClient;
@@ -68,11 +69,23 @@ public abstract class PlayerScriptInteraction {
 		client.getPlayer().rememberMap(MapMemoryVariable.valueOf(variable));
 	}
 
-	public int getRememberedMap(String variable) {
-		return client.getPlayer().getRememberedMap(MapMemoryVariable.valueOf(variable));
+	public Object getRememberedMap(String variable) {
+		Pair<Integer, Byte> location = client.getPlayer().getRememberedMap(MapMemoryVariable.valueOf(variable));
+		Context cx = Context.enter();
+		try {
+			return cx.newArray(globalScope, new Object[] { location.left, location.right });
+		} finally {
+			Context.exit();
+		}
 	}
 
-	public int resetRememberedMap(String variable) {
-		return client.getPlayer().resetRememberedMap(MapMemoryVariable.valueOf(variable));
+	public Object resetRememberedMap(String variable) {
+		Pair<Integer, Byte> location = client.getPlayer().resetRememberedMap(MapMemoryVariable.valueOf(variable));
+		Context cx = Context.enter();
+		try {
+			return cx.newArray(globalScope, new Object[] { location.left, location.right });
+		} finally {
+			Context.exit();
+		}
 	}
 }

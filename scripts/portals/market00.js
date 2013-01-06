@@ -26,21 +26,8 @@
  * @author GoldenKevin
  */
 
-function getPortal(map) {
-	//TODO: less hackish way of doing this - perhaps save portal as a db variable
-	//if we implement a method of entering FM from a map that doesn't have an FM
-	//portal, this fails. we probably would have to save the nearest portal to
-	//the db in such a case.
-	switch (map) {
-		case 230000000: //Aquarium FM
-			return "market01";
-		default:
-			return "market00";
-	}
-}
-
-let map = portal.resetRememberedMap("FREE_MARKET");
+let [map, spawnPoint] = portal.resetRememberedMap("FREE_MARKET");
 if (map == 999999999)
 	map = 102000000;
 portal.playSoundEffect();
-player.changeMap(map, getPortal(map));
+player.changeMap(map, spawnPoint);
