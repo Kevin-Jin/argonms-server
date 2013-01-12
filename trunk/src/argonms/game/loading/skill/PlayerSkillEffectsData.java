@@ -62,6 +62,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		super(skillid);
 		this.level = level;
 		this.prop = 100;
+		this.damage = 100;
 		this.monsterDiseases = EnumSet.noneOf(MonsterStatusEffect.class);
 		switch (skillid) { //for them skills that don't have x or y
 			case Skills.BEHOLDER:

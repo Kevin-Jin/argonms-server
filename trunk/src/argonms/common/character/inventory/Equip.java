@@ -32,15 +32,15 @@ public class Equip extends InventorySlot implements Cloneable {
 		AXE1H(4.4),
 		SWORD1H(4.0),
 		BLUNT1H(4.4),
-		AXE2H(4.8),
+		AXE2H(4.8), //Swing = 4.8, Stab = 3.4
 		SWORD2H(4.6),
-		BLUNT2H(4.8),
-		POLE_ARM(5.0),
-		SPEAR(5.0),
+		BLUNT2H(4.8), //Swing = 4.8, Stab = 3.4
+		POLE_ARM(5.0), //Swing = 5.0, stab = 3.0
+		SPEAR(5.0), //Stab = 5.0, wing = 3.0
 		STAFF(3.6),
 		WAND(3.6),
 		KNUCKLE(4.8),
-		GUN(3.715);
+		GUN(3.6);
 
 		private final double damageMultiplier;
 

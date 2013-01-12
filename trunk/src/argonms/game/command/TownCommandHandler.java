@@ -53,6 +53,7 @@ public class TownCommandHandler extends AbstractCommandDefinition<CommandCaller>
 		lookup.put("leafre", Integer.valueOf(240000000));
 		lookup.put("mu lung", Integer.valueOf(250000000));
 		lookup.put("herb town", Integer.valueOf(251000000));
+		lookup.put("ariant", Integer.valueOf(260000000));
 		lookup.put("singapore", Integer.valueOf(540010000));
 		lookup.put("new leaf city", Integer.valueOf(600000000));
 		lookup.put("mushroom shrine", Integer.valueOf(800000000));

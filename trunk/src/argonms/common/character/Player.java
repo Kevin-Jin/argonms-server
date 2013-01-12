@@ -590,16 +590,18 @@ public abstract class Player {
 		return id;
 	}
 
-	public static boolean characterExists(String name) {
+	public static boolean characterExists(String name, byte world) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM `characters` WHERE `name` = ? LIMIT 1)");
+			ps = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM `characters` WHERE `name` = ? AND `world` = ? LIMIT 1)");
 			ps.setString(1, name);
+			ps.setByte(2, world);
 			rs = ps.executeQuery();
-			return (rs.next() && rs.getBoolean(1));
+			rs.next();
+			return rs.getBoolean(1);
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not determine if character " + name + " exists", ex);
 			return false;

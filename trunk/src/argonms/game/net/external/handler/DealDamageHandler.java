@@ -18,13 +18,16 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.StatEffect;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
+import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.WeaponClass;
+import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Rng;
@@ -68,11 +71,61 @@ import java.util.concurrent.ScheduledFuture;
 public final class DealDamageHandler {
 	private enum AttackType { MELEE, RANGED, MAGIC, SUMMON, CHARGE }
 
+	private static int getMaxBaseDamage(GameCharacter p, int additionalWatk, PlayerSkillEffectsData attackSkill) {
+		if (p.getWatk() == 0)
+			return 1;
+
+		Equip weapon = (Equip) p.getInventory(InventoryType.EQUIPPED).get((short) -11);
+		if (weapon == null)
+			return 0;
+
+		Equip.WeaponType type = InventoryTools.getWeaponType(weapon.getDataId());
+		int mainStat;
+		int secondaryStat;
+		switch (InventoryTools.getWeaponType(weapon.getDataId())) {
+			case BOW:
+			case CROSSBOW:
+			case GUN:
+				mainStat = p.getCurrentDex();
+				secondaryStat = p.getCurrentStr();
+				break;
+			case CLAW:
+			case DAGGER:
+				if (PlayerJob.isThief(p.getJob())) {
+					mainStat = p.getCurrentLuk();
+					secondaryStat = p.getCurrentDex() + p.getCurrentStr();
+				} else {
+					mainStat = p.getCurrentStr();
+					secondaryStat = p.getCurrentDex();
+				}
+				break;
+			case NOT_A_WEAPON: //not sure what this means - it's from celino
+				if (PlayerJob.isPirate(p.getJob())) {
+					mainStat = p.getCurrentStr();
+					secondaryStat = p.getCurrentDex();
+				} else {
+					mainStat = 0;
+					secondaryStat = 0;
+				}
+				break;
+			case KNUCKLE:
+			default:
+				mainStat = p.getCurrentStr();
+				secondaryStat = p.getCurrentDex();
+				break;
+		}
+		int damage = (int) ((type.getMaxDamageMultiplier() * mainStat + secondaryStat) * (p.getWatk() + additionalWatk) / 100);
+		if (attackSkill != null)
+			damage = damage * attackSkill.getDamage() / 100;
+		return damage;
+	}
+
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE, attack.skill)), p);
+		getMaxBaseDamage(p, 0, attack.getAttackEffect(p));
 		applyAttack(attack, p);
 	}
 
@@ -135,6 +188,13 @@ public final class DealDamageHandler {
 		}
 
 		p.getMap().sendToAll(writeRangedAttack(p.getId(), attack, getMasteryLevel(p, AttackType.RANGED, attack.skill)), p);
+		int additionalWatk = 0;
+		if (attack.ammoItemId != 0) {
+			short[] bonusStats = ItemDataLoader.getInstance().getBonusStats(attack.ammoItemId);
+			if (bonusStats != null)
+				additionalWatk = bonusStats[StatEffect.PAD];
+		}
+		getMaxBaseDamage(p, additionalWatk, attack.getAttackEffect(p));
 		applyAttack(attack, p);
 	}
 

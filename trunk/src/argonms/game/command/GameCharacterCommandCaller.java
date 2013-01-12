@@ -38,6 +38,11 @@ public class GameCharacterCommandCaller implements CommandCaller {
 	}
 
 	@Override
+	public byte getWorld() {
+		return caller.getClient().getWorld();
+	}
+
+	@Override
 	public byte getChannel() {
 		return caller.getClient().getChannel();
 	}

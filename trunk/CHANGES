@@ -2570,6 +2570,16 @@
 	* Accumulate infractions if a player tries replenishing HP without a pause
 	after flinching (attacking, getting hurt, or casting skills) or moving.
 
+2013-01-12  GoldenKevin  (revision 187)
+
+	* Removed !cpu debug command.
+	* Commands on offline characters only work on characters in the same world
+	as the caller character.
+	* Added "ariant" to list of warpable maps for the !town command.
+	* Omok pieces may not be laid on top of each other.
+	* Fixed each hit on a mob counting as a whole mob killed for quest purposes.
+	* Stubs for high damage auto ban.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
