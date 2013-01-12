@@ -27,6 +27,8 @@ import argonms.game.field.GameMap;
 public interface CommandCaller {
 	public String getName();
 
+	public byte getWorld();
+
 	public byte getChannel();
 
 	public GameMap getMap();

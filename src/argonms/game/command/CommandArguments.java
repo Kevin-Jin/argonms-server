@@ -160,7 +160,7 @@ public class CommandArguments implements Iterator<String> {
 		if (channel != 0)
 			return new CrossChannelCommandTarget(caller.getChannel(), channel, name);
 
-		if (Player.characterExists(name))
+		if (Player.characterExists(name, caller.getWorld()))
 			return new OfflineCharacterCommandTarget(name);
 
 		return null;

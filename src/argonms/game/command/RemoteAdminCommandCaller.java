@@ -31,12 +31,14 @@ public class RemoteAdminCommandCaller implements CommandCaller {
 	//center server will resend these values to the game server that contains the channel every time a command is made
 	//fetch map id from database before each packet sent from the center server to here, in case !map command was used
 	private final String name;
+	private final byte world;
 	private final byte channel;
 	private final int map;
 	private final byte privilegeLevel;
 
-	public RemoteAdminCommandCaller(String name, byte channel, int map, byte privilegeLevel) {
+	public RemoteAdminCommandCaller(String name, byte world, byte channel, int map, byte privilegeLevel) {
 		this.name = name;
+		this.world = world;
 		this.channel = channel;
 		this.map = map;
 		this.privilegeLevel = privilegeLevel;
@@ -45,6 +47,11 @@ public class RemoteAdminCommandCaller implements CommandCaller {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public byte getWorld() {
+		return world;
 	}
 
 	@Override

@@ -182,7 +182,7 @@ public abstract class Minigame extends Miniroom {
 	}
 
 	public static class Omok extends Minigame {
-		private enum MoveResult { MOVE, MOVE_AND_WIN, MOVE_AND_TIE, OVERLINE, DOUBLE_THREES}
+		private enum MoveResult { MOVE, MOVE_AND_WIN, MOVE_AND_TIE, OCCUPIED, OVERLINE, DOUBLE_THREES}
 
 		private static final int ROWS = 15;
 		private static final int COLUMNS = 15;
@@ -196,6 +196,9 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		private MoveResult getResult(int x, int y, byte playerNum) {
+			if (board[x][y] != 0)
+				return MoveResult.OCCUPIED;
+
 			int horizontal = 1, vertical = 1, mainDiagonal = 1, antiDiagonal = 1;
 			int nextX, nextY;
 
@@ -251,6 +254,9 @@ public abstract class Minigame extends Miniroom {
 				case MOVE_AND_TIE:
 					sendToAll(writeMove(x, y, playerNum));
 					endGame(MinigameResult.TIE, positionOf(p));
+					break;
+				case OCCUPIED:
+					p.getClient().getSession().send(writeForbiddenMove((byte) 0));
 					break;
 				case OVERLINE:
 					p.getClient().getSession().send(writeForbiddenMove((byte) 1));

@@ -356,11 +356,13 @@ public class Mob extends AbstractEntity {
 		if (p != null) {
 			damagesWriteLock.lock();
 			try {
+				boolean firstHitByAttacker = false;
 				if (p.getParty() != null) {
 					PartyAttacker pd = partyDamages.get(p.getParty());
 					if (pd == null) {
 						pd = new PartyAttacker(p.getParty());
 						partyDamages.put(p.getParty(), pd);
+						firstHitByAttacker = true;
 					}
 					pd.addDamage(p, damage);
 				} else {
@@ -368,11 +370,12 @@ public class Mob extends AbstractEntity {
 					if (pd == null) {
 						pd = new PlayerAttacker(p);
 						playerDamages.put(p, pd);
+						firstHitByAttacker = true;
 					}
 					pd.addDamage(p, damage);
 				}
-				for (MobDeathListener hook : p.getMobDeathListeners(getId(), getDataId()))
-					subscribers.offer(hook);
+				if (firstHitByAttacker)
+					subscribers.offer(p.getMobDeathListener(getDataId()));
 			} finally {
 				damagesWriteLock.unlock();
 			}

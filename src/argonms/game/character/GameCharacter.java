@@ -1267,6 +1267,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		addWatk += inc;
 	}
 
+	public int getWatk() {
+		return addWatk;
+	}
+
 	public void addWdef(int inc) {
 		addWdef += inc;
 	}
@@ -2306,11 +2310,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 	}
 
-	public List<MobDeathListener> getMobDeathListeners(final int mobEntityId, final int mobId) {
-		List<MobDeathListener> mobSubscribers = new ArrayList<MobDeathListener>();
+	public MobDeathListener getMobDeathListener(final int mobId) {
 		final WeakReference<GameCharacter> futureSelf = new WeakReference<GameCharacter>(this);
 		final int mobMap = getMapId();
-		mobSubscribers.add(new MobDeathListener() {
+		return new MobDeathListener() {
 			@Override
 			public void monsterKilled(GameCharacter highestDamager, GameCharacter last) {
 				GameCharacter ourself = futureSelf.get();
@@ -2328,8 +2331,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 					for (GameCharacter mem : party.getLocalMembersInMap(mobMap))
 						mem.mobKilled(mobId);
 			}
-		});
-		return mobSubscribers;
+		};
 	}
 
 	/**
