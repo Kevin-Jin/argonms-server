@@ -29,7 +29,7 @@ let nlcStation, kcStation,
 		toNlc, toKc;
 
 function init(attachment) {
-	let remainingTimeUntilDeparture = untilNextTenMinuteInterval();
+	let remainingTimeUntilDeparture = untilNextSixMinuteInterval();
 	if (remainingTimeUntilDeparture > 5 * 60 * 1000) {
 		//subway is undocked until last five minutes to departure
 		undock(remainingTimeUntilDeparture - 5 * 60 * 1000, false);
@@ -48,9 +48,9 @@ function init(attachment) {
 	toKc = event.getMap(600010003);
 }
 
-function untilNextTenMinuteInterval() {
+function untilNextSixMinuteInterval() {
 	let now = new Date();
-	return ((10 - now.getMinutes() % 10) * 60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+	return ((6 - now.getMinutes() % 6) * 60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 }
 
 function undock(remainingTimeUntilArrival, transition) {
@@ -94,8 +94,8 @@ function timerExpired(key) {
 			closeDoors(60 * 1000, true);
 			break;
 		case "takeoff":
-			//next subway will arrive in 5 minutes
-			undock(5 * 60 * 1000, true);
+			//next subway will arrive in a minute
+			undock(60 * 1000, true);
 			break;
 	}
 }

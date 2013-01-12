@@ -17,7 +17,7 @@
  */
 
 /**
- * market14
+ * market00
  * Korean Folk Town: Korean Folk Town (Map 222000000)
  *
  * Korean Folk Town Free Market portal.

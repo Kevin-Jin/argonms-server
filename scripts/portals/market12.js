@@ -17,7 +17,7 @@
  */
 
 /**
- * market12
+ * market00
  * New Leaf City Town Street: New Leaf City - Town Center (Map 600000000)
  *
  * New Leaf City Free Market portal.

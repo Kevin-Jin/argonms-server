@@ -51,11 +51,8 @@ if (player.isQuestActive(6108)) {
 			} else {
 				//TODO: write event script
 				//in init, warp party to map 910500000 and start 20 minute timer
-				if (npc.getEvent("snipe4th") == null) {
-					npc.makeEvent("snipe4th", party);
-				} else {
+				if (npc.makeEvent("snipe4th", true, party) == null)
 					npc.say("Other parties are challenging on quest clear now. Try again later.");
-				}
 			}
 		}
 	} else {

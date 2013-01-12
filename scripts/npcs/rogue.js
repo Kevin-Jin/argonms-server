@@ -29,16 +29,11 @@
 //need to implement player variables.
 if (player.isQuestStarted(6141)) {
 	let selection = npc.askYesNo("Would you like to go to the training ground?");
-	if (selection == 0) {
+	if (selection == 0)
 		npc.say("Let me know when you want to enter.");
-	} else if (selection == 1) {
-		//TODO: implement instance maps - only warp if empty
-		//player.changeMap(910300000);
-		if (npc.getEvent("ninjaAmbush") != null)
+	else if (selection == 1)
+		if (npc.makeEvent("ninjaAmbush", true, player) == null)
 			npc.say("Someone is already inside. Try again later.");
-		else
-			npc.makeEvent("ninjaAmbush", player);
-	}
 } else if (player.getJob() == 0) {
 	npc.sayNext("Want to be a thief? There are some standards to meet, because we can't just accept EVERYONE in ... #bYour level should be at least 10#k. Let's see...");
 	if (player.getLevel() >= 10) {

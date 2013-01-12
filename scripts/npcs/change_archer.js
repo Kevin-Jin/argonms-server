@@ -36,7 +36,7 @@ if (player.hasItem(4031010, 1) && player.hasItem(4031013, 0)) {
 		npc.sayNext("Alright I'll let you in! Defeat the monsters inside, collect 30 Dark Marbles, and then talk to my colleague inside. Then he'll award you the proof of passing the test, #b#t4031012##k. Good luck.");
 		//create an event. the playerDisconnected and playerChangedMap handlers
 		//make it easier to destroy the instance map when it is no longer needed
-		npc.makeEvent("change_job", [player, 108000102]);
+		npc.makeEvent("change_job", false, [player, 108000102]);
 	}
 } else if (player.hasItem(4031010, 1) && player.hasItem(4031013, 1)) {
 	let selection = npc.askYesNo("So you've given up in the middle of this before. Don't worry about it, because you can always retake the test. Now...do you want to go back in and try again?");
@@ -47,7 +47,7 @@ if (player.hasItem(4031010, 1) && player.hasItem(4031013, 0)) {
 		player.loseItem(4031013);
 		//create an event. the playerDisconnected and playerChangedMap handlers
 		//make it easier to destroy the instance map when it is no longer needed
-		npc.makeEvent("change_job", [player, 108000102]);
+		npc.makeEvent("change_job", false, [player, 108000102]);
 	}
 } else if (player.getJob() == 300 && player.getLevel() >= 30) {
 	npc.sayNext("Do you want to be a stronger bowman? Let me take care of that for you, then. You look definitely qualified for it. For now, go see #b#p1012100##k of Henesys first.");

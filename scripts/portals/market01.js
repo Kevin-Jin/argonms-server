@@ -17,7 +17,7 @@
  */
 
 /**
- * market01
+ * market00
  * Victoria Road: Henesys Market (Map 100000100)
  *
  * Henesys Free Market portal.

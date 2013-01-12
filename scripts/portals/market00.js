@@ -17,7 +17,7 @@
  */
 
 /**
- * market01
+ * out00
  * Hidden Street: Free Market Entrance (Map 910000000)
  *
  * Free Market portal.

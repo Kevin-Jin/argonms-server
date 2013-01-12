@@ -27,7 +27,7 @@ let player;
 function init(attachment) {
 	player = attachment;
 
-	player.changeMap(900000000);
+	player.changeMap(900000000, "out01");
 
 	event.getMap(900000000).showTimer(10 * 60);
 	event.startTimer("kick", 10 * 60 * 1000);

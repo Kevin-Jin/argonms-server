@@ -19,12 +19,13 @@
 package argonms.game.script;
 
 import argonms.common.GlobalConstants;
+import argonms.common.util.collections.Pair;
 import argonms.game.script.binding.ScriptEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
@@ -40,21 +41,29 @@ public class EventManager {
 
 	private final String eventPath;
 	private final byte channel;
-	private final Map<String, ScriptEvent> activatedEvents;
-	private final Map<String, EventManipulator> handlers;
+	private final ConcurrentMap<String, Pair<ScriptEvent, EventManipulator>> activatedEvents;
 
 	public EventManager(String scriptPath, byte channel, String[] activateNow) {
 		eventPath = scriptPath + "events" + GlobalConstants.DIR_DELIMIT;
 		this.channel = channel;
-		activatedEvents = new ConcurrentHashMap<String, ScriptEvent>();
-		handlers = new ConcurrentHashMap<String, EventManipulator>();
+		activatedEvents = new ConcurrentHashMap<String, Pair<ScriptEvent, EventManipulator>>();
 		for (String script : activateNow)
-			runScript(script, null);
+			runScript(script, true, null);
 	}
 
-	public final ScriptEvent runScript(String scriptName, Object attachment) {
+	/**
+	 * 
+	 * @param scriptName
+	 * @param associateWithName allows the use of {@link #getRunningScript(String)},
+	 * {@link #getScriptInterface(String)}, and {@link #endScript(String)}.
+	 * If the same script is already executing (i.e. scriptName already exists as a key in activatedEvents),
+	 * a new instance will not be executed and this method will return <code>null</code>.
+	 * @param attachment
+	 * @return 
+	 */
+	public final ScriptEvent runScript(String scriptName, boolean associateWithName, Object attachment) {
 		ScriptEvent event = null;
-		EventManipulator delegator = null;
+		EventManipulator delegator;
 		Context cx = Context.enter();
 		try {
 			FileReader reader = new FileReader(eventPath + scriptName + ".js");
@@ -63,11 +72,11 @@ public class EventManager {
 			cx.setLanguageVersion(Context.VERSION_1_7);
 			cx.getWrapFactory().setJavaPrimitiveWrap(false);
 			delegator = new EventManipulator(globalScope);
-			event = new ScriptEvent(scriptName, channel, delegator, globalScope);
+			event = new ScriptEvent(associateWithName ? scriptName : null, channel, delegator, globalScope);
 			delegator.setVariables(event.getVariables());
 
-			handlers.put(scriptName, delegator);
-			activatedEvents.put(scriptName, event);
+			if (associateWithName && activatedEvents.putIfAbsent(scriptName, new Pair<ScriptEvent, EventManipulator>(event, delegator)) != null)
+				return null;
 
 			globalScope.put("event", globalScope, Context.javaToJS(event, globalScope));
 			cx.evaluateReader(globalScope, reader, "events/" + scriptName + ".js", 1, null);
@@ -88,16 +97,47 @@ public class EventManager {
 		return event;
 	}
 
+	/**
+	 * In order to have an effect, {@link #runScript(String, boolean, Object)} must have been called with
+	 * the same <code>scriptName</code> and <code>true</code> passed to <code>associateWithName</code>.
+	 * @param scriptName 
+	 */
 	public ScriptEvent getRunningScript(String scriptName) {
-		return activatedEvents.get(scriptName);
+		Pair<ScriptEvent, EventManipulator> event = activatedEvents.get(scriptName);
+		if (event == null)
+			return null;
+
+		return event.left;
 	}
 
+	/**
+	 * In order to have an effect, {@link #runScript(String, boolean, Object)} must have been called with
+	 * the same <code>scriptName</code> and <code>true</code> passed to <code>associateWithName</code>.
+	 * @param scriptName 
+	 */
 	public EventManipulator getScriptInterface(String scriptName) {
-		return handlers.get(scriptName);
+		Pair<ScriptEvent, EventManipulator> event = activatedEvents.get(scriptName);
+		if (event == null)
+			return null;
+
+		return event.right;
 	}
 
+	public void endScript(ScriptEvent event, EventManipulator delegator) {
+		event.stopTimers();
+		delegator.deinit();
+	}
+
+	/**
+	 * In order to have an effect, {@link #runScript(String, boolean, Object)} must have been called with
+	 * the same <code>scriptName</code> and <code>true</code> passed to <code>associateWithName</code>.
+	 * @param scriptName 
+	 */
 	public void endScript(String scriptName) {
-		activatedEvents.remove(scriptName).stopTimers();
-		handlers.remove(scriptName).deinit();
+		Pair<ScriptEvent, EventManipulator> event = activatedEvents.remove(scriptName);
+		if (event == null)
+			return;
+
+		endScript(event.left, event.right);
 	}
 }

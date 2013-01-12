@@ -44,11 +44,9 @@ switch (map.getId()) {
 					if (totalMembers >= 3
 							&& party.getMembersCount(map.getId(), 1, 200) == totalMembers
 							&& party.getMembersCount(map.getId(), 10, 255) == totalMembers) {
-						if (npc.getEvent("moonrabbit") != null)
+						if (npc.makeEvent("moonrabbit", true, party) == null)
 							//TODO: GMS-like line
 							npc.sayNext("I'm sorry, but there's another party inside finishing the quest. Please, speak to me here soon.");
-						else
-							npc.makeEvent("moonrabbit", party);
 					} else {
 						npc.sayNext("I'm sorry, but the party you're a member of does NOT consist of at least 3 members. Please adjust your party to make sure that your party consists of at least 3 members that are all at Level 10 or higher. Let me know when you're done.");
 					}

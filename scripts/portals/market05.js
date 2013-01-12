@@ -17,7 +17,7 @@
  */
 
 /**
- * market05
+ * market01
  * Aquarium: Aquarium (Map 230000000)
  *
  * Aquarium Free Market portal.

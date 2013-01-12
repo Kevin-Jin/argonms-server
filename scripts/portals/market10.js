@@ -17,7 +17,7 @@
  */
 
 /**
- * market10
+ * market00
  * Mu Lung: Mu Lung (Map 250000000)
  *
  * Mu Lung Free Market portal.

@@ -17,21 +17,18 @@
  */
 
 /**
- * q2073
- * Victoria Road: The Forest East of Henesys (Map 100010000)
+ * quest00
+ * Victoria Road: The Forest East of Henesys (Map 100030000)
  *
  * Warps players into Utah's pig farm for Camila's Gem (Quest 2073).
  *
  * @author GoldenKevin (content from Vana r3171)
  */
 
-if (player.isQuestStarted(2073)) {
-	if (portal.getEvent("party1") == null) {
+if (player.isQuestStarted(2073))
+	if (portal.makeEvent("pigFarm", true, player) != null)
 		portal.playSoundEffect();
-		portal.makeEvent("pigFarm", player);
-	} else {
+	else
 		portal.sayErrorInChat("It seems like someone already has visited Yoota's Farm.");
-	}
-} else {
+else
 	portal.sayErrorInChat("There's a door that'll lead me somewhere, but I can't seem to get in there.");
-}

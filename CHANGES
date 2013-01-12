@@ -2580,6 +2580,17 @@
 	* Fixed each hit on a mob counting as a whole mob killed for quest purposes.
 	* Stubs for high damage auto ban.
 
+2013-01-12  GoldenKevin  (revision 188)
+
+	* Eliminated potential for race conditions when making events where only one
+	instance can be running at a time.
+	* Fixed portals/q2073.js allowing multiple players to enter the map. 
+	* events/pigFarm.js now spawns players in the correct destination portal.
+	* Descriptions for portal scripts now list the portal name instead of the
+	script name.
+	* Eliminated unused portal scripts.
+	* NLC subway schedule shortened to six minutes.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

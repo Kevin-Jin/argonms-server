@@ -17,7 +17,7 @@
  */
 
 /**
- * advice06
+ * tutorial6
  * Maple Road: Mushroom Town (Map 10000)
  *
  * Gives an hint to new players on movement.
