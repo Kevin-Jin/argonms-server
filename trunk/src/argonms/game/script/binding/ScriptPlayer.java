@@ -304,7 +304,7 @@ public class ScriptPlayer {
 	}
 
 	public void setEvent(ScriptEvent event) {
-		getPlayer().setEvent(event == null ? null : GameServer.getChannel(getPlayer().getClient().getChannel()).getEventManager().getScriptInterface(event.getName()));
+		getPlayer().setEvent(event == null ? null : event.getScriptInterface());
 	}
 
 	public void showTimer(int seconds) {

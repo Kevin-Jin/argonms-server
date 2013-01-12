@@ -52,8 +52,8 @@ public class ScriptEvent {
 		timers = new ConcurrentHashMap<String, ScheduledFuture<?>>();
 	}
 
-	public String getName() {
-		return name;
+	protected EventManipulator getScriptInterface() {
+		return hooks;
 	}
 
 	public Map<String, Object> getVariables() {
@@ -106,6 +106,9 @@ public class ScriptEvent {
 	}
 
 	public void destroyEvent() {
-		GameServer.getChannel(channel).getEventManager().endScript(name);
+		if (name == null)
+			GameServer.getChannel(channel).getEventManager().endScript(this, hooks);
+		else
+			GameServer.getChannel(channel).getEventManager().endScript(name);
 	}
 }

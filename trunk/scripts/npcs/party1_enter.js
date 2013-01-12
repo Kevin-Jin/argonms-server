@@ -31,8 +31,6 @@ if (party == null || player.getId() != party.getLeader()) {
 	npc.say("Your party is not a party of four. Please come back when you have four party members.");
 } else if (party.getMembersCount(map.getId(), 21, 30) != 4) {
 	npc.say("Someone in your your party does not have a level between 21 ~ 30. Please double-check.");
-} else if (npc.getEvent("party1") != null) {
+} else if (npc.makeEvent("party1", true, party) == null) {
 	npc.say("Some other party has already gotten in to try clearing the quest. Please try again later.");
-} else {
-	npc.makeEvent("party1", party);
 }

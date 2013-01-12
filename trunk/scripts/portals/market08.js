@@ -17,7 +17,7 @@
  */
 
 /**
- * market08
+ * market00
  * Zipangu: Showa Street Market (Map 801000300)
  *
  * Showa Free Market portal.

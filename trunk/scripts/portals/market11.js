@@ -17,7 +17,7 @@
  */
 
 /**
- * market11
+ * market00
  * Herb Town: Herb Town (Map 251000000)
  *
  * Herb Town Free Market portal.

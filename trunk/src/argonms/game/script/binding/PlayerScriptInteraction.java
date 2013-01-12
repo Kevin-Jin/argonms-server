@@ -53,8 +53,8 @@ public abstract class PlayerScriptInteraction {
 		return Context.javaToJS(event, globalScope);
 	}
 
-	public Object makeEvent(String script, Object attachment) {
-		return Context.javaToJS(GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, attachment), globalScope);
+	public Object makeEvent(String script, boolean onlyOne, Object attachment) {
+		return Context.javaToJS(GameServer.getChannel(client.getChannel()).getEventManager().runScript(script, onlyOne, attachment), globalScope);
 	}
 
 	public void sayInChat(String message) {

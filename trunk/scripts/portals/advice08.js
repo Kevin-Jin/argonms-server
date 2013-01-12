@@ -17,7 +17,7 @@
  */
 
 /**
- * advice08
+ * tutorial8
  * Maple Road: Snail Hunting Ground I (Map 40000)
  *
  * Gives an hint to new players on checking their stats.

@@ -17,7 +17,7 @@
  */
 
 /**
- * market02
+ * market00
  * Ludibrium: Ludibrium (Map 220000000)
  *
  * Ludibrium Free Market portal.

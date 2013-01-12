@@ -17,7 +17,7 @@
  */
 
 /**
- * market06
+ * market00
  * Omega Sector: Omega Sector (Map 221000000)
  *
  * Omega Sector Free Market portal.

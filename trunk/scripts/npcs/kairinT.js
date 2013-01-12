@@ -55,7 +55,7 @@ function checkSecondJobAdvancementQuest() {
 		//create an event. the playerDisconnected and playerChangedMap handlers
 		//make it easier to destroy the instance map when it is no longer needed
 		//and we also need a timer, unlike other 2nd job advancement challenges
-		npc.makeEvent("kairinT", [player, destination]);
+		npc.makeEvent("kairinT", false, [player, destination]);
 		return true;
 	} else if (player.isQuestCompleted(2191)) {
 		npc.sayNext("Okay, as promised, you will now become a #bBrawler#k.");

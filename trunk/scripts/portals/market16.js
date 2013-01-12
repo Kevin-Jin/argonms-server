@@ -17,7 +17,7 @@
  */
 
 /**
- * market16
+ * market00
  * Singapore: Boat Quay Town (Map 541000000)
  *
  * Boat Quay Town Free Market portal.
