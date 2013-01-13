@@ -47,7 +47,6 @@ import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.character.inventory.StorageInventory;
-import argonms.game.field.MobSkills;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Miniroom;
@@ -315,16 +314,12 @@ public final class GamePackets {
 		lew.writeLong(0);
 		lew.writeLong(updateMask);
 		for (Entry<PlayerStatusEffect, Short> statupdate : stats.entrySet()) {
-			if (statupdate.getKey() == PlayerStatusEffect.SHADOW_STARS) {
-				lew.writeShort((short) 0);
-				lew.writeByte((byte) 0);
-			}
 			lew.writeShort(statupdate.getValue().shortValue());
 			if (statupdate.getKey() == PlayerStatusEffect.MORPH)
 				lew.writeByte((byte) 0);
 		}
-		lew.writeShort((short) 0);
 		lew.writeByte((byte) 0);
+		lew.writeShort((short) 0);
 
 		return lew.getBytes();
 	}
@@ -356,6 +351,40 @@ public final class GamePackets {
 			lew.writeShort((short) duration);
 		}
 		lew.writeShort((short) 0);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuffMapChargeEffect(GameCharacter p, Map<PlayerStatusEffect, Short> stats, int skillId, short delay) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(30);
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.longValue();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		lew.writeInt(skillId);
+		lew.writeShort((short) 0);
+		lew.writeShort(delay);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuffMapShadowStarsEffect(GameCharacter p, Map<PlayerStatusEffect, Short> stats, int itemId, short delay) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(30);
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_APPLY_STATUS_EFFECT);
+		lew.writeInt(p.getId());
+		long updateMask = 0;
+		for (PlayerStatusEffect key : stats.keySet())
+			updateMask |= key.longValue();
+		lew.writeLong(0);
+		lew.writeLong(updateMask);
+		lew.writeInt(itemId);
+		lew.writeShort((short) 0);
+		lew.writeShort(delay);
 
 		return lew.getBytes();
 	}
@@ -858,7 +887,7 @@ public final class GamePackets {
 				lew.writeShort(v.getModifier());
 				break;
 			case CHARGE:
-				lew.writeInt(0 /* p.getCharge() */);
+				lew.writeInt(v.getSource());
 				break;
 			case SHADOW_STARS:
 				lew.writeInt(v.getModifier());
