@@ -96,7 +96,7 @@ public final class ClientRecvOps {
 		USE_INNER_PORTAL = 0x5D,
 		TROCK_ADD_MAP = 0x5E,
 		QUEST_ACTION = 0x62,
-		//certain (repeatable) skill effects and buff items? 0x63 (Concentrate, Maple Warrior, summons) when casted and canceled, or when player gets diseased
+		STATUS_EFFECTS_TOGGLE = 0x63,
 		SKILL_MACRO = 0x65,
 		REPORT = 0x68,
 		USE_TREASURE_BOX = 0x69,

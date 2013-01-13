@@ -41,7 +41,8 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.ENTER_EXIT_VIEW_ALL:
 			case ClientRecvOps.CHAR_SELECT:
 			case ClientRecvOps.RELOG:
-				//lol, char loading lag...
+				//tried to leave character select screen after control was transferred from login server
+				//can't do anything about it now
 				break;
 			case ClientRecvOps.PLAYER_CONNECTED:
 				EnterHandler.handlePlayerConnection(reader, gc);
@@ -148,6 +149,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.OPEN_PERSONAL_INFO:
 				PersonalInfoHandler.handleOpenInfo(reader, gc);
 				break;
+			case ClientRecvOps.CANCEL_DEBUFF:
+				//no-op
+				break;
 			case ClientRecvOps.CHANGE_MAP_SPECIAL:
 				GoToHandler.handleEnteredSpecialPortal(reader, gc);
 				break;
@@ -156,6 +160,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 				break;
 			case ClientRecvOps.QUEST_ACTION:
 				NpcHandler.handleQuestAction(reader, gc);
+				break;
+			case ClientRecvOps.STATUS_EFFECTS_TOGGLE:
+				//no-op
 				break;
 			case ClientRecvOps.SKILL_MACRO:
 				StatAllocationHandler.handleSkillMacroAssign(reader, gc);
@@ -221,7 +228,7 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 				gc.getPlayer().saveCharacter();
 				break;
 			case ClientRecvOps.MAPLE_TV:
-				//I think we can all agree that we don't care...
+				//no-op
 				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });

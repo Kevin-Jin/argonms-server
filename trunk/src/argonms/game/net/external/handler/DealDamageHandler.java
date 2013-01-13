@@ -492,21 +492,34 @@ public final class DealDamageHandler {
 				else
 					player.getClient().getSession().send(GamePackets.writeEnableActions());
 			}
-			//perform meso explosion
-			if (attack.skill == Skills.MESO_EXPLOSION) {
-				int delay = 0;
-				for (int meso : attack.mesoExplosion) {
-					final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
-					if (drop != null) {
-						Scheduler.getInstance().runAfterDelay(new Runnable() {
-							@Override
-							public void run() {
-								if (drop.isAlive())
-									map.mesoExplosion(drop, player);
-							}
-						}, delay);
-						delay += 100;
+			switch (attack.skill) {
+				case Skills.MESO_EXPLOSION: {
+					int delay = 0;
+					for (int meso : attack.mesoExplosion) {
+						final ItemDrop drop = (ItemDrop) map.getEntityById(EntityType.DROP, meso);
+						if (drop != null) {
+							Scheduler.getInstance().runAfterDelay(new Runnable() {
+								@Override
+								public void run() {
+									if (drop.isAlive())
+										map.mesoExplosion(drop, player);
+								}
+							}, delay);
+							delay += 100;
+						}
 					}
+					break;
+				}
+				case Skills.CHARGED_BLOW: {
+					PlayerStatusEffectValues chargeBuff = player.getEffectValue(PlayerStatusEffect.CHARGE);
+					if (chargeBuff == null) {
+						CheatTracker.get(player.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use Charged Blow without Charge buff");
+						return;
+					}
+					byte advancedBlowLvl = player.getSkillLevel(Skills.ADVANCED_CHARGE_BLOW);
+					if (advancedBlowLvl == 0 || Rng.getGenerator().nextInt(100) >= SkillDataLoader.getInstance().getSkill(Skills.ADVANCED_CHARGE_BLOW).getLevel(advancedBlowLvl).getX())
+						StatusEffectTools.dispelEffectsAndShowVisuals(player, chargeBuff.getEffectsData());
+					break;
 				}
 			}
 		}

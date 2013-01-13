@@ -135,6 +135,10 @@ public final class BuffHandler {
 				//TODO: implement mystic door
 				break;
 			}
+			case Skills.SHADOW_STARS: {
+				int itemId = packet.readInt();
+				break;
+			}
 			case Skills.SMOKESCREEN: {
 				//TODO: implement smokescreen
 				break;

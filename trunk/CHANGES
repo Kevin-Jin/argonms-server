@@ -2591,6 +2591,16 @@
 	* Eliminated unused portal scripts.
 	* NLC subway schedule shortened to six minutes.
 
+2013-01-13  GoldenKevin  (revision 189)
+
+	* Fixed White Knight charge buffs crashing other players in the map.
+	* Fixed White Knight Charged Blow not canceling charge buff according to
+	level of Paladin's Advanced Charged Blow skill.
+	* 0x63 and 0x5B are now no-op opcodes. They do not need to be handled but
+	they were taking up many lines on game server logs.
+	* Fixed Chakra and skills that go through BuffHandler but have a duration
+	of zero (e.g. Monster Magnet) crashing other players in the map.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

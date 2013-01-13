@@ -54,6 +54,7 @@ public final class StatusEffectTools {
 			case PLAYER_SKILL:
 				if (effectType == PASSIVE_BUFF)
 					return GamePackets.writeSelfVisualEffect(effectType, e.getDataId(), e.getLevel(), stance);
+				break;
 		}
 		return null;
 	}
@@ -69,6 +70,7 @@ public final class StatusEffectTools {
 					default:
 						return GamePackets.writeUseSkill(updatedStats, e.getDataId(), duration, (short) 0);
 				}
+				break;
 			case ITEM:
 				return GamePackets.writeUseItem(updatedStats, e.getDataId(), duration);
 			case MOB_SKILL:
@@ -93,11 +95,21 @@ public final class StatusEffectTools {
 						break;
 					case Skills.DASH:
 						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), duration);
+					case Skills.SWORD_FIRE_CHARGE:
+					case Skills.BW_FLAME_CHARGE:
+					case Skills.SWORD_ICE_CHARGE:
+					case Skills.BW_BLIZZARD_CHARGE:
+					case Skills.SWORD_THUNDER_CHARGE:
+					case Skills.BW_LIGHTNING_CHARGE:
+						return GamePackets.writeBuffMapChargeEffect(p, updatedStats, e.getDataId(), (short) 600);
+					case Skills.SHADOW_STARS:
+						return GamePackets.writeBuffMapShadowStarsEffect(p, updatedStats, -1, (short) 0);
 					default:
 						if (duration > 0)
 							return GamePackets.writeBuffMapEffect(p, updatedStats);
 						break;
 				}
+				break;
 			case ITEM:
 				if (duration > 0)
 					return GamePackets.writeBuffMapEffect(p, updatedStats);
