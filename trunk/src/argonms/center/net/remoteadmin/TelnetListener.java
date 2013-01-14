@@ -149,7 +149,7 @@ public class TelnetListener implements SessionCreator {
 														public void run() {
 															try {
 																session.processRead(message);
-															} catch (Exception ex) {
+															} catch (Throwable ex) {
 																LOG.log(Level.WARNING, "Uncaught exception while processing packet from telnet client " + session.getClient().getAccountName() + " (" + session.getAddress() + ")", ex);
 															}
 														}

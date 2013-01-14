@@ -148,7 +148,7 @@ public class RemoteServerListener implements SessionCreator {
 															public void run() {
 																try {
 																	session.process(body);
-																} catch (Exception ex) {
+																} catch (Throwable ex) {
 																	LOG.log(Level.WARNING, "Uncaught exception while processing packet from remote server " + session.getServerName() + " (" + session.getAddress() + ")", ex);
 																}
 															}

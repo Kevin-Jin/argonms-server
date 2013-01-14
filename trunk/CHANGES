@@ -2601,6 +2601,16 @@
 	* Fixed Chakra and skills that go through BuffHandler but have a duration
 	of zero (e.g. Monster Magnet) crashing other players in the map.
 
+2013-01-13  GoldenKevin  (revision 190)
+
+	* All instances of Throwable are now caught in thread pool threads instead
+	of just instances of Exceptions.
+	* Scheduler class now catches uncaught Throwables.
+	* Replace branches with additions and remainder operations in miniroom code.
+	* Reduced usage of positionOf(GameCharacter) in Minigame.
+	* Match card winner is the player with more matches, not the one who flipped
+	the last pair.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

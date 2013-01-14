@@ -49,7 +49,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition<GameCharacter
 		String s;
 		try {
 			s = args.getOptValue("-m");
-		} catch (Exception e) {
+		} catch (IllegalArgumentException e) {
 			resp.printErr("No mobtime specified after -m flag.");
 			resp.printErr(getUsage());
 			throw new IllegalArgumentException();
@@ -69,7 +69,7 @@ public class SpawnCommandHandler extends AbstractCommandDefinition<GameCharacter
 		String s;
 		try {
 			s = args.getOptValue("-c");
-		} catch (Exception e) {
+		} catch (IllegalArgumentException e) {
 			resp.printErr("No count specified after -c flag.");
 			resp.printErr(getUsage());
 			throw new IllegalArgumentException();

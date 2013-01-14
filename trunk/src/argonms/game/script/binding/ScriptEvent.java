@@ -87,8 +87,8 @@ public class ScriptEvent {
 				timers.remove(key);
 				try {
 					hooks.timerExpired(key);
-				} catch (Exception ex) {
-					LOG.log(Level.SEVERE, "Exception while processing event timer.", ex);
+				} catch (Throwable ex) {
+					LOG.log(Level.SEVERE, "Uncaught exception while processing event timer.", ex);
 				}
 			}
 		}, millisDelay));

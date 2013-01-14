@@ -308,7 +308,7 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 								//the body was received successfully
 								try {
 									serverState.process(message);
-								} catch (Exception ex) {
+								} catch (Throwable ex) {
 									LOG.log(Level.WARNING, "Uncaught exception while processing packet from Center server (" + session.getAddress() + ")", ex);
 								}
 							}
