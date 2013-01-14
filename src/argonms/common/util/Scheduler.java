@@ -24,12 +24,16 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class Scheduler {
+	private static final Logger LOG = Logger.getLogger(Scheduler.class.getName());
+
 	private static Scheduler instance;
 	private static Scheduler hashedWheel;
 
@@ -39,12 +43,30 @@ public class Scheduler {
 		timer = impl;
 	}
 
-	public ScheduledFuture<?> runAfterDelay(Runnable r, long delay) {
-		return timer.schedule(r, delay, TimeUnit.MILLISECONDS);
+	public ScheduledFuture<?> runAfterDelay(final Runnable r, long delay) {
+		return timer.schedule(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					r.run();
+				} catch (Throwable ex) {
+					LOG.log(Level.WARNING, "Uncaught exception while running scheduled task", ex);
+				}
+			}
+		}, delay, TimeUnit.MILLISECONDS);
 	}
 
-	public ScheduledFuture<?> runRepeatedly(Runnable r, long delay, long period) {
-		return timer.scheduleAtFixedRate(r, delay, period, TimeUnit.MILLISECONDS);
+	public ScheduledFuture<?> runRepeatedly(final Runnable r, long delay, long period) {
+		return timer.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					r.run();
+				} catch (Throwable ex) {
+					LOG.log(Level.WARNING, "Uncaught exception while running repeated task", ex);
+				}
+			}
+		}, delay, period, TimeUnit.MILLISECONDS);
 	}
 
 	public void shutdown() {

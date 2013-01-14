@@ -303,7 +303,7 @@ public final class MiniroomHandler {
 
 	private static void tradeConfirm(GameCharacter p) {
 		Trade room = (Trade) p.getMiniRoom();
-		room.getPlayerByPosition((byte) (room.positionOf(p) == 0 ? 1 : 0)).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_CONFIRM));
+		room.getPlayerByPosition((byte) (((room.positionOf(p) + 1) % 2))).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_CONFIRM));
 		room.confirmTrade(p);
 	}
 
@@ -329,7 +329,7 @@ public final class MiniroomHandler {
 
 	private static void gameForfeit(GameCharacter p) {
 		Minigame room = (Minigame) p.getMiniRoom();
-		room.endGame(MinigameResult.LOSS, (byte) (room.positionOf(p) == 0 ? 1 : 0));
+		room.endGame(MinigameResult.LOSS, (byte) ((room.positionOf(p) + 1) % 2));
 	}
 
 	private static void gameAskRedo(GameCharacter p) {
@@ -357,7 +357,7 @@ public final class MiniroomHandler {
 
 	private static void gameDoTie(GameCharacter p, LittleEndianReader packet) {
 		Minigame room = (Minigame) p.getMiniRoom();
-		byte opponentPos = (byte) (room.positionOf(p) == 0 ? 1 : 0);
+		byte opponentPos = (byte) ((room.positionOf(p) + 1) % 2);
 		if (packet.readBool()) //accepted
 			room.endGame(MinigameResult.TIE, opponentPos);
 		else

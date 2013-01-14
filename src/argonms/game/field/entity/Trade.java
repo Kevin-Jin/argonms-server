@@ -82,7 +82,7 @@ public class Trade extends Miniroom {
 		Map<Integer, Short> itemQtys;
 		for (byte i = 0; i < getMaxPlayers(); i++) {
 			GameCharacter p = getPlayerByPosition(i);
-			byte traderPos = (byte) (i == 0 ? 1 : 0);
+			byte traderPos = (byte) ((i + 1) % 2);
 			if (((long) p.getMesos() + mesos[traderPos]) > Integer.MAX_VALUE) {
 				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
@@ -180,7 +180,7 @@ public class Trade extends Miniroom {
 		} else {
 			for (byte i = 0; i < getMaxPlayers(); i++) {
 				if ((v = getPlayerByPosition(i)) != null) {
-					giveItemsAndMesos(v, (byte) (i == 0 ? 1 : 0), true);
+					giveItemsAndMesos(v, (byte) ((i + 1) % 2), true);
 					map = v.getMap();
 					v.setMiniRoom(null);
 					v.getClient().getSession().send(getFirstPersonLeaveMessage(i, EXIT_TRADE_SUCCESS));

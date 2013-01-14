@@ -64,7 +64,7 @@ public abstract class Minigame extends Miniroom {
 		byte pos = positionOf(p);
 		exitAfterFinish[pos] = false;
 		if (inProgress)
-			endGame(MinigameResult.LOSS, (byte) (pos == 0 ? 1 : 0));
+			endGame(MinigameResult.LOSS, (byte) ((pos + 1) % 2));
 		super.leaveRoom(p);
 	}
 
@@ -92,7 +92,7 @@ public abstract class Minigame extends Miniroom {
 			case LOSS:
 				p = getPlayerByPosition(winnerPos);
 				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.WIN);
-				p = getPlayerByPosition((byte) (winnerPos == 0 ? 1 : 0));
+				p = getPlayerByPosition((byte) ((winnerPos + 1) % 2));
 				p.incrementMinigamePoints(getMiniroomType(), MinigameResult.LOSS);
 				break;
 			case TIE:
@@ -119,7 +119,7 @@ public abstract class Minigame extends Miniroom {
 	}
 
 	public byte nextTurn() {
-		return (currentPos = (byte) (currentPos == 0 ? 1 : 0));
+		return (currentPos = (byte) ((currentPos + 1) % 2));
 	}
 
 	public void setExitAfterGame(GameCharacter p, boolean shouldExit) {
@@ -244,16 +244,19 @@ public abstract class Minigame extends Miniroom {
 		public void setPiece(GameCharacter p, int x, int y, byte playerNum) {
 			switch (getResult(x, y, playerNum)) {
 				case MOVE:
-					currentPos = (byte) (positionOf(p) == 0 ? 1 : 0);
+					assert positionOf(p) == currentPos;
 					sendToAll(writeMove(x, y, playerNum));
+					nextTurn();
 					break;
 				case MOVE_AND_WIN:
+					assert positionOf(p) == currentPos;
 					sendToAll(writeMove(x, y, playerNum));
-					endGame(MinigameResult.WIN, positionOf(p));
+					endGame(MinigameResult.WIN, currentPos);
 					break;
 				case MOVE_AND_TIE:
+					assert positionOf(p) == currentPos;
 					sendToAll(writeMove(x, y, playerNum));
-					endGame(MinigameResult.TIE, positionOf(p));
+					endGame(MinigameResult.TIE, currentPos);
 					break;
 				case OCCUPIED:
 					p.getClient().getSession().send(writeForbiddenMove((byte) 0));
@@ -268,7 +271,7 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		public void redo(boolean agree, byte pos) {
-			byte opponentPos = (byte) (pos == 0 ? 1 : 0);
+			byte opponentPos = (byte) ((pos + 1) % 2);
 			if (agree) {
 				byte amountToRemove = (byte) (pos == 0 ^ currentPos == 0 ? 2 : 1);
 				board[lastMove[0]][lastMove[1]] = 0;
@@ -381,19 +384,19 @@ public abstract class Minigame extends Miniroom {
 		}
 
 		public void selectCard(GameCharacter p, byte turnNo, byte card) {
+			assert positionOf(p) == currentPos;
 			if (turnNo == 1) {
 				firstSelect = card;
-				getPlayerByPosition((byte) (positionOf(p) == 0 ? 1 : 0)).getClient().getSession().send(writeFirstSelect(card));
+				getPlayerByPosition((byte) ((currentPos + 1) % 2)).getClient().getSession().send(writeFirstSelect(card));
 			} else if (turnNo == 0) {
-				byte pos = positionOf(p);
-				currentPos = (byte) (pos == 0 ? 1 : 0);
 				if (cards[card] != cards[firstSelect]) {
-					sendToAll(writeSecondSelect(firstSelect, card, pos == 0 ? MOVE_RESULT_OWNER_UN_TURN : MOVE_RESULT_VISITOR_UN_TURN));
+					sendToAll(writeSecondSelect(firstSelect, card, currentPos == 0 ? MOVE_RESULT_OWNER_UN_TURN : MOVE_RESULT_VISITOR_UN_TURN));
+					nextTurn();
 				} else {
-					matches[pos]++;
-					sendToAll(writeSecondSelect(firstSelect, card, pos == 0 ? MOVE_RESULT_OWNER_MATCH : MOVE_RESULT_VISITOR_MATCH));
+					sendToAll(writeSecondSelect(firstSelect, card, currentPos == 0 ? MOVE_RESULT_OWNER_MATCH : MOVE_RESULT_VISITOR_MATCH));
+					matches[currentPos]++;
 					if (matches[0] + matches[1] == cards.length / 2)
-						endGame((matches[0] != matches[1]) ? MinigameResult.WIN : MinigameResult.TIE, pos);
+						endGame((matches[0] != matches[1]) ? MinigameResult.WIN : MinigameResult.TIE, (byte) (matches[0] > matches[1] ? 0 : 1));
 				}
 			}
 		}

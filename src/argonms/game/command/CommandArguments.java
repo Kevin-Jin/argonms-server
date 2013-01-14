@@ -44,7 +44,7 @@ public class CommandArguments implements Iterator<String> {
 		return false;
 	}
 
-	public String getOptValue(String search) throws Exception {
+	public String getOptValue(String search) throws IllegalArgumentException {
 		for (int i = 0; i < values.length; i++) {
 			if (values[i].equalsIgnoreCase(search)) {
 				if (i + 1 < values.length) {
