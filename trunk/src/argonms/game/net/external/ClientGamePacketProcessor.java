@@ -194,6 +194,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.CHANGE_BINDING:
 				PlayerMiscHandler.handleBindingChange(reader, gc);
 				break;
+			case ClientRecvOps.UNKNOWN:
+				//no-op, spams logs
+				break;
 			case ClientRecvOps.MOVE_SUMMON:
 				MovementHandler.handleMoveSummon(reader, gc);
 				break;
@@ -205,6 +208,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 				break;
 			case ClientRecvOps.MOVE_MOB:
 				MovementHandler.handleMoveMob(reader, gc);
+				break;
+			case ClientRecvOps.AUTO_AGGRO:
+				//no-op, for now
 				break;
 			case ClientRecvOps.MOB_DAMAGE_MOB:
 				TakeDamageHandler.handleMobDamageMob(reader, gc);

@@ -207,7 +207,10 @@ public class ClientSession<T extends RemoteClient> implements Session {
 				LOG.log(Level.WARNING, "Error while closing client " + getAccountName() + " (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
-			idleTaskFuture.cancel(false);
+			//this check is thread safe - idleTaskFuture can never be null again after it has been assigned a non-null value
+			if (idleTaskFuture != null)
+				//client closed before we could send init packet
+				idleTaskFuture.cancel(false);
 
 			LOG.log(Level.FINE, "Client {0} ({1}) disconnected: {2}", new Object[] { getAccountName(), getAddress(), reason });
 			client.disconnected();

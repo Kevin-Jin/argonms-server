@@ -27,6 +27,8 @@ import argonms.game.script.binding.ScriptPortal;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.mozilla.javascript.Context;
@@ -42,12 +44,17 @@ public class PortalScriptManager {
 	private static PortalScriptManager singleton;
 
 	private final String portalPath;
+	private final ConcurrentMap<Integer, Boolean> playersBeingFulfilled;
 
 	private PortalScriptManager(String scriptPath) {
 		portalPath = scriptPath + "portals" + GlobalConstants.DIR_DELIMIT;
+		playersBeingFulfilled = new ConcurrentHashMap<Integer, Boolean>();
 	}
 
 	public boolean runScript(String scriptName, byte portalId, GameCharacter p) {
+		if (playersBeingFulfilled.putIfAbsent(Integer.valueOf(p.getId()), Boolean.TRUE) != null)
+			return false;
+
 		Context cx = Context.enter();
 		try {
 			FileReader reader = new FileReader(portalPath + scriptName + ".js");
@@ -72,6 +79,7 @@ public class PortalScriptManager {
 			return false;
 		} finally {
 			Context.exit();
+			playersBeingFulfilled.remove(Integer.valueOf(p.getId()));
 		}
 	}
 

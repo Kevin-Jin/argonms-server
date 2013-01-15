@@ -89,8 +89,7 @@ public final class GoToHandler {
 		packet.readByte(); //sourcefm?
 
 		GameCharacter p = gc.getPlayer();
-		if (!p.getMap().enterPortal(p, portalName))
-			gc.getSession().send(GamePackets.writeEnableActions());
+		p.getMap().enterPortal(p, portalName);
 	}
 
 	public static void handleEnteredInnerPortal(LittleEndianReader packet, GameClient gc) {

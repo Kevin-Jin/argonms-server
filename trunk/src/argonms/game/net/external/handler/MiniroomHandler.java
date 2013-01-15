@@ -303,7 +303,7 @@ public final class MiniroomHandler {
 
 	private static void tradeConfirm(GameCharacter p) {
 		Trade room = (Trade) p.getMiniRoom();
-		room.getPlayerByPosition((byte) (((room.positionOf(p) + 1) % 2))).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_CONFIRM));
+		room.getPlayerByPosition((byte) ((room.positionOf(p) + 1) % 2)).getClient().getSession().send(writeSimpleMessage(Miniroom.ACT_CONFIRM));
 		room.confirmTrade(p);
 	}
 

@@ -63,7 +63,7 @@ public class Scheduler {
 				try {
 					r.run();
 				} catch (Throwable ex) {
-					LOG.log(Level.WARNING, "Uncaught exception while running repeated task", ex);
+					LOG.log(Level.WARNING, "Uncaught exception while running periodic task", ex);
 				}
 			}
 		}, delay, period, TimeUnit.MILLISECONDS);
