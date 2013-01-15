@@ -23,6 +23,11 @@ package argonms.common.character;
  * @author GoldenKevin
  */
 public class BuddyListEntry {
+	public static final byte
+		OFFLINE_CHANNEL = 0,
+		CASH_SHOP_CHANNEL = 21
+	;
+
 	private final int id;
 	private final String name;
 	private byte channel;
@@ -49,8 +54,9 @@ public class BuddyListEntry {
 
 	/**
 	 *
-	 * @return the channel that this buddy is on. If the buddy is offline, 0
-	 * will be returned. If the buddy is in the cash shop, 21 will be returned.
+	 * @return the channel that this buddy is on. If the buddy is offline,
+	 * {@link #OFFLINE_CHANNEL} will be returned. If the buddy is in the cash
+	 * shop, {@link #CASH_SHOP_CHANNEL} will be returned.
 	 */
 	public byte getChannel() {
 		return channel;

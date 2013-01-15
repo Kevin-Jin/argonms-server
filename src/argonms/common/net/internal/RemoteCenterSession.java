@@ -145,7 +145,10 @@ public class RemoteCenterSession<T extends RemoteCenterInterface> implements Ses
 				LOG.log(Level.WARNING, "Error while closing center server ( " + getAddress() + ")", ex);
 			}
 			stopPingTask();
-			idleTaskFuture.cancel(false);
+			//this check is thread safe - idleTaskFuture can never be null again after it has been assigned a non-null value
+			if (idleTaskFuture != null)
+				//client closed before we could send init packet
+				idleTaskFuture.cancel(false);
 
 			LOG.log(Level.FINE, "Disconnected from center server ({0}): {1}", new Object[] { getAddress(), reason });
 			server.disconnected();

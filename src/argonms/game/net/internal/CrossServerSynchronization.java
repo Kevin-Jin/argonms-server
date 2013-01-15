@@ -282,7 +282,7 @@ public class CrossServerSynchronization {
 				BuddyList bList = p.getBuddyList();
 				for (int buddy : recipients) {
 					BuddyListEntry entry = bList.getBuddy(buddy);
-					Byte ch = Byte.valueOf(entry != null ? entry.getChannel() : (byte) 0);
+					Byte ch = Byte.valueOf(entry != null ? entry.getChannel() : BuddyListEntry.OFFLINE_CHANNEL);
 					List<Integer> peersOnChannel = peerChannels.get(ch);
 					if (peersOnChannel == null) {
 						peersOnChannel = new ArrayList<Integer>();
@@ -589,15 +589,16 @@ public class CrossServerSynchronization {
 		return localRecipients.size();
 	}
 
-	public void sendBuddyAccepted(GameCharacter p, int recipient) {
+	public boolean sendBuddyAccepted(GameCharacter p, int recipient) {
 		lockRead();
 		try {
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
 				if (ccs.sendBuddyAccepted(p.getId(), recipient))
-					break;
+					return true;
 		} finally {
 			unlockRead();
 		}
+		return false;
 	}
 
 	/* package-private */ boolean receivedBuddyAccepted(int sender, int recipient, byte srcCh) {
@@ -626,7 +627,7 @@ public class CrossServerSynchronization {
 			return;
 		Map<Byte, List<Integer>> buddyChannels = new HashMap<Byte, List<Integer>>();
 		for (BuddyListEntry buddy : buddies) {
-			if (buddy.getChannel() == 0)
+			if (buddy.getChannel() == BuddyListEntry.OFFLINE_CHANNEL)
 				continue;
 
 			Byte ch = Byte.valueOf(buddy.getChannel());
@@ -659,7 +660,7 @@ public class CrossServerSynchronization {
 			if (entry == null)
 				continue;
 
-			entry.setChannel((byte) 0);
+			entry.setChannel(BuddyListEntry.OFFLINE_CHANNEL);
 			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 		}
 	}
@@ -681,6 +682,7 @@ public class CrossServerSynchronization {
 			return;
 
 		entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
+		entry.setChannel(BuddyListEntry.OFFLINE_CHANNEL);
 		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 	}
 

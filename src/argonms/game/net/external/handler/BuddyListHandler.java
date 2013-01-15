@@ -69,7 +69,7 @@ public final class BuddyListHandler {
 		STATUS_HALF_OPEN = 0x02
 	;
 
-	private static boolean isOnline(int playerId) {
+	private static boolean accountLoggedIn(int playerId) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -91,6 +91,17 @@ public final class BuddyListHandler {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
+	}
+
+	private static boolean isOnline(int playerId, byte channel, String name) {
+		if (channel != BuddyListEntry.OFFLINE_CHANNEL)
+			return true; //buddy entry is neither HALF_OPEN nor is it actually offline
+		if (!accountLoggedIn(playerId))
+			return false; //none of the account's characters are online - this one has to be offline
+		//this will work accurately even without the above two checks, but we
+		//can save some resources if we take a shortcut. Just make sure that
+		//when a player gets a name change, its logged in buddies are notified.
+		return GameServer.getChannel(ADD).getCrossServerInterface().scanChannelOfPlayer(name, false) == 0;
 	}
 
 	private static byte inviteOfflinePlayer(Connection con, int invitee, int inviter, String inviterName) throws SQLException {
@@ -220,9 +231,13 @@ public final class BuddyListHandler {
 		bList.addBuddy(new BuddyListEntry(inviterId, name, STATUS_MUTUAL));
 		client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 
-		if (isOnline(inviterId)) {
-			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyAccepted(p, inviterId);
-		} else {
+		//if inviter's account is logged in, we might as well try a channel scan
+		//in sendBuddyAccepted because we have no idea whether inviter is offline
+		//and if so, what channel he is in.
+		//if one of inviter's account's other characters is online but the
+		//inviter character itself is not, treat him as offline when we get
+		//false from sendBuddyAccepted.
+		if (!accountLoggedIn(inviterId) || !GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyAccepted(p, inviterId)) {
 			Connection con = null;
 			PreparedStatement ps = null;
 			try {
@@ -259,7 +274,7 @@ public final class BuddyListHandler {
 		boolean tryRetractInvite = (removed.getStatus() == STATUS_HALF_OPEN);
 		client.getSession().send(GamePackets.writeBuddyList(REMOVE, bList));
 
-		if (isOnline(deletedId)) {
+		if (isOnline(deletedId, channel, removed.getName())) {
 			if (!tryRetractInvite)
 				GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyDeleted(p, deletedId, channel);
 			else

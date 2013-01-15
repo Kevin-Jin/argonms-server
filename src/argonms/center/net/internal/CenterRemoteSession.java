@@ -156,6 +156,7 @@ public class CenterRemoteSession implements Session {
 				LOG.log(Level.WARNING, "Error while closing " + getServerName() + " server (" + getAddress() + ")", ex);
 			}
 			stopPingTask();
+			//idleTaskFuture has to be non-null as long as the this pointer was not leaked in the constructor
 			idleTaskFuture.cancel(false);
 
 			LOG.log(Level.FINE, "{0} server ({1}) disconnected: {2}", new Object[] { getServerName(), getAddress(), reason });

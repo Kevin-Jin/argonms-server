@@ -2611,6 +2611,24 @@
 	* Match card winner is the player with more matches, not the one who flipped
 	the last pair.
 
+2013-01-14  GoldenKevin  (revision 191)
+
+	* Fixed NullPointerException when trying to delete a buddy who is offline
+	and has one of its account's other characters online.
+	* Fixed STATUS_MUTUAL not being set when accepting a buddy invite from a
+	character who is offline and has one its account's other characters online.
+	* Fixed NullPointerException being thrown in ClientSession.close and
+	RemoteCenterSession.close when an IOException is thrown while the init
+	packet is being sent.
+	* Fixed a portal script possibly executing multiple times in parallel for a
+	player if there is high latency. Fixed the cause of the Free Market exit
+	portal teleporting players back to the default map (Perion) if entry and
+	exit is repeated long enough (by holding the up arrow at a town's Free
+	Market portal, for example).
+	* Added "!eventutil admit" command and split the usage and help messages for
+	each subcommand of !eventutil.
+	* Added more no-op opcodes that were spamming game server logs.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

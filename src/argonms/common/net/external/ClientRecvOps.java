@@ -116,6 +116,7 @@ public final class ClientRecvOps {
 		USE_DOOR = 0x79,
 		CHANGE_BINDING = 0x7B,
 		ADMIN_LOG = 0x7F,
+		UNKNOWN = 0x81,
 		BBS_OPERATION = 0x86,
 		ENTER_MTS = 0x87,
 		PET_TALK = 0x8B,
