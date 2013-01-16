@@ -158,7 +158,7 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 				receivedReturnedBuddyLogInNotifications(packet);
 				break;
 			case BUDDY_ACCEPTED:
-				receivedBuddyAccepted(packet);
+				receivedBuddyInviteAccepted(packet);
 				break;
 			case BUDDY_OFFLINE:
 				receivedBuddyLogOffNotifications(packet);
@@ -525,7 +525,7 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 	}
 
 	@Override
-	public boolean sendBuddyAccepted(int sender, int recipient) {
+	public boolean sendBuddyInviteAccepted(int sender, int recipient) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 		writeCrossProcessCrossChannelSynchronizationPacketHeader(lew, BUDDY_ACCEPTED);
 		lew.writeInt(sender);
@@ -535,11 +535,11 @@ public class CrossProcessCrossChannelSynchronization extends CrossProcessSynchro
 		return false;
 	}
 
-	private void receivedBuddyAccepted(LittleEndianReader packet) {
+	private void receivedBuddyInviteAccepted(LittleEndianReader packet) {
 		int sender = packet.readInt();
 		int receiver = packet.readInt();
 
-		handler.receivedBuddyAccepted(sender, receiver, targetCh);
+		handler.receivedBuddyInviteAccepted(sender, receiver, targetCh);
 	}
 
 	@Override

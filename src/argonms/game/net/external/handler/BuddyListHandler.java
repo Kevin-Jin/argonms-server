@@ -63,12 +63,6 @@ public final class BuddyListHandler {
 		CAPACITY_CHANGE = 0x15
 	;
 
-	public static final byte //buddy list entry status
-		STATUS_MUTUAL = 0x00,
-		STATUS_INVITED = 0x01,
-		STATUS_HALF_OPEN = 0x02
-	;
-
 	private static boolean accountLoggedIn(int playerId) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -93,23 +87,12 @@ public final class BuddyListHandler {
 		}
 	}
 
-	private static boolean isOnline(int playerId, byte channel, String name) {
-		if (channel != BuddyListEntry.OFFLINE_CHANNEL)
-			return true; //buddy entry is neither HALF_OPEN nor is it actually offline
-		if (!accountLoggedIn(playerId))
-			return false; //none of the account's characters are online - this one has to be offline
-		//this will work accurately even without the above two checks, but we
-		//can save some resources if we take a shortcut. Just make sure that
-		//when a player gets a name change, its logged in buddies are notified.
-		return GameServer.getChannel(ADD).getCrossServerInterface().scanChannelOfPlayer(name, false) == 0;
-	}
-
 	private static byte inviteOfflinePlayer(Connection con, int invitee, int inviter, String inviterName) throws SQLException {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
 			ps = con.prepareStatement("SELECT "
-					+ "(`c`.`buddyslots` <= (SELECT COUNT(*) FROM `buddyentries` WHERE `owner` = `c`.`id`  AND `status` <> " + STATUS_INVITED + ")) AS `full`,"
+					+ "(`c`.`buddyslots` <= (SELECT COUNT(*) FROM `buddyentries` WHERE `owner` = `c`.`id`  AND `status` <> " + BuddyListEntry.STATUS_INVITED + ")) AS `full`,"
 					+ "EXISTS (SELECT * FROM `buddyentries` WHERE `owner` = `c`.`id` AND `buddy` = ?) AS `readd` "
 					+ "FROM `characters` `c` WHERE `id` = ?");
 			ps.setInt(1, inviter);
@@ -125,14 +108,14 @@ public final class BuddyListHandler {
 
 			if (!reAdd) {
 				ps = con.prepareStatement("INSERT INTO `buddyentries` "
-						+ "(`owner`,`buddy`,`buddyname`,`status`) VALUES (?,?,?," + STATUS_INVITED + ")");
+						+ "(`owner`,`buddy`,`buddyname`,`status`) VALUES (?,?,?," + BuddyListEntry.STATUS_INVITED + ")");
 				ps.setInt(1, invitee);
 				ps.setInt(2, inviter);
 				ps.setString(3, inviterName);
 				ps.executeUpdate();
 				return Byte.MAX_VALUE;
 			} else {
-				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + STATUS_MUTUAL + " WHERE `owner` = ? AND `buddy` = ?");
+				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + BuddyListEntry.STATUS_MUTUAL + " WHERE `owner` = ? AND `buddy` = ?");
 				ps.setInt(1, invitee);
 				ps.setInt(2, inviter);
 				ps.executeUpdate();
@@ -178,11 +161,11 @@ public final class BuddyListHandler {
 					Pair<Byte, Byte> channelAndResult = GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInvite(p, inviteeId);
 					byte result = channelAndResult.right.byteValue();
 					if (result == Byte.MAX_VALUE) {
-						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_HALF_OPEN));
+						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), BuddyListEntry.STATUS_HALF_OPEN));
 						client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 						break;
 					} else if (result == Byte.MIN_VALUE) {
-						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_MUTUAL, channelAndResult.left.byteValue()));
+						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), BuddyListEntry.STATUS_MUTUAL, channelAndResult.left.byteValue()));
 						client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 						break;
 					} else if (result != -1) {
@@ -195,10 +178,10 @@ public final class BuddyListHandler {
 				default: {
 					byte result = inviteOfflinePlayer(con, inviteeId, p.getId(), p.getName());
 					if (result == Byte.MAX_VALUE) {
-						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_HALF_OPEN));
+						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), BuddyListEntry.STATUS_HALF_OPEN));
 						client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 					} else if (result == Byte.MIN_VALUE) {
-						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), STATUS_MUTUAL));
+						bList.addBuddy(new BuddyListEntry(inviteeId, rs.getString(4), BuddyListEntry.STATUS_MUTUAL));
 						client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 					} else if (result != -1) {
 						client.getSession().send(GamePackets.writeSimpleBuddyListMessage(result));
@@ -228,27 +211,28 @@ public final class BuddyListHandler {
 			client.getSession().send(GamePackets.writeSimpleBuddyListMessage(YOUR_LIST_FULL));
 			return;
 		}
-		bList.addBuddy(new BuddyListEntry(inviterId, name, STATUS_MUTUAL));
+		bList.addBuddy(new BuddyListEntry(inviterId, name, BuddyListEntry.STATUS_MUTUAL));
 		client.getSession().send(GamePackets.writeBuddyList(ADD, bList));
 
-		//if inviter's account is logged in, we might as well try a channel scan
-		//in sendBuddyAccepted because we have no idea whether inviter is offline
-		//and if so, what channel he is in.
-		//if one of inviter's account's other characters is online but the
-		//inviter character itself is not, treat him as offline when we get
-		//false from sendBuddyAccepted.
-		if (!accountLoggedIn(inviterId) || !GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyAccepted(p, inviterId)) {
+		//if (!accountLoggedIn(inviterId)) we are absolutely certain inviter is
+		//offline.
+		//otherwise, channel scan in sendBuddyAccepted because we have no idea
+		//whether he is online, and if so, in what channel. sendBuddyInviteAccepted
+		//will return false if he could not be found on any channel.
+		//if we conclude he is offline, update his entry directly on the database
+		if (!accountLoggedIn(inviterId) || !GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInviteAccepted(p, inviterId)) {
+			//if inviter is concluded to be offline, attempt to make his entry MUTUAL on database
 			Connection con = null;
 			PreparedStatement ps = null;
 			try {
 				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + STATUS_MUTUAL
+				ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + BuddyListEntry.STATUS_MUTUAL
 						+ " WHERE `owner` = ? AND `buddy` = ?");
 				ps.setInt(1, inviterId);
 				ps.setInt(2, p.getId());
 				ps.executeUpdate();
 			} catch (SQLException e) {
-				LOG.log(Level.INFO, "Could not accept buddy invite", e);
+				LOG.log(Level.WARNING, "Could not accept buddy invite", e);
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 			}
@@ -271,31 +255,41 @@ public final class BuddyListHandler {
 		//either we sent an invite and the other user has not responded yet,
 		//or the other user deleted us from his/her own buddy list already.
 		//doesn't hurt to try to retract the invite even if it's the second case
-		boolean tryRetractInvite = (removed.getStatus() == STATUS_HALF_OPEN);
+		//(note, removed.getStatus() == STATUS_MUTUAL is equivalent to !tryRetractInvite)
+		boolean tryRetractInvite = (removed.getStatus() == BuddyListEntry.STATUS_HALF_OPEN);
 		client.getSession().send(GamePackets.writeBuddyList(REMOVE, bList));
 
-		if (isOnline(deletedId, channel, removed.getName())) {
-			if (!tryRetractInvite)
-				GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyDeleted(p, deletedId, channel);
-			else
-				GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInviteRetracted(p, deletedId);
-		} else {
+		//if (channel == BuddyListEntry.OFFLINE_CHANNEL && removed.getStatus() == STATUS_MUTUAL),
+		//we are absolutely certain deleted buddy is offline - STATUS_MUTUAL entries always have accurate channels
+		//otherwise, channel scan in sendBuddyDeleted because we have no idea
+		//whether he is online, and if so, in what channel. sendBuddyInviteRetracted
+		//will return false if he could not be found on any channel.
+		//if we conclude he is offline, update his entry or delete invite to him
+		//directly on the database
+		if (channel != BuddyListEntry.OFFLINE_CHANNEL) {
+			//if entry's channel is not OFFLINE_CHANNEL, it must be STATUS_MUTUAL
+			assert !tryRetractInvite;
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyDeleted(p, deletedId, channel);
+		//sendBuddyInviteRetracted will attempt to remove our invite to buddy if he is found logged into a channel (no effect if tryRetractInvite is true and is the second case)
+		} else if (!tryRetractInvite || !GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInviteRetracted(p, deletedId)) {
+			//if buddy is concluded to be offline, attempt to remove invite to him on database (no effect if tryRetractInvite is true and is the second case) or make his entry HALF_OPEN
+			assert !accountLoggedIn(deletedId) || GameServer.getChannel(client.getChannel()).getCrossServerInterface().scanChannelOfPlayer(removed.getName(), false) == 0;
 			Connection con = null;
 			PreparedStatement ps = null;
 			try {
 				con = DatabaseManager.getConnection(DatabaseType.STATE);
 				if (!tryRetractInvite)
-					ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + STATUS_HALF_OPEN
+					ps = con.prepareStatement("UPDATE `buddyentries` SET `status` = " + BuddyListEntry.STATUS_HALF_OPEN
 							+ " WHERE `owner` = ? AND `buddy` = ?");
 				else
 					ps = con.prepareStatement("DELETE FROM `buddyentries`"
 							+ " WHERE `owner` = ? AND `buddy` = ?");
-					//assert deleted row had `status` == STATUS_INVITED.
+					//assert no rows deleted or deleted row had `status` == STATUS_INVITED.
 				ps.setInt(1, deletedId);
 				ps.setInt(2, p.getId());
 				ps.executeUpdate();
 			} catch (SQLException e) {
-				LOG.log(Level.INFO, "Could not accept buddy invite", e);
+				LOG.log(Level.WARNING, "Could not delete buddy entry", e);
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 			}

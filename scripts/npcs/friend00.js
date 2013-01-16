@@ -31,8 +31,8 @@ if (selection == 1) {
 	if (selection == 1) {
 		if (player.hasMesos(250000) && player.getBuddyCapacity() < 50) {
 			player.loseMesos(250000);
-			npc.say("Alright! Your buddy list will have 5 extra slots by now. Check and see for it yourself. And if you still need more room on your buddy list, you know who to find. Of course, it isn't going to be for free ... well, so long ...");
 			player.gainBuddySlots(5);
+			npc.say("Alright! Your buddy list will have 5 extra slots by now. Check and see for it yourself. And if you still need more room on your buddy list, you know who to find. Of course, it isn't going to be for free ... well, so long ...");
 		} else {
 			npc.sayNext("Hey... are you sure you have #b250,000 mesos#k?? If so then check and see if you have extended your buddy list to the max. Even if you pay up, the most you can have on your buddy list is #b50#k.");
 		}

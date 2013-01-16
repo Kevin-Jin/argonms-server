@@ -21,6 +21,7 @@ package argonms.game.net.external.handler;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
@@ -277,7 +278,7 @@ public final class MiniroomHandler {
 			return;
 		}
 		InventorySlot itemToPut;
-		if (item.getQuantity() != quantity) {
+		if (item.getQuantity() != quantity && !InventoryTools.isRechargeable(item.getDataId())) {
 			item.setQuantity((short) (item.getQuantity() - quantity));
 			itemToPut = item.clone();
 			itemToPut.setQuantity(quantity);

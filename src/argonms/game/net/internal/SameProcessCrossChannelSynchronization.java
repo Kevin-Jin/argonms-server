@@ -149,12 +149,12 @@ public class SameProcessCrossChannelSynchronization implements CrossChannelSynch
 	}
 
 	@Override
-	public boolean sendBuddyAccepted(int sender, int recipient) {
-		return pipe.receivedBuddyAccepted(sender, recipient);
+	public boolean sendBuddyInviteAccepted(int sender, int recipient) {
+		return pipe.receivedBuddyInviteAccepted(sender, recipient);
 	}
 
-	private boolean receivedBuddyAccepted(int sender, int recipient) {
-		return handler.receivedBuddyAccepted(sender, recipient, targetCh);
+	private boolean receivedBuddyInviteAccepted(int sender, int recipient) {
+		return handler.receivedBuddyInviteAccepted(sender, recipient, targetCh);
 	}
 
 	@Override
