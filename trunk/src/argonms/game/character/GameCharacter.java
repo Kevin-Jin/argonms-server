@@ -451,7 +451,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				ps.setByte(4, buddy.getStatus());
 				ps.addBatch();
 			}
-			ps.setByte(4, BuddyListHandler.STATUS_INVITED);
+			ps.setByte(4, BuddyListEntry.STATUS_INVITED);
 			for (Entry<Integer, String> invite : buddies.getInvites()) {
 				ps.setInt(2, invite.getKey().intValue());
 				ps.setString(3, invite.getValue());
@@ -720,7 +720,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs = ps.executeQuery();
 			while (rs.next()) {
 				byte status = rs.getByte(3);
-				if (status != BuddyListHandler.STATUS_INVITED)
+				if (status != BuddyListEntry.STATUS_INVITED)
 					p.buddies.addBuddy(new BuddyListEntry(rs.getInt(1), rs.getString(2), status));
 				else
 					p.buddies.addInvite(rs.getInt(1), rs.getString(2));

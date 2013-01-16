@@ -28,6 +28,12 @@ public class BuddyListEntry {
 		CASH_SHOP_CHANNEL = 21
 	;
 
+	public static final byte
+		STATUS_MUTUAL = 0,
+		STATUS_INVITED = 1,
+		STATUS_HALF_OPEN = 2
+	;
+
 	private final int id;
 	private final String name;
 	private byte channel;
@@ -41,7 +47,7 @@ public class BuddyListEntry {
 	}
 
 	public BuddyListEntry(int id, String name, byte status) {
-		this(id, name, status, (byte) 0);
+		this(id, name, status, OFFLINE_CHANNEL);
 	}
 
 	public int getId() {

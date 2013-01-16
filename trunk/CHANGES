@@ -2629,6 +2629,17 @@
 	each subcommand of !eventutil.
 	* Added more no-op opcodes that were spamming game server logs.
 
+2013-01-15  GoldenKevin  (revision 192)
+
+	* Further improved performance of BuddyListHandler.processDeleteEntry, and
+	made the control flow more analogous to the processAcceptInvite method.
+	* Moved STATUS_* constants in BuddyListHandler to BuddyListEntry.
+	* Fixed ScriptPlayer.gainCashInventorySlots.
+	* Fixed trades breaking rechargeable stacks.
+	* Pressing the End Chat button after Mr. Goldstein takes mesos will no
+	longer prevent players from increasing their buddy list capacity.
+	* Fixed Athena Pierce not advancing archers to crossbowmen.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

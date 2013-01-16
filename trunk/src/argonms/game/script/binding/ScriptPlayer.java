@@ -245,8 +245,8 @@ public class ScriptPlayer {
 	}
 
 	public void gainCashInventorySlots(short delta) {
-		short newCap = getPlayer().getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
+		short newCap = getPlayer().getInventory(Inventory.InventoryType.CASH).increaseCapacity(delta);
+		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.CASH, newCap));
 	}
 
 	public void gainSp(short gain) {

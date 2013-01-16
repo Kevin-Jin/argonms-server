@@ -905,15 +905,15 @@ public final class GamePackets {
 		lew.writePaddedAsciiString(entry.getName(), 13);
 		lew.writeByte(entry.getStatus());
 		switch (entry.getStatus()) {
-			case BuddyListHandler.STATUS_HALF_OPEN:
+			case BuddyListEntry.STATUS_HALF_OPEN:
 				lew.writeShort((short) 0);
 				lew.writeByte((byte) 0xF0);
 				lew.writeByte((byte) 0xB2);
 				break;
-			case BuddyListHandler.STATUS_INVITED:
+			case BuddyListEntry.STATUS_INVITED:
 				lew.writeByte((byte) 0x1F);
 				//intentional fallthrough to lew.writeInt(buddy.getChannel() - 1);
-			case BuddyListHandler.STATUS_MUTUAL:
+			case BuddyListEntry.STATUS_MUTUAL:
 				//I believe that client recognizes -1 as offline (no channel)
 				//and 20 as cash shop
 				lew.writeInt(entry.getChannel() - 1);
@@ -943,7 +943,7 @@ public final class GamePackets {
 		lew.writeInt(from);
 		lew.writeLengthPrefixedString(fromName);
 
-		writeBuddyListEntry(lew, new BuddyListEntry(from, fromName, BuddyListHandler.STATUS_INVITED));
+		writeBuddyListEntry(lew, new BuddyListEntry(from, fromName, BuddyListEntry.STATUS_INVITED));
 
 		return lew.getBytes();
 	}

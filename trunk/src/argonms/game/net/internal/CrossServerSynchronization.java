@@ -484,8 +484,8 @@ public class CrossServerSynchronization {
 			return BuddyListHandler.THEIR_LIST_FULL;
 		BuddyListEntry existing = bList.getBuddy(senderId);
 		if (existing != null) {
-			assert (existing.getStatus() == BuddyListHandler.STATUS_HALF_OPEN);
-			existing.setStatus(BuddyListHandler.STATUS_MUTUAL);
+			assert (existing.getStatus() == BuddyListEntry.STATUS_HALF_OPEN);
+			existing.setStatus(BuddyListEntry.STATUS_MUTUAL);
 			existing.setChannel(srcCh);
 			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(existing));
 			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
@@ -496,15 +496,16 @@ public class CrossServerSynchronization {
 		return Byte.MAX_VALUE;
 	}
 
-	public void sendBuddyInviteRetracted(GameCharacter p, int deletedId) {
+	public boolean sendBuddyInviteRetracted(GameCharacter p, int deletedId) {
 		lockRead();
 		try {
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
 				if (ccs.sendBuddyInviteRetracted(p.getId(), deletedId))
-					break;
+					return true;
 		} finally {
 			unlockRead();
 		}
+		return false;
 	}
 
 	/* package-private */ boolean receivedBuddyInviteRetracted(int recipient, int sender) {
@@ -547,7 +548,7 @@ public class CrossServerSynchronization {
 		int[] recipients = new int[buddies.size()];
 		int i = 0, remaining = buddies.size();
 		for (BuddyListEntry buddy : buddies)
-			if (buddy.getStatus() == BuddyListHandler.STATUS_MUTUAL)
+			if (buddy.getStatus() == BuddyListEntry.STATUS_MUTUAL)
 				recipients[i++] = buddy.getId();
 		if (recipients.length != i) {
 			//just trim recipients of extra 0s
@@ -589,11 +590,11 @@ public class CrossServerSynchronization {
 		return localRecipients.size();
 	}
 
-	public boolean sendBuddyAccepted(GameCharacter p, int recipient) {
+	public boolean sendBuddyInviteAccepted(GameCharacter p, int recipient) {
 		lockRead();
 		try {
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
-				if (ccs.sendBuddyAccepted(p.getId(), recipient))
+				if (ccs.sendBuddyInviteAccepted(p.getId(), recipient))
 					return true;
 		} finally {
 			unlockRead();
@@ -601,7 +602,7 @@ public class CrossServerSynchronization {
 		return false;
 	}
 
-	/* package-private */ boolean receivedBuddyAccepted(int sender, int recipient, byte srcCh) {
+	/* package-private */ boolean receivedBuddyInviteAccepted(int sender, int recipient, byte srcCh) {
 		GameCharacter p = self.getPlayerById(recipient);
 		if (p == null)
 			return false;
@@ -612,7 +613,7 @@ public class CrossServerSynchronization {
 		if (entry == null)
 			return true;
 
-		entry.setStatus(BuddyListHandler.STATUS_MUTUAL);
+		entry.setStatus(BuddyListEntry.STATUS_MUTUAL);
 		entry.setChannel(srcCh);
 		p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
 		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
@@ -681,7 +682,7 @@ public class CrossServerSynchronization {
 		if (entry == null)
 			return;
 
-		entry.setStatus(BuddyListHandler.STATUS_HALF_OPEN);
+		entry.setStatus(BuddyListEntry.STATUS_HALF_OPEN);
 		entry.setChannel(BuddyListEntry.OFFLINE_CHANNEL);
 		p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.REMOVE, bList));
 	}

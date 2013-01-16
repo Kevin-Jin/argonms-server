@@ -55,7 +55,7 @@ public interface CrossChannelSynchronization {
 
 	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble);
 
-	public boolean sendBuddyAccepted(int sender, int recipient);
+	public boolean sendBuddyInviteAccepted(int sender, int recipient);
 
 	public void sendBuddyLogOffNotifications(int sender, int[] recipients);
 
