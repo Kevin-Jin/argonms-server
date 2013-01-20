@@ -218,10 +218,10 @@ public final class MonsterStatusEffectTools {
 		short mod = 0;
 		switch (buff) {
 			case WATK:
-				mod = (short) e.getX();
+				mod = (short) (e.getX() - 100);
 				break;
 			case WDEF:
-				mod = (short) e.getY();
+				mod = (short) e.getX();
 				break;
 			case MATK:
 				mod = (short) e.getX();

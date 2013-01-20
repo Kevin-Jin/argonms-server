@@ -273,7 +273,7 @@ public final class MiniroomHandler {
 		byte tradeSlot = packet.readByte();
 		Inventory inv = p.getInventory(type);
 		InventorySlot item = inv.get(slot);
-		if (item == null || item.getQuantity() < quantity) {
+		if (item == null || item.getQuantity() < quantity && !InventoryTools.isRechargeable(item.getDataId())) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistent item");
 			return;
 		}

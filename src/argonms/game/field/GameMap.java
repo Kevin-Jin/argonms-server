@@ -586,7 +586,7 @@ public class GameMap {
 		try {
 			if (monsterSpawns.isEmpty())
 				return;
-			Collections.sort(monsterSpawns);
+			Collections.shuffle(monsterSpawns);
 			int numShouldSpawn = Math.round((monsterSpawns.size() - monsters.get()) * stats.getMobRate());
 			if (numShouldSpawn > 0) {
 				int spawned = 0;
@@ -809,7 +809,7 @@ public class GameMap {
 		occupiedChairs.remove(Short.valueOf(chairId));
 	}
 
-	private class MonsterSpawn implements Comparable<MonsterSpawn> {
+	private class MonsterSpawn {
 		private final MobStats mobStats;
 		private final Point pos;
 		private final short foothold;
@@ -857,14 +857,6 @@ public class GameMap {
 			if (mobTime == 0)
 				nextPossibleSpawn = System.currentTimeMillis() + 5000;
 			return mob;
-		}
-
-		@Override
-		public int compareTo(MonsterSpawn m) {
-			int aliveDelta = spawnedMonsters.get() - m.spawnedMonsters.get();
-			if (aliveDelta == 0)
-				return (int) (nextPossibleSpawn - m.nextPossibleSpawn);
-			return aliveDelta;
 		}
 	}
 

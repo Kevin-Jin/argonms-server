@@ -39,10 +39,12 @@ import argonms.game.field.AbstractEntity;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MonsterStatusEffectValues;
+import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.mob.MobStats;
 import argonms.game.loading.mob.Skill;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.net.external.GamePackets;
+import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -143,13 +145,21 @@ public class Mob extends AbstractEntity {
 		return combined;
 	}
 
-	private void makeDrops(final int owner, final byte pickupAllow) {
+	private void schedulePostDeathAnimationTasks(final int owner, final byte pickupAllow) {
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {
+				//drops
 				map.drop(getDrops(), Mob.this, pickupAllow, owner);
+
+				//revives
+				for (Integer mobId : stats.getSummons()) {
+					Mob spawn = new Mob(MobDataLoader.getInstance().getMobStats(mobId.intValue()), map);
+					spawn.setPosition(new Point(getPosition()));
+					map.spawnMonster(spawn);
+				}
 			}
-		}, getAnimationTime("die1")); //artificial drop lag...
+		}, getAnimationTime("die1"));
 	}
 
 	private Pair<Attacker, GameCharacter> giveExp(GameCharacter killer) {
@@ -223,7 +233,7 @@ public class Mob extends AbstractEntity {
 		Pair<Attacker, GameCharacter> highestDamage = giveExp(killer);
 		for (MobDeathListener hook : subscribers)
 			hook.monsterKilled(highestDamage.right, killer);
-		makeDrops(highestDamage.left.getId(), highestDamage.left.getDropPickUpAllow());
+		schedulePostDeathAnimationTasks(highestDamage.left.getId(), highestDamage.left.getDropPickUpAllow());
 	}
 
 	public void addListener(MobDeathListener subscriber) {

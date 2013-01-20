@@ -2640,6 +2640,18 @@
 	longer prevent players from increasing their buddy list capacity.
 	* Fixed Athena Pierce not advancing archers to crossbowmen.
 
+2013-01-19  GoldenKevin  (revision 193)
+
+	* Fixed monster death summons (e.g. Transforming Jr. Yeti -> Yeti, Bombing
+	Fish House -> Gobies).
+	* Fixed inability to trade empty stacks of rechargeable items.
+	* Fixed mob WATK+ buff being too effective by 100%.
+	* Mobs spawn at random spawn points in the map that can accommodate more
+	spawn rather than at the most exhausted spawn points. This discourages
+	camping in one location.
+	* Respawn rate lowered to once every 15 seconds. Rate is lowered but max
+	spawn (abundancy) remains the same.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
