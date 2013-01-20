@@ -95,7 +95,7 @@ public class WorldChannel {
 				for (GameMap map : mapFactory.getInstanceMaps())
 					map.respawnMobs();
 			}
-		}, 0, 10000);
+		}, 0, 15000);
 	}
 
 	public byte getChannelId() {
