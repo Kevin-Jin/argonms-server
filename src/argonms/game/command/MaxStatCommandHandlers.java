@@ -23,13 +23,16 @@ import argonms.common.character.PlayerJob;
 import argonms.common.character.Skills;
 import argonms.game.loading.skill.SkillDataLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public final class MaxStatCommandHandlers {
+public final class MaxStatCommandHandlers implements CommandCollection<CommandCaller> {
 	private static void maxEquips(List<CommandTarget.CharacterManipulation> changes) {
 		changes.add(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.MAX_ALL_EQUIP_STATS, null));
 	}
@@ -63,7 +66,7 @@ public final class MaxStatCommandHandlers {
 		//TODO: increase character limit to 6
 	}
 
-	public static class MaxEquipStatsHandler extends AbstractCommandDefinition<CommandCaller> {
+	private static class MaxEquipStatsHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Sets the bonus stats of all of player's equipped equipment to their max values.";
@@ -99,7 +102,7 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	public static class MaxSkillsHandler extends AbstractCommandDefinition<CommandCaller> {
+	private static class MaxSkillsHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Sets all skills across all skillbooks to their master levels.";
@@ -135,7 +138,7 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	public static class MaxAllHandler extends AbstractCommandDefinition<CommandCaller> {
+	private static class MaxAllHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Maxes out a player's base stats, equipment bonus stats, and skill levels.";
@@ -173,7 +176,12 @@ public final class MaxStatCommandHandlers {
 		}
 	}
 
-	private MaxStatCommandHandlers() {
-		//uninstantiable...
+	@Override
+	public Map<String, AbstractCommandDefinition<CommandCaller>> getDefinitions() {
+		Map<String, AbstractCommandDefinition<CommandCaller>> definitions = new HashMap<String, AbstractCommandDefinition<CommandCaller>>();
+		definitions.put("!maxequips", new MaxEquipStatsHandler());
+		definitions.put("!maxskills", new MaxSkillsHandler());
+		definitions.put("!maxall", new MaxAllHandler());
+		return Collections.unmodifiableMap(definitions);
 	}
 }

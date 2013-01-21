@@ -20,7 +20,6 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
-import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.util.TimeTool;
 import argonms.game.GameRegistry;
 import argonms.game.GameServer;
@@ -397,65 +396,7 @@ public class CommandProcessor {
 				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_SKILL_LEVEL, new CommandTarget.SkillValue(skillId, skillLevel, masterLevel))));
 			}
 		}, "Change a player's skill level", UserPrivileges.GM));
-		universalCommands.put("!maxequips", new MaxStatCommandHandlers.MaxEquipStatsHandler());
-		universalCommands.put("!maxskills", new MaxStatCommandHandlers.MaxSkillsHandler());
-		universalCommands.put("!maxall", new MaxStatCommandHandlers.MaxAllHandler());
-		universalCommands.put("!give", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
-			@Override
-			public String getUsage() {
-				return "Usage: !give [-t <target>] <itemid> [<quantity>]";
-			}
-
-			@Override
-			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
-				int itemId;
-				int quantity = 1;
-
-				String targetName = args.extractOptionalTarget(caller.getName());
-				if (targetName == null) {
-					resp.printErr(getUsage());
-					return;
-				}
-				CommandTarget target = args.getTargetByName(targetName, caller);
-				if (target == null) {
-					resp.printErr("The character " + targetName + " does not exist.");
-					resp.printErr(getUsage());
-					return;
-				}
-
-				if (!args.hasNext()) {
-					resp.printErr(getUsage());
-					return;
-				}
-				String param = args.next();
-				try {
-					itemId = Integer.parseInt(param);
-					//TODO: check if item is valid. Throw NumberFormatException if not
-				} catch (NumberFormatException e) {
-					resp.printErr(param + " is not a valid itemid.");
-					resp.printErr(getUsage());
-					return;
-				}
-				if (!ItemDataLoader.getInstance().canLoad(itemId)) {
-					resp.printErr(param + " is not a valid itemid.");
-					resp.printErr(getUsage());
-					return;
-				}
-
-				if (args.hasNext()) {
-					param = args.next();
-					try {
-						quantity = Integer.parseInt(param);
-					} catch (NumberFormatException e) {
-						resp.printErr(param + " is not a valid item quantity.");
-						resp.printErr(getUsage());
-						return;
-					}
-				}
-
-				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.ADD_ITEM, new CommandTarget.ItemValue(itemId, quantity))));
-			}
-		}, "Give a player an item", UserPrivileges.GM));
+		universalCommands.putAll(new MaxStatCommandHandlers().getDefinitions());
 		inGameOnlyCommands.put("!spawn", new SpawnCommandHandler());
 		inGameOnlyCommands.put("!playernpc", new CommandDefinition<GameCharacterCommandCaller>(new CommandAction<GameCharacterCommandCaller>() {
 			@Override
@@ -532,7 +473,7 @@ public class CommandProcessor {
 				}
 			}
 		}, "Removes all monsters on the map, either killing them for drops and an exp reward (specify with -k) or simply just wipe them out.", UserPrivileges.GM));
-		universalCommands.put("!clearinv", new ClearInventoryCommandHandler());
+		universalCommands.putAll(new InventoryCommandHandlers().getDefinitions());
 		universalCommands.put("!info", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {
@@ -566,9 +507,8 @@ public class CommandProcessor {
 				resp.printOut(sb.toString());
 			}
 		}, "Show location info of a player", UserPrivileges.GM));
-		universalCommands.put("!eventutil", new EventCommandHandlers.EventUtilCommandHandler());
-		universalCommands.put("!notice", new NoticeCommandHandlers.NoticeCommandHandler());
-		universalCommands.put("!ticker", new NoticeCommandHandlers.TickerCommandHandler());
+		universalCommands.putAll(new EventCommandHandlers().getDefinitions());
+		universalCommands.putAll(new NoticeCommandHandlers().getDefinitions());
 		universalCommands.put("!rate", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {

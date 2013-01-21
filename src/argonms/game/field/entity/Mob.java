@@ -210,7 +210,7 @@ public class Mob extends AbstractEntity {
 		}
 		for (Integer itemId : stats.getItemsToTake()) {
 			Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-			short quantity = InventoryTools.getAmountOfItem(killer.getInventory(type), itemId);
+			int quantity = InventoryTools.getAmountOfItem(killer.getInventory(type), itemId);
 			if (type == Inventory.InventoryType.EQUIP)
 				quantity += InventoryTools.getAmountOfItem(killer.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
 			if (quantity > 0) {

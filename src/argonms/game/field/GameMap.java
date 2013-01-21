@@ -71,12 +71,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public class GameMap {
+	private static final Logger LOG = Logger.getLogger(GameMap.class.getName());
+
 	/**
 	 * Amount of time in milliseconds that a dropped item will remain on the map
 	 */
@@ -695,6 +699,11 @@ public class GameMap {
 				byte targetPortalId = toMap.getPortalIdByName(portal.getTargetName());
 				if (targetPortalId != -1)
 					return p.changeMap(tm, targetPortalId);
+				//WZs are broken. Destination map doesn't have the matching portal
+				//so just warp to the default portal.
+				LOG.log(Level.WARNING, "Invalid destination for portal {0} ({1}) on map {2} -> warping to default portal.",
+						new Object[]{portal.getPortalName(), portalId, stats.getMapId()});
+				p.changeMap(tm, (byte) 0);
 			}
 		}
 		return false;

@@ -27,14 +27,16 @@ import argonms.game.field.MapEntity;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.ChatHandler;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class EventCommandHandlers {
-	public static class EventUtilCommandHandler extends AbstractCommandDefinition<CommandCaller> {
+public class EventCommandHandlers implements CommandCollection<CommandCaller> {
+	private static class EventUtilCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Commands that help with the execution of GM-led events. Pass the --usage parameter after any one of the subcommands to see how it is used.";
@@ -173,5 +175,10 @@ public class EventCommandHandlers {
 					new LocalChannelCommandTarget((GameCharacter) ent).mutate(change);
 			}
 		}
+	}
+
+	@Override
+	public Map<String, AbstractCommandDefinition<CommandCaller>> getDefinitions() {
+		return Collections.<String, AbstractCommandDefinition<CommandCaller>>unmodifiableMap(Collections.singletonMap("!eventutil", new EventUtilCommandHandler()));
 	}
 }
