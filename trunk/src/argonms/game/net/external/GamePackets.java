@@ -1167,7 +1167,8 @@ public final class GamePackets {
 		for (Entry<PlayerStatusEffect, PlayerStatusEffectValues> effect : statusEffects.entrySet())
 			writeMapEntryStatusEffectValue(lew, effect.getKey(), effect.getValue());
 		lew.writeInt(0);
-		//we write the 4th byte here. yeah. what the fuck Nexon.
+		//write the 4th byte here
+		//TODO: causes player with Dash on to look like he's using Energy Charge
 		lew.writeByte((byte) ((updateMask & 0x00000000FF000000L) >> 24));
 		lew.writeByte((byte) 0);
 		lew.writeInt(0);

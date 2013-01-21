@@ -347,7 +347,20 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						rs.close();
 						ps.close();
 
-						InventoryTools.addToInventory(inventories.get(type), value.itemId, value.quantity);
+						if (value.quantity > 0) {
+							InventoryTools.addToInventory(inventories.get(type), value.itemId, value.quantity);
+						} else {
+							Inventory inv = inventories.get(type);
+							int quantity;
+							if (value.quantity == Integer.MIN_VALUE) {
+								quantity = InventoryTools.getAmountOfItem(inv, value.itemId);
+								if (type == Inventory.InventoryType.EQUIP)
+									quantity += InventoryTools.getAmountOfItem(inv, value.itemId);
+							} else {
+								quantity = -value.quantity;
+							}
+							InventoryTools.removeFromInventory(inv, value.itemId, quantity);
+						}
 
 						ps = con.prepareStatement("DELETE FROM `inventoryitems` WHERE "
 								+ "`characterid` = ? AND `inventorytype` = ?");

@@ -43,10 +43,8 @@ public final class StatAllocationHandler {
 		p.writeLockStats();
 		try {
 			for (ClientUpdateKey key : ClientUpdateKey.valueOf(updateMask)) {
-				if (p.getAp() <= 0) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate nonexistent AP");
+				if (p.getAp() <= 0)
 					return;
-				}
 				switch (key) {
 					case STR:
 						if (p.getStr() < Short.MAX_VALUE) {
@@ -116,8 +114,6 @@ public final class StatAllocationHandler {
 					if (p.getSp() > 0) {
 						p.setSp((short) (p.getSp() - 1));
 						p.setSkillLevel(skillId, newLevel, (byte) -1, false);
-					} else {
-						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate nonexistent SP");
 					}
 				}
 			} else {

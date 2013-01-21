@@ -94,7 +94,7 @@ public class ScriptParty {
 			for (PartyList.LocalMember member : party.getMembersInLocalChannel()) {
 				GameCharacter player = member.getPlayer();
 				Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-				short quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
+				int quantity = InventoryTools.getAmountOfItem(player.getInventory(type), itemId);
 				if (type == Inventory.InventoryType.EQUIP)
 					quantity += InventoryTools.getAmountOfItem(player.getInventory(Inventory.InventoryType.EQUIPPED), itemId);
 

@@ -445,9 +445,9 @@ public final class InventoryTools {
 			return removeFromInventory(p.getInventory(type), itemId, quantity);
 		} else {
 			Inventory inv = p.getInventory(type);
-			short start = getAmountOfItem(inv, itemId);
+			int start = getAmountOfItem(inv, itemId);
 			UpdatedSlots updatedSlots = removeFromInventory(inv, itemId, quantity);
-			short end = getAmountOfItem(inv, itemId);
+			int end = getAmountOfItem(inv, itemId);
 			quantity -= start - end;
 			if (quantity > 0)
 				updatedSlots.union(removeFromInventory(p.getInventory(InventoryType.EQUIPPED), itemId, quantity));
@@ -478,8 +478,8 @@ public final class InventoryTools {
 		return true;
 	}
 
-	public static short getAmountOfItem(Inventory inv, int itemId) {
-		short total = 0;
+	public static int getAmountOfItem(Inventory inv, int itemId) {
+		int total = 0;
 		for (Short slot : inv.getItemSlots(itemId))
 			total += inv.get(slot.shortValue()).getQuantity();
 		return total;

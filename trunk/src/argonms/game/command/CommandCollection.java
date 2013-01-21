@@ -16,20 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+package argonms.game.command;
+
+import java.util.Map;
+
 /**
- * out00
- * Hidden Street: Free Market Entrance (Map 910000000)
- *
- * Free Market portal.
- * Warps players from Free Market to entry map/portal.
  *
  * @author GoldenKevin
  */
-
-let [map, spawnPoint] = portal.resetRememberedMap("FREE_MARKET");
-if (map == 999999999) { //warped to FM without having previous position saved
-	map = 102000000; //Perion
-	spawnPoint = 28; //market00 on Perion
+public interface CommandCollection<T extends CommandCaller> {
+	public Map<String, AbstractCommandDefinition<T>> getDefinitions();
 }
-portal.playSoundEffect();
-player.changeMap(map, spawnPoint);

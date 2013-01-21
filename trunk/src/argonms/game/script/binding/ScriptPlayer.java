@@ -108,7 +108,7 @@ public class ScriptPlayer {
 
 	public void loseItem(int itemId) {
 		Inventory.InventoryType type = InventoryTools.getCategory(itemId);
-		short quantity = InventoryTools.getAmountOfItem(getPlayer().getInventory(type), itemId);
+		int quantity = InventoryTools.getAmountOfItem(getPlayer().getInventory(type), itemId);
 		if (type == Inventory.InventoryType.EQUIP)
 			quantity += InventoryTools.getAmountOfItem(getPlayer().getInventory(Inventory.InventoryType.EQUIPPED), itemId);
 		if (quantity > 0)

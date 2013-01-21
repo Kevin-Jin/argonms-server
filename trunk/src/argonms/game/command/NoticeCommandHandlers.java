@@ -21,13 +21,16 @@ package argonms.game.command;
 import argonms.common.UserPrivileges;
 import argonms.game.GameServer;
 import argonms.game.net.external.handler.ChatHandler;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author GoldenKevin
  */
-public class NoticeCommandHandlers {
-	public static class NoticeCommandHandler extends AbstractCommandDefinition<CommandCaller> {
+public class NoticeCommandHandlers implements CommandCollection<CommandCaller> {
+	private static class NoticeCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Send a message to all players on the server. Use the popup option to display an OK box, or the chat option to show the message (in blue) in the player's chat log.";
@@ -71,7 +74,7 @@ public class NoticeCommandHandlers {
 		}
 	}
 
-	public static class TickerCommandHandler extends AbstractCommandDefinition<CommandCaller> {
+	private static class TickerCommandHandler extends AbstractCommandDefinition<CommandCaller> {
 		@Override
 		public String getHelpMessage() {
 			return "Update the ticker message for all players on this world. Leaving out the message parameter removes the ticker.";
@@ -97,5 +100,13 @@ public class NoticeCommandHandlers {
 
 			GameServer.getChannel(caller.getChannel()).getCrossServerInterface().sendWorldWideNotice(ChatHandler.TextStyle.TICKER.byteValue(), message);
 		}
+	}
+
+	@Override
+	public Map<String, AbstractCommandDefinition<CommandCaller>> getDefinitions() {
+		Map<String, AbstractCommandDefinition<CommandCaller>> definitions = new HashMap<String, AbstractCommandDefinition<CommandCaller>>();
+		definitions.put("!notice", new NoticeCommandHandler());
+		definitions.put("!ticker", new TickerCommandHandler());
+		return Collections.unmodifiableMap(definitions);
 	}
 }

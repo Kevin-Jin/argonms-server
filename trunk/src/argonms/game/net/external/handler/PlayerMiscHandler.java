@@ -86,14 +86,18 @@ public final class PlayerMiscHandler {
 			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish too much HP/MP at once");
 			return;
 		}
+
+		//nobody uses fast regen hacks to regenerate health at only double their
+		//expected rate - usually the period is less than one second. give them
+		//the benefit of the doubt and let latency be assumed to be the culprit
+		//as long as regeneration rate is less than double the expected rate
 		if (hp > 0) {
 			CheatTracker ct = CheatTracker.get(gc);
 			long last = ct.getLoggedTime("hpr");
 			ct.logTime("hpr", now);
-			//give some leniency of 0.5 seconds since time recording isn't always accurate w/ latency
-			//(it's not documented in the skill description, but having at least
-			//level 1 Improved HP Recovery will double recover rate to 5 seconds)
-			if (now - last < 9500 && !(p.getSkillLevel(Skills.IMPROVED_HP_RECOVERY) > 0 && now - last > 4500)) {
+			//it's not documented in the skill description, but having at least
+			//level 1 Improved HP Recovery will double recover rate to 5 seconds
+			if (now - last < 10000 / 2 && (p.getSkillLevel(Skills.IMPROVED_HP_RECOVERY) == 0 || now - last < 5000 / 2)) {
 				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish HP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
 				return;
 			}
@@ -103,7 +107,7 @@ public final class PlayerMiscHandler {
 			CheatTracker ct = CheatTracker.get(gc);
 			long last = ct.getLoggedTime("mpr");
 			ct.logTime("mpr", now);
-			if (now - last < 9500) { //9.5 seconds, give some leniency since time recording isn't always accurate w/ latency
+			if (now - last < 10000 / 2) {
 				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish MP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
 				return;
 			}

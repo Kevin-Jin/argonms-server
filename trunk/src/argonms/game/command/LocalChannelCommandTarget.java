@@ -198,16 +198,33 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					Inventory.InventoryType type = InventoryTools.getCategory(value.itemId);
 
 					Inventory inv = target.getInventory(type);
-					InventoryTools.UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, value.itemId, value.quantity);
+					InventoryTools.UpdatedSlots changedSlots;
 					ClientSession<?> ses = target.getClient().getSession();
 					short pos;
+					if (value.quantity > 0) {
+						changedSlots = InventoryTools.addToInventory(inv, value.itemId, value.quantity);
+						for (Short s : changedSlots.addedOrRemovedSlots) {
+							pos = s.shortValue();
+							ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+						}
+					} else {
+						int quantity;
+						if (value.quantity == Integer.MIN_VALUE) {
+							quantity = InventoryTools.getAmountOfItem(inv, value.itemId);
+							if (type == Inventory.InventoryType.EQUIP)
+								quantity += InventoryTools.getAmountOfItem(inv, value.itemId);
+						} else {
+							quantity = -value.quantity;
+						}
+						changedSlots = InventoryTools.removeFromInventory(inv, value.itemId, quantity);
+						for (Short s : changedSlots.addedOrRemovedSlots) {
+							pos = s.shortValue();
+							ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+						}
+					}
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
 						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
-					}
-					for (Short s : changedSlots.addedOrRemovedSlots) {
-						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 					}
 					target.itemCountChanged(value.itemId);
 					break;

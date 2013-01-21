@@ -2652,6 +2652,24 @@
 	* Respawn rate lowered to once every 15 seconds. Rate is lowered but max
 	spawn (abundancy) remains the same.
 
+2013-01-21  GoldenKevin  (revision 194)
+
+	* Added CommandCollection interface to facilitate adding commands from
+	class files (outside of CommandProcessor) that contain multiple command
+	definitions. CommandProcessor does not have to be aware of what specific
+	commands are contained in the individual CommandCollection implementations,
+	so CommandCollection implementations may now be extended without modifying
+	CommandProcessor.
+	* Fixed overflow in InventoryTools.getAmountOfItem. Now returns an int.
+	* Added !take command for taking an item from a player.
+	* Fixed bugs related to spawn points when exiting through the Free Market
+	portal to the default map, Perion, when the saved location data is missing.
+	* Allow warp to a map if the WZs for a portal have an invalid destination.
+	* Less sensitive fast HP/MP regeneration detection.
+	* Removed infraction triggers in AP and SP allocation because latency or
+	tubi enabled clients may fire them.
+	* Identified cause of Energy Charge effect showing in place of Dash.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
