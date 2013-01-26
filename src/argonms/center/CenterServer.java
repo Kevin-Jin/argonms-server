@@ -61,14 +61,14 @@ public class CenterServer {
 	private CenterLoginInterface loginServer;
 	private CenterShopInterface shopServer;
 	private final Map<Byte, CenterGameInterface> gameServers;
-	private final Map<Byte, Parties> worldParties;
+	private final Map<Byte, IntraworldGroups> worldGroups;
 	private final Map<Byte, Chatrooms> worldChatrooms;
 	private final Lock readLock;
 	private final Lock writeLock;
 
 	private CenterServer() {
 		gameServers = new HashMap<Byte, CenterGameInterface>();
-		worldParties = new HashMap<Byte, Parties>();
+		worldGroups = new HashMap<Byte, IntraworldGroups>();
 		worldChatrooms = new HashMap<Byte, Chatrooms>();
 		ReentrantReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
@@ -190,8 +190,8 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
-			if (!worldParties.containsKey(Byte.valueOf(remote.getWorld())) || !worldChatrooms.containsKey(Byte.valueOf(remote.getWorld()))) {
-				worldParties.put(Byte.valueOf(remote.getWorld()), new Parties(remote.getWorld()));
+			if (!worldGroups.containsKey(Byte.valueOf(remote.getWorld())) || !worldChatrooms.containsKey(Byte.valueOf(remote.getWorld()))) {
+				worldGroups.put(Byte.valueOf(remote.getWorld()), new IntraworldGroups(remote.getWorld()));
 				worldChatrooms.put(Byte.valueOf(remote.getWorld()), new Chatrooms());
 			}
 			remote.serverOnline();
@@ -248,7 +248,7 @@ public class CenterServer {
 				}
 			}
 			if (deleteWorldParty) {
-				worldParties.remove(Byte.valueOf(remote.getWorld()));
+				worldGroups.remove(Byte.valueOf(remote.getWorld()));
 				worldChatrooms.remove(Byte.valueOf(remote.getWorld()));
 			}
 			gameServers.remove(Byte.valueOf(serverId));
@@ -426,8 +426,8 @@ public class CenterServer {
 		}
 	}
 
-	public Parties getPartyDb(byte world) {
-		return worldParties.get(Byte.valueOf(world));
+	public IntraworldGroups getGroupsDb(byte world) {
+		return worldGroups.get(Byte.valueOf(world));
 	}
 
 	public Chatrooms getChatroomDb(byte world) {

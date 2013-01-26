@@ -69,12 +69,9 @@ public class QuestEntry {
 	 * @param state
 	 * @param mobKillsProgress
 	 */
-	public QuestEntry(byte state, Map<Integer, Short> mobKillsProgress) {
+	public QuestEntry(byte state, Map<Integer, AtomicInteger> mobKillsProgress) {
 		this.state = state;
-		Map<Integer, AtomicInteger> tempMobCount = new LinkedHashMap<Integer, AtomicInteger>(mobKillsProgress.size());
-		for (Entry<Integer, Short> mob : mobKillsProgress.entrySet())
-			tempMobCount.put(mob.getKey(), new AtomicInteger(mob.getValue().shortValue()));
-		mobCount = Collections.unmodifiableMap(tempMobCount);
+		mobCount = Collections.unmodifiableMap(mobKillsProgress);
 	}
 
 	public void updateState(byte newState) {
@@ -137,10 +134,7 @@ public class QuestEntry {
 		return (short) (count != null ? count.get() : 0);
 	}
 
-	public Map<Integer, Short> getAllMobCounts() {
-		Map<Integer, Short> counts = new LinkedHashMap<Integer, Short>(mobCount.size());
-		for (Entry<Integer, AtomicInteger> entry : mobCount.entrySet())
-			counts.put(entry.getKey(), Short.valueOf((short) entry.getValue().get()));
-		return counts;
+	public Map<Integer, ? extends Number> getAllMobCounts() {
+		return mobCount;
 	}
 }

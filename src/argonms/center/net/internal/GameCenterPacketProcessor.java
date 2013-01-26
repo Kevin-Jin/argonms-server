@@ -185,7 +185,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		String creatorName = packet.readLengthPrefixedString();
 		short creatorJob = packet.readShort();
 		short creatorLevel = packet.readShort();
-		int partyId = CenterServer.getInstance().getPartyDb(r.getWorld()).makeNewParty(new Party.Member(creatorId, creatorName, creatorJob, creatorLevel, creatorCh));
+		int partyId = CenterServer.getInstance().getGroupsDb(r.getWorld()).makeParty(new Party.Member(creatorId, creatorName, creatorJob, creatorLevel, creatorCh));
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 		writeCenterServerSynchronizationPacketHeader(lew, creatorCh, CenterServerSynchronizationOps.PARTY_CREATE);
 		lew.writeInt(partyId);
@@ -195,7 +195,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 
 	private void processPartyDisbandment(LittleEndianReader packet) {
 		int partyId = packet.readInt();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).destroyParty(partyId);
 		if (party == null) //if there was lag, leader may have spammed leave button
 			return;
 
@@ -244,7 +244,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		byte leaverChannel = packet.readByte();
 		String leaverName = packet.readLengthPrefixedString();
 		boolean leaverExpelled = packet.readBool();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 
@@ -265,7 +265,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 				//database. otherwise if another player in the party
 				//logs on before he changes channels or logs off, he
 				//will still be loaded into the party list
-				CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
+				CenterServer.getInstance().getGroupsDb(r.getWorld()).destroyParty(partyId);
 			partyChannels = new HashSet<Byte>(partyChannels);
 			partyChannels.add(Byte.valueOf(leaverChannel));
 			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
@@ -313,7 +313,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		String joinerName = packet.readLengthPrefixedString();
 		short joinerJob = packet.readShort();
 		short joinerLevel = packet.readShort();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 
@@ -369,7 +369,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	private void processPartyLeaderChange(LittleEndianReader packet) {
 		int partyId = packet.readInt();
 		int newLeader = packet.readInt();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 
@@ -398,7 +398,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int partyId = packet.readInt();
 		byte responseCh = packet.readByte();
 		int responseId = packet.readInt();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) {
 			//TODO: not safe when two members of the same party log in at the
 			//same time or when there was only one member logged in and he
@@ -427,7 +427,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			} finally {
 				DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
 			}
-			CenterServer.getInstance().getPartyDb(r.getWorld()).set(partyId, party);
+			CenterServer.getInstance().getGroupsDb(r.getWorld()).setParty(partyId, party);
 		}
 		party.lockRead();
 		try {
@@ -457,7 +457,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int partyId = packet.readInt();
 		int entererId = packet.readInt();
 		byte targetCh = packet.readByte();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 
@@ -493,7 +493,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int exiterId = packet.readInt();
 		byte lastCh = packet.readByte();
 		boolean loggingOff = packet.readBool();
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 
@@ -507,7 +507,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		try {
 			Set<Byte> partyChannels = party.allChannels();
 			if (loggingOff && partyChannels.size() == 1 && partyChannels.contains(Byte.valueOf(Party.OFFLINE_CH)))
-				CenterServer.getInstance().getPartyDb(r.getWorld()).remove(partyId);
+				CenterServer.getInstance().getGroupsDb(r.getWorld()).destroyParty(partyId);
 			partyChannels = new HashSet<Byte>(partyChannels);
 			partyChannels.add(Byte.valueOf(lastCh));
 			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
@@ -536,7 +536,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		boolean updateLevel = packet.readBool();
 		short newValue = packet.readShort();
 
-		Party party = CenterServer.getInstance().getPartyDb(r.getWorld()).get(partyId);
+		Party party = CenterServer.getInstance().getGroupsDb(r.getWorld()).getParty(partyId);
 		if (party == null) //if there was lag, party may have been disbanded before member clicked leave
 			return;
 

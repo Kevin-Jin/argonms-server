@@ -79,6 +79,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -512,7 +513,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 					rs.close();
 
 					mps.setInt(1, questEntryId);
-					for (Entry<Integer, Short> mobProgress : status.getAllMobCounts().entrySet()) {
+					for (Entry<Integer, ? extends Number> mobProgress : status.getAllMobCounts().entrySet()) {
 						mps.setInt(2, mobProgress.getKey().intValue());
 						mps.setShort(3, mobProgress.getValue().shortValue());
 						mps.addBatch();
@@ -749,14 +750,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);
 					byte state = rs.getByte(3);
-					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
+					Map<Integer, AtomicInteger> mobProgress = new LinkedHashMap<Integer, AtomicInteger>();
 					if (state == QuestEntry.STATE_STARTED) {
 						mps.setInt(1, questEntryId);
 						mrs = null;
 						try {
 							mrs = mps.executeQuery();
 							while (mrs.next())
-								mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+								mobProgress.put(Integer.valueOf(mrs.getInt(1)), new AtomicInteger(mrs.getShort(2)));
 						} finally {
 							DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
 						}

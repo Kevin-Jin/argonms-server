@@ -2670,6 +2670,18 @@
 	tubi enabled clients may fire them.
 	* Identified cause of Energy Charge effect showing in place of Dash.
 
+2013-01-26  GoldenKevin  (revision 195)
+
+	* Fixed QuestEntry.getData sometimes being out of order if the character
+	logged off or changed channels while completing the quest.
+	* Reduced amount of copying when committing and loading quest mob progress.
+	* Started work on refactoring interchannel party code to accommodate
+	interchannel guild code.
+	* Added a `guilds` table definition for database.
+	* Fixed Eurek and Vicious NPCs.
+	* A player warped to any map in the Free Market through the !map or !tp
+	commands now has his or her previous location saved.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

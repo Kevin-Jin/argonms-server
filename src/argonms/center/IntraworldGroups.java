@@ -24,7 +24,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -34,8 +36,8 @@ import java.util.logging.Logger;
  *
  * @author GoldenKevin
  */
-public class Parties {
-	private static final Logger LOG = Logger.getLogger(Parties.class.getName());
+public class IntraworldGroups {
+	private static final Logger LOG = Logger.getLogger(IntraworldGroups.class.getName());
 
 	//TODO: partyid will easily be exhausted. either we have to use 64-bit value
 	//or reuse old partyids (cf. InventorySlot)
@@ -59,12 +61,22 @@ public class Parties {
 		return partyId;
 	}
 
+	private final byte world;
+
 	private final AtomicInteger nextPartyId;
 	private final Map<Integer, Party> parties;
 
-	public Parties(byte world) {
+	private final Set<String> loadedGuildNames;
+	private final Map<Integer, Guild> guilds;
+
+	public IntraworldGroups(byte world) {
+		this.world = world;
+
 		nextPartyId = new AtomicInteger(getStartingPartyId(world));
 		parties = new ConcurrentHashMap<Integer, Party>();
+
+		loadedGuildNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+		guilds = new ConcurrentHashMap<Integer, Guild>();
 	}
 
 	/**
@@ -72,22 +84,45 @@ public class Parties {
 	 * @param creator
 	 * @return the unique partyId of the newly created party
 	 */
-	public int makeNewParty(Party.Member creator) {
+	public int makeParty(Party.Member creator) {
 		//make sure we never return 0, because the client treats 0 specially
 		int partyId = nextPartyId.incrementAndGet();
 		parties.put(Integer.valueOf(partyId), new Party(creator));
 		return partyId;
 	}
 
-	public Party remove(int partyId) {
+	public Party destroyParty(int partyId) {
 		return parties.remove(Integer.valueOf(partyId));
 	}
 
-	public Party get(int partyId) {
+	public Party getParty(int partyId) {
 		return parties.get(Integer.valueOf(partyId));
 	}
 
-	public void set(int partyId, Party party) {
+	public void setParty(int partyId, Party party) {
 		parties.put(Integer.valueOf(partyId), party);
+	}
+
+	public boolean guildExists(String name) {
+		if (loadedGuildNames.contains(name))
+			return true;
+
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM `guilds` WHERE `name` = ? AND `world` = ? LIMIT 1)");
+			ps.setString(1, name);
+			ps.setByte(2, world);
+			rs = ps.executeQuery();
+			rs.next();
+			return rs.getBoolean(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not determine whether guild " + name + " exists", ex);
+			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
 	}
 }

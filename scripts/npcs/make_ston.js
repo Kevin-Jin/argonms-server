@@ -118,7 +118,7 @@ if (selection == 0) {
 	for (let i = 0; i < reqitem.length && access; i++)
 		if (!player.hasItem(reqitem[i][0], reqitem[i][1]))
 			access = false;
-	if (!access || !player.canGainItem(makeitem) || !player.hasMesos(COST)) {
+	if (!access || !player.canGainItem(makeitem, 1) || !player.hasMesos(COST)) {
 		npc.sayNext("Please check and see if you have all the items needed, or if your etc. inventory is full or not");
 	} else {
 		player.loseItem(reqitem[0][0], reqitem[0][1]);

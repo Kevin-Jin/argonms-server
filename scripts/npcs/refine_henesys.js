@@ -156,6 +156,8 @@ if (selection == 1) {
 				giveQty = 1000 - (item - 2061000) * 100;
 			else if (item == 4003000)
 				giveQty = qty * 15;
+			else
+				giveQty = 1;
 
 			if (player.canGainItem(item, giveQty)) {
 				if (mats instanceof Array)

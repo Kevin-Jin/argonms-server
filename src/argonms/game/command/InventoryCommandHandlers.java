@@ -199,7 +199,7 @@ public class InventoryCommandHandlers implements CommandCollection<CommandCaller
 
 			@Override
 			public String getUsage() {
-					return "Usage: !take [-t <target>] <itemid> [<quantity>]";
+				return "Usage: !take [-t <target>] <itemid> [<quantity>]";
 			}
 		});
 		return Collections.unmodifiableMap(definitions);
