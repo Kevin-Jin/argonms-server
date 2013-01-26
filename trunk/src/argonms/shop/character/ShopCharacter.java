@@ -36,7 +36,9 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -178,13 +180,13 @@ public class ShopCharacter extends LoggedInPlayer {
 				while (rs.next()) {
 					int questEntryId = rs.getInt(1);
 					short questId = rs.getShort(2);
-					Map<Integer, Short> mobProgress = new HashMap<Integer, Short>();
+					Map<Integer, AtomicInteger> mobProgress = new LinkedHashMap<Integer, AtomicInteger>();
 					mps.setInt(1, questEntryId);
 					mrs = null;
 					try {
 						mrs = mps.executeQuery();
 						while (mrs.next())
-							mobProgress.put(Integer.valueOf(mrs.getInt(1)), Short.valueOf(mrs.getShort(2)));
+							mobProgress.put(Integer.valueOf(mrs.getInt(1)), new AtomicInteger(mrs.getShort(2)));
 					} finally {
 						DatabaseManager.cleanup(DatabaseType.STATE, mrs, null, null);
 					}

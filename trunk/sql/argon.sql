@@ -27,6 +27,7 @@ DROP TABLE IF EXISTS `uniqueid`;
   DROP TABLE IF EXISTS `minigamescores`;
   DROP TABLE IF EXISTS `mapmemory`;
   DROP TABLE IF EXISTS `keymaps`;
+  DROP TABLE IF EXISTS `guilds`;
   DROP TABLE IF EXISTS `famelog`;
   DROP TABLE IF EXISTS `cooldowns`;
   DROP TABLE IF EXISTS `buddyentries`;
@@ -238,6 +239,22 @@ CREATE TABLE `famelog` (
   PRIMARY KEY (`id`),
   KEY (`from`),
   CONSTRAINT FOREIGN KEY (`from`) REFERENCES `characters` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `guilds` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(12) NOT NULL,
+  `master` INT(11) NOT NULL,
+  `titles` VARCHAR(64) NOT NULL,
+  `capacity` TINYINT(4) NOT NULL,
+  `emblemBackground` SMALLINT(6) NOT NULL,
+  `emblemBackgroundColor` TINYINT(4) NOT NULL,
+  `emblemDesign` SMALLINT(6) NOT NULL,
+  `emblemDesignColor` TINYINT(4) NOT NULL,
+  `notice` VARCHAR(100) NOT NULL,
+  `gp` INT(11) NOT NULL,
+  `alliance` INT(11) NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE `keymaps` (

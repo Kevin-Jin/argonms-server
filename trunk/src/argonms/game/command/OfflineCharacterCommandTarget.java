@@ -173,13 +173,13 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 					case CHANGE_MAP: {
 						MapValue value = (MapValue) update.getValue();
 
-						if (value.mapId == MapValue.FREE_MARKET_MAP_ID || value.mapId == MapValue.JAIL_MAP_ID) {
+						if (value.mapId / 100 == MapValue.FREE_MARKET_MAP_ID / 100 || value.mapId == MapValue.JAIL_MAP_ID) {
 							int map = getIntValueInCharactersTable("map");
 							byte spawnPoint = getByteValueInCharactersTable("spawnpoint");
 
 							ps = con.prepareStatement("INSERT INTO `mapmemory` (`characterid`,`key`,`value`,`spawnpoint`) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE `characterid` = `characterid`");
 							ps.setInt(1, Player.getIdFromName(target));
-							ps.setString(2, value.mapId == MapValue.FREE_MARKET_MAP_ID ? MapMemoryVariable.FREE_MARKET.toString() : MapMemoryVariable.JAIL.toString());
+							ps.setString(2, value.mapId == MapValue.JAIL_MAP_ID ? MapMemoryVariable.JAIL.toString() : MapMemoryVariable.FREE_MARKET.toString());
 							ps.setInt(3, map);
 							ps.setByte(4, spawnPoint);
 							ps.executeUpdate();

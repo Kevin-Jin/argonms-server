@@ -283,7 +283,7 @@ public final class NpcMiniroomHandler {
 				}
 				p.itemCountChanged(item.getDataId());
 				gc.getSession().send(writeStorageDeposit(storageInv, invType));
-					break;
+				break;
 			}
 			case ACT_ARRANGE_ITEMS: {
 				//TODO: IMPLEMENT

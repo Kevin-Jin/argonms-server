@@ -74,7 +74,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 			switch (update.getKey()) {
 				case CHANGE_MAP: {
 					MapValue value = (MapValue) update.getValue();
-					if (value.mapId == MapValue.FREE_MARKET_MAP_ID && target.getRememberedMap(MapMemoryVariable.FREE_MARKET).left.intValue() == GlobalConstants.NULL_MAP)
+					if (value.mapId / 100 == MapValue.FREE_MARKET_MAP_ID / 100 && target.getRememberedMap(MapMemoryVariable.FREE_MARKET).left.intValue() == GlobalConstants.NULL_MAP)
 						target.rememberMap(MapMemoryVariable.FREE_MARKET);
 					if (value.mapId == MapValue.JAIL_MAP_ID && target.getRememberedMap(MapMemoryVariable.JAIL).left.intValue() == GlobalConstants.NULL_MAP)
 						target.rememberMap(MapMemoryVariable.JAIL);
