@@ -18,27 +18,25 @@
 
 package argonms.game.script.binding;
 
-import argonms.game.character.PartyList;
-import java.awt.Rectangle;
+import argonms.common.util.input.LittleEndianReader;
 
 /**
- *
+ * Proxy class that allows classes outside this package to call protected
+ * methods in this package. These methods must be protected so that JavaScript
+ * code cannot call them, and this class allows those methods to be called by
+ * Java code.
  * @author GoldenKevin
  */
-public class ScriptPartyMember extends ScriptPlayer {
-	public ScriptPartyMember(PartyList.LocalMember member) {
-		super(member.getPlayer());
+public class ScriptObjectManipulator {
+	public static void npcResponseReceived(ScriptNpc npc, LittleEndianReader packet) {
+		npc.responseReceived(packet);
 	}
 
-	public byte getChannel() {
-		return getPlayer().getClient().getChannel();
+	public static void guildNameReceived(ScriptNpc npc, String name) {
+		npc.guildNameReceived(name);
 	}
 
-	public int getMapId() {
-		return getPlayer().getMapId();
-	}
-
-	public boolean inRectangle(int x, int y, int width, int height) {
-		return new Rectangle(x, y, width, height).contains(getPlayer().getPosition());
+	public static void guildEmblemReceived(ScriptNpc npc, short background, byte backgroundColor, short design, byte designColor) {
+		npc.guildEmblemReceived(background, backgroundColor, design, designColor);
 	}
 }

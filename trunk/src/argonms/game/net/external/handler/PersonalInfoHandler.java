@@ -51,7 +51,7 @@ public final class PersonalInfoHandler {
 		boolean add = packet.readBool();
 
 		if (receiver == self) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to give fame to self");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to give fame to self");
 			return;
 		}
 		if (receiver == null) {

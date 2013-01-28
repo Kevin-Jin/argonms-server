@@ -37,7 +37,7 @@ public class MessengerHandler {
 		switch (packet.readByte()) {
 			case Chatroom.ACT_OPEN: {
 				if (room != null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to open new chatroom while one is open.");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to open new chatroom while one is open.");
 					return;
 				}
 				int roomId = packet.readInt();
@@ -49,14 +49,14 @@ public class MessengerHandler {
 			}
 			case Chatroom.ACT_EXIT:
 				if (room == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to leave null chatroom.");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to leave null chatroom.");
 					return;
 				}
 				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendLeaveChatroom(p);
 				break;
 			case Chatroom.ACT_INVITE: {
 				if (room == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to invite player to null chatroom.");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to invite player to null chatroom.");
 					return;
 				}
 				room.lockRead();
@@ -78,7 +78,7 @@ public class MessengerHandler {
 			}
 			case Chatroom.ACT_CHAT:
 				if (room == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to send text to null chatroom.");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to send text to null chatroom.");
 					return;
 				}
 				String text = packet.readLengthPrefixedString();

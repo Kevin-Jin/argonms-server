@@ -271,7 +271,7 @@ public final class WorldlistHandler {
 					eyes, hair + hairColor, skin, gender, str, dex, _int, luk, top, bottom, shoes, weapon);
 			writeCharEntry(lew, p);
 		} else {
-			CheatTracker.get(lc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to create a stats hacked character (" + name + ")");
+			CheatTracker.get(lc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to create a stats hacked character (" + name + ")");
 		}
 		lc.getSession().send(lew.getBytes());
 	}

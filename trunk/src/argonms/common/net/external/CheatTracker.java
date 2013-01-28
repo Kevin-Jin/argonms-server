@@ -66,7 +66,8 @@ public abstract class CheatTracker {
 	}
 
 	public enum Infraction {
-		PACKET_EDITING	(1, 10, 30L * 24 * 60 * 60 * 1000); //30 days
+		POSSIBLE_PACKET_EDITING	(1, TOLERANCE / 1000, 30L * 24 * 60 * 60 * 1000), //30 days
+		CERTAIN_PACKET_EDITING	(2, TOLERANCE / 2, 60L * 24 * 60 * 60 * 1000); //30 days
 
 		private static final Map<Byte, Infraction> lookup;
 

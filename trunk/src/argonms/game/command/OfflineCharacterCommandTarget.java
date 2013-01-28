@@ -426,7 +426,7 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						BanValue value = (BanValue) update.getValue();
 						Calendar cal = TimeTool.currentDateTime();
 						cal.setTimeInMillis(value.expireTimestamp);
-						CheatTracker.get(target).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
+						CheatTracker.get(target).ban(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, value.banner, value.reason, cal);
 						break;
 					}
 					case STUN:

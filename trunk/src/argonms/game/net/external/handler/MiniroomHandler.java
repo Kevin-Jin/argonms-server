@@ -181,7 +181,7 @@ public final class MiniroomHandler {
 				if (p.getInventory(InventoryType.CASH).getItemSlots(itemId).contains(Short.valueOf(slot))) {
 					room = new PlayerStore(p, text, itemId);
 				} else {
-					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to open player shop without permit");
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to open player shop without permit");
 					return;
 				}
 				p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
@@ -198,7 +198,7 @@ public final class MiniroomHandler {
 				if (p.getInventory(InventoryType.CASH).getItemSlots(itemId).contains(Short.valueOf(slot))) {
 					room = new HiredMerchant(p, text, itemId);
 				} else {
-					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to open hired merchant without permit");
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to open hired merchant without permit");
 					return;
 				}
 				//p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
@@ -273,8 +273,12 @@ public final class MiniroomHandler {
 		byte tradeSlot = packet.readByte();
 		Inventory inv = p.getInventory(type);
 		InventorySlot item = inv.get(slot);
+		if (quantity < 0) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to trade negative quantity");
+			return;
+		}
 		if (item == null || item.getQuantity() < quantity && !InventoryTools.isRechargeable(item.getDataId())) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistent item");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to trade nonexistent item");
 			return;
 		}
 		InventorySlot itemToPut;
@@ -298,7 +302,7 @@ public final class MiniroomHandler {
 			Trade room = (Trade) p.getMiniRoom();
 			room.addMesos(p, mesosAmt);
 		} else {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to trade nonexistent mesos");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to trade nonexistent mesos");
 		}
 	}
 

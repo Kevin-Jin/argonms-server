@@ -66,7 +66,7 @@ public final class PlayerMiscHandler {
 		int itemId = packet.readInt();
 		GameCharacter p = gc.getPlayer();
 		if (!p.getInventory(InventoryType.SETUP).hasItem(itemId, 1)) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use chair without owning the item");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use chair without owning the item");
 			return;
 		}
 		p.setItemChair(itemId);
@@ -83,7 +83,7 @@ public final class PlayerMiscHandler {
 		//TODO: use MP recovery and HP recovery skill levels to determine if the
 		//proper amount of HP/MP is being recovered
 		if (p.getHp() == 0 || hp > 400 || mp > 1000 || (hp > 0 && mp > 0)) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish too much HP/MP at once");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to replenish too much HP/MP at once");
 			return;
 		}
 
@@ -98,7 +98,7 @@ public final class PlayerMiscHandler {
 			//it's not documented in the skill description, but having at least
 			//level 1 Improved HP Recovery will double recover rate to 5 seconds
 			if (now - last < 10000 / 2 && (p.getSkillLevel(Skills.IMPROVED_HP_RECOVERY) == 0 || now - last < 5000 / 2)) {
-				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish HP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
+				ct.suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to replenish HP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
 				return;
 			}
 			p.gainHp(hp);
@@ -108,7 +108,7 @@ public final class PlayerMiscHandler {
 			long last = ct.getLoggedTime("mpr");
 			ct.logTime("mpr", now);
 			if (now - last < 10000 / 2) {
-				ct.suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to replenish MP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
+				ct.suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to replenish MP too rapidly (" + ((now - last) / 1000.0) + " seconds)");
 				return;
 			}
 			p.gainMp(mp);
@@ -121,7 +121,7 @@ public final class PlayerMiscHandler {
 		if (emote > 7) { //cash emotes
 			int itemid = 5159992 + emote;
 			if (p.getInventory(InventoryType.CASH).hasItem(itemid, 1)) {
-				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use cash shop emote without owning the item");
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use cash shop emote without owning the item");
 				return;
 			}
 		}

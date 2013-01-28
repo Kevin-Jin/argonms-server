@@ -36,7 +36,7 @@ if (player.isQuestActive(6108)) {
 			let eligible = 0;
 			let members = party.getLocalMembers();
 			for (let i = 0; i < members.length; i++) {
-				member = members[i];
+				let member = members[i];
 				if (member.getLevel() < 120) {
 					eligible = -1;
 					break;

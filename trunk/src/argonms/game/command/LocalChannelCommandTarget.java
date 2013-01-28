@@ -284,7 +284,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					BanValue value = (BanValue) update.getValue();
 					Calendar cal = TimeTool.currentDateTime();
 					cal.setTimeInMillis(value.expireTimestamp);
-					CheatTracker.get(target.getClient()).ban(CheatTracker.Infraction.PACKET_EDITING, value.banner, value.reason, cal);
+					CheatTracker.get(target.getClient()).ban(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, value.banner, value.reason, cal);
 					break;
 				}
 				case STUN: {

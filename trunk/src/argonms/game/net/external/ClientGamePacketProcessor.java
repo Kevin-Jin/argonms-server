@@ -188,6 +188,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.DENY_PARTY_REQUEST:
 				PartyListHandler.handleDenyRequest(reader, gc);
 				break;
+			case ClientRecvOps.GUILDLIST_MODIFY:
+				GuildListHandler.handleListModification(reader, gc);
+				break;
+			case ClientRecvOps.DENY_GUILD_REQUEST:
+				GuildListHandler.handleDenyRequest(reader, gc);
+				break;
 			case ClientRecvOps.BUDDYLIST_MODIFY:
 				BuddyListHandler.handleListModification(reader, gc);
 				break;

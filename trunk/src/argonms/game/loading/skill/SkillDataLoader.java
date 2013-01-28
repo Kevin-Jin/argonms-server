@@ -49,6 +49,9 @@ public abstract class SkillDataLoader {
 	public abstract boolean canLoadMobSkill(short skillid);
 
 	public SkillStats getSkill(int skillid) {
+		if (skillid == 0)
+			return null;
+
 		Integer oId = Integer.valueOf(skillid);
 		if (!skillStats.containsKey(oId))
 			loadPlayerSkill(skillid);
@@ -56,6 +59,9 @@ public abstract class SkillDataLoader {
 	}
 
 	public MobSkillStats getMobSkill(short skillid) {
+		if (skillid == 0)
+			return null;
+
 		Short oId = Short.valueOf(skillid);
 		if (!mobSkillStats.containsKey(oId))
 			loadMobSkill(skillid);

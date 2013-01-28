@@ -29,6 +29,7 @@ import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.GuildListHandler;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -285,6 +286,32 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		return false;
 	}
 
+	public void askGuildName() {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
+		clearBackButton(); //cannot go backwards
+		getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.ASK_NAME));
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
+	}
+
+	public void askGuildEmblem() {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
+		clearBackButton(); //cannot go backwards
+		getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.ASK_EMBLEM));
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
+	}
+
 	private void fireEndChatEvent() {
 		if (terminated.get())
 			return;
@@ -324,7 +351,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		}
 	}
 
-	public void responseReceived(LittleEndianReader packet) {
+	protected void responseReceived(LittleEndianReader packet) {
 		byte type = packet.readByte();
 		byte action = packet.readByte();
 		switch (type) {
@@ -431,6 +458,21 @@ public class ScriptNpc extends PlayerScriptInteraction {
 						new Object[] { type, packet });
 				break;
 		}
+	}
+
+	protected void guildNameReceived(String name) {
+		resume(name);
+	}
+
+	protected void guildEmblemReceived(short background, byte backgroundColor, short design, byte designColor) {
+		Scriptable array;
+		Context cx = Context.enter();
+		try {
+			array = cx.newArray(globalScope, new Object[] { Short.valueOf(background), Byte.valueOf(backgroundColor), Short.valueOf(design), Byte.valueOf(designColor) });
+		} finally {
+			Context.exit();
+		}
+		resume(array);
 	}
 
 	public int getNpcId() {

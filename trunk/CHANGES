@@ -2682,6 +2682,24 @@
 	* A player warped to any map in the Free Market through the !map or !tp
 	commands now has his or her previous location saved.
 
+2013-01-28  GoldenKevin  (revision 196)
+
+	* CheatTracker now supports unmistakable hacking attempts, banning the user
+	after just two attempts. Some existing calls to CheatTracker.suspicious have
+	been retrofitted to use the correct option.
+	* Added packet editing checks for negative item quantities in selling and
+	buying items to NPC shops and in storing to storage keepers.
+	* KvjSkillDataLoader no longer repeats file IO operations for skills that do
+	not exist and SkillDataLoader immediately returns null when getting stats
+	for skillid 0. Solves potential bottleneck in DealDamageHandler.parseDamage.
+	* Removed unused instance variable in ScriptPartyMember.
+	* Started working on game server side of guild lists by having it share bits
+	of code with PartyList.
+	* Implemented guild NPC scripts and added stubs for necessary bindings that
+	cannot yet be implemented.
+	* Do not allow scripts to call npc.responseReceived. Make that method
+	protected and use a proxy class in the same package to indirectly call it.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

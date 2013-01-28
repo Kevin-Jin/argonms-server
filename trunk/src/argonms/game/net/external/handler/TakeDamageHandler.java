@@ -77,7 +77,7 @@ public final class TakeDamageHandler {
 			Mob m = (Mob) p.getMap().getEntityById(EntityType.MONSTER, ent);
 			if (m != null) { //lag...
 				if (m.getDataId() != mobid) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to spoof mob attack");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to spoof mob attack");
 					return;
 				}
 				if (attack != BUMP_DAMAGE) {
@@ -102,13 +102,13 @@ public final class TakeDamageHandler {
 					switch (pgmr.getSkill()) {
 						case 0:
 							if (!p.isEffectActive(PlayerStatusEffect.MANA_REFLECTION)) {
-								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having mana reflection cast");
+								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to power guard without having mana reflection cast");
 								return;
 							}
 							break;
 						case 6:
 							if (!p.isEffectActive(PlayerStatusEffect.POWER_GUARD)) {
-								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having power guard cast");
+								CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to power guard without having power guard cast");
 								return;
 							}
 							break;
@@ -118,7 +118,7 @@ public final class TakeDamageHandler {
 				}
 				stance = packet.readByte();
 				if (stance > 0 && !p.isEffectActive(PlayerStatusEffect.POWER_STANCE) && !p.isEffectActive(PlayerStatusEffect.POWER_GUARD) && !p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use stance without having buff cast");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use stance without having buff cast");
 					return;
 				}
 			}

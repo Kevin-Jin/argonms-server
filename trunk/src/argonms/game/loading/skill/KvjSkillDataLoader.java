@@ -23,6 +23,9 @@ import argonms.common.util.input.LittleEndianByteArrayReader;
 import argonms.common.util.input.LittleEndianReader;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,9 +48,11 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	;
 
 	private final String dataPath;
+	private final Set<Integer> loadedFiles;
 
 	protected KvjSkillDataLoader(String wzPath) {
 		this.dataPath = wzPath;
+		loadedFiles = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 	}
 
 	@Override
@@ -55,9 +60,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		String id = String.format("%07d", skillid);
 
 		try {
-			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
-			if (f.exists())
-				doWork(new LittleEndianByteArrayReader(f));
+			Integer key = Integer.valueOf(Integer.parseInt(id.substring(0, 3)));
+			if (!loadedFiles.contains(key)) {
+				File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
+				if (f.exists())
+					doWork(new LittleEndianByteArrayReader(f));
+				loadedFiles.add(key);
+			}
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for skill " + skillid, e);
 		}
@@ -66,9 +75,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 	@Override
 	protected void loadMobSkill(short skillid) {
 		try {
-			File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
-			if (f.exists())
-				doMobWork(new LittleEndianByteArrayReader(f));
+			Integer key = Integer.valueOf(-1);
+			if (!loadedFiles.contains(key)) {
+				File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
+				if (f.exists())
+					doMobWork(new LittleEndianByteArrayReader(f));
+				loadedFiles.add(key);
+			}
 		} catch (IOException e) {
 			LOG.log(Level.WARNING, "Could not read KVJ data file for mob skill " + skillid, e);
 		}
@@ -84,11 +97,13 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 					//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
 					//doMobWork(new LittleEndianStreamReader(is));
 					//is.close();
+					loadedFiles.add(Integer.valueOf(-1));
 				} else {
 					doWork(new LittleEndianByteArrayReader(new File(root.getAbsolutePath() + File.separatorChar + kvj)));
 					//InputStream is = new BufferedInputStream(new FileInputStream(root.getAbsolutePath() + File.separatorChar + kvj));
 					//doWork(new LittleEndianStreamReader(is));
 					//is.close();
+					loadedFiles.add(Integer.valueOf(Integer.parseInt(kvj.substring(0, kvj.indexOf(".img.kvj")))));
 				}
 			}
 			return true;
@@ -98,23 +113,27 @@ public class KvjSkillDataLoader extends SkillDataLoader {
 		}
 	}
 
-	//TODO: Actually do real work to see if the skill exists in the file so we
-	//can name this method exists() instead of loadable?
 	@Override
 	public boolean canLoadPlayerSkill(int skillid) {
 		if (skillStats.containsKey(Integer.valueOf(skillid)))
 			return true;
+		if (loadedFiles.contains(Integer.valueOf(skillid / 10000)))
+			return false;
+		//TODO: actually load the file to see if the skill exists so we can use
+		//this method as an "does exist" instead of just "is loadable"?
 		String id = String.format("%07d", skillid);
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append(id.substring(0, 3)).append(".img.kvj").toString());
 		return f.exists();
 	}
 
-	//TODO: Actually do real work to see if the skill exists in the file so we
-	//can name this method exists() instead of loadable?
 	@Override
 	public boolean canLoadMobSkill(short skillid) {
 		if (mobSkillStats.containsKey(Short.valueOf(skillid)))
 			return true;
+		if (loadedFiles.contains(Integer.valueOf(-1)))
+			return false;
+		//TODO: actually load the file to see if the skill exists so we can use
+		//this method as an "does exist" instead of just "is loadable"?
 		File f = new File(new StringBuilder(dataPath).append("Skill.wz").append(File.separator).append("MobSkill.img.kvj").toString());
 		return f.exists();
 	}

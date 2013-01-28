@@ -156,7 +156,7 @@ public final class DealDamageHandler {
 			if (!shadowStars) { //consume ammo if shadow claw is not active
 				InventorySlot slot = p.getInventory(InventoryType.USE).get(attack.ammoSlot);
 				if (slot == null || slot.getQuantity() < useQty) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent ranged weapon ammunition");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent ranged weapon ammunition");
 					return;
 				}
 				attack.ammoItemId = slot.getDataId();
@@ -171,7 +171,7 @@ public final class DealDamageHandler {
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars
 				InventorySlot slot = p.getInventory(InventoryType.CASH).get(attack.cashAmmoSlot);
 				if (slot == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent cash shop stars");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent cash shop stars");
 					return;
 				}
 				attack.ammoItemId = slot.getDataId();
@@ -227,7 +227,7 @@ public final class DealDamageHandler {
 	public static void handleEnergyChargeAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		if (!p.isEffectActive(PlayerStatusEffect.ENERGY_CHARGE)) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to power guard without having energy charge cast");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to power guard without having energy charge cast");
 			return;
 		}
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
@@ -263,7 +263,7 @@ public final class DealDamageHandler {
 				//apparently chakra does not show a prepared skill effect to the map.
 			}
 		} else {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to charge non-prepared skill");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to charge non-prepared skill");
 		}
 	}
 
@@ -513,7 +513,7 @@ public final class DealDamageHandler {
 				case Skills.CHARGED_BLOW: {
 					PlayerStatusEffectValues chargeBuff = player.getEffectValue(PlayerStatusEffect.CHARGE);
 					if (chargeBuff == null) {
-						CheatTracker.get(player.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use Charged Blow without Charge buff");
+						CheatTracker.get(player.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use Charged Blow without Charge buff");
 						return;
 					}
 					byte advancedBlowLvl = player.getSkillLevel(Skills.ADVANCED_CHARGE_BLOW);

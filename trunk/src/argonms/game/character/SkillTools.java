@@ -111,7 +111,7 @@ public final class SkillTools {
 					ammoPrefix = 2330;
 					break;
 				default:
-					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use ranged buff skill without ranged weapon");
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use ranged buff skill without ranged weapon");
 					return;
 			}
 			InventorySlot slot;
@@ -156,7 +156,7 @@ public final class SkillTools {
 				}
 				p.itemCountChanged(removeItemId);
 			} else {
-				CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use buff skill without meeting the cast costs");
+				CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use buff skill without meeting the cast costs");
 			}
 		}
 	}
