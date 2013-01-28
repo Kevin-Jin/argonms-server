@@ -139,7 +139,7 @@ public final class InventoryHandler {
 		Inventory inv = p.getInventory(InventoryType.USE);
 		InventorySlot changed = inv.get(slot);
 		if (changed == null || changed.getDataId() != itemId || changed.getQuantity() < 1) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent map return scroll");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent map return scroll");
 			return;
 		}
 		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
@@ -169,7 +169,7 @@ public final class InventoryHandler {
 		GameCharacter p = gc.getPlayer();
 		InventorySlot scroll = p.getInventory(InventoryType.USE).get(scrollSlot);
 		if (scroll == null || scroll.getQuantity() < 1) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to scroll equip with nonexistent scroll");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to scroll equip with nonexistent scroll");
 			return;
 		}
 		Equip equip;
@@ -178,18 +178,18 @@ public final class InventoryHandler {
 		else
 			equip = (Equip) p.getInventory(InventoryType.EQUIP).get(equipSlot);
 		if (equip == null) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to scroll nonexistent equip");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to scroll nonexistent equip");
 			return;
 		}
 		if ((scroll.getDataId() / 100) % 100 < 90 && (scroll.getDataId() / 100) % 100 != (equip.getDataId() / 10000) % 100) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to scroll equip with incompatible scroll");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to scroll equip with incompatible scroll");
 			return;
 		}
 		short whiteScrollSlot = 0;
 		if (useWhiteScroll) {
 			Set<Short> whiteScrollSlots = p.getInventory(InventoryType.USE).getItemSlots(2340000);
 			if (whiteScrollSlots.isEmpty() || p.getInventory(InventoryType.USE).get(whiteScrollSlot = whiteScrollSlots.iterator().next().shortValue()).getQuantity() < 1) {
-				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to scroll equip with nonexistent white scroll");
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to scroll equip with nonexistent white scroll");
 				return;
 			}
 		}

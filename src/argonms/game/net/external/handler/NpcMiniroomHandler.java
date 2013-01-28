@@ -73,7 +73,7 @@ public final class NpcMiniroomHandler {
 	public static void handleNpcShopAction(LittleEndianReader packet, GameClient gc) {
 		NpcShop shop = (NpcShop) gc.getNpcRoom();
 		if (shop == null) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to perform NPC shop transaction to nonexistent shop");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to perform NPC shop transaction to nonexistent shop");
 			return;
 		}
 		switch (packet.readByte()) {
@@ -86,15 +86,19 @@ public final class NpcMiniroomHandler {
 				NpcShop.ShopSlot item = shop.get(position);
 				int totalPrice = price * quantity;
 				int totalQuantity = item.quantity * quantity;
+				if (quantity < 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy negative quantity from NPC shop");
+					return;
+				}
 				if (item == null || item.itemId != itemId || item.price != price) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to buy nonexistent item from NPC shop");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from NPC shop");
 					return;
 				}
 				GameCharacter p = gc.getPlayer();
 				InventoryType invType = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(invType);
 				if (p.getMesos() < totalPrice) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to buy item from NPC shop with nonexistent mesos");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy item from NPC shop with nonexistent mesos");
 					return;
 				}
 				UpdatedSlots changedSlots = null;
@@ -106,7 +110,7 @@ public final class NpcMiniroomHandler {
 						if (InventoryTools.canFitEntirely(inv, itemId, quantity, true))
 							changedSlots = InventoryTools.addToInventory(p.getInventory(invType), itemId, totalQuantity);
 					} else {
-						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to buy more items from NPC shop than one slot allows");
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy more items from NPC shop than one slot allows");
 						return;
 					}
 				} else {
@@ -147,8 +151,12 @@ public final class NpcMiniroomHandler {
 				InventoryType invType = InventoryTools.getCategory(itemId);
 				Inventory inventory = p.getInventory(invType);
 				InventorySlot item = inventory.get(slot);
+				if (quantity < 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to sell negative quantity to NPC shop");
+					return;
+				}
 				if (item == null || item.getDataId() != itemId || !InventoryTools.isRechargeable(itemId) && item.getQuantity() < quantity) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to sell nonexistent items to NPC shop");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to sell nonexistent items to NPC shop");
 					return;
 				}
 				int price = ItemDataLoader.getInstance().getWholePrice(itemId) * quantity;
@@ -178,13 +186,13 @@ public final class NpcMiniroomHandler {
 				Inventory inventory = p.getInventory(InventoryType.USE);
 				InventorySlot item = inventory.get(slot);
 				if (item == null || !InventoryTools.isRechargeable(item.getDataId())) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to recharge nonexistent ranged weapon ammunition");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to recharge nonexistent ranged weapon ammunition");
 					return;
 				}
 				short slotMax = ItemTools.getPersonalSlotMax(p, item.getDataId());
 				int rechargeCost = shop.rechargeCost(item.getDataId(), slotMax - item.getQuantity());
 				if (rechargeCost < 0 || p.getMesos() < rechargeCost) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to recharge ranged weapon ammunition with nonexistent mesos");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to recharge ranged weapon ammunition with nonexistent mesos");
 					return;
 				}
 				item.setQuantity(slotMax);
@@ -203,7 +211,7 @@ public final class NpcMiniroomHandler {
 	public static void handleNpcStorageAction(LittleEndianReader packet, GameClient gc) {
 		NpcStorageKeeper keeper = (NpcStorageKeeper) gc.getNpcRoom();
 		if (keeper == null) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to perform storage keeper transaction to nonexistent storage keeper");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to perform storage keeper transaction to nonexistent storage keeper");
 			return;
 		}
 		StorageInventory storageInv = gc.getPlayer().getStorageInventory();
@@ -219,7 +227,7 @@ public final class NpcMiniroomHandler {
 				}
 				InventorySlot item = storageInv.get(invType, slot);
 				if (item == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to take out nonexistent item from storage keeper");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to take out nonexistent item from storage keeper");
 					return;
 				}
 				if (!InventoryTools.canFitEntirely(destInv, item.getDataId(), item.getQuantity(), false)) {
@@ -251,8 +259,12 @@ public final class NpcMiniroomHandler {
 				InventoryType invType = InventoryTools.getCategory(itemId);
 				Inventory inv = p.getInventory(invType);
 				InventorySlot item = inv.get(slot);
+				if (quantity < 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to store negative quantity to storage keeper");
+					return;
+				}
 				if (item == null || item.getDataId() != itemId || quantity < 1 || quantity > item.getQuantity()) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to store nonexistent item to storage keeper");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to store nonexistent item to storage keeper");
 					return;
 				}
 				if (p.getMesos() < keeper.getDepositCost()) {
@@ -293,7 +305,7 @@ public final class NpcMiniroomHandler {
 				GameCharacter p = gc.getPlayer();
 				int delta = packet.readInt();
 				if (delta > 0 && delta > storageInv.getMesos() || delta < 0 && -delta > p.getMesos()) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to store nonexistent mesos to storage keeper");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to store nonexistent mesos to storage keeper");
 					return;
 				}
 				if ((long) p.getMesos() + delta > Integer.MAX_VALUE) {

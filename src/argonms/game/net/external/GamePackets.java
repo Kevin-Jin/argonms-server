@@ -1115,6 +1115,15 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeSimpleGuildListMessage(byte opCode) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(3);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(opCode);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowPlayer(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 

@@ -30,6 +30,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import java.lang.ref.WeakReference;
+import org.mozilla.javascript.NativeArray;
 
 /**
  *
@@ -309,5 +310,57 @@ public class ScriptPlayer {
 
 	public void showTimer(int seconds) {
 		getPlayer().getClient().getSession().send(GamePackets.writeTimer(seconds));
+	}
+
+	public void createGuild(String name) {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public int getGuildId() {
+		return getPlayer().getGuildId();
+	}
+
+	public byte getGuildRank() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public int getGuildCapacity() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void increaseGuildCapacity(byte amount) {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void setGuildEmblem(NativeArray arr) {
+		short background = ((Number) arr.get(0, null)).shortValue();
+		byte backgroundColor = ((Number) arr.get(1, null)).byteValue();
+		short design = ((Number) arr.get(2, null)).shortValue();
+		byte designColor = ((Number) arr.get(3, null)).byteValue();
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public byte getAllianceRank() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void disbandGuild() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void createAlliance() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public int getAllianceCapacity() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void increaseAllianceCapacity() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	}
+
+	public void removeGuildEmblem() {
+		throw new UnsupportedOperationException("TODO: IMPLEMENT");
 	}
 }

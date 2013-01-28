@@ -117,7 +117,7 @@ public final class StatAllocationHandler {
 					}
 				}
 			} else {
-				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to allocate SP to a mastered skill");
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to allocate SP to a mastered skill");
 			}
 		} finally {
 			p.writeUnlockStats();

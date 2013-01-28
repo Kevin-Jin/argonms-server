@@ -391,7 +391,7 @@ public final class BuffHandler {
 		Inventory inv = p.getInventory(InventoryType.USE);
 		InventorySlot changed = inv.get(slot);
 		if (changed == null || changed.getDataId() != itemId || changed.getQuantity() < 1) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.PACKET_EDITING, "Tried to use nonexistent consume item");
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent consume item");
 			return;
 		}
 		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
