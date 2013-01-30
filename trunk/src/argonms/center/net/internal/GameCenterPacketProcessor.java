@@ -155,6 +155,9 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			case CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED:
 				processPartyMemberStatChanged(packet);
 				break;
+			case CenterServerSynchronizationOps.GUILD_CREATE:
+				processCreateGuild(packet);
+				break;
 			case CenterServerSynchronizationOps.CHATROOM_CREATE:
 				processCreateChatroom(packet);
 				break;
@@ -568,6 +571,23 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		}
 	}
 
+	private void processCreateGuild(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		String name = packet.readLengthPrefixedString();
+		int partyId = packet.readInt();
+		int guildId;
+		if (!CenterServer.getInstance().getGroupsDb(r.getWorld()).guildExists(name))
+			guildId = CenterServer.getInstance().getGroupsDb(r.getWorld()).makeGuild(name, partyId);
+		else
+			guildId = -2;
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + name.length());
+		writeCenterServerSynchronizationPacketHeader(lew, channel, CenterServerSynchronizationOps.GUILD_CREATED);
+		lew.writeInt(guildId);
+		lew.writeInt(partyId);
+		lew.writeLengthPrefixedString(name);
+		r.getSession().send(lew.getBytes());
+	}
+
 	private void processCreateChatroom(LittleEndianReader packet) {
 		int creatorId = packet.readInt();
 		Map<Short, Integer> equips = new HashMap<Short, Integer>();
@@ -582,7 +602,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int hair = packet.readInt();
 		String creatorName = packet.readLengthPrefixedString();
 		byte creatorCh = packet.readByte();
-		int roomId = CenterServer.getInstance().getChatroomDb(r.getWorld()).makeNewRoom(new Chatroom.Avatar(creatorId, gender, skin, eyes, hair, equips, creatorName, creatorCh));
+		int roomId = CenterServer.getInstance().getGroupsDb(r.getWorld()).makeRoom(new Chatroom.Avatar(creatorId, gender, skin, eyes, hair, equips, creatorName, creatorCh));
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 		writeCenterServerSynchronizationPacketHeader(lew, creatorCh, CenterServerSynchronizationOps.CHATROOM_CREATED);
 		lew.writeInt(roomId);
@@ -605,7 +625,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		int hair = packet.readInt();
 		String joinerName = packet.readLengthPrefixedString();
 		byte joinerCh = packet.readByte();
-		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		Chatroom room = CenterServer.getInstance().getGroupsDb(r.getWorld()).getRoom(roomId);
 		if (room == null)
 			return;
 
@@ -703,7 +723,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 	private void processCloseChatroom(LittleEndianReader packet) {
 		int roomId = packet.readInt();
 		int playerId = packet.readInt();
-		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		Chatroom room = CenterServer.getInstance().getGroupsDb(r.getWorld()).getRoom(roomId);
 		if (room == null)
 			return;
 
@@ -758,14 +778,14 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			room.unlockRead();
 		}
 		if (empty)
-			CenterServer.getInstance().getChatroomDb(r.getWorld()).remove(roomId);
+			CenterServer.getInstance().getGroupsDb(r.getWorld()).destroyRoom(roomId);
 	}
 
 	private void processUpdateChatroomPlayerChannel(LittleEndianReader packet) {
 		int playerId = packet.readInt();
 		int roomId = packet.readInt();
 		byte newChannel = packet.readByte();
-		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		Chatroom room = CenterServer.getInstance().getGroupsDb(r.getWorld()).getRoom(roomId);
 		if (room == null)
 			return;
 
@@ -875,7 +895,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		byte skin = packet.readByte();
 		int eyes = packet.readInt();
 		int hair = packet.readInt();
-		Chatroom room = CenterServer.getInstance().getChatroomDb(r.getWorld()).get(roomId);
+		Chatroom room = CenterServer.getInstance().getGroupsDb(r.getWorld()).getRoom(roomId);
 		if (room == null)
 			return;
 

@@ -27,6 +27,7 @@ import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.net.external.GameClient;
 import java.util.List;
@@ -132,28 +133,14 @@ public final class PersonalInfoHandler {
 		lew.writeBool(p.getSpouseId() != 0);
 
 		String allianceName = "";
-		/*if (p.getGuildId() > 0) {
-			MapleGuildSummary gs = null;
-
-			gs = chr.getClient().getChannelServer().getGuildSummary(chr.getGuildId());
-			if (gs != null) {
-				lew.writeLengthPrefixedString(gs.getName());
-				try {
-					MapleAlliance alliance = chr.getClient().getChannelServer().getWorldInterface().getAlliance(gs.getAllianceId());
-					if (alliance != null) {
-						allianceName = alliance.getName();
-					}
-
-				} catch (RemoteException re) {
-					re.printStackTrace();
-					chr.getClient().getChannelServer().reconnectWorld();
-				}
-			} else {
-				lew.writeLengthPrefixedString("-");
-			}
-		} else {*/
+		GuildList guild = p.getGuild();
+		if (guild != null) {
+			lew.writeLengthPrefixedString(guild.getName());
+			/*if (guild.getAllianceId() != 0)
+				allianceName = GuildAlliances.get(guild.getAllianceId()).getName();*/
+		} else {
 			lew.writeLengthPrefixedString("-");
-		//}
+		}
 		lew.writeLengthPrefixedString(allianceName);
 		lew.writeBool(self);
 		for (Pet pet : p.getPets()) {

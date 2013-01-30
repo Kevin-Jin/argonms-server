@@ -216,7 +216,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 						} else {
 							quantity = -value.quantity;
 						}
-						changedSlots = InventoryTools.removeFromInventory(inv, value.itemId, quantity);
+						changedSlots = InventoryTools.removeFromInventory(inv, value.itemId, quantity, true);
 						for (Short s : changedSlots.addedOrRemovedSlots) {
 							pos = s.shortValue();
 							ses.send(GamePackets.writeInventoryClearSlot(type, pos));

@@ -76,7 +76,7 @@ public class CrossServerSynchronization {
 
 	private final LockableMap<Byte, CrossChannelSynchronization> allChannelsInWorld;
 	private final LockableMap<Byte, CrossProcessCrossChannelSynchronization> remoteChannelsInWorld;
-	private CenterServerSynchronization partiesAndChatRooms;
+	private CenterServerSynchronization intraworldGroups;
 	private final ReadWriteLock locks;
 	private final WorldChannel self;
 
@@ -124,7 +124,7 @@ public class CrossServerSynchronization {
 			}
 
 			//this could be called in the ctor, but that would leak "this"
-			partiesAndChatRooms = new CenterServerSynchronization(this, self);
+			intraworldGroups = new CenterServerSynchronization(this, self);
 		} finally {
 			unlockWrite();
 		}
@@ -197,7 +197,7 @@ public class CrossServerSynchronization {
 	}
 
 	public void receivedCenterServerSynchronizationPacket(LittleEndianReader packet) {
-		partiesAndChatRooms.receivedCenterServerSynchronizationPacket(packet);
+		intraworldGroups.receivedCenterServerSynchronizationPacket(packet);
 	}
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
@@ -309,7 +309,7 @@ public class CrossServerSynchronization {
 				break;
 			}
 			case PRIVATE_CHAT_TYPE_GUILD: {
-				if (p.getGuildId() == 0)
+				if (p.getGuild() == null)
 					return;
 
 				peerChannels = new HashMap<Byte, List<Integer>>();
@@ -688,32 +688,32 @@ public class CrossServerSynchronization {
 	}
 
 	public void sendMakeParty(GameCharacter p) {
-		partiesAndChatRooms.sendMakeParty(p);
+		intraworldGroups.sendMakeParty(p);
 	}
 
 	public void sendDisbandParty(int partyId) {
-		partiesAndChatRooms.sendDisbandParty(partyId);
+		intraworldGroups.sendDisbandParty(partyId);
 	}
 
 	public void sendLeaveParty(GameCharacter p, int partyId) {
-		partiesAndChatRooms.sendLeaveParty(p, partyId);
+		intraworldGroups.sendLeaveParty(p, partyId);
 	}
 
 	public void sendJoinParty(GameCharacter p, int partyId) {
-		partiesAndChatRooms.sendJoinParty(p, partyId);
+		intraworldGroups.sendJoinParty(p, partyId);
 	}
 
 	public void sendExpelPartyMember(PartyList.Member member, int partyId) {
-		partiesAndChatRooms.sendExpelPartyMember(member, partyId);
+		intraworldGroups.sendExpelPartyMember(member, partyId);
 	}
 
 	public void sendChangePartyLeader(int partyId, int newLeader) {
-		partiesAndChatRooms.sendChangePartyLeader(partyId, newLeader);
+		intraworldGroups.sendChangePartyLeader(partyId, newLeader);
 	}
 
 	/* package-private */ void fillPartyList(PartyList party) {
 		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
-		partiesAndChatRooms.sendFillPartyList(queue, party);
+		intraworldGroups.sendFillPartyList(queue, party);
 
 		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
 		try {
@@ -743,31 +743,35 @@ public class CrossServerSynchronization {
 	}
 
 	public PartyList sendFetchPartyList(int partyId) {
-		return partiesAndChatRooms.sendFetchPartyList(partyId);
+		return intraworldGroups.sendFetchPartyList(partyId);
 	}
 
 	public void sendPartyMemberLogInNotifications(GameCharacter p, PartyList party) {
-		partiesAndChatRooms.sendPartyMemberOnline(p, party);
+		intraworldGroups.sendPartyMemberOnline(p, party);
 	}
 
 	public void sendPartyMemberLogOffNotifications(GameCharacter p, boolean loggingOff) {
-		partiesAndChatRooms.sendPartyMemberOffline(p, loggingOff);
+		intraworldGroups.sendPartyMemberOffline(p, loggingOff);
 	}
 
 	public void sendPartyLevelOrJobUpdate(GameCharacter p, boolean level) {
-		partiesAndChatRooms.sendPartyLevelOrJobUpdate(p, level);
+		intraworldGroups.sendPartyLevelOrJobUpdate(p, level);
+	}
+
+	public void sendMakeGuild(String name, PartyList party) {
+		intraworldGroups.sendMakeGuild(name, party);
 	}
 
 	public void sendMakeChatroom(GameCharacter p) {
-		partiesAndChatRooms.sendMakeChatroom(p);
+		intraworldGroups.sendMakeChatroom(p);
 	}
 
 	public void sendJoinChatroom(GameCharacter joiner, int roomId) {
-		partiesAndChatRooms.sendJoinChatroom(joiner, roomId);
+		intraworldGroups.sendJoinChatroom(joiner, roomId);
 	}
 
 	public void sendLeaveChatroom(GameCharacter leaver) {
-		partiesAndChatRooms.sendLeaveChatroom(leaver.getChatRoom().getRoomId(), leaver.getId());
+		intraworldGroups.sendLeaveChatroom(leaver.getChatRoom().getRoomId(), leaver.getId());
 	}
 
 	public boolean sendChatroomInvite(String inviter, int roomId, String invitee) {
@@ -851,7 +855,7 @@ public class CrossServerSynchronization {
 	}
 
 	/* package-private */ void receivedChatroomText(String text, int roomId, int sender) {
-		Chatroom room = partiesAndChatRooms.getChatRoom(roomId);
+		Chatroom room = intraworldGroups.getChatRoom(roomId);
 		if (room == null)
 			return;
 
@@ -869,15 +873,15 @@ public class CrossServerSynchronization {
 	}
 
 	public void chatroomPlayerChangingChannels(int playerId, Chatroom room) {
-		partiesAndChatRooms.chatroomPlayerChangingChannels(playerId, room);
+		intraworldGroups.chatroomPlayerChangingChannels(playerId, room);
 	}
 
 	public void sendChatroomPlayerChangedChannels(GameCharacter p, int roomId) {
-		partiesAndChatRooms.sendChatroomPlayerChangedChannels(p.getId(), roomId);
+		intraworldGroups.sendChatroomPlayerChangedChannels(p.getId(), roomId);
 	}
 
 	public void sendChatroomPlayerLookUpdate(GameCharacter p, int roomId) {
-		partiesAndChatRooms.sendChatroomPlayerLookUpdate(p, roomId);
+		intraworldGroups.sendChatroomPlayerLookUpdate(p, roomId);
 	}
 
 	public void sendCrossChannelCommandCharacterManipulation(byte destCh, String recipient, List<CommandTarget.CharacterManipulation> updates) {

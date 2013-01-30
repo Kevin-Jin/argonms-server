@@ -89,13 +89,12 @@ public final class EnterHandler {
 			gc.getSession().send(GamePackets.writePartyList(player.getParty()));
 			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player, player.getParty());
 		}
-		/*if (player.getGuildId() > 0) {
-			cserv.getInterChannelInterface().setGuildMemberOnline(
-					player.getMGC(), true, gc.getChannel());
-			gc.getSession().send(GamePackets.writeGuildInfo(player));
+		if (player.getGuild() != null) {
+			gc.getSession().send(GamePackets.writeGuildList(player.getGuild()));
+			//cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player, player.getParty());
 		}
 
-		c.getPlayer().showNote();*/
+		//player.showNote();
 		gc.getSession().send(writeKeymap(player.getKeyMap()));
 		gc.getSession().send(writeMacros(player.getMacros()));
 		String serverMessage = GameServer.getVariables().getNewsTickerMessage();

@@ -28,10 +28,13 @@ import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.character.PartyList;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.GuildListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
+import argonms.game.script.binding.ScriptObjectManipulator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,10 +51,12 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 	private final CrossServerSynchronization handler;
 	private final WorldChannel self;
 	private final ConcurrentMap<Integer, PartyList> activeLocalParties;
+	private final ConcurrentMap<Integer, GuildList> activeLocalGuilds;
 	private final ConcurrentMap<Integer, Chatroom> localChatRooms;
 
 	public CenterServerSynchronization(CrossServerSynchronization handler, WorldChannel self) {
 		this.activeLocalParties = new ConcurrentHashMap<Integer, PartyList>();
+		this.activeLocalGuilds = new ConcurrentHashMap<Integer, GuildList>();
 		this.localChatRooms = new ConcurrentHashMap<Integer, Chatroom>();
 		this.handler = handler;
 		this.self = self;
@@ -97,6 +102,9 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				break;
 			case CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED:
 				receivedPartyMemberStatUpdated(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_CREATED:
+				receivedGuildCreated(packet);
 				break;
 			case CenterServerSynchronizationOps.CHATROOM_CREATED:
 				receivedChatroomCreated(packet);
@@ -235,6 +243,16 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		lew.writeByte(self.getChannelId());
 		lew.writeBool(level);
 		lew.writeShort(level ? p.getLevel() : p.getJob());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendMakeGuild(String name, PartyList party) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + name.length());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_CREATE);
+		lew.writeByte(self.getChannelId());
+		lew.writeLengthPrefixedString(name);
+		lew.writeInt(party.getId());
 
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
@@ -643,6 +661,36 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
 		} finally {
 			party.unlockRead();
+		}
+	}
+
+	private void receivedGuildCreated(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int partyId = packet.readInt();
+		String name = packet.readLengthPrefixedString();
+		PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
+		if (party == null)
+			return;
+
+		GameCharacter leader = GameServer.getChannel(self.getChannelId()).getPlayerById(party.getLeader());
+		switch (guildId) {
+			case -2:
+				leader.getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.NAME_TAKEN));
+				return;
+			case -1:
+				leader.getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.GENERAL_ERROR));
+				ScriptObjectManipulator.guildNameReceived(leader.getClient().getNpc(), null);
+				return;
+			default:
+				ScriptObjectManipulator.guildNameReceived(leader.getClient().getNpc(), null);
+				break;
+		}
+
+		GuildList guild = new GuildList(guildId, name, party);
+		activeLocalGuilds.put(Integer.valueOf(guildId), guild);
+		for (PartyList.LocalMember m : party.getMembersInLocalChannel()) {
+			m.getPlayer().setGuild(guild);
+			m.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
 		}
 	}
 

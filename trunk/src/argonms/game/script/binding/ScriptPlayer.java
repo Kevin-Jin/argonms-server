@@ -29,7 +29,9 @@ import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.GuildListHandler;
 import java.lang.ref.WeakReference;
+import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeArray;
 
 /**
@@ -312,12 +314,24 @@ public class ScriptPlayer {
 		getPlayer().getClient().getSession().send(GamePackets.writeTimer(seconds));
 	}
 
-	public void createGuild(String name) {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+	public String createGuild(String name) {
+		if (getPlayer().getLevel() <= 10) {
+			getPlayer().getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.LEVEL_TOO_LOW));
+			//haven't captured continuation yet, so we don't need to call this:
+			//getPlayer().getClient().getNpc().guildNameReceived(null);
+			return null;
+		}
+		GameServer.getChannel(getPlayer().getClient().getChannel()).getCrossServerInterface().sendMakeGuild(name, getPlayer().getParty());
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
 	}
 
 	public int getGuildId() {
-		return getPlayer().getGuildId();
+		return getPlayer().getGuild() == null ? 0 : getPlayer().getGuild().getId();
 	}
 
 	public byte getGuildRank() {

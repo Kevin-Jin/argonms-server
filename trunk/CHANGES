@@ -2700,6 +2700,20 @@
 	* Do not allow scripts to call npc.responseReceived. Make that method
 	protected and use a proxy class in the same package to indirectly call it.
 
+2013-01-30  GoldenKevin  (revision 197)
+
+	* Added infraction detection for attacking without a weapon.
+	* !take now removes empty stacks of rechargeable ammo.
+	* Glaze and Blaze Capsules are now treated as bullets and no longer Error 38
+	the client.
+	* Chatrooms integrated into IntraworldGroups.
+	* Started working on center server side of guilds by having it share bits
+	of code with Party.
+	* Moved PartyList specific elements in IntraworldGroupList to PartyList.
+	* Implemented more methods in GuildList.
+	* Implemented all guild packets from game server to client.
+	* Implemented guild creation.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

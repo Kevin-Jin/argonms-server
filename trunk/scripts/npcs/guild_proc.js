@@ -64,7 +64,9 @@ if (player.getGuildId() == 0) {
 					if (eligible) {
 						npc.sayNext("Enter the name of your guild and your guild will be created.\r\n"
 								+ "The guild will also be officially registered under our Guild Headquarters, so best of luck to you and your guild!");
-						player.createGuild(npc.askGuildName());
+						let retryName = player.createGuild(npc.askGuildName());
+						while (retryName != null)
+							retryName = player.createGuild(retryName);
 					} else {
 						npc.sayNext("There seems to be a traitor among us. Someone in your party is already part of another guild. To form a guild, all of your party members must be out of their guild. Come back when you have solved the problem with the traitor.");
 					}

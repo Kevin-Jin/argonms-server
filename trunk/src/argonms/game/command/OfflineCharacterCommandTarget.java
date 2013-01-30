@@ -359,7 +359,7 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 							} else {
 								quantity = -value.quantity;
 							}
-							InventoryTools.removeFromInventory(inv, value.itemId, quantity);
+							InventoryTools.removeFromInventory(inv, value.itemId, quantity, true);
 						}
 
 						ps = con.prepareStatement("DELETE FROM `inventoryitems` WHERE "

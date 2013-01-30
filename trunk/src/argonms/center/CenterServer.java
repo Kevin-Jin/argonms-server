@@ -62,14 +62,12 @@ public class CenterServer {
 	private CenterShopInterface shopServer;
 	private final Map<Byte, CenterGameInterface> gameServers;
 	private final Map<Byte, IntraworldGroups> worldGroups;
-	private final Map<Byte, Chatrooms> worldChatrooms;
 	private final Lock readLock;
 	private final Lock writeLock;
 
 	private CenterServer() {
 		gameServers = new HashMap<Byte, CenterGameInterface>();
 		worldGroups = new HashMap<Byte, IntraworldGroups>();
-		worldChatrooms = new HashMap<Byte, Chatrooms>();
 		ReentrantReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
@@ -190,10 +188,8 @@ public class CenterServer {
 		writeLock.lock();
 		try {
 			gameServers.put(Byte.valueOf(serverId), remote);
-			if (!worldGroups.containsKey(Byte.valueOf(remote.getWorld())) || !worldChatrooms.containsKey(Byte.valueOf(remote.getWorld()))) {
+			if (!worldGroups.containsKey(Byte.valueOf(remote.getWorld())))
 				worldGroups.put(Byte.valueOf(remote.getWorld()), new IntraworldGroups(remote.getWorld()));
-				worldChatrooms.put(Byte.valueOf(remote.getWorld()), new Chatrooms());
-			}
 			remote.serverOnline();
 			notifyGameConnected(serverId, remote.getWorld(), remote.getHost(), remote.getClientPorts());
 			sendConnectedShop(remote);
@@ -247,10 +243,8 @@ public class CenterServer {
 					break;
 				}
 			}
-			if (deleteWorldParty) {
+			if (deleteWorldParty)
 				worldGroups.remove(Byte.valueOf(remote.getWorld()));
-				worldChatrooms.remove(Byte.valueOf(remote.getWorld()));
-			}
 			gameServers.remove(Byte.valueOf(serverId));
 		} finally {
 			writeLock.unlock();
@@ -428,10 +422,6 @@ public class CenterServer {
 
 	public IntraworldGroups getGroupsDb(byte world) {
 		return worldGroups.get(Byte.valueOf(world));
-	}
-
-	public Chatrooms getChatroomDb(byte world) {
-		return worldChatrooms.get(Byte.valueOf(world));
 	}
 
 	private static byte[] writeGameConnected(byte serverId, byte world, String host, Map<Byte, Integer> ports) {

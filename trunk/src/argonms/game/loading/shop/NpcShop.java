@@ -73,6 +73,9 @@ public abstract class NpcShop implements NpcMiniroom {
 					rechargeableOnly.put(Integer.valueOf(itemId), Double.valueOf(ItemDataLoader.getInstance().getUnitPrice(itemId)));
 			for (int itemId = 2330000; itemId <= 2330006; itemId++) //bullets
 				rechargeableOnly.put(Integer.valueOf(itemId), Double.valueOf(ItemDataLoader.getInstance().getUnitPrice(itemId)));
+			//more bullets - Blaze and Glaze Capsules
+			rechargeableOnly.put(Integer.valueOf(2331000), Double.valueOf(ItemDataLoader.getInstance().getUnitPrice(2331000)));
+			rechargeableOnly.put(Integer.valueOf(2332000), Double.valueOf(ItemDataLoader.getInstance().getUnitPrice(2332000)));
 			for (ShopSlot item : allItems())
 				if (rechargeableOnly.containsKey(Integer.valueOf(item.itemId)))
 					rechargeableOnly.remove(Integer.valueOf(item.itemId));

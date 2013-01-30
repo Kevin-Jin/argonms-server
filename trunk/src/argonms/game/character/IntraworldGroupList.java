@@ -195,102 +195,69 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 
 	private final int id;
 	//members on current channel
-	private final Map<Integer, LocalMember> localMembers;
+	protected final Map<Integer, L> localMembers;
 	//members on other channels
-	private final Map<Byte, Map<Integer, RemoteMember>> remoteMembers;
-	private final Member[] allMembers;
+	protected final Map<Byte, Map<Integer, R>> remoteMembers;
 	private final Lock readLock, writeLock;
-
-	protected abstract M getEmptyMember();
 
 	public IntraworldGroupList(int groupId) {
 		this.id = groupId;
-		this.localMembers = new HashMap<Integer, LocalMember>();
-		this.remoteMembers = new HashMap<Byte, Map<Integer, RemoteMember>>();
-		this.allMembers = new Member[6];
-		for (int i = 0; i < 6; i++)
-			allMembers[i] = getEmptyMember();
+		this.localMembers = new HashMap<Integer, L>();
+		this.remoteMembers = new HashMap<Byte, Map<Integer, R>>();
 
 		ReadWriteLock locks = new ReentrantReadWriteLock();
 		readLock = locks.readLock();
 		writeLock = locks.writeLock();
 	}
 
+	protected abstract L createLocalMember(GameCharacter p);
+
+	protected abstract R createRemoteMember(Member member, byte channel);
+
 	public int getId() {
 		return id;
 	}
 
 	/**
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @return 
 	 */
 	public byte getMembersCount() {
 		byte total = (byte) localMembers.size();
-		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
+		for (Map<Integer, R> channel : remoteMembers.values())
 			total += channel.size();
 		return total;
 	}
 
 	/**
-	 * This PartyList must be at least read locked while the returned Collection is in scope.
+	 * This IntraworldGroupList must be at least read locked while the returned Collection is in scope.
 	 * @return 
 	 */
-	public Collection<LocalMember> getMembersInLocalChannel() {
+	public Collection<L> getMembersInLocalChannel() {
 		return Collections.unmodifiableCollection(localMembers.values());
 	}
 
 	/**
-	 * This PartyList must be at least read locked while the returned Member[] is in scope.
+	 * This IntraworldGroupList must be at least read locked while the returned Member[] is in scope.
 	 * @return 
 	 */
-	public Member[] getAllMembers() {
-		return allMembers;
-	}
-
-	private void removeFromAllMembersAndCollapse(int playerId) {
-		for (int i = 0; i < 6; i++) {
-			if (allMembers[i].getPlayerId() == playerId) {
-				for (; i < 5 && allMembers[i + 1].getPlayerId() != 0; i++)
-					allMembers[i] = allMembers[i + 1];
-				allMembers[i] = getEmptyMember();
-				break;
-			}
-		}
-	}
-
-	private void addToAllMembers(Member member) {
-		for (int i = 0; i < 6; i++) {
-			if (allMembers[i].getPlayerId() == 0) {
-				allMembers[i] = member;
-				break;
-			}
-		}
-	}
-
-	private void syncWithAllMembers(Member member) {
-		for (int i = 0; i < 6; i++) {
-			if (allMembers[i].getPlayerId() == member.getPlayerId()) {
-				allMembers[i] = member;
-				break;
-			}
-		}
-	}
+	public abstract Member[] getAllMembers();
 
 	/**
-	 * This PartyList must be at least read locked while the returned List is in scope.
+	 * This IntraworldGroupList must be at least read locked while the returned List is in scope.
 	 * @param mapId
 	 * @return 
 	 */
 	public List<GameCharacter> getLocalMembersInMap(int mapId) {
 		List<GameCharacter> filtered = new ArrayList<GameCharacter>();
-		for (LocalMember m : localMembers.values())
+		for (L m : localMembers.values())
 			if (m.getMapId() == mapId)
 				filtered.add(m.getPlayer());
 		return filtered;
 	}
 
 	/**
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @return 
 	 */
 	public boolean allOffline() {
@@ -298,7 +265,7 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	}
 
 	private void removeFromOffline(Member member) {
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
 		others.remove(Integer.valueOf(member.getPlayerId()));
 		if (others.isEmpty())
 			remoteMembers.remove(Byte.valueOf(OFFLINE_CH));
@@ -307,35 +274,34 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	/**
 	 * Moves the Member from the offline list to the online list for a remote
 	 * channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param member 
 	 */
-	public void memberConnected(RemoteMember member) {
+	public void memberConnected(R member) {
 		removeFromOffline(member);
 		addPlayer(member, true);
-		syncWithAllMembers(member);
 	}
 
 	/**
 	 * Moves the Member from the offline list to the online list for the local
 	 * channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param p 
 	 */
-	public void memberConnected(GameCharacter p) {
-		LocalMember member = new LocalMember(p);
+	public L memberConnected(GameCharacter p) {
+		L member = createLocalMember(p);
 		removeFromOffline(member);
 		addPlayer(member, true);
-		syncWithAllMembers(member);
+		return member;
 	}
 
-	private RemoteMember addToOffline(Member member) {
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+	private R addToOffline(Member member) {
+		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
 		if (others == null) {
-			others = new HashMap<Integer, RemoteMember>();
+			others = new HashMap<Integer, R>();
 			remoteMembers.put(Byte.valueOf(OFFLINE_CH), others);
 		}
-		RemoteMember offlineMember = new RemoteMember(member, OFFLINE_CH);
+		R offlineMember = createRemoteMember(member, OFFLINE_CH);
 		others.put(Integer.valueOf(member.getPlayerId()), offlineMember);
 		return offlineMember;
 	}
@@ -343,64 +309,58 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	/**
 	 * Moves the Member from the online list for a remote channel to the
 	 * offline list.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param ch
 	 * @param pId 
 	 */
-	public void memberDisconnected(byte ch, int pId) {
-		syncWithAllMembers(addToOffline(removePlayer(ch, pId, true)));
+	public R memberDisconnected(byte ch, int pId) {
+		return addToOffline(removePlayer(ch, pId, true));
 	}
 
 	/**
 	 * Moves the Member from the online list for the local channel to the
 	 * offline list.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param p 
 	 */
-	public void memberDisconnected(GameCharacter p) {
-		syncWithAllMembers(addToOffline(removePlayer(p, true)));
+	public R memberDisconnected(GameCharacter p) {
+		return addToOffline(removePlayer(p, true));
 	}
 
-	private void addPlayer(RemoteMember member, boolean transition) {
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(member.getChannel()));
+	protected void addPlayer(R member, boolean transition) {
+		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(member.getChannel()));
 		if (others == null) {
-			others = new HashMap<Integer, RemoteMember>();
+			others = new HashMap<Integer, R>();
 			remoteMembers.put(Byte.valueOf(member.getChannel()), others);
 		}
 		others.put(Integer.valueOf(member.getPlayerId()), member);
-		if (!transition)
-			addToAllMembers(member);
 	}
 
 	/**
 	 * Adds a Member from a remote channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param member 
 	 */
-	public void addPlayer(RemoteMember member) {
+	public void addPlayer(R member) {
 		addPlayer(member, false);
 	}
 
-	protected void addPlayer(LocalMember member, boolean transition) {
+	protected void addPlayer(L member, boolean transition) {
 		localMembers.put(Integer.valueOf(member.getPlayerId()), member);
-		if (!transition)
-			addToAllMembers(member);
 	}
 
 	/**
 	 * Adds a Member from the local channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param member 
 	 */
-	public void addPlayer(LocalMember member) {
+	public void addPlayer(L member) {
 		addPlayer(member, false);
 	}
 
-	private RemoteMember removePlayer(byte ch, int playerId, boolean transition) {
-		if (!transition)
-			removeFromAllMembersAndCollapse(playerId);
-		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(ch));
-		RemoteMember member = others.remove(Integer.valueOf(playerId));
+	protected R removePlayer(byte ch, int playerId, boolean transition) {
+		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(ch));
+		R member = others.remove(Integer.valueOf(playerId));
 		if (others.isEmpty())
 			remoteMembers.remove(Byte.valueOf(ch));
 		return member;
@@ -408,81 +368,65 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 
 	/**
 	 * Removes a player from a remote channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param ch
 	 * @param playerId
 	 * @return 
 	 */
-	public RemoteMember removePlayer(byte ch, int playerId) {
+	public R removePlayer(byte ch, int playerId) {
 		return removePlayer(ch, playerId, false);
 	}
 
-	private LocalMember removePlayer(GameCharacter p, boolean transition) {
-		if (!transition)
-			removeFromAllMembersAndCollapse(p.getId());
+	protected L removePlayer(GameCharacter p, boolean transition) {
 		return localMembers.remove(Integer.valueOf(p.getId()));
 	}
 
 	/**
 	 * Removes a player from the local channel.
-	 * This PartyList must be write locked when this method is called.
+	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param p
 	 * @return 
 	 */
-	public LocalMember removePlayer(GameCharacter p) {
+	public L removePlayer(GameCharacter p) {
 		return removePlayer(p, false);
 	}
 
 	/**
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @param playerId
 	 * @return 
 	 */
-	public RemoteMember getOfflineMember(int playerId) {
+	public R getOfflineMember(int playerId) {
 		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
 	}
 
 	/**
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @param playerId
 	 * @return 
 	 */
-	public Member getMember(int playerId) {
-		for (int i = 0; i < 6; i++)
-			if (allMembers[i].getPlayerId() == playerId)
-				return allMembers[i];
-		return null;
-	}
+	public abstract M getMember(int playerId);
 
 	/**
 	 * Gets the RemoteMember in the specified channel.
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @param playerId
 	 * @return 
 	 */
-	public RemoteMember getMember(byte channel, int playerId) {
-		Map<Integer, RemoteMember> channelMembers = remoteMembers.get(Byte.valueOf(channel));
+	public R getMember(byte channel, int playerId) {
+		Map<Integer, R> channelMembers = remoteMembers.get(Byte.valueOf(channel));
 		if (channelMembers != null)
 			return channelMembers.get(Integer.valueOf(playerId));
 		return null;
 	}
 
 	/**
-	 * This PartyList must be at least read locked when this method is called.
-	 * @param position
-	 * @return 
-	 */
-	public Member getMember(byte position) {
-		return allMembers[position];
-	}
-
-	/**
-	 * This PartyList must be at least read locked when this method is called.
+	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @return 
 	 */
 	public boolean isFull() {
 		int count = localMembers.size();
-		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
+		for (Map<Integer, R> channel : remoteMembers.values())
 			count += channel.size();
 		return count >= 6;
 	}

@@ -120,7 +120,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private final ConcurrentMap<MapMemoryVariable, Pair<Integer, Byte>> rememberedMaps;
 
 	private BuddyList buddies;
-	private int guild;
+	private GuildList guild;
 	private PartyList party;
 
 	private volatile int mesos;
@@ -1071,7 +1071,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		if (PlayerJob.isBeginner(getJob()) || getLevel() == 200) {
 			lossPercent = 0;
 		} else if (inv.hasItem(5130000, 1)) { //safety charm
-			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, 5130000, 1);
+			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, 5130000, 1, false);
 			for (Short s : changedSlots.modifiedSlots)
 				getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.CASH, s.shortValue(), inv.get(s.shortValue())));
 			for (Short s : changedSlots.addedOrRemovedSlots)
@@ -1772,8 +1772,12 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		prepareExitChannel(quickCleanup);
 	}
 
-	public int getGuildId() {
+	public GuildList getGuild() {
 		return guild;
+	}
+
+	public void setGuild(GuildList guild) {
+		this.guild = guild;
 	}
 
 	public PartyList getParty() {
