@@ -26,10 +26,14 @@ public class PartyList extends IntraworldGroupList<
 		IntraworldGroupList.Member,
 		IntraworldGroupList.RemoteMember,
 		IntraworldGroupList.LocalMember> {
+	private final Member[] allMembers;
 	private volatile int leader;
 
 	public PartyList(int partyId) {
 		super(partyId);
+		this.allMembers = new Member[6];
+		for (int i = 0; i < 6; i++)
+			allMembers[i] = EmptyMember.getInstance();
 	}
 
 	public PartyList(int partyId, GameCharacter creator) {
@@ -39,8 +43,13 @@ public class PartyList extends IntraworldGroupList<
 	}
 
 	@Override
-	protected Member getEmptyMember() {
-		return EmptyMember.getInstance();
+	protected LocalMember createLocalMember(GameCharacter p) {
+		return new LocalMember(p);
+	}
+
+	@Override
+	protected RemoteMember createRemoteMember(Member member, byte channel) {
+		return new RemoteMember(member, channel);
 	}
 
 	/**
@@ -55,5 +64,111 @@ public class PartyList extends IntraworldGroupList<
 	 */
 	public void setLeader(int leader) {
 		this.leader = leader;
+	}
+
+	private void removeFromAllMembersAndCollapse(int playerId) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == playerId) {
+				for (; i < 5 && allMembers[i + 1].getPlayerId() != 0; i++)
+					allMembers[i] = allMembers[i + 1];
+				allMembers[i] = EmptyMember.getInstance();
+				break;
+			}
+		}
+	}
+
+	private void addToAllMembers(Member member) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == 0) {
+				allMembers[i] = member;
+				break;
+			}
+		}
+	}
+
+	private void syncWithAllMembers(Member member) {
+		for (int i = 0; i < 6; i++) {
+			if (allMembers[i].getPlayerId() == member.getPlayerId()) {
+				allMembers[i] = member;
+				break;
+			}
+		}
+	}
+
+	@Override
+	public Member[] getAllMembers() {
+		return allMembers;
+	}
+
+	@Override
+	public void memberConnected(RemoteMember member) {
+		super.memberConnected(member);
+		syncWithAllMembers(member);
+	}
+
+	@Override
+	public LocalMember memberConnected(GameCharacter p) {
+		LocalMember member = super.memberConnected(p);
+		syncWithAllMembers(member);
+		return member;
+	}
+
+	@Override
+	public RemoteMember memberDisconnected(byte ch, int pId) {
+		RemoteMember member = super.memberDisconnected(ch, pId);
+		syncWithAllMembers(member);
+		return member;
+	}
+
+	@Override
+	public RemoteMember memberDisconnected(GameCharacter p) {
+		RemoteMember member = super.memberDisconnected(p);
+		syncWithAllMembers(member);
+		return member;
+	}
+
+	@Override
+	protected void addPlayer(RemoteMember member, boolean transition) {
+		super.addPlayer(member, transition);
+		if (!transition)
+			addToAllMembers(member);
+	}
+
+	@Override
+	protected void addPlayer(LocalMember member, boolean transition) {
+		super.addPlayer(member, transition);
+		if (!transition)
+			addToAllMembers(member);
+	}
+
+	@Override
+	protected RemoteMember removePlayer(byte ch, int playerId, boolean transition) {
+		if (!transition)
+			removeFromAllMembersAndCollapse(playerId);
+		return super.removePlayer(ch, playerId, transition);
+	}
+
+	@Override
+	protected LocalMember removePlayer(GameCharacter p, boolean transition) {
+		if (!transition)
+			removeFromAllMembersAndCollapse(p.getId());
+		return super.removePlayer(p, transition);
+	}
+
+	@Override
+	public Member getMember(int playerId) {
+		for (int i = 0; i < 6; i++)
+			if (allMembers[i].getPlayerId() == playerId)
+				return allMembers[i];
+		return null;
+	}
+
+	/**
+	 * This PartyList must be at least read locked when this method is called.
+	 * @param position
+	 * @return 
+	 */
+	public Member getMember(byte position) {
+		return allMembers[position];
 	}
 }

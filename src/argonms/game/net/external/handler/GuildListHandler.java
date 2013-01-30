@@ -18,7 +18,9 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
+import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.external.GameClient;
 import argonms.game.script.binding.ScriptNpc;
@@ -43,7 +45,28 @@ public class GuildListHandler {
 
 	public static final byte //guild send op codes
 		ASK_NAME = 0x01,
-		ASK_EMBLEM = 0x11
+		GENERAL_ERROR = 0x02,
+		INVITE_SENT = 0x05,
+		ASK_EMBLEM = 0x11,
+		LIST = 0x1A,
+		NAME_TAKEN = 0x1C,
+		LEVEL_TOO_LOW = 0x23,
+		JOINED_GUILD = 0x27,
+		ALREADY_IN_GUILD = 0x28,
+		CANNOT_FIND = 0x2A,
+		LEFT_GUILD = 0x2C,
+		EXPELLED_FROM_GUILD = 0x2F,
+		DISBANDED_GUILD = 0x32,
+		INVITE_DENIED = 0x37,
+		CAPACITY_CHANGED = 0x3A,
+		LEVEL_JOB_CHANGED = 0x3C,
+		CHANNEL_CHANGE = 0x3D,
+		RANK_TITLES_CHANGED = 0x3E,
+		RANK_CHANGED = 0x40,
+		EMBLEM_CHANGED = 0x42,
+		NOTICE_CHANGED = 0x44,
+		GUILD_GP_CHANGED = 0x48,
+		SHOW_GUILD_RANK_BOARD = 0x49
 	;
 
 	public static void handleListModification(LittleEndianReader packet, GameClient gc) {
@@ -85,5 +108,36 @@ public class GuildListHandler {
 
 	public static void handleDenyRequest(LittleEndianReader packet, GameClient gc) {
 		
+	}
+
+	private static byte[] writeGuildClear() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.LIST);
+		lew.writeBool(false);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writePartyInviteRejected(String name) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + name.length());
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(INVITE_DENIED);
+		lew.writeLengthPrefixedString(name);
+
+		return lew.getBytes();
+	}
+
+	private static byte[] writeGuildInvite(int guildId, String inviter) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + inviter.length());
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(INVITE_SENT);
+		lew.writeInt(guildId);
+		lew.writeLengthPrefixedString(inviter);
+
+		return lew.getBytes();
 	}
 }

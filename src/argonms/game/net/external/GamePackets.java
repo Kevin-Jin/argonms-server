@@ -42,6 +42,7 @@ import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.character.Chatroom;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
@@ -62,10 +63,12 @@ import argonms.game.field.movement.LifeMovementFragment;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.loading.shop.NpcShop.ShopSlot;
 import argonms.game.net.external.handler.BuddyListHandler;
+import argonms.game.net.external.handler.GuildListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -1124,35 +1127,217 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	private static void writeGuildListEntry(LittleEndianWriter lew, GuildList.Member member) {
+		lew.writePaddedAsciiString(member.getName(), 13);
+		lew.writeInt(member.getJob());
+		lew.writeInt(member.getLevel());
+		lew.writeInt(member.getRank());
+		lew.writeInt(Math.min(member.getChannel(), 1));
+		lew.writeInt(member.getSignature());
+		lew.writeInt(member.getAllianceRank());
+	}
+
+	public static byte[] writeGuildList(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.LIST);
+		lew.writeBool(true);
+		lew.writeInt(guild.getId());
+		lew.writeLengthPrefixedString(guild.getName());
+		for (byte i = 0; i < 5; i++)
+			lew.writeLengthPrefixedString(guild.getTitle(i));
+
+		GuildList.Member[] members = guild.getAllMembers();
+		lew.writeByte((byte) members.length);
+		for (GuildList.Member member : members)
+			lew.writeInt(member.getPlayerId());
+		for (GuildList.Member member : members)
+			writeGuildListEntry(lew, member);
+
+		lew.writeInt(guild.getCapacity());
+		lew.writeShort(guild.getEmblemBackground());
+		lew.writeByte(guild.getEmblemBackgroundColor());
+		lew.writeShort(guild.getEmblemDesign());
+		lew.writeByte(guild.getEmblemDesignColor());
+		lew.writeLengthPrefixedString(guild.getNotice());
+		lew.writeInt(guild.getGp());
+		lew.writeInt(guild.getAllianceId());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildMemberJoined(GuildList guild, GuildList.Member member) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(48);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.JOINED_GUILD);
+		lew.writeInt(guild.getId());
+		lew.writeInt(member.getPlayerId());
+		writeGuildListEntry(lew, member);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildMemberLeft(GuildList guild, int playerId, String playerName, boolean expelled) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13 + playerName.length());
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(expelled ? GuildListHandler.EXPELLED_FROM_GUILD : GuildListHandler.LEFT_GUILD);
+		lew.writeInt(guild.getId());
+		lew.writeInt(playerId);
+		lew.writeLengthPrefixedString(playerName);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildDisbanded(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.DISBANDED_GUILD);
+		lew.writeInt(guild.getId());
+		lew.writeBool(true);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildCapacityChanged(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.CAPACITY_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeByte(guild.getCapacity());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildMemberLevelJobUpdate(GuildList guild, GuildList.Member member) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(19);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.LEVEL_JOB_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeInt(member.getPlayerId());
+		lew.writeInt(member.getLevel());
+		lew.writeInt(member.getJob());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildMemberLoggedIn(GuildList guild, GuildList.Member member) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.CHANNEL_CHANGE);
+		lew.writeInt(guild.getId());
+		lew.writeInt(member.getPlayerId());
+		lew.writeByte((byte) Math.min(member.getChannel(), 1));
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildChangeRankTitles(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.RANK_TITLES_CHANGED);
+		lew.writeInt(guild.getId());
+		for (byte i = 0; i < 5; i++)
+			lew.writeLengthPrefixedString(guild.getTitle(i));
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildMemberChangeRank(GuildList guild, GuildList.Member member) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.RANK_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeInt(member.getPlayerId());
+		lew.writeByte(member.getRank());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildChangeEmblem(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(13);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.EMBLEM_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeShort(guild.getEmblemBackground());
+		lew.writeByte(guild.getEmblemBackgroundColor());
+		lew.writeShort(guild.getEmblemDesign());
+		lew.writeByte(guild.getEmblemDesignColor());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildChangeNotice(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + guild.getNotice().length());
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.NOTICE_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeLengthPrefixedString(guild.getNotice());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildChangeGp(GuildList guild) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.GUILD_GP_CHANGED);
+		lew.writeInt(guild.getId());
+		lew.writeInt(guild.getGp());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowGuildRankings(int npcId, Collection<GuildList> guilds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.SHOW_GUILD_RANK_BOARD);
+		lew.writeInt(npcId);
+		lew.writeInt(guilds.size());
+		for (GuildList guild : guilds) {
+			lew.writeLengthPrefixedString(guild.getName());
+			lew.writeInt(guild.getGp());
+			lew.writeInt(guild.getEmblemDesign());
+			lew.writeInt(guild.getEmblemDesignColor());
+			lew.writeInt(guild.getEmblemBackground());
+			lew.writeInt(guild.getEmblemBackgroundColor());
+		}
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowPlayer(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
 		lew.writeShort(ClientSendOps.SHOW_PLAYER);
 		lew.writeInt(p.getId());
 		lew.writeLengthPrefixedString(p.getName());
-		/*if (p.getGuildId() > 0) {
-			MapleGuildSummary gs = p.getClient().getChannelServer().getGuildSummary(p.getGuildId());
 
-			if (gs != null) {
-				lew.writeLengthPrefixedString(gs.getName());
-				lew.writeShort(gs.getLogoBG());
-				lew.writeByte(gs.getLogoBGColor());
-				lew.writeShort(gs.getLogo());
-				lew.writeByte(gs.getLogoColor());
-			} else {
-				lew.writeLengthPrefixedString("");
-				lew.writeShort((short) 0);
-				lew.writeByte((byte) 0);
-				lew.writeShort((short) 0);
-				lew.writeByte((byte) 0);
-			}
-		} else {*/
+		GuildList guild = p.getGuild();
+		if (guild != null) {
+			lew.writeLengthPrefixedString(guild.getName());
+			lew.writeShort(guild.getEmblemBackground());
+			lew.writeByte(guild.getEmblemBackgroundColor());
+			lew.writeShort(guild.getEmblemDesign());
+			lew.writeByte(guild.getEmblemDesignColor());
+		} else {
 			lew.writeLengthPrefixedString("");
 			lew.writeShort((short) 0);
 			lew.writeByte((byte) 0);
 			lew.writeShort((short) 0);
 			lew.writeByte((byte) 0);
-		//}
+		}
 		lew.writeInt(0);
 		lew.writeInt(1);
 
@@ -1578,6 +1763,7 @@ public final class GamePackets {
 				lew.writeDouble(shop.rechargeCost(item.itemId));
 			lew.writeShort(ItemTools.getPersonalSlotMax(customer, item.itemId));
 		}
+		//lets client know the max quantity of a stack of ammo, for recharging
 		for (Map.Entry<Integer, Double> rechargeable : rechargeables.entrySet()) {
 			int itemId = rechargeable.getKey().intValue();
 			lew.writeInt(itemId);

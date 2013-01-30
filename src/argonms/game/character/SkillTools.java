@@ -65,7 +65,7 @@ public final class SkillTools {
 		if (itemId != 0) {
 			InventoryType type = InventoryTools.getCategory(itemId);
 			Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
-			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemId, quantity);
+			UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, itemId, quantity, false);
 			ClientSession<?> ses = p.getClient().getSession();
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
@@ -96,19 +96,24 @@ public final class SkillTools {
 		if (quantity == 0)
 			quantity = e.getBulletCount();
 		if (quantity != 0) { //buff skill uses bullets
+			int ammoFactor;
 			int ammoPrefix;
 			switch (WeaponClass.getForPlayer(p)) {
 				case BOW:
+					ammoFactor = 1000;
 					ammoPrefix = 2060;
 					break;
 				case CROSSBOW:
+					ammoFactor = 1000;
 					ammoPrefix = 2061;
 					break;
 				case CLAW:
-					ammoPrefix = 2070;
+					ammoFactor = 10000;
+					ammoPrefix = 207;
 					break;
 				case GUN:
-					ammoPrefix = 2330;
+					ammoFactor = 10000;
+					ammoPrefix = 233;
 					break;
 				default:
 					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use ranged buff skill without ranged weapon");
@@ -128,7 +133,7 @@ public final class SkillTools {
 				for (Entry<Short, InventorySlot> entry : inv.getAll().entrySet()) {
 					slot = entry.getValue();
 					itemId = slot.getDataId();
-					if ((itemId / 1000) == ammoPrefix) {
+					if ((itemId / ammoFactor) == ammoPrefix) {
 						Short amount = canUse.get(Integer.valueOf(itemId));
 						if (amount == null)
 							amount = Short.valueOf(slot.getQuantity());
@@ -143,7 +148,7 @@ public final class SkillTools {
 				}
 			}
 			if (removeItemId != 0) {
-				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity);
+				UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, removeItemId, quantity, false);
 				ClientSession<?> ses = p.getClient().getSession();
 				short pos;
 				for (Short s : changedSlots.modifiedSlots) {

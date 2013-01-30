@@ -22,6 +22,31 @@ package argonms.center;
  *
  * @author GoldenKevin
  */
-public class Guild {
-	
+public class Guild extends IntraworldGroup<Guild.Member> {
+	public static class Member extends IntraworldGroup.Member {
+		private final byte rank;
+
+		public Member(int playerId, String name, short job, short level, byte channel, byte rank) {
+			super(playerId, name, job, level, channel);
+			this.rank = rank;
+		}
+
+		public Member(IntraworldGroup.Member m, boolean leader) {
+			this(m.getPlayerId(), m.getName(), m.getJob(), m.getLevel(), m.getChannel(), (byte) (leader ? 1 : 0));
+		}
+
+		public byte getRank() {
+			return rank;
+		}
+	}
+
+	private final String name;
+
+	public Guild(String name, Party p) {
+		super();
+		this.name = name;
+
+		for (IntraworldGroup.Member m : p.getAllMembers())
+			addPlayer(new Member(m, p.getLeader() == m.getPlayerId()));
+	}
 }

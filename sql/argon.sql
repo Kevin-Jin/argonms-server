@@ -27,6 +27,7 @@ DROP TABLE IF EXISTS `uniqueid`;
   DROP TABLE IF EXISTS `minigamescores`;
   DROP TABLE IF EXISTS `mapmemory`;
   DROP TABLE IF EXISTS `keymaps`;
+    DROP TABLE IF EXISTS `guildmembers`;
   DROP TABLE IF EXISTS `guilds`;
   DROP TABLE IF EXISTS `famelog`;
   DROP TABLE IF EXISTS `cooldowns`;
@@ -243,18 +244,29 @@ CREATE TABLE `famelog` (
 
 CREATE TABLE `guilds` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `world` TINYINT(2) NOT NULL,
   `name` VARCHAR(12) NOT NULL,
-  `master` INT(11) NOT NULL,
-  `titles` VARCHAR(64) NOT NULL,
-  `capacity` TINYINT(4) NOT NULL,
-  `emblemBackground` SMALLINT(6) NOT NULL,
-  `emblemBackgroundColor` TINYINT(4) NOT NULL,
-  `emblemDesign` SMALLINT(6) NOT NULL,
-  `emblemDesignColor` TINYINT(4) NOT NULL,
-  `notice` VARCHAR(100) NOT NULL,
-  `gp` INT(11) NOT NULL,
-  `alliance` INT(11) NOT NULL,
+  `titles` VARCHAR(64) NOT NULL DEFAULT ',,,,',
+  `capacity` TINYINT(4) NOT NULL DEFAULT 10,
+  `emblemBackground` SMALLINT(6) NOT NULL DEFAULT 0,
+  `emblemBackgroundColor` TINYINT(4) NOT NULL DEFAULT 0,
+  `emblemDesign` SMALLINT(6) NOT NULL DEFAULT 0,
+  `emblemDesignColor` TINYINT(4) NOT NULL DEFAULT 0,
+  `notice` VARCHAR(100) NOT NULL DEFAULT '',
+  `gp` INT(11) NOT NULL DEfAULT 0,
+  `alliance` INT(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `guildmembers` (
+  `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `guildid` INT(11) NOT NULL,
+  `characterid` INT(11) NOT NULL,
+  `rank` TINYINT(4) NOT NULL,
+  PRIMARY KEY (`entryid`),
+  KEY (`characterid`),
+  CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT FOREIGN KEY (`guildid`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE `keymaps` (

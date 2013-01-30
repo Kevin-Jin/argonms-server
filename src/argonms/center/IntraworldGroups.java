@@ -69,6 +69,9 @@ public class IntraworldGroups {
 	private final Set<String> loadedGuildNames;
 	private final Map<Integer, Guild> guilds;
 
+	private final AtomicInteger nextRoomId;
+	private final Map<Integer, Chatroom> rooms;
+
 	public IntraworldGroups(byte world) {
 		this.world = world;
 
@@ -77,6 +80,9 @@ public class IntraworldGroups {
 
 		loadedGuildNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 		guilds = new ConcurrentHashMap<Integer, Guild>();
+
+		nextRoomId = new AtomicInteger();
+		rooms = new ConcurrentHashMap<Integer, Chatroom>();
 	}
 
 	/**
@@ -124,5 +130,60 @@ public class IntraworldGroups {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
+	}
+
+	public int makeGuild(String name, int partyId) {
+		Party p = getParty(partyId);
+		if (p == null)
+			return -1;
+
+		int guildId;
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("INSERT INTO `guilds` (`world`,`name`) VALUES (?,?)", PreparedStatement.RETURN_GENERATED_KEYS);
+			ps.setByte(1, world);
+			ps.setString(2, name);
+			ps.executeUpdate();
+			rs = ps.getGeneratedKeys();
+			if (!rs.next())
+				return -1;
+			guildId = rs.getInt(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not create guild " + name, ex);
+			return -1;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+
+		loadedGuildNames.add(name);
+		guilds.put(Integer.valueOf(guildId), new Guild(name, p));
+		return guildId;
+	}
+
+	/**
+	 * 
+	 * @param creator
+	 * @return the unique roomId of the newly created chatroom
+	 */
+	public int makeRoom(Chatroom.Avatar creator) {
+		//make sure we never return 0, because the client treats 0 specially
+		int roomId = nextRoomId.incrementAndGet();
+		rooms.put(Integer.valueOf(roomId), new Chatroom(creator));
+		return roomId;
+	}
+
+	public Chatroom destroyRoom(int roomId) {
+		return rooms.remove(Integer.valueOf(roomId));
+	}
+
+	public Chatroom getRoom(int roomId) {
+		return rooms.get(Integer.valueOf(roomId));
+	}
+
+	public void setRoom(int roomid, Chatroom room) {
+		rooms.put(Integer.valueOf(roomid), room);
 	}
 }

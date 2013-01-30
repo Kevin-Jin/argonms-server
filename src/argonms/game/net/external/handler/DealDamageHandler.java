@@ -123,6 +123,10 @@ public final class DealDamageHandler {
 	public static void handleMeleeAttack(LittleEndianReader packet, GameClient gc) {
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		GameCharacter p = gc.getPlayer();
+		if (p.getInventory(InventoryType.EQUIPPED).get((short) -11) == null) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to attack without a weapon");
+			return;
+		}
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE, attack.skill)), p);
 		getMaxBaseDamage(p, 0, attack.getAttackEffect(p));
@@ -133,6 +137,10 @@ public final class DealDamageHandler {
 	public static void handleRangedAttack(LittleEndianReader packet, GameClient gc) {
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		GameCharacter p = gc.getPlayer();
+		if (p.getInventory(InventoryType.EQUIPPED).get((short) -11) == null) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to attack without a weapon");
+			return;
+		}
 		AttackInfo attack = parseDamage(packet, AttackType.RANGED, p);
 
 		PlayerSkillEffectsData e = attack.getAttackEffect(p);
@@ -201,6 +209,10 @@ public final class DealDamageHandler {
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
 		final GameCharacter p = gc.getPlayer();
+		if (p.getInventory(InventoryType.EQUIPPED).get((short) -11) == null) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to attack without a weapon");
+			return;
+		}
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
 		applyAttack(attack, p);

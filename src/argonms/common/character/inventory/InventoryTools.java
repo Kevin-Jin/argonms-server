@@ -416,7 +416,7 @@ public final class InventoryTools {
 		}
 	}
 
-	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, int quantity) {
+	public static UpdatedSlots removeFromInventory(Inventory inv, int itemId, int quantity, boolean removeEmptyRechargeableStacks) {
 		boolean rechargeable = isRechargeable(itemId);
 		List<Short> changed = new ArrayList<Short>();
 		List<Short> removed = new ArrayList<Short>();
@@ -425,7 +425,7 @@ public final class InventoryTools {
 			InventorySlot item = inv.get(slot.shortValue());
 			delta = Math.min(quantity, item.getQuantity());
 			short newQty = (short) (item.getQuantity() - delta);
-			if (newQty == 0 && !rechargeable) {
+			if (newQty == 0 && (removeEmptyRechargeableStacks || !rechargeable)) {
 				inv.remove(slot);
 				removed.add(slot);
 			} else {
@@ -442,15 +442,15 @@ public final class InventoryTools {
 	public static UpdatedSlots removeFromInventory(Player p, int itemId, int quantity) {
 		InventoryType type = getCategory(itemId);
 		if (type != InventoryType.EQUIP) {
-			return removeFromInventory(p.getInventory(type), itemId, quantity);
+			return removeFromInventory(p.getInventory(type), itemId, quantity, false);
 		} else {
 			Inventory inv = p.getInventory(type);
 			int start = getAmountOfItem(inv, itemId);
-			UpdatedSlots updatedSlots = removeFromInventory(inv, itemId, quantity);
+			UpdatedSlots updatedSlots = removeFromInventory(inv, itemId, quantity, false);
 			int end = getAmountOfItem(inv, itemId);
 			quantity -= start - end;
 			if (quantity > 0)
-				updatedSlots.union(removeFromInventory(p.getInventory(InventoryType.EQUIPPED), itemId, quantity));
+				updatedSlots.union(removeFromInventory(p.getInventory(InventoryType.EQUIPPED), itemId, quantity, false));
 			return updatedSlots;
 		}
 	}
@@ -751,7 +751,7 @@ public final class InventoryTools {
 	}
 
 	public static boolean isBullet(int itemId) {
-		return (itemId >= 2330000 && itemId < 2331000);
+		return (itemId >= 2330000 && itemId < 2340000);
 	}
 
 	public static boolean isRechargeable(int itemId) {
