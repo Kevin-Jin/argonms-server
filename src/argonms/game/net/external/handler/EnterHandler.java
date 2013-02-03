@@ -38,7 +38,6 @@ import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import argonms.game.script.EventManipulator;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
@@ -85,14 +84,10 @@ public final class EnterHandler {
 				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
 		}
 		cserv.getCrossServerInterface().sendExchangeBuddyLogInNotifications(player);
-		if (player.getParty() != null) {
-			gc.getSession().send(GamePackets.writePartyList(player.getParty()));
-			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player, player.getParty());
-		}
-		if (player.getGuild() != null) {
-			gc.getSession().send(GamePackets.writeGuildList(player.getGuild()));
-			//cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player, player.getParty());
-		}
+		if (player.getParty() != null)
+			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player);
+		if (player.getGuild() != null)
+			cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player);
 
 		//player.showNote();
 		gc.getSession().send(writeKeymap(player.getKeyMap()));

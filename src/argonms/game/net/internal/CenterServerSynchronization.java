@@ -106,6 +106,21 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			case CenterServerSynchronizationOps.GUILD_CREATED:
 				receivedGuildCreated(packet);
 				break;
+			case CenterServerSynchronizationOps.GUILD_FETCH_LIST:
+				receivedGuildListFetched(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_MEMBER_CONNECTED:
+				receivedGuildMemberConnected(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_MEMBER_DISCONNECTED:
+				receivedGuildMemberDisconnected(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_ADD_PLAYER:
+				receivedGuildPlayerAdded(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_JOIN_ERROR:
+				receivedGuildJoinError(packet);
+				break;
 			case CenterServerSynchronizationOps.CHATROOM_CREATED:
 				receivedChatroomCreated(packet);
 				break;
@@ -188,7 +203,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		int responseId = nextResponseId.incrementAndGet();
 		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
 
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_FETCH_LIST);
 		lew.writeInt(party.getId());
 		lew.writeByte(self.getChannelId());
@@ -214,7 +229,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		return party;
 	}
 
-	public void sendPartyMemberOnline(GameCharacter p, PartyList party) {
+	public void sendPartyMemberOnline(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.PARTY_MEMBER_CONNECTED);
 		lew.writeInt(p.getParty().getId());
@@ -248,11 +263,75 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 	}
 
 	public void sendMakeGuild(String name, PartyList party) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + name.length());
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + name.length());
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_CREATE);
 		lew.writeByte(self.getChannelId());
 		lew.writeLengthPrefixedString(name);
 		lew.writeInt(party.getId());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	/* package-private */ void sendFillGuildList(BlockingQueue<Pair<Byte, Object>> resultConsumer, GuildList guild) {
+		int responseId = nextResponseId.incrementAndGet();
+		blockingCalls.put(Integer.valueOf(responseId), resultConsumer);
+
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_FETCH_LIST);
+		lew.writeInt(guild.getId());
+		lew.writeByte(self.getChannelId());
+		lew.writeInt(responseId);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public GuildList sendFetchGuildList(int guildId) {
+		GuildList newGuild = new GuildList(guildId);
+		GuildList guild;
+		//prevent any concurrent accessors from using an uninitialized GuildList
+		newGuild.lockWrite();
+		try {
+			guild = activeLocalGuilds.putIfAbsent(Integer.valueOf(guildId), newGuild);
+			if (guild == null) {
+				guild = newGuild;
+				handler.fillGuildList(guild);
+			}
+		} finally {
+			newGuild.unlockWrite();
+		}
+		return guild;
+	}
+
+	public void sendGuildMemberOnline(GameCharacter p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_MEMBER_CONNECTED);
+		lew.writeInt(p.getGuild().getId());
+		lew.writeInt(p.getId());
+		lew.writeByte(self.getChannelId());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendGuildMemberOffline(GameCharacter exiter, boolean loggingOff) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_MEMBER_DISCONNECTED);
+		lew.writeInt(exiter.getGuild().getId());
+		lew.writeInt(exiter.getId());
+		lew.writeByte(self.getChannelId());
+		lew.writeBool(loggingOff);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendJoinGuild(GameCharacter p, int guildId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + p.getName().length());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_ADD_PLAYER);
+		lew.writeInt(guildId);
+		lew.writeInt(p.getId());
+		lew.writeByte(p.getClient().getChannel());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeShort(p.getJob());
+		lew.writeShort(p.getLevel());
 
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
@@ -439,7 +518,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		int joinerId = packet.readInt();
 		byte joinerCh = packet.readByte();
 		if (joinerCh == self.getChannelId()) {
-			GameCharacter joiningPlayer = self.getPlayerById(joinerId);
+			PartyList.LocalMember joiningPlayer = new PartyList.LocalMember(self.getPlayerById(joinerId));
 			PartyList newParty = new PartyList(partyId);
 			PartyList party = activeLocalParties.putIfAbsent(Integer.valueOf(partyId), newParty);
 			if (party == null) {
@@ -455,13 +534,16 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			} else {
 				party.lockWrite();
 				try {
-					party.addPlayer(new PartyList.LocalMember(joiningPlayer));
+					party.addPlayer(joiningPlayer);
 				} finally {
 					party.unlockWrite();
 				}
 				party.lockRead();
 				try {
 					for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+						if (mem == joiningPlayer)
+							continue;
+
 						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyMemberJoined(party, joiningPlayer.getName()));
 						mem.getPlayer().pullPartyHp();
 						mem.getPlayer().pushHpToParty();
@@ -470,7 +552,8 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 					party.unlockRead();
 				}
 			}
-			joiningPlayer.setParty(party);
+			joiningPlayer.getPlayer().setParty(party);
+			joiningPlayer.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
 		} else {
 			String joinerName = packet.readLengthPrefixedString();
 			short joinerJob = packet.readShort();
@@ -564,16 +647,21 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				} finally {
 					party.unlockWrite();
 				}
+				self.getPlayerById(entererId).getClient().getSession().send(GamePackets.writePartyList(party));
 			} else {
+				PartyList.LocalMember member;
 				party.lockWrite();
 				try {
-					party.memberConnected(self.getPlayerById(entererId));
+					member = party.memberConnected(self.getPlayerById(entererId));
 				} finally {
 					party.unlockWrite();
 				}
 				party.lockRead();
 				try {
 					for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+						if (mem == member)
+							continue;
+
 						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
 						mem.getPlayer().pullPartyHp();
 						mem.getPlayer().pushHpToParty();
@@ -581,6 +669,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				} finally {
 					party.unlockRead();
 				}
+				member.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
 			}
 		} else {
 			PartyList party = activeLocalParties.get(Integer.valueOf(partyId));
@@ -692,6 +781,215 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			m.getPlayer().setGuild(guild);
 			m.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
 		}
+	}
+
+	private void receivedGuildListFetched(LittleEndianReader packet) {
+		int responseId = packet.readInt();
+		String name = packet.readLengthPrefixedString();
+		short emblemBackground = packet.readShort();
+		byte emblemBackgroundColor = packet.readByte();
+		short emblemDesign = packet.readShort();
+		byte emblemDesignColor = packet.readByte();
+		String[] titles = new String[5];
+		for (int i = 0; i < 5; i++)
+			titles[i] = packet.readLengthPrefixedString();
+		byte capacity = packet.readByte();
+		String notice = packet.readLengthPrefixedString();
+		int gp = packet.readInt();
+		int allianceId = packet.readInt();
+		byte count = packet.readByte();
+		GuildList.Member[] members = new GuildList.Member[count];
+		for (int i = 0; i < count; i++) {
+			int memberId = packet.readInt();
+			byte memberCh = packet.readByte();
+			byte rank = packet.readByte();
+			byte signature = packet.readByte();
+			byte allianceRank = packet.readByte();
+			if (memberCh == self.getChannelId()) {
+				members[i] = new GuildList.LocalMember(self.getPlayerById(memberId), rank, signature, allianceRank);
+			} else {
+				String memberName = packet.readLengthPrefixedString();
+				short memberJob = packet.readShort();
+				short memberLevel = packet.readShort();
+				members[i] = new GuildList.RemoteMember(memberId, memberName, memberJob, memberLevel, memberCh, rank, signature, allianceRank);
+			}
+		}
+
+		BlockingQueue<Pair<Byte, Object>> consumer = blockingCalls.remove(Integer.valueOf(responseId));
+		if (consumer == null)
+			//timed out and garbage collected
+			return;
+
+		consumer.add(new Pair<Byte, Object>(Byte.valueOf((byte) -1), new Object[] {
+			name,
+			Short.valueOf(emblemBackground), Byte.valueOf(emblemBackgroundColor), Short.valueOf(emblemDesign), Byte.valueOf(emblemDesignColor),
+			titles, Byte.valueOf(capacity), notice, Integer.valueOf(gp), Integer.valueOf(allianceId)
+		}));
+		consumer.add(new Pair<Byte, Object>(Byte.valueOf((byte) -1), members));
+	}
+
+	private void receivedGuildMemberConnected(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int entererId = packet.readInt();
+		byte targetCh = packet.readByte();
+
+		if (targetCh == self.getChannelId()) {
+			GuildList newGuild = new GuildList(guildId);
+			GuildList guild = activeLocalGuilds.putIfAbsent(Integer.valueOf(guildId), newGuild);
+			if (guild == null) {
+				//this should never happen, since we always call
+				//sendFetchPartyList when we load the character, which
+				//happens before we call sendPartyMemberEnteredChannel
+				guild = newGuild;
+				guild.lockWrite();
+				try {
+					handler.fillGuildList(guild);
+				} finally {
+					guild.unlockWrite();
+				}
+				self.getPlayerById(entererId).getClient().getSession().send(GamePackets.writeGuildList(guild));
+			} else {
+				GuildList.LocalMember member;
+				guild.lockWrite();
+				try {
+					member = guild.memberConnected(self.getPlayerById(entererId));
+				} finally {
+					guild.unlockWrite();
+				}
+				guild.lockRead();
+				try {
+					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+						if (mem != member)
+							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
+				} finally {
+					guild.unlockRead();
+				}
+				member.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
+			}
+		} else {
+			GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+			if (guild != null) {
+				GuildList.RemoteMember member;
+				guild.lockWrite();
+				try {
+					guild.memberConnected(new GuildList.RemoteMember(member = guild.getOfflineMember(entererId), targetCh));
+				} finally {
+					guild.unlockWrite();
+				}
+				guild.lockRead();
+				try {
+					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+						mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
+				} finally {
+					guild.unlockRead();
+				}
+			}
+		}
+	}
+
+	private void receivedGuildMemberDisconnected(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int exiterId = packet.readInt();
+		byte lastCh = packet.readByte();
+		boolean loggingOff = packet.readBool();
+		//TODO: not safe for activeLocalParties when members
+		//concurrently join or leave party, or enter or exit channel
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		boolean removeGuild = false;
+		GuildList.RemoteMember member;
+		guild.lockWrite();
+		try {
+			if (lastCh == self.getChannelId()) {
+				member = guild.memberDisconnected(self.getPlayerById(exiterId));
+				removeGuild = guild.getMembersInLocalChannel().isEmpty();
+			} else {
+				member = guild.memberDisconnected(lastCh, exiterId);
+			}
+		} finally {
+			guild.unlockWrite();
+		}
+		if (removeGuild) {
+			activeLocalGuilds.remove(Integer.valueOf(guildId));
+		} else if (loggingOff) {
+			guild.lockRead();
+			try {
+				for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+					mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
+			} finally {
+				guild.unlockRead();
+			}
+		}
+	}
+
+	private void receivedGuildPlayerAdded(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int joinerId = packet.readInt();
+		byte joinerCh = packet.readByte();
+		if (joinerCh == self.getChannelId()) {
+			GuildList.LocalMember joiningPlayer = new GuildList.LocalMember(self.getPlayerById(joinerId));
+			GuildList newGuild = new GuildList(guildId);
+			GuildList guild = activeLocalGuilds.putIfAbsent(Integer.valueOf(guildId), newGuild);
+			if (guild == null) {
+				//only can happen if the inviter changed channels or
+				//logged off. is that even a valid case?
+				guild = newGuild;
+				guild.lockWrite();
+				try {
+					handler.fillGuildList(guild);
+				} finally {
+					guild.unlockWrite();
+				}
+			} else {
+				guild.lockWrite();
+				try {
+					guild.addPlayer(joiningPlayer);
+				} finally {
+					guild.unlockWrite();
+				}
+				guild.lockRead();
+				try {
+					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+						if (mem != joiningPlayer)
+							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberJoined(guild, joiningPlayer));
+				} finally {
+					guild.unlockRead();
+				}
+			}
+			joiningPlayer.getPlayer().setGuild(guild);
+			joiningPlayer.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
+			//TODO: update other players on joiningPlayer's map so that new guild appears under his name
+		} else {
+			String joinerName = packet.readLengthPrefixedString();
+			short joinerJob = packet.readShort();
+			short joinerLevel = packet.readShort();
+			GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+			if (guild != null) {
+				GuildList.RemoteMember joiningPlayer = new GuildList.RemoteMember(joinerId, joinerName, joinerJob, joinerLevel, joinerCh);
+				guild.lockWrite();
+				try {
+					guild.addPlayer(joiningPlayer);
+				} finally {
+					guild.unlockWrite();
+				}
+				guild.lockRead();
+				try {
+					for (PartyList.LocalMember mem : guild.getMembersInLocalChannel())
+						mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberJoined(guild, joiningPlayer));
+				} finally {
+					guild.unlockRead();
+				}
+			}
+		}
+	}
+
+	private void receivedGuildJoinError(LittleEndianReader packet) {
+		int joinFailedPlayerId = packet.readInt();
+		GameCharacter joinFailedPlayer = self.getPlayerById(joinFailedPlayerId);
+		if (joinFailedPlayer != null)
+			joinFailedPlayer.getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.GENERAL_ERROR));
 	}
 
 	private void receivedChatroomCreated(LittleEndianReader packet) {

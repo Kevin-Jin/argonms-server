@@ -83,6 +83,7 @@ public final class PartyListHandler {
 				break;
 			}
 			case JOIN: {
+				//TODO: check if player was actually invited
 				int partyId = packet.readInt();
 				if (currentParty == null)
 					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendJoinParty(p, partyId);

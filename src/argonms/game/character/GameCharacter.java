@@ -198,6 +198,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			updateDbBindings(con);
 			updateDbBuddies(con);
 			updateDbParty(con);
+			updateDbGuilds(con);
 			updateDbQuests(con);
 			updateDbMinigameStats(con);
 			updateDbFameLog(con);
@@ -486,6 +487,30 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 	}
 
+	private void updateDbGuilds(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `guildmembers` WHERE `characterid` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+
+			if (guild != null) {
+				ps.close();
+				ps = con.prepareStatement("INSERT INTO `guildmembers` "
+						+ "(`guildid`,`characterid`,`rank`,`signature`,`alliancerank`) VALUES (?,?,?,?,?)");
+				ps.setInt(1, guild.getId());
+				ps.setInt(2, getDataId());
+				GuildList.Member member = guild.getMember(getId());
+				ps.setByte(3, member.getRank());
+				ps.setByte(4, member.getSignature());
+				ps.setByte(5, member.getAllianceRank());
+				ps.executeUpdate();
+			}
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
 	private void updateDbQuests(Connection con) throws SQLException {
 		PreparedStatement ps = null, mps = null;
 		ResultSet rs = null;
@@ -734,6 +759,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			rs = ps.executeQuery();
 			if (rs.next())
 				p.party = GameServer.getChannel(c.getChannel()).getCrossServerInterface().sendFetchPartyList(rs.getInt(1));
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `g`.`id` FROM `guilds` `g` LEFT JOIN `guildmembers` `m` ON `g`.`id` = `m`.`guildid` WHERE `m`.`characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			if (rs.next())
+				p.guild = GameServer.getChannel(c.getChannel()).getCrossServerInterface().sendFetchGuildList(rs.getInt(1));
 			rs.close();
 			ps.close();
 
@@ -1756,6 +1789,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			event.playerDisconnected(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendPartyMemberLogOffNotifications(this, false);
+		if (guild != null)
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendGuildMemberLogOffNotifications(this, false);
 		if (chatroom != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().chatroomPlayerChangingChannels(getId(), chatroom);
 		prepareExitChannel(false);
@@ -1767,6 +1802,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyLogOffNotifications(this);
 		if (party != null)
 			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendPartyMemberLogOffNotifications(this, true);
+		if (guild != null)
+			GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendGuildMemberLogOffNotifications(this, true);
 		if (chatroom != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendLeaveChatroom(this);
 		prepareExitChannel(quickCleanup);

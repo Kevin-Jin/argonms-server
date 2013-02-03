@@ -35,9 +35,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		R extends IntraworldGroupList.RemoteMember,
 		L extends IntraworldGroupList.LocalMember> {
-	public static final byte CASH_SHOP_CH = 0;
-	public static final byte OFFLINE_CH = -1;
-
 	public interface Member {
 		public int getPlayerId();
 		public String getName();
@@ -151,48 +148,6 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		}
 	}
 
-	public static class EmptyMember implements Member {
-		private static EmptyMember instance = new EmptyMember();
-
-		private EmptyMember() {
-			
-		}
-
-		@Override
-		public int getPlayerId() {
-			return 0;
-		}
-
-		@Override
-		public String getName() {
-			return "";
-		}
-
-		@Override
-		public short getJob() {
-			return 0;
-		}
-
-		@Override
-		public short getLevel() {
-			return 0;
-		}
-
-		@Override
-		public byte getChannel() {
-			return OFFLINE_CH;
-		}
-
-		@Override
-		public int getMapId() {
-			return 0;
-		}
-
-		public static EmptyMember getInstance() {
-			return instance;
-		}
-	}
-
 	private final int id;
 	//members on current channel
 	protected final Map<Integer, L> localMembers;
@@ -260,16 +215,9 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @return 
 	 */
-	public boolean allOffline() {
-		return localMembers.isEmpty() && remoteMembers.size() == 1 && remoteMembers.containsKey(Byte.valueOf(OFFLINE_CH));
-	}
+	public abstract boolean allOffline();
 
-	private void removeFromOffline(Member member) {
-		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
-		others.remove(Integer.valueOf(member.getPlayerId()));
-		if (others.isEmpty())
-			remoteMembers.remove(Byte.valueOf(OFFLINE_CH));
-	}
+	protected abstract void removeFromOffline(Member member);
 
 	/**
 	 * Moves the Member from the offline list to the online list for a remote
@@ -295,16 +243,7 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		return member;
 	}
 
-	private R addToOffline(Member member) {
-		Map<Integer, R> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
-		if (others == null) {
-			others = new HashMap<Integer, R>();
-			remoteMembers.put(Byte.valueOf(OFFLINE_CH), others);
-		}
-		R offlineMember = createRemoteMember(member, OFFLINE_CH);
-		others.put(Integer.valueOf(member.getPlayerId()), offlineMember);
-		return offlineMember;
-	}
+	protected abstract R addToOffline(Member member);
 
 	/**
 	 * Moves the Member from the online list for a remote channel to the
@@ -396,9 +335,7 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	 * @param playerId
 	 * @return 
 	 */
-	public R getOfflineMember(int playerId) {
-		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
-	}
+	public abstract R getOfflineMember(int playerId);
 
 	/**
 	 * This IntraworldGroupList must be at least read locked when this method is called.

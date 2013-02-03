@@ -33,8 +33,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public abstract class IntraworldGroup<T extends IntraworldGroup.Member> {
-	public static final byte OFFLINE_CH = -1;
-
 	public static class Member {
 		private final int playerId;
 		private final String name;

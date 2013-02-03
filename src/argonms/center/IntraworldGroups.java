@@ -97,7 +97,7 @@ public class IntraworldGroups {
 		return partyId;
 	}
 
-	public Party destroyParty(int partyId) {
+	public Party flushParty(int partyId) {
 		return parties.remove(Integer.valueOf(partyId));
 	}
 
@@ -163,6 +163,18 @@ public class IntraworldGroups {
 		return guildId;
 	}
 
+	public Guild flushGuild(int guildId) {
+		return guilds.remove(Integer.valueOf(guildId));
+	}
+
+	public Guild getGuild(int guildId) {
+		return guilds.get(Integer.valueOf(guildId));
+	}
+
+	public void setGuild(int guildId, Guild guild) {
+		guilds.put(Integer.valueOf(guildId), guild);
+	}
+
 	/**
 	 * 
 	 * @param creator
@@ -175,7 +187,7 @@ public class IntraworldGroups {
 		return roomId;
 	}
 
-	public Chatroom destroyRoom(int roomId) {
+	public Chatroom flushRoom(int roomId) {
 		return rooms.remove(Integer.valueOf(roomId));
 	}
 

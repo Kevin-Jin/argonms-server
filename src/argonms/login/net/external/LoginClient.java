@@ -47,7 +47,17 @@ public class LoginClient extends RemoteClient {
 	public static final byte
 		GENDER_MALE = 0,
 		GENDER_FEMALE = 1,
-		GENDER_UNDEFINED = 0x0A //lawl
+		GENDER_UNDEFINED = 0x0A
+	;
+
+	private static final byte
+		DELETE_OKAY = 0,
+		DELETE_ERROR_SYSTEM = 6,
+		DELETE_ERROR_GENERAL = 9,
+		DELETE_ERROR_WRONG_BIRTHDAY = 18,
+		DELETE_ERROR_GUILD_MASTER = 22,
+		DELETE_ERROR_IMPENDING_WEDDING = 24,
+		DELETE_ERROR_IMPENDING_WORLD_TRANSFER = 26
 	;
 
 	private String pin;
@@ -361,29 +371,35 @@ public class LoginClient extends RemoteClient {
 		}
 	}
 
-	//TODO: Find more status codes.
 	public byte deleteCharacter(int characterid, int enteredBirthday) {
-		byte status = 18;
-		if (birthday == 0 || birthday == enteredBirthday) {
-			Connection con = null;
-			PreparedStatement ps = null;
-			try {
-				con = DatabaseManager.getConnection(DatabaseType.STATE);
-				ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
-				ps.setInt(1, characterid);
-				int rowsUpdated = ps.executeUpdate();
-				if (rowsUpdated != 0)
-					status = 0;
-				else
-					status = 1;
-			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not delete character " + characterid + " of account " + getAccountId(), ex);
-				status = 1;
-			} finally {
-				DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
-			}
+		if (birthday != 0 && birthday != enteredBirthday)
+			return DELETE_ERROR_WRONG_BIRTHDAY;
+
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT EXISTS(SELECT 1 FROM `guildmembers` WHERE `characterid` = ? AND `rank` = 1 LIMIT 1)");
+			ps.setInt(1, characterid);
+			rs = ps.executeQuery();
+			rs.next();
+			if (rs.getBoolean(1))
+				return DELETE_ERROR_GUILD_MASTER;
+
+			ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
+			ps.setInt(1, characterid);
+			int rowsUpdated = ps.executeUpdate();
+			if (rowsUpdated != 0)
+				return DELETE_OKAY;
+			else
+				return DELETE_ERROR_SYSTEM;
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not delete character " + characterid + " of account " + getAccountId(), ex);
+			return DELETE_ERROR_SYSTEM;
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
-		return status;
 	}
 
 	private byte[] macStringToBytes(String str) {

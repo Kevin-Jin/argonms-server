@@ -18,6 +18,9 @@
 
 package argonms.game.character;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  * @author GoldenKevin
@@ -26,6 +29,51 @@ public class PartyList extends IntraworldGroupList<
 		IntraworldGroupList.Member,
 		IntraworldGroupList.RemoteMember,
 		IntraworldGroupList.LocalMember> {
+	public static final byte OFFLINE_CH = -1;
+	public static final byte CASH_SHOP_CH = 0;
+
+	public static class EmptyMember implements Member {
+		private static EmptyMember instance = new EmptyMember();
+
+		private EmptyMember() {
+			
+		}
+
+		@Override
+		public int getPlayerId() {
+			return 0;
+		}
+
+		@Override
+		public String getName() {
+			return "";
+		}
+
+		@Override
+		public short getJob() {
+			return 0;
+		}
+
+		@Override
+		public short getLevel() {
+			return 0;
+		}
+
+		@Override
+		public byte getChannel() {
+			return OFFLINE_CH;
+		}
+
+		@Override
+		public int getMapId() {
+			return 0;
+		}
+
+		public static EmptyMember getInstance() {
+			return instance;
+		}
+	}
+
 	private final Member[] allMembers;
 	private volatile int leader;
 
@@ -101,6 +149,19 @@ public class PartyList extends IntraworldGroupList<
 	}
 
 	@Override
+	public boolean allOffline() {
+		return localMembers.isEmpty() && remoteMembers.size() == 1 && remoteMembers.containsKey(Byte.valueOf(OFFLINE_CH));
+	}
+
+	@Override
+	protected void removeFromOffline(IntraworldGroupList.Member member) {
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+		others.remove(Integer.valueOf(member.getPlayerId()));
+		if (others.isEmpty())
+			remoteMembers.remove(Byte.valueOf(OFFLINE_CH));
+	}
+
+	@Override
 	public void memberConnected(RemoteMember member) {
 		super.memberConnected(member);
 		syncWithAllMembers(member);
@@ -111,6 +172,18 @@ public class PartyList extends IntraworldGroupList<
 		LocalMember member = super.memberConnected(p);
 		syncWithAllMembers(member);
 		return member;
+	}
+
+	@Override
+	protected RemoteMember addToOffline(IntraworldGroupList.Member member) {
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+		if (others == null) {
+			others = new HashMap<Integer, RemoteMember>();
+			remoteMembers.put(Byte.valueOf(OFFLINE_CH), others);
+		}
+		RemoteMember offlineMember = createRemoteMember(member, OFFLINE_CH);
+		others.put(Integer.valueOf(member.getPlayerId()), offlineMember);
+		return offlineMember;
 	}
 
 	@Override
@@ -153,6 +226,11 @@ public class PartyList extends IntraworldGroupList<
 		if (!transition)
 			removeFromAllMembersAndCollapse(p.getId());
 		return super.removePlayer(p, transition);
+	}
+
+	@Override
+	public RemoteMember getOfflineMember(int playerId) {
+		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
 	}
 
 	@Override
