@@ -263,6 +263,8 @@ CREATE TABLE `guildmembers` (
   `guildid` INT(11) NOT NULL,
   `characterid` INT(11) NOT NULL,
   `rank` TINYINT(4) NOT NULL,
+  `signature` TINYINT(4) NOT NULL,
+  `alliancerank` TINYINT(4) NOT NULL,
   PRIMARY KEY (`entryid`),
   KEY (`characterid`),
   CONSTRAINT FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE,

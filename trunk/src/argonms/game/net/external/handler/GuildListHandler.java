@@ -18,11 +18,15 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import argonms.game.script.binding.ScriptNpc;
 import argonms.game.script.binding.ScriptObjectManipulator;
 
@@ -71,6 +75,7 @@ public class GuildListHandler {
 
 	public static void handleListModification(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
+		GuildList currentGuild = p.getGuild();
 		switch (packet.readByte()) {
 			case CREATE: {
 				String name = packet.readLengthPrefixedString();
@@ -79,10 +84,34 @@ public class GuildListHandler {
 					ScriptObjectManipulator.guildNameReceived(npc, name);
 				break;
 			}
-			case INVITE:
+			case INVITE: {
+				//invites only check players on current channel
+				String name = packet.readLengthPrefixedString();
+				GameCharacter invited = GameServer.getChannel(gc.getChannel()).getPlayerByName(name);
+				if (currentGuild != null)
+					if (!currentGuild.isFull())
+						if (invited != null)
+							if (invited.getParty() == null)
+								invited.getClient().getSession().send(writeGuildInvite(currentGuild.getId(), p.getName()));
+							else
+								gc.getSession().send(GamePackets.writeSimpleGuildListMessage(ALREADY_IN_GUILD));
+						else
+							gc.getSession().send(GamePackets.writeSimpleGuildListMessage(CANNOT_FIND));
+					else
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to invite player to full guild");
+				else
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to invite player to nonexistent guild");
 				break;
-			case JOIN:
+			}
+			case JOIN: {
+				//TODO: check if player was actually invited
+				int guildId = packet.readInt();
+				if (currentGuild == null)
+					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendJoinGuild(p, guildId);
+				else
+					gc.getSession().send(GamePackets.writeSimpleGuildListMessage(ALREADY_IN_GUILD));
 				break;
+			}
 			case LEAVE:
 				break;
 			case EXPEL:
@@ -107,7 +136,12 @@ public class GuildListHandler {
 	}
 
 	public static void handleDenyRequest(LittleEndianReader packet, GameClient gc) {
-		
+		packet.readByte();
+		String from = packet.readLengthPrefixedString();
+		String to = packet.readLengthPrefixedString();
+		GameCharacter inviter = GameServer.getChannel(gc.getChannel()).getPlayerByName(from);
+		if (inviter != null) //check if inviter changed channels or logged off
+			inviter.getClient().getSession().send(writeGuildInviteRejected(to));
 	}
 
 	private static byte[] writeGuildClear() {
@@ -120,7 +154,7 @@ public class GuildListHandler {
 		return lew.getBytes();
 	}
 
-	private static byte[] writePartyInviteRejected(String name) {
+	private static byte[] writeGuildInviteRejected(String name) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5 + name.length());
 
 		lew.writeShort(ClientSendOps.GUILD_LIST);

@@ -27,6 +27,7 @@ import argonms.game.GameRegistry;
 import argonms.game.GameServer;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.character.PartyList;
 import argonms.game.character.PlayerContinuation;
 import argonms.game.command.CommandTarget;
@@ -227,14 +228,13 @@ public class CrossServerSynchronization {
 				ccs.callPlayerExistsCheck(queue, name);
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
-				while ((result = queue.poll()) != null) {
+				while ((result = queue.poll()) != null)
 					if ((findResult = ((Byte) result.right).byteValue()) == SCAN_PLAYER_CHANNEL_NO_MATCH)
 						remaining--;
 					else if (!ignoreHidden || findResult == SCAN_PLAYER_CHANNEL_FOUND)
 						return result.left.byteValue();
 					else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
 						return 0;
-				}
 				remaining++;
 			}
 
@@ -729,12 +729,11 @@ public class CrossServerSynchronization {
 				LOG.log(Level.FINE, "Cross process fill party list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 				return;
 			}
-			for (PartyList.Member mem : (PartyList.Member[]) result.right) {
+			for (PartyList.Member mem : (PartyList.Member[]) result.right)
 				if (mem instanceof PartyList.LocalMember)
 					party.addPlayer((PartyList.LocalMember) mem);
 				else if (mem instanceof PartyList.RemoteMember)
 					party.addPlayer((PartyList.RemoteMember) mem);
-			}
 		} catch (InterruptedException e) {
 			//propagate the interrupted status further up to our worker
 			//executor service and see if they care - we don't care about it
@@ -746,8 +745,8 @@ public class CrossServerSynchronization {
 		return intraworldGroups.sendFetchPartyList(partyId);
 	}
 
-	public void sendPartyMemberLogInNotifications(GameCharacter p, PartyList party) {
-		intraworldGroups.sendPartyMemberOnline(p, party);
+	public void sendPartyMemberLogInNotifications(GameCharacter p) {
+		intraworldGroups.sendPartyMemberOnline(p);
 	}
 
 	public void sendPartyMemberLogOffNotifications(GameCharacter p, boolean loggingOff) {
@@ -760,6 +759,59 @@ public class CrossServerSynchronization {
 
 	public void sendMakeGuild(String name, PartyList party) {
 		intraworldGroups.sendMakeGuild(name, party);
+	}
+
+	/* package-private */ void fillGuildList(GuildList guild) {
+		BlockingQueue<Pair<Byte, Object>> queue = new LinkedBlockingQueue<Pair<Byte, Object>>();
+		intraworldGroups.sendFillGuildList(queue, guild);
+
+		long limit = System.currentTimeMillis() + BLOCKING_CALL_TIMEOUT;
+		try {
+			Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			if (result == null) {
+				LOG.log(Level.FINE, "Cross process fill guild list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+				return;
+			}
+			Object[] properties = (Object[]) result.right;
+			guild.setName((String) properties[0]);
+			guild.setEmblem(((Short) properties[1]).shortValue(), ((Byte) properties[2]).byteValue(), ((Short) properties[3]).shortValue(), ((Byte) properties[4]).byteValue());
+			guild.setTitles((String[]) properties[5]);
+			guild.setCapacity(((Byte) properties[6]).byteValue());
+			guild.setNotice((String) properties[7]);
+			guild.setGp(((Integer) properties[8]).intValue());
+			guild.setAlliance(((Integer) properties[9]).intValue());
+
+			result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+			if (result == null) {
+				LOG.log(Level.FINE, "Cross process fill guild list timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
+				return;
+			}
+			for (GuildList.Member mem : (GuildList.Member[]) result.right)
+				if (mem instanceof GuildList.LocalMember)
+					guild.addPlayer((GuildList.LocalMember) mem);
+				else if (mem instanceof GuildList.RemoteMember)
+					guild.addPlayer((GuildList.RemoteMember) mem);
+		} catch (InterruptedException e) {
+			//propagate the interrupted status further up to our worker
+			//executor service and see if they care - we don't care about it
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	public GuildList sendFetchGuildList(int guildList) {
+		return intraworldGroups.sendFetchGuildList(guildList);
+	}
+
+	public void sendGuildMemberLogInNotifications(GameCharacter p) {
+		intraworldGroups.sendGuildMemberOnline(p);
+	}
+
+	public void sendGuildMemberLogOffNotifications(GameCharacter p, boolean loggingOff) {
+		intraworldGroups.sendGuildMemberOffline(p, loggingOff);
+	}
+
+	public void sendJoinGuild(GameCharacter p, int guildId) {
+		intraworldGroups.sendJoinGuild(p, guildId);
 	}
 
 	public void sendMakeChatroom(GameCharacter p) {

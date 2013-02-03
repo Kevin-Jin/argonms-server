@@ -23,30 +23,131 @@ package argonms.center;
  * @author GoldenKevin
  */
 public class Guild extends IntraworldGroup<Guild.Member> {
+	public static final byte OFFLINE_CH = 0;
+
 	public static class Member extends IntraworldGroup.Member {
 		private final byte rank;
+		private final byte signature;
+		private final byte allianceRank;
 
-		public Member(int playerId, String name, short job, short level, byte channel, byte rank) {
+		public Member(int playerId, String name, short job, short level, byte channel, byte rank, byte signature, byte allianceRank) {
 			super(playerId, name, job, level, channel);
 			this.rank = rank;
+			this.signature = signature;
+			this.allianceRank = allianceRank;
+		}
+
+		public Member(int playerId, String name, short job, short level, byte channel) {
+			this(playerId, name, job, level, channel, (byte) 5, (byte) 0, (byte) 0);
 		}
 
 		public Member(IntraworldGroup.Member m, boolean leader) {
-			this(m.getPlayerId(), m.getName(), m.getJob(), m.getLevel(), m.getChannel(), (byte) (leader ? 1 : 0));
+			this(m.getPlayerId(), m.getName(), m.getJob(), m.getLevel(), m.getChannel(), (byte) (leader ? 1 : 5), (byte) 0, (byte) 0);
 		}
 
 		public byte getRank() {
 			return rank;
 		}
+
+		public byte getSignature() {
+			return signature;
+		}
+
+		public byte getAllianceRank() {
+			return allianceRank;
+		}
 	}
 
-	private final String name;
+	private String name;
+	private short emblemBg, emblemFg;
+	private byte emblemBgC, emblemFgC;
+	private String[] titles;
+	private byte capacity;
+	private String notice;
+	private int gp;
+	private int alliance;
 
 	public Guild(String name, Party p) {
 		super();
 		this.name = name;
+		this.titles = new String[5];
 
 		for (IntraworldGroup.Member m : p.getAllMembers())
 			addPlayer(new Member(m, p.getLeader() == m.getPlayerId()));
+	}
+
+	public Guild() {
+		super();
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setEmblem(short background, byte backgroundColor, short foreground, byte foregroundColor) {
+		this.emblemBg = background;
+		this.emblemBgC = backgroundColor;
+		this.emblemFg = foreground;
+		this.emblemFgC = foregroundColor;
+	}
+
+	public void setTitles(String csv) {
+		this.titles = csv.split(",", -1);
+	}
+
+	public void setCapacity(byte capacity) {
+		this.capacity = capacity;
+	}
+
+	public void setNotice(String notice) {
+		this.notice = notice;
+	}
+
+	public void setGp(int gp) {
+		this.gp = gp;
+	}
+
+	public void setAlliance(int allianceId) {
+		this.alliance = allianceId;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public short getEmblemBackground() {
+		return emblemBg;
+	}
+
+	public byte getEmblemBackgroundColor() {
+		return emblemBgC;
+	}
+
+	public short getEmblemDesign() {
+		return emblemFg;
+	}
+
+	public byte getEmblemDesignColor() {
+		return emblemFgC;
+	}
+
+	public String getTitle(byte index) {
+		return titles[index];
+	}
+
+	public byte getCapacity() {
+		return capacity;
+	}
+
+	public String getNotice() {
+		return notice;
+	}
+
+	public int getGp() {
+		return gp;
+	}
+
+	public int getAlliance() {
+		return alliance;
 	}
 }

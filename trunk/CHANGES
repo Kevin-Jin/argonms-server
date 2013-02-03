@@ -2714,6 +2714,17 @@
 	* Implemented all guild packets from game server to client.
 	* Implemented guild creation.
 
+2013-02-02  GoldenKevin  (revision 198)
+
+	* Heracle now takes 1500000 mesos to create a guild.
+	* Prevent guild masters from deleting their characters.
+	* Save character guild membership to database and fetch guild data from
+	center server on character load.
+	* Implemented guild log in and log off notifications.
+	* Implemented guild invitations and guild joining.
+	* Reduced amount of game server to client packets when joining a party and
+	when logging into a character that is in a party.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

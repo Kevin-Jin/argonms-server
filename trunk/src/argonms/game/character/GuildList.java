@@ -19,6 +19,7 @@
 package argonms.game.character;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +31,8 @@ public class GuildList extends IntraworldGroupList<
 		GuildList.Member,
 		GuildList.RemoteMember,
 		GuildList.LocalMember> {
+	private static final byte OFFLINE_CH = 0;
+
 	public interface Member extends IntraworldGroupList.Member {
 		public byte getRank();
 		public byte getSignature();
@@ -46,6 +49,10 @@ public class GuildList extends IntraworldGroupList<
 			this.rank = rank;
 			this.signature = signature;
 			this.allianceRank = allianceRank;
+		}
+
+		public RemoteMember(int playerId, String name, short job, short level, byte channel) {
+			this(playerId, name, job, level, channel, (byte) 5, (byte) 0, (byte) 0);
 		}
 
 		public RemoteMember(Member copy, byte channel) {
@@ -83,8 +90,12 @@ public class GuildList extends IntraworldGroupList<
 			this.allianceRank = allianceRank;
 		}
 
+		public LocalMember(GameCharacter player) {
+			this(player, (byte) 5, (byte) 0, (byte) 0);
+		}
+
 		public LocalMember(IntraworldGroupList.LocalMember m, boolean leader) {
-			this(m.getPlayer(), (byte) (leader ? 1 : 0), (byte) 0, (byte) 0);
+			this(m.getPlayer(), (byte) (leader ? 1 : 5), (byte) 0, (byte) 0);
 		}
 
 		@Override
@@ -103,64 +114,7 @@ public class GuildList extends IntraworldGroupList<
 		}
 	}
 
-	public static class EmptyMember implements Member {
-		private static EmptyMember instance = new EmptyMember();
-
-		private EmptyMember() {
-			
-		}
-
-		@Override
-		public int getPlayerId() {
-			return 0;
-		}
-
-		@Override
-		public String getName() {
-			return "";
-		}
-
-		@Override
-		public short getJob() {
-			return 0;
-		}
-
-		@Override
-		public short getLevel() {
-			return 0;
-		}
-
-		@Override
-		public byte getChannel() {
-			return OFFLINE_CH;
-		}
-
-		@Override
-		public int getMapId() {
-			return 0;
-		}
-
-		@Override
-		public byte getRank() {
-			return 0;
-		}
-
-		public static EmptyMember getInstance() {
-			return instance;
-		}
-
-		@Override
-		public byte getSignature() {
-			return 0;
-		}
-
-		@Override
-		public byte getAllianceRank() {
-			return 0;
-		}
-	}
-
-	private final String name;
+	private String name;
 	private short emblemBg, emblemFg;
 	private byte emblemBgC, emblemFgC;
 	private String[] titles;
@@ -180,9 +134,44 @@ public class GuildList extends IntraworldGroupList<
 			addPlayer(new LocalMember(m, p.getLeader() == m.getPlayerId()));
 	}
 
+	public GuildList(int guildId) {
+		super(guildId);
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setEmblem(short background, byte backgroundColor, short foreground, byte foregroundColor) {
+		this.emblemBg = background;
+		this.emblemBgC = backgroundColor;
+		this.emblemFg = foreground;
+		this.emblemFgC = foregroundColor;
+	}
+
+	public void setTitles(String[] titles) {
+		this.titles = titles;
+	}
+
+	public void setCapacity(byte capacity) {
+		this.capacity = capacity;
+	}
+
+	public void setNotice(String notice) {
+		this.notice = notice;
+	}
+
+	public void setGp(int gp) {
+		this.gp = gp;
+	}
+
+	public void setAlliance(int allianceId) {
+		this.allianceId = allianceId;
+	}
+
 	@Override
 	protected LocalMember createLocalMember(GameCharacter p) {
-		return new LocalMember(p, (byte) 0, (byte) 0, (byte) 0);
+		return new LocalMember(p);
 	}
 
 	@Override
@@ -197,6 +186,36 @@ public class GuildList extends IntraworldGroupList<
 		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
 			list.addAll(channel.values());
 		return list.toArray(new Member[list.size()]);
+	}
+
+	@Override
+	public boolean allOffline() {
+		return localMembers.isEmpty() && remoteMembers.size() == 1 && remoteMembers.containsKey(Byte.valueOf(OFFLINE_CH));
+	}
+
+	@Override
+	protected void removeFromOffline(IntraworldGroupList.Member member) {
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+		others.remove(Integer.valueOf(member.getPlayerId()));
+		if (others.isEmpty())
+			remoteMembers.remove(Byte.valueOf(OFFLINE_CH));
+	}
+
+	@Override
+	protected RemoteMember addToOffline(IntraworldGroupList.Member member) {
+		Map<Integer, RemoteMember> others = remoteMembers.get(Byte.valueOf(OFFLINE_CH));
+		if (others == null) {
+			others = new HashMap<Integer, RemoteMember>();
+			remoteMembers.put(Byte.valueOf(OFFLINE_CH), others);
+		}
+		RemoteMember offlineMember = createRemoteMember(member, OFFLINE_CH);
+		others.put(Integer.valueOf(member.getPlayerId()), offlineMember);
+		return offlineMember;
+	}
+
+	@Override
+	public RemoteMember getOfflineMember(int playerId) {
+		return remoteMembers.get(Byte.valueOf(OFFLINE_CH)).get(Integer.valueOf(playerId));
 	}
 
 	@Override
