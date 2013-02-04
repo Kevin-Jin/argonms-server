@@ -208,7 +208,7 @@ public class PartyList extends IntraworldGroupList<
 	}
 
 	@Override
-	protected void addPlayer(LocalMember member, boolean transition) {
+	protected final void addPlayer(LocalMember member, boolean transition) {
 		super.addPlayer(member, transition);
 		if (!transition)
 			addToAllMembers(member);

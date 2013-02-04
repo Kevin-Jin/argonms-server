@@ -1127,6 +1127,20 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeGuildContract(PartyList party, String guildName, String creatorName, boolean isCreator) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(isCreator ? 3 : (11 + creatorName.length() + guildName.length()));
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.GUILD_CONTRACT);
+		if (!isCreator) {
+			lew.writeInt(party.getId());
+			lew.writeLengthPrefixedString(creatorName);
+			lew.writeLengthPrefixedString(guildName);
+		}
+
+		return lew.getBytes();
+	}
+
 	private static void writeGuildListEntry(LittleEndianWriter lew, GuildList.Member member) {
 		lew.writePaddedAsciiString(member.getName(), 13);
 		lew.writeInt(member.getJob());
@@ -1163,6 +1177,16 @@ public final class GamePackets {
 		lew.writeLengthPrefixedString(guild.getNotice());
 		lew.writeInt(guild.getGp());
 		lew.writeInt(guild.getAllianceId());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGuildClear() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+
+		lew.writeShort(ClientSendOps.GUILD_LIST);
+		lew.writeByte(GuildListHandler.LIST);
+		lew.writeBool(false);
 
 		return lew.getBytes();
 	}
@@ -1313,6 +1337,29 @@ public final class GamePackets {
 			lew.writeInt(guild.getEmblemBackground());
 			lew.writeInt(guild.getEmblemBackgroundColor());
 		}
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateGuildName(GameCharacter p, String newName) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8 + newName.length());
+
+		lew.writeShort(ClientSendOps.UPDATE_GUILD_MEMBERSHIP);
+		lew.writeInt(p.getId());
+		lew.writeLengthPrefixedString(newName);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateGuildEmblem(GameCharacter p, GuildList g) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+
+		lew.writeShort(ClientSendOps.UPDATE_GUILD_EMBLEM);
+		lew.writeInt(p.getId());
+		lew.writeShort(g.getEmblemBackground());
+		lew.writeByte(g.getEmblemBackgroundColor());
+		lew.writeShort(g.getEmblemDesign());
+		lew.writeByte(g.getEmblemDesignColor());
 
 		return lew.getBytes();
 	}

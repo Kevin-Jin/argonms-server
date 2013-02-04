@@ -246,7 +246,7 @@ CREATE TABLE `guilds` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `world` TINYINT(2) NOT NULL,
   `name` VARCHAR(12) NOT NULL,
-  `titles` VARCHAR(64) NOT NULL DEFAULT ',,,,',
+  `titles` VARCHAR(64) NOT NULL DEFAULT 'Master,Jr.Master,Member,,',
   `capacity` TINYINT(4) NOT NULL DEFAULT 10,
   `emblemBackground` SMALLINT(6) NOT NULL DEFAULT 0,
   `emblemBackgroundColor` TINYINT(4) NOT NULL DEFAULT 0,

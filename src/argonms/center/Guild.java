@@ -26,7 +26,7 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 	public static final byte OFFLINE_CH = 0;
 
 	public static class Member extends IntraworldGroup.Member {
-		private final byte rank;
+		private byte rank;
 		private final byte signature;
 		private final byte allianceRank;
 
@@ -37,12 +37,12 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 			this.allianceRank = allianceRank;
 		}
 
-		public Member(int playerId, String name, short job, short level, byte channel) {
-			this(playerId, name, job, level, channel, (byte) 5, (byte) 0, (byte) 0);
+		public Member(int playerId, String name, short job, short level, byte channel, byte rank) {
+			this(playerId, name, job, level, channel, rank, (byte) 0, (byte) 0);
 		}
 
 		public Member(IntraworldGroup.Member m, boolean leader) {
-			this(m.getPlayerId(), m.getName(), m.getJob(), m.getLevel(), m.getChannel(), (byte) (leader ? 1 : 5), (byte) 0, (byte) 0);
+			this(m.getPlayerId(), m.getName(), m.getJob(), m.getLevel(), m.getChannel(), (byte) (leader ? 1 : 3), (byte) 0, (byte) 0);
 		}
 
 		public byte getRank() {
@@ -55,6 +55,10 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 
 		public byte getAllianceRank() {
 			return allianceRank;
+		}
+
+		public void setRank(byte rank) {
+			this.rank = rank;
 		}
 	}
 
@@ -70,7 +74,9 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 	public Guild(String name, Party p) {
 		super();
 		this.name = name;
-		this.titles = new String[5];
+		titles = new String[] { "Master", "Jr.Master", "Member", "", "" };
+		capacity = 10;
+		notice = "";
 
 		for (IntraworldGroup.Member m : p.getAllMembers())
 			addPlayer(new Member(m, p.getLeader() == m.getPlayerId()));
@@ -78,6 +84,12 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 
 	public Guild() {
 		super();
+	}
+
+	public byte getLowestRank() {
+		byte i;
+		for (i = 5; i >= 4 && titles[i - 1].isEmpty(); --i);
+		return i;
 	}
 
 	public void setName(String name) {
@@ -93,6 +105,10 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 
 	public void setTitles(String csv) {
 		this.titles = csv.split(",", -1);
+	}
+
+	public void setTitles(String[] titltes) {
+		this.titles = titles;
 	}
 
 	public void setCapacity(byte capacity) {

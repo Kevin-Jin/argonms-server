@@ -27,6 +27,7 @@ import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.GuildList;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.GuildListHandler;
@@ -335,15 +336,29 @@ public class ScriptPlayer {
 	}
 
 	public byte getGuildRank() {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GuildList guild = getPlayer().getGuild();
+		if (guild == null)
+			return 5;
+		return guild.getMember(getPlayer().getId()).getRank();
 	}
 
 	public int getGuildCapacity() {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GuildList guild = getPlayer().getGuild();
+		if (guild == null)
+			return 0;
+		return guild.getCapacity();
 	}
 
 	public void increaseGuildCapacity(byte amount) {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GameServer.getChannel(getPlayer().getClient().getChannel()).getCrossServerInterface().sendExpandGuild(getPlayer().getGuild(), amount);
+	}
+
+	public boolean hasGuildEmblem() {
+		GuildList guild = getPlayer().getGuild();
+		if (guild == null)
+			return false;
+		return guild.getEmblemBackground() != 0 || guild.getEmblemBackgroundColor() != 0
+				&& guild.getEmblemDesign() != 0 || guild.getEmblemDesignColor() != 0;
 	}
 
 	public void setGuildEmblem(NativeArray arr) {
@@ -351,15 +366,18 @@ public class ScriptPlayer {
 		byte backgroundColor = ((Number) arr.get(1, null)).byteValue();
 		short design = ((Number) arr.get(2, null)).shortValue();
 		byte designColor = ((Number) arr.get(3, null)).byteValue();
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GameServer.getChannel(getPlayer().getClient().getChannel()).getCrossServerInterface().sendUpdateGuildEmblem(getPlayer().getGuild(), background, backgroundColor, design, designColor);
 	}
 
 	public byte getAllianceRank() {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GuildList guild = getPlayer().getGuild();
+		if (guild == null)
+			throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		return guild.getMember(getPlayer().getId()).getAllianceRank();
 	}
 
 	public void disbandGuild() {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
+		GameServer.getChannel(getPlayer().getClient().getChannel()).getCrossServerInterface().sendDisbandGuild(getPlayer().getGuild().getId());
 	}
 
 	public void createAlliance() {
@@ -371,10 +389,6 @@ public class ScriptPlayer {
 	}
 
 	public void increaseAllianceCapacity() {
-		throw new UnsupportedOperationException("TODO: IMPLEMENT");
-	}
-
-	public void removeGuildEmblem() {
 		throw new UnsupportedOperationException("TODO: IMPLEMENT");
 	}
 }

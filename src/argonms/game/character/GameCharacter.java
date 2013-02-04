@@ -961,6 +961,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getMap().sendToAll(GamePackets.writeShowLevelUp(this), this);
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, true);
+		if (guild != null)
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendGuildLevelOrJobUpdate(this, true);
 		pushHpToParty();
 
 		return level < GlobalConstants.MAX_LEVEL ? exp : 0;
@@ -975,6 +977,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.LEVEL, Short.valueOf(level)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, true);
+		if (guild != null)
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendGuildLevelOrJobUpdate(this, true);
 	}
 
 	@Override
@@ -984,6 +988,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.JOB, Short.valueOf(job)), false));
 		if (party != null)
 			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendPartyLevelOrJobUpdate(this, false);
+		if (guild != null)
+			GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendGuildLevelOrJobUpdate(this, false);
 	}
 
 	public int getCurrentStr() {

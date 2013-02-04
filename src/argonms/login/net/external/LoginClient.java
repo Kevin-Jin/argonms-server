@@ -386,6 +386,8 @@ public class LoginClient extends RemoteClient {
 			rs.next();
 			if (rs.getBoolean(1))
 				return DELETE_ERROR_GUILD_MASTER;
+			rs.close();
+			ps.close();
 
 			ps = con.prepareStatement("DELETE FROM `characters` WHERE `id` = ?");
 			ps.setInt(1, characterid);

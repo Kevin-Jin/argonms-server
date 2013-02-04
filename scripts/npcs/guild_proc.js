@@ -94,28 +94,41 @@ if (player.getGuildId() == 0) {
 				} else {
 					npc.sayNext("Are you here to expand your guild? Your guild must have grown quite a bit~ To expand your guild, the guild has to be re-registered in our Guiild Headquarters, and that'll require some service fee .....");
 					let fee = 500000;
-					if (capacity >= 25)
+					if (capacity >= 35)
+						fee *= 10;
+					else if (capacity >= 30)
+						fee *= 9;
+					else if (capacity >= 25)
 						fee *= 7;
-					if (capacity >= 20)
+					else if (capacity >= 20)
 						fee *= 5;
-					if (capacity >= 15)
+					else if (capacity >= 15)
 						fee *= 3;
 					selection = npc.askYesNo("The service fee will only cost you #r" + fee + " mesos#k. Would you like to expand your guild?");
 
 					if (selection == 1) {
-						if (player.hasMesos(fee))
+						if (player.hasMesos(fee)) {
 							player.increaseGuildCapacity(5);
-						else
+							player.loseMesos(fee);
+						} else {
 							npc.say("Please check again. You'll need to pay the service fee in order to expand your guild and re-register it....");
+						}
 					}
 				}
 				break;
 			}
 			case 1:
-				if (player.getAllianceRank() == 1)
+				if (player.getAllianceRank() == 1) {
 					npc.say("You need to pass the alliance leadership first before you disband the guild.");
-				else if (npc.askYesNo("Are you sure you want to break up your guild? Really ... just remember, once you break up your guild, that guild will be gone forever. Oh, and one thing. If you want to break up your guild, you'll have to pay a 200,000 meso service fee. Are you sure you still want to do it?") == 1)
-					player.disbandGuild();
+				} else if (npc.askYesNo("Are you sure you want to break up your guild? Really ... just remember, once you break up your guild, that guild will be gone forever. Oh, and one thing. If you want to break up your guild, you'll have to pay a 200,000 meso service fee. Are you sure you still want to do it?") == 1) {
+					if (player.hasMesos(200000)) {
+						player.disbandGuild();
+						player.loseMesos(200000);
+					} else {
+						//TODO: GMS-like line
+						npc.say("Hey, you do not have the money for the service... are you sure that you have enough money with you?");
+					}
+				}
 				break;
 		}
 	}

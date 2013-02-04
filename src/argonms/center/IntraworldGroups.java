@@ -67,6 +67,7 @@ public class IntraworldGroups {
 	private final Map<Integer, Party> parties;
 
 	private final Set<String> loadedGuildNames;
+	private final Map<Integer, Set<Integer>> pendingGuildContractVotes;
 	private final Map<Integer, Guild> guilds;
 
 	private final AtomicInteger nextRoomId;
@@ -79,6 +80,7 @@ public class IntraworldGroups {
 		parties = new ConcurrentHashMap<Integer, Party>();
 
 		loadedGuildNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+		pendingGuildContractVotes = new ConcurrentHashMap<Integer, Set<Integer>>();
 		guilds = new ConcurrentHashMap<Integer, Guild>();
 
 		nextRoomId = new AtomicInteger();
@@ -163,8 +165,31 @@ public class IntraworldGroups {
 		return guildId;
 	}
 
+	public void makePendingGuildContractVotes(int guildId, int partyId) {
+		Set<Integer> pending = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+		Party p = getParty(partyId);
+		if (p == null)
+			return;
+
+		for (Party.Member mem : p.getAllMembers())
+			if (mem.getPlayerId() != p.getLeader())
+				pending.add(Integer.valueOf(mem.getPlayerId()));
+		pendingGuildContractVotes.put(Integer.valueOf(guildId), pending);
+	}
+
+	public Set<Integer> getPendingGuildContractVotes(int guildId) {
+		return pendingGuildContractVotes.get(Integer.valueOf(guildId));
+	}
+
+	public Set<Integer> removePendingGuildContractVotes(int guildId) {
+		return pendingGuildContractVotes.remove(Integer.valueOf(guildId));
+	}
+
 	public Guild flushGuild(int guildId) {
-		return guilds.remove(Integer.valueOf(guildId));
+		Guild guild = guilds.remove(Integer.valueOf(guildId));
+		if (guild != null)
+			loadedGuildNames.remove(guild.getName());
+		return guild;
 	}
 
 	public Guild getGuild(int guildId) {
