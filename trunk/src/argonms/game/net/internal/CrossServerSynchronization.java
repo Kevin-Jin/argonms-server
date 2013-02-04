@@ -802,16 +802,56 @@ public class CrossServerSynchronization {
 		return intraworldGroups.sendFetchGuildList(guildList);
 	}
 
-	public void sendGuildMemberLogInNotifications(GameCharacter p) {
-		intraworldGroups.sendGuildMemberOnline(p);
+	public void sendGuildMemberLogInNotifications(GameCharacter p, boolean firstLogIn) {
+		intraworldGroups.sendGuildMemberOnline(p, firstLogIn);
 	}
 
 	public void sendGuildMemberLogOffNotifications(GameCharacter p, boolean loggingOff) {
 		intraworldGroups.sendGuildMemberOffline(p, loggingOff);
 	}
 
+	public void sendGuildLevelOrJobUpdate(GameCharacter p, boolean level) {
+		intraworldGroups.sendGuildLevelOrJobUpdate(p, level);
+	}
+
 	public void sendJoinGuild(GameCharacter p, int guildId) {
 		intraworldGroups.sendJoinGuild(p, guildId);
+	}
+
+	public void sendLeaveGuild(GameCharacter p, int guildId) {
+		intraworldGroups.sendLeaveGuild(p, guildId);
+	}
+
+	public void sendExpelGuildMember(GuildList.Member member, int partyId) {
+		intraworldGroups.sendExpelGuildMember(member, partyId);
+	}
+
+	public void sendExpandGuild(GuildList guild, byte amount) {
+		intraworldGroups.sendExpandGuild(guild, amount);
+	}
+
+	public void sendUpdateGuildEmblem(GuildList guild, short background, byte backgroundColor, short design, byte designColor) {
+		intraworldGroups.sendUpdateGuildEmblem(guild, background, backgroundColor, design, designColor);
+	}
+
+	public void sendUpdateGuildTitles(GuildList guild, String[] titles) {
+		intraworldGroups.sendUpdateGuildTitles(guild, titles);
+	}
+
+	public void sendUpdateGuildRank(GuildList guild, int characterId, byte newRank) {
+		intraworldGroups.sendUpdateGuildMemberRank(guild, characterId, newRank);
+	}
+
+	public void sendUpdateGuildNotice(GuildList guild, String notice) {
+		intraworldGroups.sendUpdateGuildNotice(guild, notice);
+	}
+
+	public void sendVoteGuildContract(GuildList guild, int characterId, boolean result) {
+		intraworldGroups.sendVoteGuildContract(guild, characterId, result);
+	}
+
+	public void sendDisbandGuild(int guildId) {
+		intraworldGroups.sendDisbandGuild(guildId);
 	}
 
 	public void sendMakeChatroom(GameCharacter p) {

@@ -87,7 +87,7 @@ public final class EnterHandler {
 		if (player.getParty() != null)
 			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player);
 		if (player.getGuild() != null)
-			cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player);
+			cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player, firstLogIn);
 
 		//player.showNote();
 		gc.getSession().send(writeKeymap(player.getKeyMap()));

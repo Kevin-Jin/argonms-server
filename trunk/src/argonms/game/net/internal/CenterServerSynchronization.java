@@ -32,6 +32,7 @@ import argonms.game.character.GuildList;
 import argonms.game.character.PartyList;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
+import argonms.game.net.external.handler.ChatHandler;
 import argonms.game.net.external.handler.GuildListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
 import argonms.game.script.binding.ScriptObjectManipulator;
@@ -103,8 +104,8 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			case CenterServerSynchronizationOps.PARTY_MEMBER_STAT_UPDATED:
 				receivedPartyMemberStatUpdated(packet);
 				break;
-			case CenterServerSynchronizationOps.GUILD_CREATED:
-				receivedGuildCreated(packet);
+			case CenterServerSynchronizationOps.GUILD_CONTRACT:
+				receivedGuildContract(packet);
 				break;
 			case CenterServerSynchronizationOps.GUILD_FETCH_LIST:
 				receivedGuildListFetched(packet);
@@ -115,11 +116,38 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			case CenterServerSynchronizationOps.GUILD_MEMBER_DISCONNECTED:
 				receivedGuildMemberDisconnected(packet);
 				break;
+			case CenterServerSynchronizationOps.GUILD_MEMBER_STAT_UPDATED:
+				receivedGuildMemberStatUpdated(packet);
+				break;
 			case CenterServerSynchronizationOps.GUILD_ADD_PLAYER:
 				receivedGuildPlayerAdded(packet);
 				break;
 			case CenterServerSynchronizationOps.GUILD_JOIN_ERROR:
 				receivedGuildJoinError(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_REMOVE_PLAYER:
+				receivedGuildPlayerRemoved(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_EXPAND:
+				receivedGuildExpanded(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_EMBLEM_UPDATE:
+				receivedGuildEmblemUpdate(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_TITLES_UPDATE:
+				receivedGuildTitlesUpdate(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_MEMBER_RANK_UPDATE:
+				receivedGuildMemberRankUpdate(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_NOTICE_UPDATE:
+				receivedGuildNoticeUpdate(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_CREATED:
+				receivedGuildCreated(packet);
+				break;
+			case CenterServerSynchronizationOps.GUILD_DISBAND:
+				receivedGuildDisbanded(packet);
 				break;
 			case CenterServerSynchronizationOps.CHATROOM_CREATED:
 				receivedChatroomCreated(packet);
@@ -302,12 +330,13 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		return guild;
 	}
 
-	public void sendGuildMemberOnline(GameCharacter p) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+	public void sendGuildMemberOnline(GameCharacter p, boolean firstLogIn) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_MEMBER_CONNECTED);
 		lew.writeInt(p.getGuild().getId());
 		lew.writeInt(p.getId());
 		lew.writeByte(self.getChannelId());
+		lew.writeBool(firstLogIn);
 
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
@@ -323,6 +352,18 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
 
+	public void sendGuildLevelOrJobUpdate(GameCharacter p, boolean level) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_MEMBER_STAT_UPDATED);
+		lew.writeInt(p.getGuild().getId());
+		lew.writeInt(p.getId());
+		lew.writeByte(self.getChannelId());
+		lew.writeBool(level);
+		lew.writeShort(level ? p.getLevel() : p.getJob());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
 	public void sendJoinGuild(GameCharacter p, int guildId) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + p.getName().length());
 		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_ADD_PLAYER);
@@ -332,6 +373,98 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		lew.writeLengthPrefixedString(p.getName());
 		lew.writeShort(p.getJob());
 		lew.writeShort(p.getLevel());
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendLeaveGuild(GameCharacter p, int guildId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + p.getName().length());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_REMOVE_PLAYER);
+		lew.writeInt(guildId);
+		lew.writeInt(p.getId());
+		lew.writeByte(p.getClient().getChannel());
+		lew.writeLengthPrefixedString(p.getName());
+		lew.writeBool(false);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendExpelGuildMember(GuildList.Member member, int partyId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14 + member.getName().length());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_REMOVE_PLAYER);
+		lew.writeInt(partyId);
+		lew.writeInt(member.getPlayerId());
+		lew.writeByte(member.getChannel());
+		lew.writeLengthPrefixedString(member.getName());
+		lew.writeBool(true);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendExpandGuild(GuildList guild, byte amount) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_EXPAND);
+		lew.writeInt(guild.getId());
+		lew.writeByte(amount);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendUpdateGuildEmblem(GuildList guild, short background, byte backgroundColor, short design, byte designColor) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_EMBLEM_UPDATE);
+		lew.writeInt(guild.getId());
+		lew.writeShort(background);
+		lew.writeByte(backgroundColor);
+		lew.writeShort(design);
+		lew.writeByte(designColor);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendUpdateGuildTitles(GuildList guild, String[] titles) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_TITLES_UPDATE);
+		lew.writeInt(guild.getId());
+		for (int i = 0; i < 5; i++)
+			lew.writeLengthPrefixedString(titles[i]);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendUpdateGuildMemberRank(GuildList guild, int characterId, byte newRank) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_MEMBER_RANK_UPDATE);
+		lew.writeInt(guild.getId());
+		lew.writeInt(characterId);
+		lew.writeByte(newRank);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendUpdateGuildNotice(GuildList guild, String notice) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8 + notice.length());
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_NOTICE_UPDATE);
+		lew.writeInt(guild.getId());
+		lew.writeLengthPrefixedString(notice);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendVoteGuildContract(GuildList guild, int characterId, boolean result) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_CONTRACT_VOTE);
+		lew.writeInt(guild.getId());
+		lew.writeInt(characterId);
+		lew.writeBool(result);
+
+		writeCenterServerSynchronizationPacket(lew.getBytes());
+	}
+
+	public void sendDisbandGuild(int guildId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		writeCenterServerSynchronizationPacketHeader(lew, CenterServerSynchronizationOps.GUILD_DISBAND);
+		lew.writeInt(guildId);
 
 		writeCenterServerSynchronizationPacket(lew.getBytes());
 	}
@@ -753,7 +886,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		}
 	}
 
-	private void receivedGuildCreated(LittleEndianReader packet) {
+	private void receivedGuildContract(LittleEndianReader packet) {
 		int guildId = packet.readInt();
 		int partyId = packet.readInt();
 		String name = packet.readLengthPrefixedString();
@@ -778,8 +911,8 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		GuildList guild = new GuildList(guildId, name, party);
 		activeLocalGuilds.put(Integer.valueOf(guildId), guild);
 		for (PartyList.LocalMember m : party.getMembersInLocalChannel()) {
-			m.getPlayer().setGuild(guild);
-			m.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
+			m.getPlayer().setGuild(guild); //TODO: this makes player look like he's already in guild to players who walk into guilds HQ; refactor this.
+			m.getPlayer().getClient().getSession().send(GamePackets.writeGuildContract(party, name, leader.getName(), m.getPlayer() == leader));
 		}
 	}
 
@@ -832,6 +965,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		int guildId = packet.readInt();
 		int entererId = packet.readInt();
 		byte targetCh = packet.readByte();
+		boolean firstLogIn = packet.readBool();
 
 		if (targetCh == self.getChannelId()) {
 			GuildList newGuild = new GuildList(guildId);
@@ -856,15 +990,17 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				} finally {
 					guild.unlockWrite();
 				}
-				guild.lockRead();
-				try {
-					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
-						if (mem != member)
-							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
-				} finally {
-					guild.unlockRead();
+				if (firstLogIn) {
+					guild.lockRead();
+					try {
+						for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+							if (mem != member)
+								mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
+					} finally {
+						guild.unlockRead();
+					}
+					member.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
 				}
-				member.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
 			}
 		} else {
 			GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
@@ -872,16 +1008,18 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				GuildList.RemoteMember member;
 				guild.lockWrite();
 				try {
-					guild.memberConnected(new GuildList.RemoteMember(member = guild.getOfflineMember(entererId), targetCh));
+					guild.memberConnected(member = new GuildList.RemoteMember(guild.getOfflineMember(entererId), targetCh));
 				} finally {
 					guild.unlockWrite();
 				}
-				guild.lockRead();
-				try {
-					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
-						mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
-				} finally {
-					guild.unlockRead();
+				if (firstLogIn) {
+					guild.lockRead();
+					try {
+						for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLoggedIn(guild, member));
+					} finally {
+						guild.unlockRead();
+					}
 				}
 			}
 		}
@@ -924,12 +1062,40 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		}
 	}
 
+	private void receivedGuildMemberStatUpdated(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int updatedPlayerId = packet.readInt();
+		byte updatedPlayerCh = packet.readByte();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockRead();
+		try {
+			if (updatedPlayerCh != self.getChannelId()) {
+				boolean levelUpdated = packet.readBool();
+				short newValue = packet.readShort();
+				GuildList.RemoteMember member = guild.getMember(updatedPlayerCh, updatedPlayerId);
+				if (levelUpdated)
+					member.setLevel(newValue);
+				else
+					member.setJob(newValue);
+			}
+			GuildList.Member member = guild.getMember(updatedPlayerId);
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLevelJobUpdate(guild, member));
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
 	private void receivedGuildPlayerAdded(LittleEndianReader packet) {
 		int guildId = packet.readInt();
 		int joinerId = packet.readInt();
 		byte joinerCh = packet.readByte();
 		if (joinerCh == self.getChannelId()) {
-			GuildList.LocalMember joiningPlayer = new GuildList.LocalMember(self.getPlayerById(joinerId));
+			GameCharacter joiningPlayer = self.getPlayerById(joinerId);
+			GuildList.LocalMember joiningMember = new GuildList.LocalMember(joiningPlayer);
 			GuildList newGuild = new GuildList(guildId);
 			GuildList guild = activeLocalGuilds.putIfAbsent(Integer.valueOf(guildId), newGuild);
 			if (guild == null) {
@@ -945,22 +1111,22 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			} else {
 				guild.lockWrite();
 				try {
-					guild.addPlayer(joiningPlayer);
+					guild.addPlayer(joiningMember);
 				} finally {
 					guild.unlockWrite();
 				}
 				guild.lockRead();
 				try {
 					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
-						if (mem != joiningPlayer)
-							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberJoined(guild, joiningPlayer));
+						if (mem != joiningMember)
+							mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberJoined(guild, joiningMember));
 				} finally {
 					guild.unlockRead();
 				}
 			}
-			joiningPlayer.getPlayer().setGuild(guild);
-			joiningPlayer.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
-			//TODO: update other players on joiningPlayer's map so that new guild appears under his name
+			joiningPlayer.setGuild(guild);
+			joiningPlayer.getClient().getSession().send(GamePackets.writeGuildList(guild));
+			joiningPlayer.getMap().sendToAll(GamePackets.writeUpdateGuildName(joiningPlayer, guild.getName()), joiningPlayer);
 		} else {
 			String joinerName = packet.readLengthPrefixedString();
 			short joinerJob = packet.readShort();
@@ -976,7 +1142,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				}
 				guild.lockRead();
 				try {
-					for (PartyList.LocalMember mem : guild.getMembersInLocalChannel())
+					for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
 						mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberJoined(guild, joiningPlayer));
 				} finally {
 					guild.unlockRead();
@@ -990,6 +1156,228 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		GameCharacter joinFailedPlayer = self.getPlayerById(joinFailedPlayerId);
 		if (joinFailedPlayer != null)
 			joinFailedPlayer.getClient().getSession().send(GamePackets.writeSimpleGuildListMessage(GuildListHandler.GENERAL_ERROR));
+	}
+
+	private void receivedGuildPlayerRemoved(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int leaverId = packet.readInt();
+		byte leaverCh = packet.readByte();
+		boolean leaverExpelled = packet.readBool();
+		//TODO: not safe for activeLocalGuilds when members
+		//concurrently join or leave guild, or enter or exit channel
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		boolean removeGuild = false;
+		String leaverName;
+		guild.lockWrite();
+		try {
+			if (self.getChannelId() == leaverCh) {
+				GameCharacter leavingPlayer = self.getPlayerById(leaverId);
+				leaverName = leavingPlayer.getName();
+				guild.removePlayer(leavingPlayer);
+				removeGuild = guild.getMembersInLocalChannel().isEmpty();
+
+				leavingPlayer.setGuild(null);
+				if (leaverExpelled)
+					leavingPlayer.getClient().getSession().send(GamePackets.writeGuildMemberLeft(guild, leaverId, leaverName, true));
+				leavingPlayer.getClient().getSession().send(GamePackets.writeGuildClear());
+
+				//GameCenterPacketProcessor.processGuildMemberLeft
+				//has an explanation for this
+				if (removeGuild) {
+					boolean save;
+					guild.lockRead();
+					try {
+						save = guild.allOffline();
+					} finally {
+						guild.unlockRead();
+					}
+					if (save)
+						leavingPlayer.saveCharacter();
+				}
+				leavingPlayer.getMap().sendToAll(GamePackets.writeUpdateGuildName(leavingPlayer, ""), leavingPlayer);
+			} else {
+				leaverName = packet.readLengthPrefixedString();
+				guild.removePlayer(leaverCh, leaverId);
+			}
+		} finally {
+			guild.unlockWrite();
+		}
+		if (removeGuild) {
+			activeLocalGuilds.remove(Integer.valueOf(guildId));
+		} else {
+			guild.lockRead();
+			try {
+				for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+					mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberLeft(guild, leaverId, leaverName, leaverExpelled));
+			} finally {
+				guild.unlockRead();
+			}
+		}
+	}
+
+	private void receivedGuildExpanded(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		byte newCap = packet.readByte();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockWrite();
+		try {
+			guild.setCapacity(newCap);
+		} finally {
+			guild.unlockWrite();
+		}
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildCapacityChanged(guild));
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
+	private void receivedGuildEmblemUpdate(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		short background = packet.readShort();
+		byte backgroundColor = packet.readByte();
+		short design = packet.readShort();
+		byte designColor = packet.readByte();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockWrite();
+		try {
+			guild.setEmblem(background, backgroundColor, design, designColor);
+		} finally {
+			guild.unlockWrite();
+		}
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel()) {
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildChangeEmblem(guild));
+				mem.getPlayer().getMap().sendToAll(GamePackets.writeUpdateGuildEmblem(mem.getPlayer(), guild), mem.getPlayer());
+			}
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
+	private void receivedGuildTitlesUpdate(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		String[] titles = new String[5];
+		for (int i = 0; i < 5; i++)
+			titles[i] = packet.readLengthPrefixedString();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockWrite();
+		try {
+			guild.setTitles(titles);
+		} finally {
+			guild.unlockWrite();
+		}
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildChangeRankTitles(guild));
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
+	private void receivedGuildMemberRankUpdate(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		int characterId = packet.readInt();
+		byte newRank = packet.readByte();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		GuildList.Member member;
+		guild.lockWrite();
+		try {
+			(member = guild.getMember(characterId)).setRank(newRank);
+		} finally {
+			guild.unlockWrite();
+		}
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildMemberChangeRank(guild, member));
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
+	private void receivedGuildNoticeUpdate(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		String notice = packet.readLengthPrefixedString();
+		GuildList guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockWrite();
+		try {
+			guild.setNotice(notice);
+		} finally {
+			guild.unlockWrite();
+		}
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel())
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildChangeNotice(guild));
+		} finally {
+			guild.unlockRead();
+		}
+	}
+
+	private void receivedGuildCreated(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		boolean create = packet.readBool();
+		GuildList guild;
+		if (create)
+			guild = activeLocalGuilds.get(Integer.valueOf(guildId));
+		else
+			guild = activeLocalGuilds.remove(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		if (create) {
+			for (GuildList.LocalMember m : guild.getMembersInLocalChannel()) {
+				m.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
+				m.getPlayer().getMap().sendToAll(GamePackets.writeUpdateGuildName(m.getPlayer(), guild.getName()), m.getPlayer());
+			}
+		} else {
+			//TODO: get packet for guild contract rejection
+			for (GuildList.LocalMember m : guild.getMembersInLocalChannel()) {
+				m.getPlayer().setGuild(null);
+				m.getPlayer().getClient().getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), "Guild contract was not unanimous.", (byte) -1, true));
+			}
+		}
+	}
+
+	private void receivedGuildDisbanded(LittleEndianReader packet) {
+		int guildId = packet.readInt();
+		GuildList guild = activeLocalGuilds.remove(Integer.valueOf(guildId));
+		if (guild == null)
+			return;
+
+		guild.lockRead();
+		try {
+			for (GuildList.LocalMember mem : guild.getMembersInLocalChannel()) {
+				mem.getPlayer().setGuild(null);
+				mem.getPlayer().getClient().getSession().send(GamePackets.writeGuildDisbanded(guild));
+				mem.getPlayer().getMap().sendToAll(GamePackets.writeUpdateGuildName(mem.getPlayer(), ""), mem.getPlayer());
+			}
+		} finally {
+			guild.unlockRead();
+		}
 	}
 
 	private void receivedChatroomCreated(LittleEndianReader packet) {

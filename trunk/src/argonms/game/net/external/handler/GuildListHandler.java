@@ -44,12 +44,14 @@ public class GuildListHandler {
 		CHANGE_RANK_STRING = 0x0D,
 		CHANGE_PLAYER_RANK = 0x0E,
 		CHANGE_EMBLEM = 0x0F,
-		CHANGE_NOTICE = 0x10
+		CHANGE_NOTICE = 0x10,
+		GUILD_CONTRACT_RESPONSE = 0x1E
 	;
 
 	public static final byte //guild send op codes
 		ASK_NAME = 0x01,
 		GENERAL_ERROR = 0x02,
+		GUILD_CONTRACT = 0x03,
 		INVITE_SENT = 0x05,
 		ASK_EMBLEM = 0x11,
 		LIST = 0x1A,
@@ -91,7 +93,7 @@ public class GuildListHandler {
 				if (currentGuild != null)
 					if (!currentGuild.isFull())
 						if (invited != null)
-							if (invited.getParty() == null)
+							if (invited.getGuild() == null)
 								invited.getClient().getSession().send(writeGuildInvite(currentGuild.getId(), p.getName()));
 							else
 								gc.getSession().send(GamePackets.writeSimpleGuildListMessage(ALREADY_IN_GUILD));
@@ -104,22 +106,70 @@ public class GuildListHandler {
 				break;
 			}
 			case JOIN: {
-				//TODO: check if player was actually invited
 				int guildId = packet.readInt();
+				int characterId = packet.readInt();
+				if (characterId != p.getId()) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to join guild without being invited");
+					return;
+				}
+				//TODO: check if player was actually invited
+
 				if (currentGuild == null)
 					GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendJoinGuild(p, guildId);
 				else
 					gc.getSession().send(GamePackets.writeSimpleGuildListMessage(ALREADY_IN_GUILD));
 				break;
 			}
-			case LEAVE:
+			case LEAVE: {
+				int characterId = packet.readInt();
+				String characterName = packet.readLengthPrefixedString();
+				if (characterId != p.getId() || !p.getName().equals(characterName) || currentGuild == null) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to leave guild without being in one");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendLeaveGuild(p, currentGuild.getId());
 				break;
-			case EXPEL:
+			}
+			case EXPEL: {
+				int expelled = packet.readInt();
+				/*String expelledName = */packet.readLengthPrefixedString();
+				if (currentGuild == null || currentGuild.getMember(p.getId()).getRank() > 2) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to expel guild member without having privileges");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendExpelGuildMember(currentGuild.getMember(expelled), currentGuild.getId());
 				break;
-			case CHANGE_RANK_STRING:
+			}
+			case CHANGE_RANK_STRING: {
+				String[] titles = new String[5];
+				for (int i = 0; i < 5; i++) {
+					titles[i] = packet.readLengthPrefixedString();
+					if (titles[i].length() > 12 || (i <= 2 || i > 2 && !titles[i].isEmpty()) && titles[i].length() < 4) {
+						CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to set invalid guild title");
+						return;
+					}
+				}
+				if (currentGuild == null || currentGuild.getMember(p.getId()).getRank() > 2) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to edit guild titles without having privileges");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendUpdateGuildTitles(currentGuild, titles);
 				break;
-			case CHANGE_PLAYER_RANK:
+			}
+			case CHANGE_PLAYER_RANK: {
+				int characterId = packet.readInt();
+				byte newRank = packet.readByte();
+				if (currentGuild == null || currentGuild.getMember(p.getId()).getRank() > 2 || newRank >= 2 && currentGuild.getMember(p.getId()).getRank() > 1) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to edit guild rankings without having privileges");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendUpdateGuildRank(currentGuild, characterId, newRank);
 				break;
+			}
 			case CHANGE_EMBLEM: {
 				short background = packet.readShort();
 				byte backgroundColor = packet.readByte();
@@ -130,8 +180,27 @@ public class GuildListHandler {
 					ScriptObjectManipulator.guildEmblemReceived(npc, background, backgroundColor, design, designColor);
 				break;
 			}
-			case CHANGE_NOTICE:
+			case CHANGE_NOTICE: {
+				String notice = packet.readLengthPrefixedString();
+				if (notice.length() > 100) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to set invalid guild notice");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendUpdateGuildNotice(currentGuild, notice);
 				break;
+			}
+			case GUILD_CONTRACT_RESPONSE: {
+				int characterId = packet.readInt();
+				boolean accept = packet.readBool();
+				if (characterId != p.getId()) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to accept guild contract of another player");
+					return;
+				}
+
+				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendVoteGuildContract(currentGuild, characterId, accept);
+				break;
+			}
 		}
 	}
 
@@ -142,16 +211,6 @@ public class GuildListHandler {
 		GameCharacter inviter = GameServer.getChannel(gc.getChannel()).getPlayerByName(from);
 		if (inviter != null) //check if inviter changed channels or logged off
 			inviter.getClient().getSession().send(writeGuildInviteRejected(to));
-	}
-
-	private static byte[] writeGuildClear() {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
-
-		lew.writeShort(ClientSendOps.GUILD_LIST);
-		lew.writeByte(GuildListHandler.LIST);
-		lew.writeBool(false);
-
-		return lew.getBytes();
 	}
 
 	private static byte[] writeGuildInviteRejected(String name) {

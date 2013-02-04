@@ -19,6 +19,8 @@
 package argonms.game.character;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +39,11 @@ public class GuildList extends IntraworldGroupList<
 		public byte getRank();
 		public byte getSignature();
 		public byte getAllianceRank();
+		public void setRank(byte rank);
 	}
 
 	public static class RemoteMember extends IntraworldGroupList.RemoteMember implements Member {
-		private final byte rank;
+		private byte rank;
 		private final byte signature;
 		private final byte allianceRank;
 
@@ -52,7 +55,7 @@ public class GuildList extends IntraworldGroupList<
 		}
 
 		public RemoteMember(int playerId, String name, short job, short level, byte channel) {
-			this(playerId, name, job, level, channel, (byte) 5, (byte) 0, (byte) 0);
+			this(playerId, name, job, level, channel, (byte) 3, (byte) 0, (byte) 0);
 		}
 
 		public RemoteMember(Member copy, byte channel) {
@@ -76,10 +79,15 @@ public class GuildList extends IntraworldGroupList<
 		public byte getAllianceRank() {
 			return allianceRank;
 		}
+
+		@Override
+		public void setRank(byte rank) {
+			this.rank = rank;
+		}
 	}
 
 	public static class LocalMember extends IntraworldGroupList.LocalMember implements Member {
-		private final byte rank;
+		private byte rank;
 		private final byte signature;
 		private final byte allianceRank;
 
@@ -91,11 +99,11 @@ public class GuildList extends IntraworldGroupList<
 		}
 
 		public LocalMember(GameCharacter player) {
-			this(player, (byte) 5, (byte) 0, (byte) 0);
+			this(player, (byte) 3, (byte) 0, (byte) 0);
 		}
 
 		public LocalMember(IntraworldGroupList.LocalMember m, boolean leader) {
-			this(m.getPlayer(), (byte) (leader ? 1 : 5), (byte) 0, (byte) 0);
+			this(m.getPlayer(), (byte) (leader ? 1 : 3), (byte) 0, (byte) 0);
 		}
 
 		@Override
@@ -112,6 +120,11 @@ public class GuildList extends IntraworldGroupList<
 		public byte getAllianceRank() {
 			return allianceRank;
 		}
+
+		@Override
+		public void setRank(byte rank) {
+			this.rank = rank;
+		}
 	}
 
 	private String name;
@@ -126,7 +139,7 @@ public class GuildList extends IntraworldGroupList<
 	public GuildList(int guildId, String name, PartyList p) {
 		super(guildId);
 		this.name = name;
-		titles = new String[5];
+		titles = new String[] { "Master", "Jr.Master", "Member", "", "" };
 		capacity = 10;
 		notice = "";
 
@@ -169,9 +182,21 @@ public class GuildList extends IntraworldGroupList<
 		this.allianceId = allianceId;
 	}
 
+	private byte getLowestRank() {
+		byte i;
+		for (i = 5; i >= 4 && titles[i - 1].isEmpty(); --i);
+		return i;
+	}
+
 	@Override
 	protected LocalMember createLocalMember(GameCharacter p) {
-		return new LocalMember(p);
+		LocalMember member = new LocalMember(p);
+		Member existing = getMember(member.getPlayerId());
+		if (existing != null)
+			member.setRank(existing.getRank());
+		else
+			member.setRank(getLowestRank());
+		return member;
 	}
 
 	@Override
@@ -185,7 +210,17 @@ public class GuildList extends IntraworldGroupList<
 		list.addAll(localMembers.values());
 		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
 			list.addAll(channel.values());
-		return list.toArray(new Member[list.size()]);
+		Member[] array = list.toArray(new Member[list.size()]);
+		Arrays.sort(array, new Comparator<Member>() {
+			@Override
+			public int compare(Member o1, Member o2) {
+				int delta = o1.getRank() - o2.getRank();
+				if (delta == 0)
+					delta = o1.getName().compareTo(o2.getName());
+				return delta;
+			}
+		});
+		return array;
 	}
 
 	@Override

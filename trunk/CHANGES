@@ -2725,6 +2725,25 @@
 	* Reduced amount of game server to client packets when joining a party and
 	when logging into a character that is in a party.
 
+2013-02-04  GoldenKevin  (revision 199)
+
+	* Heracle now takes the proper amount of mesos to expand a guild and to
+	disband a guild.
+	* Fixed guild ranks being reset.
+	* Fixed guild invitations checking for party membership instead of guild.
+	* Fixed guild member log in/log off notifications.
+	* Properly initialized guild capacity for new guilds.
+	* Proper three default titles, and new guild members always start on the
+	correct rank.
+	* Players on the same map as someone who just joined a guild, someone in a
+	guild whose emblem was just changed, or someone who was just removed from a
+	guild will now see the updated guild line under the guild member's name.
+	* Guild contracts are now shown before guild is made.
+	* Implemented guild member level and job updates.
+	* Implemented guild title changes, rank changes, notice changes, leave, and
+	expel.
+	* Implemented guild expansion, emblem change, and disbandment.
+
 Copyright 2011-2012 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
