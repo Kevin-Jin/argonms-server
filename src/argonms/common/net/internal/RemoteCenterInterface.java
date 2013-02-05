@@ -1,7 +1,7 @@
 /*
 /*
  * ArgonMS MapleStory server emulator written in Java
- * Copyright (C) 2011-2012  GoldenKevin
+ * Copyright (C) 2011-2013  GoldenKevin
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
