@@ -21,10 +21,10 @@ package argonms.game.net.external.handler;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
+import argonms.game.RoomInviteQueue;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -55,20 +55,22 @@ public class MessengerHandler {
 				GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendLeaveChatroom(p);
 				break;
 			case Chatroom.ACT_INVITE: {
+				String recipient = packet.readLengthPrefixedString();
 				if (room == null) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to invite player to null chatroom.");
+					RoomInviteQueue.getInstance().queueChatInvite(p, recipient);
 					return;
 				}
+
 				room.lockRead();
 				try {
 					if (room.isFull())
+						//TODO: send response that room is full
 						return;
 				} finally {
 					room.unlockRead();
 				}
-				String recipient = packet.readLengthPrefixedString();
-				boolean result = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().sendChatroomInvite(p.getName(), room.getRoomId(), recipient);
-				gc.getSession().send(GamePackets.writeChatroomInviteResponse(Chatroom.ACT_INVITE_RESPONSE, recipient, result));
+
+				RoomInviteQueue.getInstance().inviteToChat(p, recipient, room);
 				break;
 			}
 			case Chatroom.ACT_DECLINE: {

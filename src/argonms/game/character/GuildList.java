@@ -266,6 +266,14 @@ public class GuildList extends IntraworldGroupList<
 		return null;
 	}
 
+	@Override
+	public boolean isFull() {
+		int count = localMembers.size();
+		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
+			count += channel.size();
+		return count >= capacity;
+	}
+
 	public String getName() {
 		return name;
 	}

@@ -2748,6 +2748,22 @@
 
 	* Updated copyright years.
 
+2013-02-05  GoldenKevin  (revision 201)
+
+	* Fixed chatroom auto-invite (double click name on user group list) and
+	occasional failed trade invite.
+	* Fixed guild disbandment not erasing guild from database.
+	* Fixed guild notice updates being rolled back when all guild members
+	disconnect.
+	* Fixed broken Guild.isFull and GuildList.isFull.
+	* Heracle will not take mesos unless the guild contract is accepted by
+	everyone.
+	* Fixed storage inventory rolling back if client is disconnected before the
+	NPC window is closed.
+	* Removed unnecessary parameter passing in scripts/npcs/party1_play.js.
+	* Fixed broken Trade.canFitAllItemsAndMesos by adapting code copied from
+	QuestRewards.awardItems.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

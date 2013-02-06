@@ -2087,6 +2087,25 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeTradeInvite(String inviter, int tradeEntId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + inviter.length());
+		lew.writeShort(ClientSendOps.MINIROOM_ACT);
+		lew.writeByte(Miniroom.ACT_INVITE);
+		lew.writeByte((byte) 3);
+		lew.writeLengthPrefixedString(inviter);
+		lew.writeInt(tradeEntId);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInviteFail(byte code, String name) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6 + name.length());
+		lew.writeShort(ClientSendOps.MINIROOM_ACT);
+		lew.writeByte(Miniroom.ACT_DECLINE);
+		lew.writeByte(code);
+		lew.writeLengthPrefixedString(name);
+		return lew.getBytes();
+	}
+
 	public static void writeMiniroomBalloon(LittleEndianWriter lew, Miniroom room) {
 		lew.writeByte(room.getMiniroomType().byteValue());
 		lew.writeInt(room.getId());

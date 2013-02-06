@@ -1180,6 +1180,20 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		}
 		guild.lockRead();
 		try {
+			Connection con = null;
+			PreparedStatement ps = null;
+			try {
+				con = DatabaseManager.getConnection(DatabaseType.STATE);
+				ps = con.prepareStatement("UPDATE `guilds` SET `notice` = ? WHERE `id` = ?");
+				ps.setString(1, notice);
+				ps.setInt(2, guildId);
+				ps.executeUpdate();
+			} catch (SQLException ex) {
+				LOG.log(Level.WARNING, "Could not update notice of guild " + guildId, ex);
+			} finally {
+				DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
+			}
+
 			for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED)) {
 				for (Byte channel : guild.allChannels()) {
 					if (!cgi.isOnline() || !cgi.getChannels().contains(channel))
@@ -1279,11 +1293,6 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 					cgi.getSession().send(lew.getBytes());
 				}
 			}
-
-			//TODO: not safe if player is being concurrently loaded
-			Collection<Guild.Member> offlineMembers = guild.getMembersOfChannel(Guild.OFFLINE_CH);
-			if (offlineMembers.isEmpty())
-				return;
 
 			Connection con = null;
 			PreparedStatement ps = null;

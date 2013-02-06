@@ -22,7 +22,9 @@ import argonms.common.net.external.RemoteClient;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.game.GameServer;
+import argonms.game.RoomInviteQueue;
 import argonms.game.character.GameCharacter;
+import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.script.binding.ScriptNpc;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -107,6 +109,7 @@ public class GameClient extends RemoteClient {
 				player.prepareLogOff(quickCleanup);
 			if (!quickCleanup) {
 				GameServer.getChannel(getChannel()).removePlayer(player);
+				RoomInviteQueue.getInstance().cancelAll(player);
 				player.disconnect();
 			}
 			player = null;
@@ -121,6 +124,8 @@ public class GameClient extends RemoteClient {
 		final boolean changingChannels = isMigrating();
 		if (npc != null)
 			npc.endConversation();
+		if (npcRoom instanceof NpcStorageKeeper && player != null)
+			player.getStorageInventory().collapse();
 		if (getSession().getQueuedReads() == 0) {
 			dissociate(quickCleanup, changingChannels);
 		} else {

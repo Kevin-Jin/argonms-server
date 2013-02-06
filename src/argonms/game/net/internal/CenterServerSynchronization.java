@@ -26,6 +26,7 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
+import argonms.game.RoomInviteQueue;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
@@ -904,7 +905,6 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				ScriptObjectManipulator.guildNameReceived(leader.getClient().getNpc(), null);
 				return;
 			default:
-				ScriptObjectManipulator.guildNameReceived(leader.getClient().getNpc(), null);
 				break;
 		}
 
@@ -1348,18 +1348,25 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		if (guild == null)
 			return;
 
+		GameCharacter master = null;
 		if (create) {
 			for (GuildList.LocalMember m : guild.getMembersInLocalChannel()) {
 				m.getPlayer().getClient().getSession().send(GamePackets.writeGuildList(guild));
 				m.getPlayer().getMap().sendToAll(GamePackets.writeUpdateGuildName(m.getPlayer(), guild.getName()), m.getPlayer());
+				if (m.getRank() == 1)
+					master = m.getPlayer();
 			}
 		} else {
 			//TODO: get packet for guild contract rejection
 			for (GuildList.LocalMember m : guild.getMembersInLocalChannel()) {
 				m.getPlayer().setGuild(null);
 				m.getPlayer().getClient().getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), "Guild contract was not unanimous.", (byte) -1, true));
+				if (m.getRank() == 1)
+					master = m.getPlayer();
 			}
 		}
+		if (master != null)
+			ScriptObjectManipulator.guildNameReceived(master.getClient().getNpc(), null);
 	}
 
 	private void receivedGuildDisbanded(LittleEndianReader packet) {
@@ -1390,6 +1397,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		Chatroom room = new Chatroom(roomId, p);
 		localChatRooms.put(Integer.valueOf(roomId), room);
 		p.setChatRoom(room);
+		RoomInviteQueue.getInstance().processQueuedChatInvites(p, room);
 	}
 
 	private void receivedChatroomRoomChanged(LittleEndianReader packet) {
@@ -1531,7 +1539,9 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		Chatroom room = localChatRooms.get(Integer.valueOf(roomId));
 		if (room == null)
 			return;
+
 		if (playerId != 0) {
+			//TODO: send response message (already closed) if chatroom is empty
 			byte channel = packet.readByte();
 			Map<Short, Integer> equips = new HashMap<Short, Integer>();
 			for (byte i = packet.readByte(); i > 0; i--) {

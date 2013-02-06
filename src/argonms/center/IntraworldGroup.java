@@ -123,12 +123,14 @@ public abstract class IntraworldGroup<T extends IntraworldGroup.Member> {
 		return channelMembers.keySet();
 	}
 
+	protected abstract byte getCapacity();
+
 	/**
 	 * This IntraworldGroup must be at least read locked when this method is called.
 	 * @return 
 	 */
 	public boolean isFull() {
-		return allMembers.size() >= 6;
+		return allMembers.size() >= getCapacity();
 	}
 
 	private void addPlayer(T member, boolean transition) {

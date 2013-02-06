@@ -151,6 +151,7 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 		return titles[index];
 	}
 
+	@Override
 	public byte getCapacity() {
 		return capacity;
 	}
