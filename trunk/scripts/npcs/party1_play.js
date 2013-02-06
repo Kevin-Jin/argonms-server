@@ -30,8 +30,11 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
+let stage = map.getId() - 103000800 + 1;
+let event = npc.getEvent("party1");
+
 //TODO: GMS-like conversation
-function clear(event, stage, exp) {
+function clear(stage, exp) {
 	event.setVariable(stage + "stageclear", true);
 	map.screenEffect("quest/party/clear");
 	map.soundEffect("Party1/Clear");
@@ -47,7 +50,7 @@ function failStage() {
 	map.soundEffect("Party1/Failed");
 }
 
-function rectangleStages(event, stage) {
+function rectangleStages(stage) {
 	let debug = false; //see which positions are occupied
 	let stages = ["2nd", "3rd", "4th"];
 	let objs = ["ropes", "platforms", "barrels"];
@@ -176,7 +179,7 @@ function rectangleStages(event, stage) {
 						}
 					}
 					if (testcombo || debug) {
-						clear(event, stage, Math.pow(2, stage) * 50);
+						clear(stage, Math.pow(2, stage) * 50);
 					} else {
 						failStage();
 					}
@@ -237,9 +240,6 @@ function getPrize() {
 		npc.say("Please check whether your inventory is full.");
 }
 
-let stage = map.getId() - 103000800 + 1;
-let event = npc.getEvent("party1");
-
 switch (stage) {
 	case 1:
 		let questions = [
@@ -266,7 +266,7 @@ switch (stage) {
 					if (!player.hasItem(4001008, numPasses)) {
 						npc.sayNext("I'm sorry, but you are short on the number of passes. You need to give me the right number of passes; it should be the number of members of your party minus the leader, #b" + numPasses + " passes#k to clear the stage. Tell your party members to solve the questions, gather up the passes, and give them to you.");
 					} else {
-						clear(event, stage, 100);
+						clear(stage, 100);
 						player.loseItem(4001008, numPasses);
 						npc.sayNext("You gathered up #b" + numPasses + " passes#k! Congratulations on clearing the stage! I'll make the portal that sends you to the next stage. There's a time limit on getting there, so please hurry. Best of luck to you all!");
 					}
@@ -316,7 +316,7 @@ switch (stage) {
 	case 2:
 	case 3:
 	case 4:
-		rectangleStages(event, stage);
+		rectangleStages(stage);
 		break;
 	case 5:
 		let complete = event.getVariable(stage + "stageclear");
@@ -324,7 +324,7 @@ switch (stage) {
 			if (player.getId() == party.getLeader()) {
 				if (player.hasItem(4001008, 10)) {
 					player.loseItem(4001008, 10);
-					clear(event, stage, 1500);
+					clear(stage, 1500);
 					npc.sayNext("Here's the portal that leads you to the last, bonus stage. It's a stage that allows you to defeat regular monsters a little easier. You'll be given a set amount of time to hunt as much as possible, but you can always leave the stage in the middle of it through the NPC. Again, congratulations on clearing all the stages. Take care...");
 				} else {
 					npc.sayNext("Hello. Welcome to the 5th and final stage. Walk around the map and you'll be able to find some Boss monsters. Defeat all of them, gather up #bthe passes#k, and please get them to me. Once you earn your pass, the leader of your party will collect them, and then get them to me once the #bpasses#k are gathered up. The monsters may be familiar to you, but they may be much stronger than you think, so please be careful. Good luck!\r\nAs a result of complaints, it is now mandatory to kill all the Slimes! Do it!");

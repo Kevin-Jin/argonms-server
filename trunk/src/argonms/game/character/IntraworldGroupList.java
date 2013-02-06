@@ -361,12 +361,7 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	 * This IntraworldGroupList must be at least read locked when this method is called.
 	 * @return 
 	 */
-	public boolean isFull() {
-		int count = localMembers.size();
-		for (Map<Integer, R> channel : remoteMembers.values())
-			count += channel.size();
-		return count >= 6;
-	}
+	public abstract boolean isFull();
 
 	public void lockRead() {
 		readLock.lock();

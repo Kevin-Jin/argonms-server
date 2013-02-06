@@ -30,6 +30,7 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.net.external.GamePackets;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -96,9 +97,24 @@ public class Trade extends Miniroom {
 					itemQtys.put(oId, Short.valueOf((short) (qty != null ? qty.shortValue() + item.getQuantity() : item.getQuantity())));
 				}
 			}
+
+			Map<InventoryType, Integer> netEmptySlotRemovals = new EnumMap<InventoryType, Integer>(InventoryType.class);
+			netEmptySlotRemovals.put(InventoryType.EQUIP, Integer.valueOf(0));
+			netEmptySlotRemovals.put(InventoryType.USE, Integer.valueOf(0));
+			netEmptySlotRemovals.put(InventoryType.SETUP, Integer.valueOf(0));
+			netEmptySlotRemovals.put(InventoryType.ETC, Integer.valueOf(0));
+			netEmptySlotRemovals.put(InventoryType.CASH, Integer.valueOf(0));
+
 			for (Entry<Integer, Short> entry : itemQtys.entrySet()) {
 				int itemId = entry.getKey().intValue();
-				if (!InventoryTools.canFitEntirely(p.getInventory(InventoryTools.getCategory(itemId)), itemId, entry.getValue().shortValue(), false)) {
+				short quantity = entry.getValue().shortValue();
+				InventoryType type = InventoryTools.getCategory(entry.getKey().intValue());
+
+				netEmptySlotRemovals.put(type, Integer.valueOf(netEmptySlotRemovals.get(type).intValue() + InventoryTools.slotsNeeded(p.getInventory(type), itemId, quantity, false)));
+			}
+
+			for (Map.Entry<InventoryType, Integer> netEmptySlotChange : netEmptySlotRemovals.entrySet()) {
+				if (p.getInventory(netEmptySlotChange.getKey()).freeSlots() < netEmptySlotChange.getValue().intValue()) {
 					p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
 					p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 					return false;

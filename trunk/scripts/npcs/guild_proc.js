@@ -72,7 +72,8 @@ if (player.getGuildId() == 0) {
 						let retryName = player.createGuild(npc.askGuildName());
 						while (retryName != null)
 							retryName = player.createGuild(retryName);
-						player.loseMesos(1500000);
+						if (player.getGuildId() != 0)
+							player.loseMesos(1500000);
 					}
 				}
 			}

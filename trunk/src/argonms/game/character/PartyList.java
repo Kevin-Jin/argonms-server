@@ -249,4 +249,12 @@ public class PartyList extends IntraworldGroupList<
 	public Member getMember(byte position) {
 		return allMembers[position];
 	}
+
+	@Override
+	public boolean isFull() {
+		int count = localMembers.size();
+		for (Map<Integer, RemoteMember> channel : remoteMembers.values())
+			count += channel.size();
+		return count >= 6;
+	}
 }

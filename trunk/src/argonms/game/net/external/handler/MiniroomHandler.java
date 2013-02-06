@@ -26,6 +26,7 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
+import argonms.game.RoomInviteQueue;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.FreeMarketShop.HiredMerchant;
@@ -207,24 +208,17 @@ public final class MiniroomHandler {
 		}
 		p.setMiniRoom(room);
 		p.getMap().spawnEntity(room);
+		if (room instanceof Trade) //can't put it in the switch because room wouldn't be spawned in map yet
+			RoomInviteQueue.getInstance().processQueuedTradeInvites(p, (Trade) room);
 	}
 
 	private static void inviteToRoom(GameCharacter p, LittleEndianReader packet) {
 		int pId = packet.readInt();
-		GameCharacter invitee = (GameCharacter) p.getMap().getEntityById(EntityType.PLAYER, pId);
 		Trade room = (Trade) p.getMiniRoom();
-		if (invitee == null) {
-			p.setMiniRoom(null);
-			p.getClient().getSession().send(writeInviteFail(Miniroom.INVITE_ERROR_NOT_FOUND, null));
-			p.getMap().destroyEntity(room);
-		} else if (invitee.getMiniRoom() != null) {
-			p.setMiniRoom(null);
-			p.getClient().getSession().send(writeInviteFail(Miniroom.INVITE_ERROR_BUSY, invitee.getName()));
-			p.getMap().destroyEntity(room);
-		} else {
-			invitee.getClient().getSession().send(writeTradeInvite(p.getName(), room.getId()));
-			p.getClient().getSession().send(room.getFirstPersonJoinMessage(p));
-		}
+		if (room == null)
+			RoomInviteQueue.getInstance().queueTradeInvite(p, pId);
+		else
+			RoomInviteQueue.getInstance().inviteToTrade(p, pId, room);
 	}
 
 	private static void declineInvite(GameCharacter p, LittleEndianReader packet) {
@@ -233,7 +227,7 @@ public final class MiniroomHandler {
 		Trade room = (Trade) p.getMap().getEntityById(EntityType.MINI_ROOM, entId);
 		if (room != null) {
 			GameCharacter owner = room.getPlayerByPosition((byte) 0);
-			owner.getClient().getSession().send(writeInviteFail(message, p.getName()));
+			owner.getClient().getSession().send(GamePackets.writeInviteFail(message, p.getName()));
 			owner.setMiniRoom(null);
 			room.leaveRoom(owner);
 			owner.getClient().getSession().send(room.getFirstPersonLeaveMessage((byte) 0, Miniroom.EXIT_TRADE_CANCELED));
@@ -402,25 +396,6 @@ public final class MiniroomHandler {
 		lew.writeByte(Miniroom.ACT_JOIN);
 		lew.writeByte(MiniroomType.NONE.byteValue());
 		lew.writeByte(code);
-		return lew.getBytes();
-	}
-
-	public static byte[] writeTradeInvite(String inviter, int tradeEntId) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + inviter.length());
-		lew.writeShort(ClientSendOps.MINIROOM_ACT);
-		lew.writeByte(Miniroom.ACT_INVITE);
-		lew.writeByte((byte) 3);
-		lew.writeLengthPrefixedString(inviter);
-		lew.writeInt(tradeEntId);
-		return lew.getBytes();
-	}
-
-	private static byte[] writeInviteFail(byte code, String name) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6 + name.length());
-		lew.writeShort(ClientSendOps.MINIROOM_ACT);
-		lew.writeByte(Miniroom.ACT_DECLINE);
-		lew.writeByte(code);
-		lew.writeLengthPrefixedString(name);
 		return lew.getBytes();
 	}
 

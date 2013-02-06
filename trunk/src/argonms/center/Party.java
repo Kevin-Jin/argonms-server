@@ -53,4 +53,9 @@ public class Party extends IntraworldGroup<IntraworldGroup.Member> {
 	public int getLeader() {
 		return leader;
 	}
+
+	@Override
+	public byte getCapacity() {
+		return 6;
+	}
 }
