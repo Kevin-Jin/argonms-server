@@ -21,6 +21,7 @@ package argonms.common.net.external;
 import argonms.common.character.Player;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.common.util.HexTool;
 import argonms.common.util.collections.LockableMap;
 import java.net.InetSocketAddress;
 import java.sql.Connection;
@@ -29,9 +30,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +43,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Logs any suspicious activity that a client may perform and automatically
@@ -59,7 +64,8 @@ public abstract class CheatTracker {
 
 	public static final short TOLERANCE = 10000;
 
-	private static LockableMap<RemoteClient, OnlineCheatTracker> recent;
+	private static final LockableMap<RemoteClient, OnlineCheatTracker> recent;
+	private static Pattern[] macBanBlacklist;
 
 	static {
 		recent = new LockableMap<RemoteClient, OnlineCheatTracker>(new WeakHashMap<RemoteClient, OnlineCheatTracker>());
@@ -184,6 +190,14 @@ public abstract class CheatTracker {
 		}
 	}
 
+	private boolean excludeMacBan(byte[] mac) {
+		String macStr = HexTool.macAddressBytesToString(mac);
+		for (int i = 0; i < macBanBlacklist.length; i++)
+			if (macBanBlacklist[i].matcher(macStr).matches())
+				return true;
+		return false;
+	}
+
 	//no matter how minor the infractions are, always MAC, IP, and account name
 	//ban a player if they exceed the tolerance. it's pointless to just choose
 	//one as they can be easily bypassed individually.
@@ -220,9 +234,12 @@ public abstract class CheatTracker {
 				ps.setInt(1, entryId);
 				for (int i = 0; i < macCount; i++) {
 					System.arraycopy(macListCombined, i * 6, macAddress, 0, 6);
-					ps.setBytes(2, macAddress);
-					ps.executeUpdate();
+					if (!excludeMacBan(macAddress)) {
+						ps.setBytes(2, macAddress);
+						ps.addBatch();
+					}
 				}
+				ps.executeBatch();
 			}
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
@@ -421,5 +438,19 @@ public abstract class CheatTracker {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
+	}
+
+	public static void setBlacklistedMacBans(Scanner scan) {
+		List<Pattern> blacklist = new ArrayList<Pattern>();
+		while (scan.hasNext()) {
+			String line = scan.nextLine();
+			int comment = line.indexOf('#');
+			if (comment != -1)
+				line = line.substring(0, comment);
+			line = line.trim();
+			if (!line.isEmpty())
+				blacklist.add(Pattern.compile(line));
+		}
+		macBanBlacklist = blacklist.toArray(new Pattern[blacklist.size()]);
 	}
 }

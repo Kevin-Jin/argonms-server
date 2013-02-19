@@ -114,6 +114,17 @@ public final class HexTool {
 	}
 
 	/**
+	 * Turns an array of bytes into a hexadecimal string with each byte
+	 * delimited by a colon.
+	 * 
+	 * @param bytes The bytes to convert.
+	 * @return The hexadecimal representation of <code>bytes</code>
+	 */
+	public static String macAddressBytesToString(byte[] bytes) {
+		return toString(bytes, ':');
+	}
+
+	/**
 	 * Turns an array of bytes into a ASCII string. Any non-printable characters
 	 * are replaced by a period (<code>.</code>)
 	 * 

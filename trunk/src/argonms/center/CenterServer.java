@@ -25,6 +25,7 @@ import argonms.center.net.internal.CenterShopInterface;
 import argonms.center.net.internal.RemoteServerListener;
 import argonms.center.net.remoteadmin.TelnetListener;
 import argonms.common.ServerType;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.CenterRemoteOps;
 import argonms.common.util.DatabaseManager;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.TimeZone;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -135,6 +137,20 @@ public class CenterServer {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, con);
 		}
+
+		Scanner scan = null;
+		try {
+			scan = new Scanner(new FileReader(System.getProperty("argonms.ct.macbanblacklist.file", "macbanblacklist.txt")));
+			CheatTracker.setBlacklistedMacBans(scan);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load macban blacklist!", ex);
+			System.exit(3);
+			return;
+		} finally {
+			if (scan != null)
+				scan.close();
+		}
+
 		Scheduler.enable(true, true);
 
 		listener = new RemoteServerListener(authKey, useNio);

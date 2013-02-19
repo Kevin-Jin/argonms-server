@@ -22,6 +22,7 @@ export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-
 java -Xmx600m -Dargonms.game.serverid=2 -Dargonms.game.config.file=game2.properties \
 -Djava.util.logging.config.file=logging.properties \
 -Dargonms.db.config.file=db.properties \
+-Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
 -Dargonms.data.dir=wz/ \
 -Dargonms.scripts.dir=scripts/ \
 argonms.game.GameServer
