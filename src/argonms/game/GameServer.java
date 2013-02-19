@@ -24,6 +24,7 @@ import argonms.common.ServerType;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.logging.Level;
@@ -211,6 +213,19 @@ public class GameServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
 			System.exit(3);
 			return;
+		}
+
+		Scanner scan = null;
+		try {
+			scan = new Scanner(new FileReader(System.getProperty("argonms.ct.macbanblacklist.file", "macbanblacklist.txt")));
+			CheatTracker.setBlacklistedMacBans(scan);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load macban blacklist!", ex);
+			System.exit(3);
+			return;
+		} finally {
+			if (scan != null)
+				scan.close();
 		}
 
 		Scheduler.enable(true, true);

@@ -24,6 +24,7 @@ import argonms.common.ServerType;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.PlayerLog;
@@ -31,7 +32,6 @@ import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
-import argonms.common.util.TimeTool;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
@@ -48,6 +48,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -166,6 +167,19 @@ public class ShopServer implements LocalServer {
 			LOG.log(Level.SEVERE, "Could not connect to database!", e);
 			System.exit(3);
 			return;
+		}
+
+		Scanner scan = null;
+		try {
+			scan = new Scanner(new FileReader(System.getProperty("argonms.ct.macbanblacklist.file", "macbanblacklist.txt")));
+			CheatTracker.setBlacklistedMacBans(scan);
+		} catch (IOException ex) {
+			LOG.log(Level.SEVERE, "Could not load macban blacklist!", ex);
+			System.exit(3);
+			return;
+		} finally {
+			if (scan != null)
+				scan.close();
 		}
 
 		Scheduler.enable(true, true);

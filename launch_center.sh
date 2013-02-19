@@ -22,4 +22,5 @@ export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-
 java -Xmx600m -Dargonms.center.config.file=center.properties \
 -Djava.util.logging.config.file=logging.properties \
 -Dargonms.db.config.file=db.properties \
+-Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
 argonms.center.CenterServer
