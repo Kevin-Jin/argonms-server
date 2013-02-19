@@ -18,7 +18,9 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.character.PlayerJob;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Rng;
@@ -28,12 +30,14 @@ import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.mob.Attack;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 import java.awt.Point;
 
 /**
@@ -128,9 +132,26 @@ public final class TakeDamageHandler {
 			DiseaseTools.applyDebuff(p, diseaseSkill, diseaseLevel);
 
 		if (damage == -1) {
-			//TODO: no damage player skill
+			switch (p.getJob()) {
+				case PlayerJob.JOB_NIGHT_LORD:
+					noDamageId = Skills.NL_SHADOW_SHIFTER;
+					break;
+				case PlayerJob.JOB_SHADOWER:
+					noDamageId = Skills.SHADOWER_SHADOW_SHIFTER;
+					break;
+				case PlayerJob.JOB_HERO:
+					noDamageId = Skills.HERO_GUARDIAN;
+					break;
+				case PlayerJob.JOB_PALADIN:
+					noDamageId = Skills.PALADIN_GUARDIAN;
+					break;
+			}
+			if (noDamageId == 0 || p.getSkillLevel(noDamageId) <= 0) {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to avoid damage without leveled skill");
+				return;
+			}
 		}
-		//TODO: handle the rest of the good player skill stuffs (achilles, magic guard, powerguard, etc)!
+		//TODO: handle other player skill things (achilles, powerguard, etc)
 
 		if (!deadlyAttack) {
 			int hpBurn = damage;
@@ -139,6 +160,22 @@ public final class TakeDamageHandler {
 				int delta = damage * mg.getModifier() / 100;
 				hpBurn -= delta;
 				mpBurn += delta;
+			}
+			mg = p.getEffectValue(PlayerStatusEffect.MESO_GUARD);
+			if (mg != null) {
+				int mesoBurn = hpBurn / 2;
+				hpBurn -= mesoBurn; //hpBurn = ceil(damage / 2)
+				mesoBurn = mesoBurn * mg.getModifier() / 100; //ceil, floor, or round?
+				if (p.getMesos() < mesoBurn) {
+					//TODO: MATCH CLIENT SIDE HP BURN
+					mesoBurn = 0;
+					hpBurn = damage;
+					SkillTools.cancelBuffSkill(p, mg.getSource());
+				} else {
+					p.gainMesos(-mesoBurn, false);
+				}
+				p.getMap().sendToAll(GamePackets.writeBuffMapVisualEffect(p, StatusEffectTools.DRAGON_BLOOD, mg.getSource(), (byte) -1, (byte) -1), p);
+				damage = hpBurn; //meso guarded player sees hpBurn instead of damage, so make map players see hpBurn too
 			}
 			int mpOverage = mpBurn - p.getMp();
 			if (mpOverage > 0) {

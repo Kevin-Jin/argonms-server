@@ -279,7 +279,8 @@ public final class GamePackets {
 		lew.writeInt(p.getId());
 		lew.writeByte(effectType);
 		lew.writeInt(skillId);
-		lew.writeByte(skillLevel);
+		if (skillLevel != -1)
+			lew.writeByte(skillLevel);
 		if (direction != -1)
 			lew.writeByte(direction);
 
