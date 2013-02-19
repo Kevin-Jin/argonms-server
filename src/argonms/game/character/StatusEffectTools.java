@@ -92,6 +92,15 @@ public final class StatusEffectTools {
 			case PLAYER_SKILL:
 				switch (e.getDataId()) {
 					case Skills.CHAKRA:
+					case Skills.NL_NINJA_AMBUSH:
+					case Skills.SHADOWER_NINJA_AMBUSH:
+					case Skills.THREATEN:
+					case Skills.FP_SLOW:
+					case Skills.IL_SLOW:
+					case Skills.FP_SEAL:
+					case Skills.IL_SEAL:
+					case Skills.DOOM:
+					case Skills.SHADOW_WEB:
 						break;
 					case Skills.DASH:
 						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), duration);

@@ -2764,6 +2764,16 @@
 	* Fixed broken Trade.canFitAllItemsAndMesos by adapting code copied from
 	QuestRewards.awardItems.
 
+2013-02-19  GoldenKevin  (revision 202)
+
+	* QuestRewards.giveRewards only multiplies mesos by meso rate if the mesos
+	are given and not taken away.
+	* Fixed scripts/npcs/refine_nautillus.js.
+	* Fixed Shadow Shifter and Guardian crashing the map when activated.
+	* Fixed Ninja Ambush, Threaten, Slow, Seal, Doom, and Shadow Web crashing
+	the map when cast.
+	* Fixed Meso Guard not working.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

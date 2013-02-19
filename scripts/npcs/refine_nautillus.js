@@ -72,6 +72,9 @@ selection = npc.askMenu(selStr);
 
 let item = itemSet[selection];
 let levelLimit = levelSet[selection];
+let mats = matSet[selection];
+let matQty = matQtySet[selection];
+let cost = costSet[selection];
 
 let prompt = "Making one #t" + item + "# requires the items listed below. The level limit for this item is " + levelLimit + ", so check and make sure you really need this item before getting it. What do you think? Do you really want one?\r\n";
 

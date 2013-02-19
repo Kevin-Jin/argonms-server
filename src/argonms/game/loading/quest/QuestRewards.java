@@ -261,7 +261,10 @@ public class QuestRewards {
 		if (giveExp != 0)
 			p.gainExp((int) Math.min((long) giveExp * GameServer.getVariables().getExpRate(), Integer.MAX_VALUE), false, true);
 		if (giveMesos != 0)
-			p.gainMesos((int) Math.min((long) giveMesos * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
+			if (giveMesos > 0)
+				p.gainMesos((int) Math.min((long) giveMesos * GameServer.getVariables().getMesoRate(), Integer.MAX_VALUE), true);
+			else
+				p.gainMesos(giveMesos, true);
 		if (giveBuff != 0)
 			ItemTools.useItem(p, giveBuff);
 		if (givePetTameness != 0) {
