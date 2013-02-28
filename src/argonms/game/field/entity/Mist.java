@@ -44,7 +44,6 @@ public class Mist extends AbstractEntity {
 	private final byte skillLevel;
 	private final short skillDelay;
 	private final Rectangle box;
-	private final short prop;
 
 	public Mist(Mob mob, MobSkillEffectsData skill) {
 		this.mistType = MOB_MIST;
@@ -53,7 +52,6 @@ public class Mist extends AbstractEntity {
 		this.skillLevel = skill.getLevel();
 		this.skillDelay = 0;
 		this.box = skill.getBoundingBox(mob.getPosition(), mob.getStance() % 2 != 0);
-		this.prop = skill.getProp();
 	}
 
 	public Mist(GameCharacter p, PlayerSkillEffectsData skill) {
@@ -61,7 +59,6 @@ public class Mist extends AbstractEntity {
 		this.skillId = skill.getDataId();
 		this.skillLevel = skill.getLevel();
 		this.box = skill.getBoundingBox(p.getPosition(), p.getStance() % 2 != 0);
-		this.prop = skill.getProp();
 		switch (skillId) {
 			case Skills.SMOKESCREEN:
 				skillDelay = 8;
@@ -100,10 +97,6 @@ public class Mist extends AbstractEntity {
 
 	public Rectangle getBox() {
 		return box;
-	}
-
-	public boolean shouldHurt() {
-		return Rng.getGenerator().nextInt(100) < prop;
 	}
 
 	@Override

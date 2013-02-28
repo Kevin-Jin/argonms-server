@@ -130,7 +130,7 @@ public final class DealDamageHandler {
 		AttackInfo attack = parseDamage(packet, AttackType.MELEE, p);
 		p.getMap().sendToAll(writeMeleeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MELEE, attack.skill)), p);
 		getMaxBaseDamage(p, 0, attack.getAttackEffect(p));
-		applyAttack(attack, p);
+		applyAttack(attack, AttackType.MELEE, p);
 	}
 
 	//bow/arrows, claw/stars, guns/bullets (projectiles)
@@ -203,7 +203,7 @@ public final class DealDamageHandler {
 				additionalWatk = bonusStats[StatEffect.PAD];
 		}
 		getMaxBaseDamage(p, additionalWatk, attack.getAttackEffect(p));
-		applyAttack(attack, p);
+		applyAttack(attack, AttackType.RANGED, p);
 	}
 
 	public static void handleMagicAttack(LittleEndianReader packet, GameClient gc) {
@@ -215,7 +215,7 @@ public final class DealDamageHandler {
 		}
 		AttackInfo attack = parseDamage(packet, AttackType.MAGIC, p);
 		p.getMap().sendToAll(writeMagicAttack(p.getId(), attack, getMasteryLevel(p, AttackType.MAGIC, attack.skill)), p);
-		applyAttack(attack, p);
+		applyAttack(attack, AttackType.MAGIC, p);
 
 		final PlayerSkillEffectsData e = attack.getAttackEffect(p);
 		if (e != null) {
@@ -226,11 +226,10 @@ public final class DealDamageHandler {
 						@Override
 						public void run() {
 							for (MapEntity mo : p.getMap().getMapEntitiesInRect(mist.getBox(), EnumSet.of(EntityType.MONSTER)))
-								if (mist.shouldHurt())
-									MonsterStatusEffectTools.applyEffectsAndShowVisuals((Mob) mo, p, e);
+								MonsterStatusEffectTools.applyEffectsAndShowVisuals((Mob) mo, p, e);
 						}
 					}, 2000, 2500);
-					p.getMap().spawnMist(mist, e.getX() * 1000, poisonSchedule);
+					p.getMap().spawnMist(mist, e.getDuration(), poisonSchedule);
 					break;
 			}
 		}
@@ -245,14 +244,14 @@ public final class DealDamageHandler {
 		AttackInfo attack = parseDamage(packet, AttackType.CHARGE, p);
 		p.getMap().sendToAll(writeEnergyChargeAttack(p.getId(), attack, getMasteryLevel(p, AttackType.CHARGE, attack.skill)), p);
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis() + 5000);
-		applyAttack(attack, p);
+		applyAttack(attack, AttackType.CHARGE, p);
 	}
 
 	public static void handleSummonAttack(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
 		AttackInfo attack = parseDamage(packet, AttackType.SUMMON, p);
 		p.getMap().sendToAll(writeSummonAttack(p.getId(), attack), p);
-		applyAttack(attack, p);
+		applyAttack(attack, AttackType.SUMMON, p);
 	}
 
 	public static void handlePreparedSkill(LittleEndianReader packet, GameClient gc) {
@@ -376,52 +375,38 @@ public final class DealDamageHandler {
 		PlayerSkillEffectsData e;
 		if ((v = player.getEffectValue(PlayerStatusEffect.BLIND)) != null) {
 			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
-			if (e.makeChanceResult())
-				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
+			MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
 		if ((v = player.getEffectValue(PlayerStatusEffect.HAMSTRING)) != null) {
 			e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
-			if (e.makeChanceResult())
-				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
+			MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
 		if ((v = player.getEffectValue(PlayerStatusEffect.CHARGE)) != null) {
 			switch (v.getSource()) {
 				case Skills.SWORD_ICE_CHARGE:
 				case Skills.BW_BLIZZARD_CHARGE:
 					e = SkillDataLoader.getInstance().getSkill(v.getSource()).getLevel(v.getLevelWhenCast());
-					if (monster.getElementalResistance(Element.ICE) <= Element.EFFECTIVENESS_NORMAL)
-						//no need for e.makeChanceResult() since ice charge freezes non ice-immune monsters 100% of the time
-						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
+					MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 					break;
 			}
 		}
 	}
 
-	private static void giveMonsterDiseasesFromPassiveSkills(final GameCharacter player, Mob monster, WeaponClass weaponClass, int attackCount) {
+	private static void giveMonsterDiseasesFromPassiveSkills(final GameCharacter player, Mob monster, WeaponClass weaponClass, int attackCount, AttackType type) {
 		byte level;
 		PlayerSkillEffectsData e;
 		//(when the client says "Usable up to 3 times against each monster", do
 		//they mean 3 per player or 3 max for the mob? I'll assume that it's 3
 		//max per mob. I guess this is why post-BB venom is not stackable...)
-		if (weaponClass == WeaponClass.CLAW && (level = player.getSkillLevel(Skills.VENOMOUS_STAR)) > 0) {
+		if (type == AttackType.RANGED && weaponClass == WeaponClass.CLAW && (level = player.getSkillLevel(Skills.VENOMOUS_STAR)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAR).getLevel(level);
-			for (int i = 0; i < attackCount; i++) {
-				if (monster.getVenomCount() < 3 && e.makeChanceResult()) {
-					monster.addToVenomCount();
-					if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
-						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
-				}
-			}
+			for (int i = 0; i < attackCount; i++)
+				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
-		if (weaponClass == WeaponClass.ONE_HANDED_MELEE && (level = player.getSkillLevel(Skills.VENOMOUS_STAB)) > 0) {
+		if (type == AttackType.MELEE && weaponClass == WeaponClass.ONE_HANDED_MELEE && (level = player.getSkillLevel(Skills.VENOMOUS_STAB)) > 0) {
 			e = SkillDataLoader.getInstance().getSkill(Skills.VENOMOUS_STAB).getLevel(level);
-			for (int i = 0; i < attackCount; i++) {
-				if (monster.getVenomCount() < 3 && e.makeChanceResult()) {
-					monster.addToVenomCount();
-					if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
-						MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
-				}
-			}
+			for (int i = 0; i < attackCount; i++)
+				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, e);
 		}
 
 		//MP Eater - just stack them until the monster has no MP if we leveled more than one of them!
@@ -491,7 +476,7 @@ public final class DealDamageHandler {
 		}
 	}
 
-	private static void applyAttack(AttackInfo attack, final GameCharacter player) {
+	private static void applyAttack(AttackInfo attack, AttackType type, final GameCharacter player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();
 		if (attackEffect != null && attack.skill != 0) { //attack skills
@@ -560,26 +545,18 @@ public final class DealDamageHandler {
 						//totDamageToOneMonster = (int) (player.calculateMaxBaseDamage(player.getTotalWatk()) * (SkillDataLoader.getInstance().getSkill(Skills.HEAVENS_HAMMER).getLevel(player.getSkillLevel(Skills.HEAVENS_HAMMER)).getDamage() / 100));
 						//totDamageToOneMonster = (int) (Math.floor(Rng.getGenerator().nextDouble() * (totDamageToOneMonster * .2) + totDamageToOneMonster * .8));
 						break;
+					case Skills.POISON_MIST:
+						//TODO: could Poison Mist poison a monster as a basic attack?
+						//if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
+							//MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
+						break;
 					case Skills.FP_ELEMENT_COMPOSITION:
-						//see if the attack skill can give the monster a disease
-						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
-								if (monster.getElementalResistance(Element.POISON) <= Element.EFFECTIVENESS_NORMAL)
-									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
-						break;
 					case Skills.IL_ELEMENT_COMPOSITION:
-						//see if the attack skill can give the monster a disease
-						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
-								if (monster.getElementalResistance(Element.ICE) <= Element.EFFECTIVENESS_NORMAL)
-									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
-						break;
 					default:
 						//see if the attack skill can give the monster a disease
 						if (totDamageToOneMonster > 0 && monster.isAlive() && attackEffect != null)
-							if (!attackEffect.getMonsterEffects().isEmpty() && attackEffect.makeChanceResult())
-								if (monster.getElementalResistance(SkillDataLoader.getInstance().getSkill(attackEffect.getDataId()).getElement()) <= Element.EFFECTIVENESS_NORMAL)
-									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
+							if (!attackEffect.getMonsterEffects().isEmpty())
+								MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, attackEffect);
 						break;
 				}
 				if (player.isEffectActive(PlayerStatusEffect.PICKPOCKET)) {
@@ -599,7 +576,7 @@ public final class DealDamageHandler {
 				//see if any active player buffs can give the monster a disease
 				giveMonsterDiseasesFromActiveBuffs(player, monster);
 				//see if any passive player skills can give the monster a disease
-				giveMonsterDiseasesFromPassiveSkills(player, monster, attack.weaponClass, attack.numDamage);
+				giveMonsterDiseasesFromPassiveSkills(player, monster, attack.weaponClass, attack.numDamage, type);
 
 				player.getMap().damageMonster(player, monster, totDamageToOneMonster);
 			}
@@ -628,85 +605,74 @@ public final class DealDamageHandler {
 
 	private static byte getMasteryLevel(GameCharacter p, AttackType type, int skill) {
 		List<Integer> skills = new ArrayList<Integer>();
-		switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
-			case SWORD1H:
-			case SWORD2H:
-				switch (p.getJob()) {
-					case PlayerJob.JOB_FIGHTER:
-					case PlayerJob.JOB_CRUSADER:
-					case PlayerJob.JOB_HERO:
-						if (type == AttackType.MELEE)
-							skills.add(Integer.valueOf(Skills.CRUSADER_SWORD_MASTERY));
-						break;
-					case PlayerJob.JOB_PAGE:
-					case PlayerJob.JOB_WHITE_KNIGHT:
-					case PlayerJob.JOB_PALADIN:
-						if (type == AttackType.MELEE)
-							skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
-						break;
-					default:
-						if (type == AttackType.MELEE)
-							if (p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY) > p.getSkillLevel(Skills.PAGE_SWORD_MASTERY))
+		switch (type) {
+			case MAGIC:
+				skills.add(Integer.valueOf(skill));
+				break;
+			case MELEE:
+				switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
+					case SWORD1H:
+					case SWORD2H:
+						switch (p.getJob()) {
+							case PlayerJob.JOB_FIGHTER:
+							case PlayerJob.JOB_CRUSADER:
+							case PlayerJob.JOB_HERO:
 								skills.add(Integer.valueOf(Skills.CRUSADER_SWORD_MASTERY));
-							else
+								break;
+							case PlayerJob.JOB_PAGE:
+							case PlayerJob.JOB_WHITE_KNIGHT:
+							case PlayerJob.JOB_PALADIN:
 								skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
+								break;
+							default:
+								if (p.getSkillLevel(Skills.CRUSADER_SWORD_MASTERY) > p.getSkillLevel(Skills.PAGE_SWORD_MASTERY))
+									skills.add(Integer.valueOf(Skills.CRUSADER_SWORD_MASTERY));
+								else
+									skills.add(Integer.valueOf(Skills.PAGE_SWORD_MASTERY));
+								break;
+						}
+						break;
+					case AXE1H:
+					case AXE2H:
+						skills.add(Integer.valueOf(Skills.AXE_MASTERY));
+						break;
+					case BLUNT1H:
+					case BLUNT2H:
+						skills.add(Integer.valueOf(Skills.BW_MASTERY));
+						break;
+					case DAGGER:
+						skills.add(Integer.valueOf(Skills.DAGGER_MASTERY));
+						break;
+					case SPEAR:
+						skills.add(Integer.valueOf(Skills.SPEAR_MASTERY));
+						skills.add(Integer.valueOf(Skills.BEHOLDER));
+						break;
+					case POLE_ARM:
+						skills.add(Integer.valueOf(Skills.POLE_ARM_MASTERY));
+						skills.add(Integer.valueOf(Skills.BEHOLDER));
+						break;
+					case KNUCKLE:
+						skills.add(Integer.valueOf(Skills.KNUCKLER_MASTERY));
 						break;
 				}
 				break;
-			case AXE1H:
-			case AXE2H:
-				if (type == AttackType.MELEE)
-					skills.add(Integer.valueOf(Skills.AXE_MASTERY));
-				break;
-			case BLUNT1H:
-			case BLUNT2H:
-				if (type == AttackType.MELEE)
-					skills.add(Integer.valueOf(Skills.BW_MASTERY));
-				break;
-			case DAGGER:
-				if (type == AttackType.MELEE)
-					skills.add(Integer.valueOf(Skills.DAGGER_MASTERY));
-				break;
-			case SPEAR:
-				if (type == AttackType.MELEE) {
-					skills.add(Integer.valueOf(Skills.SPEAR_MASTERY));
-					skills.add(Integer.valueOf(Skills.BEHOLDER));
+			case RANGED:
+				switch (InventoryTools.getWeaponType(p.getInventory(InventoryType.EQUIPPED).get((short) -11).getDataId())) {
+					case BOW:
+						skills.add(Integer.valueOf(Skills.BOW_MASTERY));
+						skills.add(Integer.valueOf(Skills.BOW_EXPERT));
+						break;
+					case CROSSBOW:
+						skills.add(Integer.valueOf(Skills.XBOW_MASTERY));
+						skills.add(Integer.valueOf(Skills.MARKSMAN_BOOST));
+						break;
+					case CLAW:
+						skills.add(Integer.valueOf(Skills.CLAW_MASTERY));
+						break;
+					case GUN:
+						skills.add(Integer.valueOf(Skills.GUN_MASTERY));
+						break;
 				}
-				break;
-			case POLE_ARM:
-				if (type == AttackType.MELEE) {
-					skills.add(Integer.valueOf(Skills.POLE_ARM_MASTERY));
-					skills.add(Integer.valueOf(Skills.BEHOLDER));
-				}
-				break;
-			case BOW:
-				if (type == AttackType.RANGED) {
-					skills.add(Integer.valueOf(Skills.BOW_MASTERY));
-					skills.add(Integer.valueOf(Skills.BOW_EXPERT));
-				}
-				break;
-			case CROSSBOW:
-				if (type == AttackType.RANGED) {
-					skills.add(Integer.valueOf(Skills.XBOW_MASTERY));
-					skills.add(Integer.valueOf(Skills.MARKSMAN_BOOST));
-				}
-				break;
-			case CLAW:
-				if (type == AttackType.RANGED)
-					skills.add(Integer.valueOf(Skills.CLAW_MASTERY));
-				break;
-			case KNUCKLE:
-				if (type == AttackType.MELEE)
-					skills.add(Integer.valueOf(Skills.KNUCKLER_MASTERY));
-				break;
-			case GUN:
-				if (type == AttackType.RANGED)
-					skills.add(Integer.valueOf(Skills.GUN_MASTERY));
-				break;
-			case WAND:
-			case STAFF:
-				if (type == AttackType.MAGIC)
-					skills.add(Integer.valueOf(skill));
 				break;
 		}
 		byte sum = 0;

@@ -200,6 +200,7 @@ public class MobSkillEffectsData implements MonsterStatusEffectsData {
 		return prop;
 	}
 
+	@Override
 	public boolean makeChanceResult() {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}

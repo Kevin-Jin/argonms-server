@@ -472,6 +472,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 		return prop;
 	}
 
+	@Override
 	public boolean makeChanceResult() {
 		return Rng.getGenerator().nextInt(100) < prop;
 	}

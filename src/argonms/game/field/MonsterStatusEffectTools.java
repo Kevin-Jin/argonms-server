@@ -31,12 +31,16 @@ import argonms.game.field.entity.Mob;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
+import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import java.awt.Point;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -54,20 +58,55 @@ public final class MonsterStatusEffectTools {
 	}
 
 	private static byte[] getDispelEffect(Mob m, MonsterStatusEffectsData e) {
+		if (e.getDataId() == Skills.POISON_MIST || e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB)
+			return GamePackets.writeMonsterCancelStatusEffect(m, Collections.singleton(MonsterStatusEffect.POISON));
 		return GamePackets.writeMonsterCancelStatusEffect(m, e.getMonsterEffects());
 	}
 
 	private static int applyEffects(Map<MonsterStatusEffect, Short> updatedStats, Mob m, GameCharacter p, MonsterStatusEffectsData e) {
-		if (m.areEffectsActive(e))
-			m.removeCancelEffectTask(e);
+		Element elem = null;
+		if (e.getSourceType() == StatusEffectsData.EffectSource.PLAYER_SKILL) {
+			elem = SkillDataLoader.getInstance().getSkill(e.getDataId()).getElement();
+			switch (e.getDataId()) {
+				case Skills.SWORD_ICE_CHARGE:
+				case Skills.BW_BLIZZARD_CHARGE:
+				case Skills.IL_ELEMENT_COMPOSITION:
+					elem = Element.ICE;
+					break;
+				case Skills.VENOMOUS_STAR:
+				case Skills.VENOMOUS_STAB:
+				case Skills.FP_ELEMENT_COMPOSITION:
+					elem = Element.POISON;
+					break;
+			}
+		}
+		if (!e.makeChanceResult() || elem != null && (m.getElementalResistance(elem) > Element.EFFECTIVENESS_NORMAL
+				|| elem == Element.POISON && m.getHp() <= 1))
+			return -1;
 		for (MonsterStatusEffect buff : e.getMonsterEffects()) {
 			MonsterStatusEffectValues v = m.getEffectValue(buff);
-			if (v != null)
-				dispelEffect(m, buff, v);
-			v = applyEffect(m, e, buff);
+			if (v != null) {
+				if (elem == Element.POISON) {
+					if (e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB) {
+						if (!m.canAcceptVenom(p) || m.getVenomCount() >= 3) {
+							for (MonsterStatusEffect alreadyBuffed : updatedStats.keySet())
+								m.removeFromActiveEffects(alreadyBuffed);
+							return -1;
+						}
+					} else {
+						for (MonsterStatusEffect alreadyBuffed : updatedStats.keySet())
+							m.removeFromActiveEffects(alreadyBuffed);
+						return -1;
+					}
+				} else {
+					dispelEffect(m, buff, v);
+				}
+			}
+			v = applyEffect(m, p, e, buff);
 			updatedStats.put(buff, Short.valueOf(v.getModifier()));
 			m.addToActiveEffects(buff, v);
 		}
+		int duration;
 		switch (e.getSourceType()) {
 			case MOB_SKILL: {
 				//check if it is a mob attack skill
@@ -76,7 +115,8 @@ public final class MonsterStatusEffectTools {
 					case MobSkills.MIST:
 						Mist mist = new Mist(m, skill);
 						m.getMap().spawnMist(mist, skill.getX() * 10, null);
-						return e.getDuration();
+						duration = e.getDuration();
+						break;
 					case MobSkills.SUMMON:
 						short limit = skill.getSummonLimit();
 						if (limit == 5000)
@@ -129,15 +169,17 @@ public final class MonsterStatusEffectTools {
 								m.addToSpawnedSummons();
 							}
 						}
-						return 0;
+						duration = 0;
+						break;
 					default:
 						if (!e.getEffects().isEmpty())
 							DiseaseTools.applyDebuff(p, (short) skill.getDataId(), skill.getLevel());
-						return e.getDuration();
+						duration = e.getDuration();
+						break;
 				}
+				break;
 			}
 			case PLAYER_SKILL: {
-				int duration;
 				switch (e.getDataId()) {
 					case Skills.BLIND:
 					case Skills.HAMSTRING:
@@ -148,27 +190,58 @@ public final class MonsterStatusEffectTools {
 						//freeze skills have weird times...
 						duration = e.getY() * 2;
 						break;
+					case Skills.VENOMOUS_STAR:
+					case Skills.VENOMOUS_STAB:
 					case Skills.POISON_MIST: {
-						MonsterStatusEffectValues value = applyEffect(m, e, MonsterStatusEffect.POISON);
-						updatedStats.put(MonsterStatusEffect.POISON, Short.valueOf((short) 1));
-						m.addToActiveEffects(MonsterStatusEffect.POISON, value);
-						duration = e.getX();
+						MonsterStatusEffectValues v = m.getEffectValue(MonsterStatusEffect.POISON);
+						if (v != null) {
+							if (elem == Element.POISON) {
+								if (e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB) {
+									if (!m.canAcceptVenom(p) || m.getVenomCount() >= 3) {
+										for (MonsterStatusEffect alreadyBuffed : updatedStats.keySet())
+											m.removeFromActiveEffects(alreadyBuffed);
+										return -1;
+									}
+								} else {
+									for (MonsterStatusEffect alreadyBuffed : updatedStats.keySet())
+										m.removeFromActiveEffects(alreadyBuffed);
+									return -1;
+								}
+							} else {
+								dispelEffect(m, MonsterStatusEffect.POISON, v);
+							}
+						}
+						v = applyEffect(m, p, e, MonsterStatusEffect.POISON);
+						updatedStats.put(MonsterStatusEffect.POISON, Short.valueOf(v.getModifier()));
+						m.addToActiveEffects(MonsterStatusEffect.POISON, v);
+						duration = e.getDuration();
+						if (e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB) {
+							//TODO: not thread-safe (since (m.getVenomCount() >= 3) check was done long ago)
+							m.setVenomOwner(p);
+							m.incrementVenom(duration);
+						}
 						break;
 					}
 					default:
 						duration = e.getDuration();
 						break;
 				}
-				return duration;
+				break;
 			}
 			default:
-				return 0;
+				duration = 0;
+				break;
 		}
+		if (m.areEffectsActive(e))
+			m.removeCancelEffectTask(e);
+		return duration;
 	}
 
-	private static void applyEffectsAndShowVisualsInternal(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
+	private static boolean applyEffectsAndShowVisualsInternal(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
 		Map<MonsterStatusEffect, Short> updatedStats = new EnumMap<MonsterStatusEffect, Short>(MonsterStatusEffect.class);
 		int duration = applyEffects(updatedStats, m, p, e);
+		if (duration == -1)
+			return false;
 		byte[] effect = getCastEffect(m, e, updatedStats);
 		if (m.isVisible() && effect != null)
 			m.getMap().sendToAll(effect);
@@ -178,14 +251,18 @@ public final class MonsterStatusEffectTools {
 				dispelEffectsAndShowVisuals(m, e);
 			}
 		}, duration));
+		return true;
 	}
 
-	public static void applyEffectsAndShowVisuals(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
-		if (e.getSourceType() == StatusEffectsData.EffectSource.MOB_SKILL && ((MobSkillEffectsData) e).isAoe())
+	public static boolean applyEffectsAndShowVisuals(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e) {
+		if (e.getSourceType() == StatusEffectsData.EffectSource.MOB_SKILL && ((MobSkillEffectsData) e).isAoe()) {
 			for (MapEntity neighbor : m.getMap().getMapEntitiesInRect(e.getBoundingBox(m.getPosition(), m.getStance() % 2 != 0), EnumSet.of(MapEntity.EntityType.MONSTER)))
-				applyEffectsAndShowVisualsInternal((Mob) neighbor, p, e);
-		else
-			applyEffectsAndShowVisualsInternal(m, p, e);
+				if (!applyEffectsAndShowVisualsInternal((Mob) neighbor, p, e))
+					return false;
+			return true;
+		} else {
+			return applyEffectsAndShowVisualsInternal(m, p, e);
+		}
 	}
 
 	public static void dispelEffectsAndShowVisuals(Mob m, MonsterStatusEffectsData e) {
@@ -201,12 +278,16 @@ public final class MonsterStatusEffectTools {
 			}
 			case PLAYER_SKILL: {
 				for (MonsterStatusEffect buff : e.getMonsterEffects()) {
-					if (buff != null) {
-						MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
-						if (v != null)
-							dispelEffect(m, buff, v);
-					}
+					MonsterStatusEffectValues v = m.removeFromActiveEffects(buff);
+					if (v != null)
+						dispelEffect(m, buff, v);
 				}
+				if (e.getDataId() == Skills.POISON_MIST || e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB) {
+					MonsterStatusEffectValues v = m.removeFromActiveEffects(MonsterStatusEffect.POISON);
+					if (v != null)
+						dispelEffect(m, MonsterStatusEffect.POISON, v);
+				}
+				break;
 			}
 		}
 		byte[] effect = getDispelEffect(m, e);
@@ -214,7 +295,20 @@ public final class MonsterStatusEffectTools {
 			m.getMap().sendToAll(effect);
 	}
 
-	private static MonsterStatusEffectValues applyEffect(Mob m, MonsterStatusEffectsData e, MonsterStatusEffect buff) {
+	private static void schedulePoisonDamage(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e, final short damage) {
+		m.setPoisonTask(Scheduler.getInstance().runRepeatedly(new Runnable() {
+			@Override
+			public void run() {
+				if (m.getHp() > damage)
+					//TODO: not thread-safe
+					m.hurt(p, damage);
+				else
+					dispelEffectsAndShowVisuals(m, e);
+			}
+		}, 0, 1000));
+	}
+
+	private static MonsterStatusEffectValues applyEffect(final Mob m, final GameCharacter p, final MonsterStatusEffectsData e, MonsterStatusEffect buff) {
 		short mod = 0;
 		switch (buff) {
 			case WATK:
@@ -244,9 +338,49 @@ public final class MonsterStatusEffectTools {
 			case FREEZE:
 				mod = 1;
 				break;
-			case POISON:
-				mod = 1;
+			case POISON: {
+				final short damage = mod = (short) Math.min((double) m.getMaxHp() / (70 - e.getLevel()), Short.MAX_VALUE);
+				if (e.getDataId() == Skills.VENOMOUS_STAR || e.getDataId() == Skills.VENOMOUS_STAB) {
+					MonsterStatusEffectValues v = m.getEffectValue(MonsterStatusEffect.POISON);
+					if (v != null) {
+						assert (v.getSource() == Skills.VENOMOUS_STAR || v.getSource() == Skills.VENOMOUS_STAB);
+						mod += v.getModifier();
+						final AtomicReference<Runnable> decrementVenomTask = new AtomicReference<Runnable>();
+						decrementVenomTask.set(new Runnable() {
+							@Override
+							public void run() {
+								MonsterStatusEffectValues value = m.getEffectValue(MonsterStatusEffect.POISON);
+								if (value == null)
+									return;
+
+								ScheduledFuture<?> f = m.removePoisonTask();
+								if (f != null)
+									f.cancel(false);
+								m.decrementVenom();
+								short newMod = value.getModifier();
+								newMod -= damage;
+								if (newMod <= 0)
+									return;
+
+								schedulePoisonDamage(m, p, value.getEffectsData(), newMod);
+								m.addToActiveEffects(MonsterStatusEffect.POISON, new MonsterStatusEffectValues(value.getEffectsData(), newMod));
+								byte[] effect = getDispelEffect(m, e);
+								if (m.isVisible() && effect != null)
+									m.getMap().sendToAll(effect);
+								effect = getCastEffect(m, e, Collections.singletonMap(MonsterStatusEffect.POISON, Short.valueOf(newMod)));
+								if (m.isVisible() && effect != null)
+									m.getMap().sendToAll(effect);
+
+								m.setVenomDecrementTask(Scheduler.getInstance().runAfterDelay(decrementVenomTask.get(), m.nextVenomExpire()));
+							}
+						});
+						m.setVenomDecrementTask(Scheduler.getInstance().runAfterDelay(decrementVenomTask.get(), m.nextVenomExpire()));
+					}
+				}
+
+				schedulePoisonDamage(m, p, e, mod);
 				break;
+			}
 			case SEAL:
 				mod = 1;
 				break;
@@ -278,7 +412,7 @@ public final class MonsterStatusEffectTools {
 		return new MonsterStatusEffectValues(e, mod);
 	}
 
-	private static void dispelEffect(Mob m, MonsterStatusEffect key, MonsterStatusEffectValues value) {
+	public static void dispelEffect(Mob m, MonsterStatusEffect key, MonsterStatusEffectValues value) {
 		switch (key) {
 			case WATK:
 				break;
@@ -298,8 +432,19 @@ public final class MonsterStatusEffectTools {
 				break;
 			case FREEZE:
 				break;
-			case POISON:
+			case POISON: {
+				ScheduledFuture<?> f = m.removePoisonTask();
+				if (f != null)
+					f.cancel(false);
+				if (value.getSource() == Skills.VENOMOUS_STAR || value.getSource() == Skills.VENOMOUS_STAB) {
+					m.resetVenom();
+					m.removeVenomOwner();
+					f = m.removeVenomDecrementTask();
+					if (f != null)
+						f.cancel(false);
+				}
 				break;
+			}
 			case SEAL:
 				break;
 			case TAUNT_1:
