@@ -31,6 +31,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -588,27 +589,40 @@ public final class InventoryTools {
 		} else if (itemData.isChaosScroll(scrollItemId)) {
 			if (equip.getUpgradeSlots() > 0) {
 				if (itemData.makeSuccessChanceResult(scrollItemId)) {
-					byte factor = -1;
-					if (Rng.getGenerator().nextBoolean())
-						factor = 1;
+					Random r = Rng.getGenerator();
 
 					equip.setUpgradeSlots((byte) (equip.getUpgradeSlots() - 1));
 					equip.setLevel((byte) (equip.getLevel() + 1));
-					equip.setStr((short) (equip.getStr() + 5 * factor));
-					equip.setDex((short) (equip.getDex() + 5 * factor));
-					equip.setInt((short) (equip.getInt() + 5 * factor));
-					equip.setLuk((short) (equip.getLuk() + 5 * factor));
-					equip.setHp((short) (equip.getHp() + 5 * factor));
-					equip.setMp((short) (equip.getMp() + 5 * factor));
-					equip.setWatk((short) (equip.getWatk() + 5 * factor));
-					equip.setMatk((short) (equip.getMatk() + 5 * factor));
-					equip.setWdef((short) (equip.getWdef() + 5 * factor));
-					equip.setMdef((short) (equip.getMdef() + 5 * factor));
-					equip.setAcc((short) (equip.getAcc() + 5 * factor));
-					equip.setAvoid((short) (equip.getAvoid() + 5 * factor));
-					equip.setHands((short) (equip.getHands() + 5 * factor));
-					equip.setSpeed((short) (equip.getSpeed() + 5 * factor));
-					equip.setJump((short) (equip.getJump() + 5 * factor));
+					if (equip.getStr() != 0)
+						equip.setStr((short) Math.max(equip.getStr() + r.nextInt(11) - 5, 0));
+					if (equip.getDex() != 0)
+						equip.setDex((short) Math.max(equip.getDex() + r.nextInt(11) - 5, 0));
+					if (equip.getInt() != 0)
+						equip.setInt((short) Math.max(equip.getInt() + r.nextInt(11) - 5, 0));
+					if (equip.getLuk() != 0)
+						equip.setLuk((short) Math.max(equip.getLuk() + r.nextInt(11) - 5, 0));
+					if (equip.getHp() != 0)
+						equip.setHp((short) Math.max(equip.getHp() + r.nextInt(11) - 5, 0));
+					if (equip.getMp() != 0)
+						equip.setMp((short) Math.max(equip.getMp() + r.nextInt(11) - 5, 0));
+					if (equip.getWatk() != 0)
+						equip.setWatk((short) Math.max(equip.getWatk() + r.nextInt(11) - 5, 0));
+					if (equip.getMatk() != 0)
+						equip.setMatk((short) Math.max(equip.getMatk() + r.nextInt(11) - 5, 0));
+					if (equip.getWdef() != 0)
+						equip.setWdef((short) Math.max(equip.getWdef() + r.nextInt(11) - 5, 0));
+					if (equip.getMdef() != 0)
+						equip.setMdef((short) Math.max(equip.getMdef() + r.nextInt(11) - 5, 0));
+					if (equip.getAcc() != 0)
+						equip.setAcc((short) Math.max(equip.getAcc() + r.nextInt(11) - 5, 0));
+					if (equip.getAvoid() != 0)
+						equip.setAvoid((short) Math.max(equip.getAvoid() + r.nextInt(11) - 5, 0));
+					if (equip.getHands() != 0)
+						equip.setHands((short) Math.max(equip.getHands() + r.nextInt(11) - 5, 0));
+					if (equip.getSpeed() != 0)
+						equip.setSpeed((short) Math.max(equip.getSpeed() + r.nextInt(11) - 5, 0));
+					if (equip.getJump() != 0)
+						equip.setJump((short) Math.max(equip.getJump() + r.nextInt(11) - 5, 0));
 					result = 1;
 				} else {
 					if (!useWhiteScroll)

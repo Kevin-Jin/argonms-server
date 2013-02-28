@@ -287,6 +287,10 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					CheatTracker.get(target.getClient()).ban(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, value.banner, value.reason, cal);
 					break;
 				}
+				case KICK: {
+					target.getClient().getSession().close("Kicked");
+					break;
+				}
 				case STUN: {
 					boolean start = ((Boolean) update.getValue()).booleanValue();
 					MobSkillEffectsData e = SkillDataLoader.getInstance().getMobSkill(MobSkills.STUN).getLevel((byte) 1);

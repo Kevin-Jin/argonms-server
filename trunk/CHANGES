@@ -2780,6 +2780,13 @@
 	the `macbans` table if the MAC address is likely to be duplicated on
 	multiple clients.
 
+2013-02-27  GoldenKevin  (revision 204)
+
+	* Fixed Chaos scrolls.
+	* Moved !jail, !unjail, and !ban commands from CommandProcessor into
+	DisciplinaryCommandHandlers.
+	* Added !kick command.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
