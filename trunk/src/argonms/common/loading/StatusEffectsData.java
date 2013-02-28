@@ -201,5 +201,6 @@ public interface StatusEffectsData {
 		public Rectangle getBoundingBox(Point posFrom, boolean facingLeft);
 		public int getX();
 		public int getY();
+		public boolean makeChanceResult();
 	}
 }

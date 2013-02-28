@@ -2787,6 +2787,15 @@
 	DisciplinaryCommandHandlers.
 	* Added !kick command.
 
+2013-02-27  GoldenKevin  (revision 205)
+
+	* Fixed mastery missing for magic skills if not equipped with wand or staff.
+	* Moved all monster elemental resistance and makeChanceResult logic for mob
+	status effects to MonsterStatusEffectTools.
+	* Fixed Poison Mist expiring immediately.
+	* Fixed one damage mob poison shown on client and no damage on server.
+	* Fixed Venomous Star and Venomous Stab.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

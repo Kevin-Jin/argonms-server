@@ -38,6 +38,7 @@ import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.AbstractEntity;
 import argonms.game.field.Element;
 import argonms.game.field.GameMap;
+import argonms.game.field.MonsterStatusEffectTools;
 import argonms.game.field.MonsterStatusEffectValues;
 import argonms.game.loading.mob.MobDataLoader;
 import argonms.game.loading.mob.MobStats;
@@ -48,9 +49,11 @@ import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -94,7 +97,10 @@ public class Mob extends AbstractEntity {
 	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseFutures;
 	private final AtomicInteger spawnedSummons;
 	private volatile byte spawnEffect, deathEffect;
-	private final AtomicInteger venomUseCount;
+	private volatile ScheduledFuture<?> poisonTask;
+	private final ConcurrentLinkedQueue<Long> venomExpires;
+	private volatile ScheduledFuture<?> venomDecrementTask;
+	private volatile int venomOwner;
 
 	public Mob(MobStats stats, GameMap map, byte stance) {
 		this.stats = stats;
@@ -112,7 +118,7 @@ public class Mob extends AbstractEntity {
 		this.diseaseFutures = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
 		this.spawnedSummons = new AtomicInteger(0);
 		this.deathEffect = stats.getDeathAnimation();
-		this.venomUseCount = new AtomicInteger(0);
+		this.venomExpires = new ConcurrentLinkedQueue<Long>();
 		setStance(stance);
 	}
 
@@ -196,10 +202,16 @@ public class Mob extends AbstractEntity {
 	}
 
 	public void died(GameCharacter killer) {
-		for (ScheduledFuture<?> cancelTask : skillFutures.values())
-			cancelTask.cancel(false);
-		for (ScheduledFuture<?> cancelTask : diseaseFutures.values())
-			cancelTask.cancel(false);
+		Set<StatusEffectsData> sources = new HashSet<StatusEffectsData>();
+		//TODO: race condition for getAllEffects() if skill expires while
+		//this loop is running
+		for (Map.Entry<MonsterStatusEffect, MonsterStatusEffectValues> effect : getAllEffects().entrySet()) {
+			removeFromActiveEffects(effect.getKey());
+			MonsterStatusEffectTools.dispelEffect(this, effect.getKey(), effect.getValue());
+			sources.add(effect.getValue().getEffectsData());
+		}
+		for (StatusEffectsData e : sources)
+			removeCancelEffectTask(e);
 		if (removeAfter != null)
 			removeAfter.cancel(false);
 		int deathBuff = stats.getBuffToGive();
@@ -431,12 +443,58 @@ public class Mob extends AbstractEntity {
 		return stats.getElementalResistance(elem);
 	}
 
-	public int getVenomCount() {
-		return venomUseCount.get();
+	public void setPoisonTask(ScheduledFuture<?> f) {
+		poisonTask = f;
 	}
 
-	public void addToVenomCount() {
-		venomUseCount.incrementAndGet();
+	public ScheduledFuture<?> removePoisonTask() {
+		ScheduledFuture<?> f = poisonTask;
+		poisonTask = null;
+		return f;
+	}
+
+	public int getVenomCount() {
+		return venomExpires.size();
+	}
+
+	public void incrementVenom(int duration) {
+		venomExpires.offer(Long.valueOf(System.currentTimeMillis() + duration));
+	}
+
+	public void decrementVenom() {
+		venomExpires.poll();
+	}
+
+	public int nextVenomExpire() {
+		return (int) (venomExpires.peek().longValue() - System.currentTimeMillis());
+	}
+
+	public void resetVenom() {
+		venomExpires.clear();
+	}
+
+	public void setVenomDecrementTask(ScheduledFuture<?> f) {
+		venomDecrementTask = f;
+	}
+
+	public ScheduledFuture<?> removeVenomDecrementTask() {
+		ScheduledFuture<?> f = venomDecrementTask;
+		venomDecrementTask = null;
+		return f;
+	}
+
+	public void setVenomOwner(GameCharacter p) {
+		venomOwner = p.getId();
+	}
+
+	public int removeVenomOwner() {
+		int playerId = venomOwner;
+		venomOwner = 0;
+		return playerId;
+	}
+
+	public boolean canAcceptVenom(GameCharacter p) {
+		return venomOwner == 0 || p.getId() == venomOwner;
 	}
 
 	public void addToActiveEffects(MonsterStatusEffect buff, MonsterStatusEffectValues value) {

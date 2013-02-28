@@ -162,15 +162,13 @@ public final class MovementHandler {
 		if (useSkill && skillsCount > 0) {
 			skillToUse = skills.get(Rng.getGenerator().nextInt(skillsCount));
 			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillToUse.getSkill()).getLevel(skillToUse.getLevel());
-			if (skillToUseEffect.makeChanceResult() && monster.canUseSkill(skillToUseEffect))
-				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
-			else
+			if (!monster.canUseSkill(skillToUseEffect) || !MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect))
 				skillToUse = null;
 		}
 
 		if ((skillId >= 100 && skillId <= 200) && monster.hasSkill(skillId, skillLevel)) {
 			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
-			if (skillToUseEffect.makeChanceResult() && monster.canUseSkill(skillToUseEffect))
+			if (monster.canUseSkill(skillToUseEffect))
 				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
 		}
 
