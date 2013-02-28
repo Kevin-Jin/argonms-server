@@ -159,9 +159,10 @@ public interface CommandTarget {
 		MAX_INVENTORY_SLOTS((byte) 36),
 		MAX_BUDDY_LIST_SLOTS((byte) 37),
 		BAN((byte) 38),
-		STUN((byte) 39),
-		CLEAR_INVENTORY_SLOTS((byte) 40),
-		RETURN_TO_REMEMBERED_MAP((byte) 41);
+		KICK((byte) 39),
+		STUN((byte) 40),
+		CLEAR_INVENTORY_SLOTS((byte) 41),
+		RETURN_TO_REMEMBERED_MAP((byte) 42);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

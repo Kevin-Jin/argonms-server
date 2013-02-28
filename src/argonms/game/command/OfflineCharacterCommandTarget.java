@@ -429,6 +429,14 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						CheatTracker.get(target).ban(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, value.banner, value.reason, cal);
 						break;
 					}
+					case KICK: {
+						//just make sure the character's login status is reset...
+						ps = con.prepareStatement("UPDATE `accounts` `a` LEFT JOIN `characters` `c` ON `c`.`accountid` = `a`.`id` SET `connected` = 0 WHERE `c`.`name` = ?");
+						ps.setString(1, target);
+						ps.executeUpdate();
+						ps.close();
+						break;
+					}
 					case STUN:
 						break;
 					case CLEAR_INVENTORY_SLOTS: {

@@ -133,6 +133,7 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case MAX_ALL_EQUIP_STATS:
 				case MAX_INVENTORY_SLOTS:
 				case MAX_BUDDY_LIST_SLOTS:
+				case KICK:
 					break;
 				case BAN: {
 					BanValue value = (BanValue) update.getValue();
@@ -235,6 +236,7 @@ public class CrossChannelCommandTarget implements CommandTarget {
 				case MAX_ALL_EQUIP_STATS:
 				case MAX_INVENTORY_SLOTS:
 				case MAX_BUDDY_LIST_SLOTS:
+				case KICK:
 					break;
 				case BAN: {
 					String banner = packet.readLengthPrefixedString();
