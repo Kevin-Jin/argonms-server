@@ -204,19 +204,23 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			updateDbFameLog(con);
 			//wishlists can't change in game server, so don't bother with them
 			con.commit();
-		} catch (SQLException ex) {
+		} catch (Throwable ex) {
 			LOG.log(Level.WARNING, "Could not save character " + getDataId() + ". Rolling back all changes...", ex);
-			try {
-				con.rollback();
-			} catch (SQLException ex2) {
-				LOG.log(Level.WARNING, "Error rolling back character.", ex2);
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException ex2) {
+					LOG.log(Level.WARNING, "Error rolling back character.", ex2);
+				}
 			}
 		} finally {
-			try {
-				con.setAutoCommit(prevAutoCommit);
-				con.setTransactionIsolation(prevTransactionIsolation);
-			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not reset Connection config after saving character " + getDataId(), ex);
+			if (con != null) {
+				try {
+					con.setAutoCommit(prevAutoCommit);
+					con.setTransactionIsolation(prevTransactionIsolation);
+				} catch (SQLException ex) {
+					LOG.log(Level.WARNING, "Could not reset Connection config after saving character " + getDataId(), ex);
+				}
 			}
 			DatabaseManager.cleanup(DatabaseType.STATE, null, null, con);
 		}
@@ -2421,6 +2425,16 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		try {
 			QuestEntry status = questStatuses.get(Short.valueOf(questId));
 			return status != null && status.getState() == QuestEntry.STATE_COMPLETED;
+		} finally {
+			readUnlockQuests();
+		}
+	}
+
+	public boolean isQuestInactive(short questId) {
+		readLockQuests();
+		try {
+			QuestEntry status = questStatuses.get(Short.valueOf(questId));
+			return status == null || status.getState() == QuestEntry.STATE_NOT_STARTED;
 		} finally {
 			readUnlockQuests();
 		}

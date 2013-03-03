@@ -514,19 +514,23 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 			}
 
 			con.commit();
-		} catch (SQLException e) {
+		} catch (Throwable e) {
 			LOG.log(Level.WARNING, "Could not manipulate stat of offline character. Rolling back all changes...", e);
-			try {
-				con.rollback();
-			} catch (SQLException ex2) {
-				LOG.log(Level.WARNING, "Error rolling back stat manipulations of offline character.", ex2);
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException ex2) {
+					LOG.log(Level.WARNING, "Error rolling back stat manipulations of offline character.", ex2);
+				}
 			}
 		} finally {
-			try {
-				con.setAutoCommit(prevAutoCommit);
-				con.setTransactionIsolation(prevTransactionIsolation);
-			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not reset Connection config after manipulating offline character " + target, ex);
+			if (con != null) {
+				try {
+					con.setAutoCommit(prevAutoCommit);
+					con.setTransactionIsolation(prevTransactionIsolation);
+				} catch (SQLException ex) {
+					LOG.log(Level.WARNING, "Could not reset Connection config after manipulating offline character " + target, ex);
+				}
 			}
 			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
 		}

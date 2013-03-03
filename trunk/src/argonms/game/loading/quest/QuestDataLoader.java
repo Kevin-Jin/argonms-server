@@ -74,6 +74,8 @@ public abstract class QuestDataLoader {
 	}
 
 	public byte startRequirementError(GameCharacter p, short questId) {
+		if (!p.isQuestInactive(questId))
+			return -1;
 		QuestChecks qc = startReqs.get(Short.valueOf(questId));
 		if (qc != null)
 			return qc.requirementError(p);
@@ -90,6 +92,8 @@ public abstract class QuestDataLoader {
 	}
 
 	public byte completeRequirementError(GameCharacter p, short questId) {
+		if (!p.isQuestStarted(questId))
+			return -1;
 		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
 		if (qc != null)
 			return qc.requirementError(p);

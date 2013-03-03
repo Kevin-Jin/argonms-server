@@ -194,8 +194,8 @@ public class PartyList extends IntraworldGroupList<
 	}
 
 	@Override
-	public RemoteMember memberDisconnected(GameCharacter p) {
-		RemoteMember member = super.memberDisconnected(p);
+	public RemoteMember memberDisconnected(int playerId) {
+		RemoteMember member = super.memberDisconnected(playerId);
 		syncWithAllMembers(member);
 		return member;
 	}
@@ -222,10 +222,10 @@ public class PartyList extends IntraworldGroupList<
 	}
 
 	@Override
-	protected LocalMember removePlayer(GameCharacter p, boolean transition) {
+	protected LocalMember removePlayer(int playerId, boolean transition) {
 		if (!transition)
-			removeFromAllMembersAndCollapse(p.getId());
-		return super.removePlayer(p, transition);
+			removeFromAllMembersAndCollapse(playerId);
+		return super.removePlayer(playerId, transition);
 	}
 
 	@Override

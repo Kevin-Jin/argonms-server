@@ -19,7 +19,6 @@
 package argonms.game.field.entity;
 
 import argonms.common.character.Skills;
-import argonms.common.util.Rng;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.AbstractEntity;
 import argonms.game.loading.skill.MobSkillEffectsData;

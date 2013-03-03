@@ -291,13 +291,18 @@ public final class MiniroomHandler {
 
 	private static void tradeSetMesos(GameCharacter p, LittleEndianReader packet) {
 		int mesosAmt = packet.readInt();
-		if (p.getMesos() >= mesosAmt) {
-			p.setMesos(p.getMesos() - mesosAmt);
-			Trade room = (Trade) p.getMiniRoom();
-			room.addMesos(p, mesosAmt);
-		} else {
+		if (p.getMesos() < mesosAmt) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to trade nonexistent mesos");
+			return;
 		}
+		if (mesosAmt < 0) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to trade negative mesos");
+			return;
+		}
+
+		p.setMesos(p.getMesos() - mesosAmt);
+		Trade room = (Trade) p.getMiniRoom();
+		room.addMesos(p, mesosAmt);
 	}
 
 	private static void tradeConfirm(GameCharacter p) {

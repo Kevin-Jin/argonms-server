@@ -262,8 +262,8 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	 * This IntraworldGroupList must be write locked when this method is called.
 	 * @param p 
 	 */
-	public R memberDisconnected(GameCharacter p) {
-		return addToOffline(removePlayer(p, true));
+	public R memberDisconnected(int playerId) {
+		return addToOffline(removePlayer(playerId, true));
 	}
 
 	protected void addPlayer(R member, boolean transition) {
@@ -316,8 +316,8 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		return removePlayer(ch, playerId, false);
 	}
 
-	protected L removePlayer(GameCharacter p, boolean transition) {
-		return localMembers.remove(Integer.valueOf(p.getId()));
+	protected L removePlayer(int playerId, boolean transition) {
+		return localMembers.remove(Integer.valueOf(playerId));
 	}
 
 	/**
@@ -327,7 +327,7 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 	 * @return 
 	 */
 	public L removePlayer(GameCharacter p) {
-		return removePlayer(p, false);
+		return removePlayer(p.getId(), false);
 	}
 
 	/**
