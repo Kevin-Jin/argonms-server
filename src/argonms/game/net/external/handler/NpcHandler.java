@@ -59,6 +59,8 @@ public final class NpcHandler {
 				byte error = QuestDataLoader.getInstance().startRequirementError(player, questId);
 				if (error == 0) {
 					player.startQuest(questId, npcId);
+				} else if (error == -1) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to start already started or completed quest");
 				} else {
 					gc.getSession().send(GamePackets.writeQuestActionError(questId, error));
 					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to start quest without meeting requirements");
@@ -72,6 +74,8 @@ public final class NpcHandler {
 				byte error = QuestDataLoader.getInstance().completeRequirementError(player, questId);
 				if (error == 0) {
 					player.completeQuest(questId, npcId, selection);
+				} else if (error == -1) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to complete non-started quest");
 				} else {
 					gc.getSession().send(GamePackets.writeQuestActionError(questId, error));
 					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to complete quest without meeting requirements");

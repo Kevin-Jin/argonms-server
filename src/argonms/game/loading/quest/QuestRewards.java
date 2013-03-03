@@ -249,10 +249,12 @@ public class QuestRewards {
 		for (Entry<Short, Byte> entry : questChanges.entrySet()) {
 			switch (entry.getValue().byteValue()) {
 				case QuestEntry.STATE_STARTED:
-					p.localStartQuest(entry.getKey().shortValue());
+					if (p.isQuestInactive(entry.getKey().shortValue()))
+						p.localStartQuest(entry.getKey().shortValue());
 					break;
 				case QuestEntry.STATE_COMPLETED:
-					p.localCompleteQuest(entry.getKey().shortValue(), -1);
+					if (p.isQuestStarted(entry.getKey().shortValue()))
+						p.localCompleteQuest(entry.getKey().shortValue(), -1);
 					break;
 			}
 		}

@@ -293,20 +293,24 @@ public class LoginCharacter extends Player {
 			p.updateDbInventory(con);
 			p.updateDbBindings(con);
 			con.commit();
-		} catch (SQLException ex) {
+		} catch (Throwable ex) {
 			LOG.log(Level.WARNING, "Could not create new character " + name
 					+ " on account" + account.getAccountId() + ". Rolling back all changes...", ex);
-			try {
-				con.rollback();
-			} catch (SQLException ex2) {
-				LOG.log(Level.WARNING, "Error rolling back character.", ex2);
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException ex2) {
+					LOG.log(Level.WARNING, "Error rolling back character.", ex2);
+				}
 			}
 		} finally {
-			try {
-				con.setAutoCommit(prevAutoCommit);
-				con.setTransactionIsolation(prevTransactionIsolation);
-			} catch (SQLException ex) {
-				LOG.log(Level.WARNING, "Could not reset Connection config after creating character " + p.getDataId(), ex);
+			if (con != null) {
+				try {
+					con.setAutoCommit(prevAutoCommit);
+					con.setTransactionIsolation(prevTransactionIsolation);
+				} catch (SQLException ex) {
+					LOG.log(Level.WARNING, "Could not reset Connection config after creating character " + p.getDataId(), ex);
+				}
 			}
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}

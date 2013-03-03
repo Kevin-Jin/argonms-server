@@ -840,7 +840,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		party.lockWrite();
 		try {
 			if (lastCh == self.getChannelId()) {
-				party.memberDisconnected(self.getPlayerById(exiterId));
+				party.memberDisconnected(exiterId);
 				removeParty = party.getMembersInLocalChannel().isEmpty();
 			} else {
 				party.memberDisconnected(lastCh, exiterId);
@@ -1041,7 +1041,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		guild.lockWrite();
 		try {
 			if (lastCh == self.getChannelId()) {
-				member = guild.memberDisconnected(self.getPlayerById(exiterId));
+				member = guild.memberDisconnected(exiterId);
 				removeGuild = guild.getMembersInLocalChannel().isEmpty();
 			} else {
 				member = guild.memberDisconnected(lastCh, exiterId);
@@ -1490,13 +1490,21 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 				p.getClient().getSession().send(GamePackets.writeChatroomAvatar(Chatroom.ACT_REFRESH_AVATAR, position, a, false));
 			}
 		} else { //left room
-			if (p == null)
-				return;
+			roomId = packet.readInt();
+			Chatroom room;
 
-			Chatroom room = p.getChatRoom();
-			p.setChatRoom(null);
-			if (room == null)
-				return;
+			if (p != null) {
+				room = p.getChatRoom();
+				if (room == null || room.getRoomId() != roomId)
+					return;
+
+				p.setChatRoom(null);
+			} else {
+				//sendLeaveChatroom was sent in GameCharacter.prepareLogOff and
+				//the character has already been removed from the channel's
+				//PlayerLog
+				room = localChatRooms.get(Integer.valueOf(roomId));
+			}
 
 			room.lockWrite();
 			try {

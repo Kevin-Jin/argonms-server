@@ -2558,7 +2558,7 @@
 
 2013-01-06  GoldenKevin  (revision 186)
 
-	* Send level up packet to map when player's level is changed through !stat 
+	* Send level up packet to map when player's level is changed through !stat
 	command.
 	* Do not send job change or avatar change packets back to client that had
 	their job or avatar changed.
@@ -2584,7 +2584,7 @@
 
 	* Eliminated potential for race conditions when making events where only one
 	instance can be running at a time.
-	* Fixed portals/q2073.js allowing multiple players to enter the map. 
+	* Fixed portals/q2073.js allowing multiple players to enter the map.
 	* events/pigFarm.js now spawns players in the correct destination portal.
 	* Descriptions for portal scripts now list the portal name instead of the
 	script name.
@@ -2795,6 +2795,22 @@
 	* Fixed Poison Mist expiring immediately.
 	* Fixed one damage mob poison shown on client and no damage on server.
 	* Fixed Venomous Star and Venomous Stab.
+
+2013-03-03  GoldenKevin  (revision 206)
+
+	* Patched packet editing negative mesos when trading or dropping.
+	* Patched packet editing quest rewards when starting or completing quest.
+	* Fixed QuestRewards.giveRewards giving completion rewards from Strange Dish
+	2 when starting Strange Dish 3.
+	* All Throwables (not just SQLExceptions) will be caught when auto-commit is
+	disabled, and Connection.rollback will be called whenever Connection.commit
+	failed or was not yet called so that pooled Connections will always be at a
+	clean state.
+	* Partially resolved issues that arise when
+	CrossServerSynchronization.sendPartyMemberLogOffNotifications,
+	CrossServerSynchronization.sendGuildMemberLogOffNotifications, and
+	CrossServerSynchronization.sendLeaveChatroom are called in
+	GameCharacter.prepareLogOff.
 
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are

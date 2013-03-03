@@ -1468,11 +1468,12 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 		} finally {
 			room.unlockWrite();
 		}
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
 		writeCenterServerSynchronizationPacketHeader(lew, leaver.getChannel(), CenterServerSynchronizationOps.CHATROOM_ROOM_CHANGED);
 		lew.writeInt(0);
 		lew.writeInt(leaver.getPlayerId());
 		lew.writeByte(pos);
+		lew.writeInt(roomId);
 		r.getSession().send(lew.getBytes());
 
 		boolean empty;
@@ -1535,7 +1536,7 @@ public class GameCenterPacketProcessor extends RemoteCenterPacketProcessor {
 			room.unlockWrite();
 		}
 
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		writeCenterServerSynchronizationPacketHeader(lew, newChannel, CenterServerSynchronizationOps.CHATROOM_ROOM_CHANGED);
 		lew.writeInt(roomId);
 		lew.writeInt(playerId);
