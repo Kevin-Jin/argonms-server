@@ -2812,6 +2812,16 @@
 	CrossServerSynchronization.sendLeaveChatroom are called in
 	GameCharacter.prepareLogOff.
 
+2013-03-06  GoldenKevin  (revision 207)
+
+	* Fixed wrong initial rank being assigned to new guild members.
+	* Fixed mobs casting too many skills.
+	* Fixed Wings skill crashing the map.
+	* Simplified MonsterStatusEffectTools handling of Poison Mist and Venom.
+	* Fixed Blizzard/Ice Charge not freezing monsters.
+	* Fixed Blind and Hamstring effects expiring almost immediately.
+	* Fixed boss monsters being freezable.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

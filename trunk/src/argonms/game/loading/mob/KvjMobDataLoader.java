@@ -236,6 +236,7 @@ public class KvjMobDataLoader extends MobDataLoader {
 		Skill s = new Skill();
 		s.setSkill(reader.readShort());
 		s.setLevel(reader.readByte());
+		s.setEffectDelay(reader.readShort());
 		stats.addSkill(s);
 	}
 }

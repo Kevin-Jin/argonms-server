@@ -18,14 +18,17 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.field.MonsterStatusEffect;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.Rng;
+import argonms.common.util.Scheduler;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity;
 import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.MobSkills;
 import argonms.game.field.MonsterStatusEffectTools;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
@@ -137,41 +140,86 @@ public final class MovementHandler {
 		int entId = packet.readInt();
 		short moveid = packet.readShort();
 
-		GameCharacter player = gc.getPlayer();
+		final GameCharacter player = gc.getPlayer();
 		//TODO: Synchronize on the mob (for the canUseSkill, which gets Hp, and
 		//the aggro things)
-		Mob monster = (Mob) player.getMap().getEntityById(EntityType.MONSTER, entId);
+		final Mob monster = (Mob) player.getMap().getEntityById(EntityType.MONSTER, entId);
 		if (monster == null)
 			return;
 
 		List<LifeMovementFragment> res;
 		boolean useSkill = packet.readBool();
 		byte skill = packet.readByte();
-		short skillId = (short) (packet.readByte() & 0xFF);
-		byte skillLevel = packet.readByte();
-		short delay = packet.readShort();
+		Point projectileTarget = packet.readPos();
 
 		Skill skillToUse = null;
-		MobSkillEffectsData skillToUseEffect;
+		final MobSkillEffectsData skillToUseEffect;
 
-		//TODO: I don't think we should apply a debuff again if it is already active to the player
-		//this useSkill and skillId/skillLevel part is probably all wrong...
-		//probably will "borrow" a working algorithm from Vana
-		List<Skill> skills = monster.getSkills();
-		int skillsCount = skills.size();
-		if (useSkill && skillsCount > 0) {
-			skillToUse = skills.get(Rng.getGenerator().nextInt(skillsCount));
-			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillToUse.getSkill()).getLevel(skillToUse.getLevel());
-			if (!monster.canUseSkill(skillToUseEffect) || !MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect))
-				skillToUse = null;
+		if (useSkill && (skill == -1 || skill == 0)) {
+			if (!monster.isEffectActive(MonsterStatusEffect.FREEZE) && !monster.isEffectActive(MonsterStatusEffect.STUN) && !monster.isEffectActive(MonsterStatusEffect.SHADOW_WEB)) {
+				List<Skill> skills = monster.getSkills();
+				if (!skills.isEmpty()) {
+					skillToUse = skills.get(Rng.getGenerator().nextInt(skills.size()));
+					skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillToUse.getSkill()).getLevel(skillToUse.getLevel());
+
+					switch (skillToUse.getSkill()) {
+						case MobSkills.WATK_UP:
+						case MobSkills.WATK_UP_AOE:
+							if (monster.isEffectActive(MonsterStatusEffect.WATK))
+								skillToUse = null;
+							break;
+						case MobSkills.MATK_UP:
+						case MobSkills.MATK_UP_AOE:
+							if (monster.isEffectActive(MonsterStatusEffect.MATK))
+								skillToUse = null;
+							break;
+						case MobSkills.WDEF_UP:
+						case MobSkills.WDEF_UP_AOE:
+							if (monster.isEffectActive(MonsterStatusEffect.WDEF))
+								skillToUse = null;
+							break;
+						case MobSkills.MDEF_UP:
+						case MobSkills.MDEF_UP_AOE:
+							if (monster.isEffectActive(MonsterStatusEffect.MDEF))
+								skillToUse = null;
+							break;
+						case MobSkills.PHYSICAL_IMMUNITY:
+						case MobSkills.MAGIC_IMMUNITY:
+						case MobSkills.PHYSICAL_REFLECT:
+						case MobSkills.MAGIC_REFLECT:
+							//if (monster.hasImmunity())
+								//skillToUse = null;
+							break;
+						case MobSkills.MONSTER_CARNIVAL_SPEED_UP:
+							if (monster.isEffectActive(MonsterStatusEffect.SPEED))
+								skillToUse = null;
+							break;
+						case MobSkills.SUMMON: {
+							short limit = skillToUseEffect.getSummonLimit();
+							if (limit == 5000) // Custom limit based on number of players on map
+								limit = (short) (30 + monster.getMap().getPlayerCount() * 2);
+							if (monster.getSpawnedSummons() >= limit)
+								skillToUse = null;
+							break;
+						}
+					}
+					if (skillToUse != null && monster.canUseSkill(skillToUseEffect)) {
+						if (skillToUse.getEffectDelay() == 0) {
+							MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
+						} else {
+							Scheduler.getInstance().runAfterDelay(new Runnable() {
+								@Override
+								public void run() {
+									MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
+								}
+							}, skillToUse.getEffectDelay());
+						}
+					} else {
+						skillToUse = null;
+					}
+				}
+			}
 		}
-
-		if ((skillId >= 100 && skillId <= 200) && monster.hasSkill(skillId, skillLevel)) {
-			skillToUseEffect = SkillDataLoader.getInstance().getMobSkill(skillId).getLevel(skillLevel);
-			if (monster.canUseSkill(skillToUseEffect))
-				MonsterStatusEffectTools.applyEffectsAndShowVisuals(monster, player, skillToUseEffect);
-		}
-
 		packet.readByte();
 		packet.readInt();
 
@@ -211,7 +259,7 @@ public final class MovementHandler {
 		/*Point initialPos = */packet.readPos();
 		/*Point finalPos = */packet.readPos();
 		updatePosition(res, monster, -1);
-		player.getMap().monsterMoved(player, monster, res, useSkill, skill, skillId, skillLevel, delay, startPos);
+		player.getMap().monsterMoved(player, monster, res, useSkill, skill, projectileTarget, startPos);
 	}
 
 	public static void handleMoveNpc(LittleEndianReader packet, GameClient gc) {
@@ -323,13 +371,13 @@ public final class MovementHandler {
 		}
 	}
 
-	private static byte[] moveMonsterResponse(int entityid, short moveid, int currentMp, boolean useSkills, short skillId, byte skillLevel) {
+	private static byte[] moveMonsterResponse(int entityid, short moveid, int currentMp, boolean useSkill, short skillId, byte skillLevel) {
 		LittleEndianByteArrayWriter mplew = new LittleEndianByteArrayWriter(13);
 
 		mplew.writeShort(ClientSendOps.MOVE_MONSTER_RESPONSE);
 		mplew.writeInt(entityid);
 		mplew.writeShort(moveid);
-		mplew.writeBool(useSkills);
+		mplew.writeBool(useSkill);
 		mplew.writeShort((short) currentMp);
 		mplew.writeByte((byte) skillId);
 		mplew.writeByte(skillLevel);

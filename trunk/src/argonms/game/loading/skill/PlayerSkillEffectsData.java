@@ -116,6 +116,9 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				break;
 			case Skills.POISON_BREATH:
 			case Skills.FP_ELEMENT_COMPOSITION:
+			case Skills.POISON_MIST:
+			case Skills.VENOMOUS_STAR:
+			case Skills.VENOMOUS_STAB:
 				monsterDiseases.add(MonsterStatusEffect.POISON);
 				break;
 			case Skills.HYPNOTIZE:
@@ -172,11 +175,12 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.MYSTIC_DOOR: // hacked buff icon
 					effects.add(PlayerStatusEffect.SOUL_ARROW);
 					break;
-				case Skills.SWORD_FIRE_CHARGE:
-					monsterDiseases.add(MonsterStatusEffect.FREEZE);
-				case Skills.BW_FLAME_CHARGE:
 				case Skills.SWORD_ICE_CHARGE:
 				case Skills.BW_BLIZZARD_CHARGE:
+					monsterDiseases.add(MonsterStatusEffect.FREEZE);
+					//intentional fallthrough to PlayerStatusEffect.CHARGE
+				case Skills.SWORD_FIRE_CHARGE:
+				case Skills.BW_FLAME_CHARGE:
 				case Skills.SWORD_THUNDER_CHARGE:
 				case Skills.BW_LIGHTNING_CHARGE:
 				case Skills.SWORD_HOLY_CHARGE:

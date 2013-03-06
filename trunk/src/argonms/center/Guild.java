@@ -107,7 +107,7 @@ public class Guild extends IntraworldGroup<Guild.Member> {
 		this.titles = csv.split(",", -1);
 	}
 
-	public void setTitles(String[] titltes) {
+	public void setTitles(String[] titles) {
 		this.titles = titles;
 	}
 

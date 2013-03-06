@@ -25,6 +25,7 @@ package argonms.game.loading.mob;
 public class Skill {
 	private short skill;
 	private byte level;
+	private short effectDelay;
 
 	public void setSkill(short id) {
 		this.skill = id;
@@ -34,12 +35,20 @@ public class Skill {
 		this.level = level;
 	}
 
+	public void setEffectDelay(short delay) {
+		this.effectDelay = delay;
+	}
+
 	public short getSkill() {
 		return skill;
 	}
 
 	public byte getLevel() {
 		return level;
+	}
+
+	public short getEffectDelay() {
+		return effectDelay;
 	}
 
 	@Override
