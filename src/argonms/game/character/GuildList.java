@@ -98,8 +98,8 @@ public class GuildList extends IntraworldGroupList<
 			this.allianceRank = allianceRank;
 		}
 
-		public LocalMember(GameCharacter player) {
-			this(player, (byte) 3, (byte) 0, (byte) 0);
+		public LocalMember(GameCharacter player, byte rank) {
+			this(player, rank, (byte) 0, (byte) 0);
 		}
 
 		public LocalMember(IntraworldGroupList.LocalMember m, boolean leader) {
@@ -182,7 +182,7 @@ public class GuildList extends IntraworldGroupList<
 		this.allianceId = allianceId;
 	}
 
-	private byte getLowestRank() {
+	public byte getLowestRank() {
 		byte i;
 		for (i = 5; i >= 4 && titles[i - 1].isEmpty(); --i);
 		return i;
@@ -190,12 +190,8 @@ public class GuildList extends IntraworldGroupList<
 
 	@Override
 	protected LocalMember createLocalMember(GameCharacter p) {
-		LocalMember member = new LocalMember(p);
-		Member existing = getMember(member.getPlayerId());
-		if (existing != null)
-			member.setRank(existing.getRank());
-		else
-			member.setRank(getLowestRank());
+		Member existing = getMember(p.getId());
+		LocalMember member = new LocalMember(p, existing != null ? existing.getRank() : getLowestRank());
 		return member;
 	}
 

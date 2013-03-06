@@ -101,6 +101,7 @@ public final class StatusEffectTools {
 					case Skills.IL_SEAL:
 					case Skills.DOOM:
 					case Skills.SHADOW_WEB:
+					case Skills.WINGS:
 						break;
 					case Skills.DASH:
 						return GamePackets.writeBuffMapPirateEffect(p, updatedStats, e.getDataId(), duration);

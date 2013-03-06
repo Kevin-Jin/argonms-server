@@ -1095,7 +1095,6 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		byte joinerCh = packet.readByte();
 		if (joinerCh == self.getChannelId()) {
 			GameCharacter joiningPlayer = self.getPlayerById(joinerId);
-			GuildList.LocalMember joiningMember = new GuildList.LocalMember(joiningPlayer);
 			GuildList newGuild = new GuildList(guildId);
 			GuildList guild = activeLocalGuilds.putIfAbsent(Integer.valueOf(guildId), newGuild);
 			if (guild == null) {
@@ -1109,8 +1108,10 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 					guild.unlockWrite();
 				}
 			} else {
+				GuildList.LocalMember joiningMember;
 				guild.lockWrite();
 				try {
+					joiningMember = new GuildList.LocalMember(joiningPlayer, guild.getLowestRank());
 					guild.addPlayer(joiningMember);
 				} finally {
 					guild.unlockWrite();

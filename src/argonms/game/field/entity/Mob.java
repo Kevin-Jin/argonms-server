@@ -95,6 +95,7 @@ public class Mob extends AbstractEntity {
 	private final ConcurrentMap<MonsterStatusEffect, MonsterStatusEffectValues> activeEffects;
 	private final ConcurrentMap<Short, ScheduledFuture<?>> skillFutures;
 	private final ConcurrentMap<Integer, ScheduledFuture<?>> diseaseFutures;
+	private final ConcurrentMap<Short, Long> skillsUsed;
 	private final AtomicInteger spawnedSummons;
 	private volatile byte spawnEffect, deathEffect;
 	private volatile ScheduledFuture<?> poisonTask;
@@ -116,6 +117,7 @@ public class Mob extends AbstractEntity {
 		this.activeEffects = new ConcurrentSkipListMap<MonsterStatusEffect, MonsterStatusEffectValues>();
 		this.skillFutures = new ConcurrentHashMap<Short, ScheduledFuture<?>>();
 		this.diseaseFutures = new ConcurrentHashMap<Integer, ScheduledFuture<?>>();
+		this.skillsUsed = new ConcurrentHashMap<Short, Long>();
 		this.spawnedSummons = new AtomicInteger(0);
 		this.deathEffect = stats.getDeathAnimation();
 		this.venomExpires = new ConcurrentLinkedQueue<Long>();
@@ -137,6 +139,10 @@ public class Mob extends AbstractEntity {
 	public boolean isMobile() {
 		//TODO: fix for MCDB
 		return stats.getDelays().containsKey("move") || stats.getDelays().containsKey("fly");
+	}
+
+	public boolean isBoss() {
+		return stats.isBoss();
 	}
 
 	private List<ItemDrop> getDrops() {
@@ -427,7 +433,16 @@ public class Mob extends AbstractEntity {
 	}
 
 	public boolean canUseSkill(MobSkillEffectsData effect) {
-		return ((remHp.get() / stats.getMaxHp() * 100) <= effect.getMaxPercentHp());
+		Long usedTime = skillsUsed.get(Short.valueOf((short) effect.getDataId()));
+		long now = System.currentTimeMillis();
+		if (usedTime != null && now - usedTime.longValue() <= effect.getCooltime() * 1000)
+			return false;
+
+		skillsUsed.put(Short.valueOf((short) effect.getDataId()), Long.valueOf(now));
+		if ((remHp.get() * 100 / stats.getMaxHp()) > effect.getMaxPercentHp())
+			return false;
+
+		return true;
 	}
 
 	public boolean hasSkill(short skillId, byte skillLevel) {
