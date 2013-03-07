@@ -24,6 +24,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -127,6 +130,7 @@ public class GuildList extends IntraworldGroupList<
 		}
 	}
 
+	private final Lock bbsWriteLock, bbsReadLock;
 	private String name;
 	private short emblemBg, emblemFg;
 	private byte emblemBgC, emblemFgC;
@@ -137,7 +141,7 @@ public class GuildList extends IntraworldGroupList<
 	private int allianceId;
 
 	public GuildList(int guildId, String name, PartyList p) {
-		super(guildId);
+		this(guildId);
 		this.name = name;
 		titles = new String[] { "Master", "Jr.Master", "Member", "", "" };
 		capacity = 10;
@@ -149,6 +153,10 @@ public class GuildList extends IntraworldGroupList<
 
 	public GuildList(int guildId) {
 		super(guildId);
+
+		ReadWriteLock locks = new ReentrantReadWriteLock();
+		bbsWriteLock = locks.writeLock();
+		bbsReadLock = locks.readLock();
 	}
 
 	public void setName(String name) {
@@ -308,5 +316,21 @@ public class GuildList extends IntraworldGroupList<
 
 	public int getAllianceId() {
 		return allianceId;
+	}
+
+	public void lockBbsRead() {
+		bbsReadLock.lock();
+	}
+
+	public void unlockBbsRead() {
+		bbsReadLock.unlock();
+	}
+
+	public void lockBbsWrite() {
+		bbsWriteLock.lock();
+	}
+
+	public void unlockBbsWrite() {
+		bbsWriteLock.unlock();
 	}
 }

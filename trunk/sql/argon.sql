@@ -28,6 +28,8 @@ DROP TABLE IF EXISTS `uniqueid`;
   DROP TABLE IF EXISTS `mapmemory`;
   DROP TABLE IF EXISTS `keymaps`;
     DROP TABLE IF EXISTS `guildmembers`;
+      DROP TABLE IF EXISTS `guildbbsreplies`;
+    DROP TABLE IF EXISTS `guildbbstopics`;
   DROP TABLE IF EXISTS `guilds`;
   DROP TABLE IF EXISTS `famelog`;
   DROP TABLE IF EXISTS `cooldowns`;
@@ -255,7 +257,38 @@ CREATE TABLE `guilds` (
   `notice` VARCHAR(100) NOT NULL DEFAULT '',
   `gp` INT(11) NOT NULL DEfAULT 0,
   `alliance` INT(11) NOT NULL DEFAULT 0,
+  `nextbbstopicid` INT(11) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `guildbbstopics` (
+  `topicsid` INT(11) NOT NULL AUTO_INCREMENT,
+  `guildid` INT(11) NOT NULL,
+  `topicid` INT(11) NOT NULL,
+  `poster` INT(11) NOT NULL,
+  `posttime` BIGINT(20) NOT NULL,
+  `subject` VARCHAR(25) NOT NULL,
+  `content` VARCHAR(600) NOT NULL,
+  `icon` INT(11) NOT NULL,
+  `nextreplyid` INT(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`topicsid`),
+  KEY (`guildid`),
+  KEY (`guildid`,`topicid`),
+  CONSTRAINT FOREIGN KEY (`poster`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT FOREIGN KEY (`guildid`) REFERENCES `guilds` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `guildbbsreplies` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `topicsid` INT(11) NOT NULL,
+  `replyid` INT(11) NOT NULL,
+  `poster` INT(11) NOT NULL,
+  `posttime` BIGINT(20) NOT NULL,
+  `content` VARCHAR(25) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY (`topicsid`,`replyid`),
+  CONSTRAINT FOREIGN KEY (`poster`) REFERENCES `characters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT FOREIGN KEY (`topicsid`) REFERENCES `guildbbstopics` (`topicsid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE `guildmembers` (

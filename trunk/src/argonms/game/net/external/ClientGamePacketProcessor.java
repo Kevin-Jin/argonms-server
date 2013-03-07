@@ -203,6 +203,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.UNKNOWN:
 				//no-op, spams logs
 				break;
+			case ClientRecvOps.BBS_OPERATION:
+				GuildListHandler.handleGuildBbs(reader, gc);
+				break;
 			case ClientRecvOps.MOVE_SUMMON:
 				MovementHandler.handleMoveSummon(reader, gc);
 				break;
