@@ -1089,10 +1089,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	}
 
 	public void setHp(short newHp) {
-		//TODO: send new hp to party mates (I think v0.62 supports it...)
+		boolean notAlreadyDead = isAlive();
 		setLocalHp(newHp);
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.HP, Short.valueOf(remHp)), false));
-		if (remHp == 0)
+		if (notAlreadyDead && remHp == 0)
 			died();
 	}
 
@@ -2009,15 +2009,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return questStatuses;
 	}
 
-	/**
-	 * Only recognize that the quest is started on the server without notifying the client
-	 * @param questId
-	 */
-	public byte localStartQuest(short questId) {
-		byte error = (byte) -QuestDataLoader.getInstance().startedQuest(this, questId);
-		if (error != 0)
-			return error;
-
+	public void updateStatusOfStartedQuest(short questId) {
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		writeLockQuests();
 		try {
@@ -2052,6 +2044,18 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 		//see if one req of another quest was starting this one...
 		questStatusChanged(questId, QuestEntry.STATE_STARTED);
+	}
+
+	/**
+	 * Only recognize that the quest is started on the server without notifying the client
+	 * @param questId
+	 */
+	public byte localStartQuest(short questId) {
+		byte error = (byte) -QuestDataLoader.getInstance().startedQuest(this, questId);
+		if (error != 0)
+			return error;
+
+		updateStatusOfStartedQuest(questId);
 
 		return 0;
 	}
@@ -2072,17 +2076,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getClient().getSession().send(GamePackets.writeQuestStartSuccess(questId, npcId));
 	}
 
-
-	/**
-	 * Only recognize that the quest is completed on the server without notifying the client
-	 * @param questId
-	 * @param selection
-	 */
-	public short localCompleteQuest(short questId, int selection) {
-		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
-		if (next < 0)
-			return next;
-
+	public void updateStatusOfCompletedQuest(short questId, long completionTime) {
 		QuestChecks qc = QuestDataLoader.getInstance().getCompleteReqs(questId);
 		writeLockQuests();
 		try {
@@ -2111,13 +2105,26 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				status = new QuestEntry(QuestEntry.STATE_COMPLETED, reqMobs);
 				questStatuses.put(oId, status);
 			}
-			status.setCompletionTime(System.currentTimeMillis());
+			status.setCompletionTime(completionTime);
 		} finally {
 			writeUnlockQuests();
 		}
 
 		//see if one req of another quest was completing this one...
 		questStatusChanged(questId, QuestEntry.STATE_COMPLETED);
+	}
+
+	/**
+	 * Only recognize that the quest is completed on the server without notifying the client
+	 * @param questId
+	 * @param selection
+	 */
+	public short localCompleteQuest(short questId, int selection) {
+		short next = QuestDataLoader.getInstance().finishedQuest(this, questId, selection);
+		if (next < 0)
+			return next;
+
+		updateStatusOfCompletedQuest(questId, System.currentTimeMillis());
 
 		return next;
 	}
@@ -2135,7 +2142,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			getClient().getSession().send(GamePackets.writeQuestActionError(questId, (byte) -nextQuest));
 			return;
 		}
-		getClient().getSession().send(GamePackets.writeQuestComplete(questId, questStatuses.get(Short.valueOf(questId))));
+		getClient().getSession().send(GamePackets.writeQuestComplete(questId, questStatuses.get(Short.valueOf(questId)).getCompletionTime()));
 		getClient().getSession().send(GamePackets.writeQuestCompleteSuccess(questId, npcId, nextQuest));
 		getClient().getSession().send(GamePackets.writeShowSelfQuestEffect());
 		getMap().sendToAll(GamePackets.writeShowQuestEffect(this));

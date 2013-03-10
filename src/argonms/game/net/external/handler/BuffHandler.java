@@ -57,6 +57,9 @@ public final class BuffHandler {
 	public static void handleUseSkill(LittleEndianReader packet, GameClient gc) {
 		CheatTracker.get(gc).logTime("hpr", System.currentTimeMillis());
 		GameCharacter p = gc.getPlayer();
+		if (!p.isAlive())
+			return;
+
 		/*int tickCount = */packet.readInt();
 		int skillId = packet.readInt();
 		byte skillLevel = packet.readByte();
@@ -385,6 +388,9 @@ public final class BuffHandler {
 
 	public static void handleUseItem(LittleEndianReader packet, GameClient gc) {
 		GameCharacter p = gc.getPlayer();
+		if (!p.isAlive())
+			return;
+
 		/*int tickCount = */packet.readInt();
 		short slot = packet.readShort();
 		int itemId = packet.readInt();

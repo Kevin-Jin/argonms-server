@@ -323,6 +323,25 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						ps.close();
 						break;
 					}
+					case SET_QUEST_STATUS: {
+						QuestStatusValue value = (QuestStatusValue) update.getValue();
+						int characterId = Player.getIdFromName(target);
+
+						ps = con.prepareStatement("DELETE FROM `queststatuses` WHERE `characterid` = ? AND `questid` = ?");
+						ps.setInt(1, characterId);
+						ps.setShort(2, value.questId);
+						ps.executeUpdate();
+						ps.close();
+
+						ps = con.prepareStatement("INSERT INTO `queststatuses` (`characterid`,`questid`,`state`,`completed`) VALUES (?,?,?,?)");
+						ps.setInt(1, characterId);
+						ps.setShort(2, value.questId);
+						ps.setByte(3, value.status);
+						ps.setLong(4, value.completionTime);
+						ps.executeUpdate();
+						ps.close();
+						break;
+					}
 					case ADD_ITEM: {
 						ItemValue value = (ItemValue) update.getValue();
 						Inventory.InventoryType type = InventoryTools.getCategory(value.itemId);

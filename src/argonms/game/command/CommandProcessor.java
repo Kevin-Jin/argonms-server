@@ -20,6 +20,7 @@ package argonms.game.command;
 
 import argonms.common.UserPrivileges;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.QuestEntry;
 import argonms.game.GameRegistry;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
@@ -213,6 +214,76 @@ public class CommandProcessor {
 			}
 		}, "Warp a player to a specific map and spawn point", UserPrivileges.GM));
 		universalCommands.putAll(new DisciplinaryCommandHandlers().getDefinitions());
+		universalCommands.put("!queststatus", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
+			@Override
+			public String getUsage() {
+				return "Usage: !queststatus [-t <target>] <questid> <status> [<completion time>]";
+			}
+
+			@Override
+			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+				short questId;
+				byte status;
+				long completionTime;
+
+				String targetName = args.extractOptionalTarget(caller.getName());
+				if (targetName == null) {
+					resp.printErr(getUsage());
+					return;
+				}
+				CommandTarget target = args.getTargetByName(targetName, caller);
+				if (target == null) {
+					resp.printErr("The character " + targetName + " does not exist.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				String param = args.next();
+				try {
+					questId = Short.parseShort(param);
+				} catch (NumberFormatException e) {
+					resp.printErr(param + " is not a valid questid.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (!args.hasNext()) {
+					resp.printErr(getUsage());
+					return;
+				}
+				param = args.next();
+				try {
+					status = Byte.parseByte(param);
+					if (status < QuestEntry.STATE_NOT_STARTED || status > QuestEntry.STATE_COMPLETED)
+						throw new NumberFormatException();
+				} catch (NumberFormatException e) {
+					resp.printErr(param + " is not a valid quest status.");
+					resp.printErr(getUsage());
+					return;
+				}
+
+				if (args.hasNext()) {
+					param = args.next();
+					try {
+						completionTime = Long.parseLong(param);
+					} catch (NumberFormatException e) {
+						resp.printErr(param + " is not a valid quest completion time.");
+						resp.printErr(getUsage());
+						return;
+					}
+				} else if (status == QuestEntry.STATE_COMPLETED) {
+					completionTime = System.currentTimeMillis();
+				} else {
+					completionTime = 0;
+				}
+
+				target.mutate(Collections.singletonList(new CommandTarget.CharacterManipulation(CommandTarget.CharacterManipulationKey.SET_QUEST_STATUS, new CommandTarget.QuestStatusValue(questId, status, completionTime))));
+			}
+		}, "Change a player's quest status; does not perform checks or give rewards", UserPrivileges.GM));
 		universalCommands.put("!skill", new CommandDefinition<CommandCaller>(new CommandAction<CommandCaller>() {
 			@Override
 			public String getUsage() {

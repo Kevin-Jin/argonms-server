@@ -21,6 +21,7 @@ package argonms.game.command;
 import argonms.common.GlobalConstants;
 import argonms.common.character.BuddyList;
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.Equip;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
@@ -191,6 +192,23 @@ public class LocalChannelCommandTarget implements CommandTarget {
 				case SET_SKILL_LEVEL: {
 					SkillValue value = (SkillValue) update.getValue();
 					target.setSkillLevel(value.skillId, value.skillLevel, value.skillMasterLevel, false);
+					break;
+				}
+				case SET_QUEST_STATUS: {
+					QuestStatusValue value = (QuestStatusValue) update.getValue();
+					switch (value.status) {
+						case QuestEntry.STATE_NOT_STARTED:
+							target.forfeitQuest(value.questId);
+							break;
+						case QuestEntry.STATE_STARTED:
+							target.updateStatusOfStartedQuest(value.questId);
+							target.getClient().getSession().send(GamePackets.writeQuestProgress(value.questId, ""));
+							break;
+						case QuestEntry.STATE_COMPLETED:
+							target.updateStatusOfCompletedQuest(value.questId, value.completionTime);
+							target.getClient().getSession().send(GamePackets.writeQuestComplete(value.questId, value.completionTime));
+							break;
+					}
 					break;
 				}
 				case ADD_ITEM: {
