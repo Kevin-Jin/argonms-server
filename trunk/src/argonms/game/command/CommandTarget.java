@@ -69,6 +69,18 @@ public interface CommandTarget {
 		}
 	}
 
+	public static class QuestStatusValue {
+		public final short questId;
+		public final byte status;
+		public final long completionTime;
+
+		public QuestStatusValue(short questId, byte status, long completionTime) {
+			this.questId = questId;
+			this.status = status;
+			this.completionTime = completionTime;
+		}
+	}
+
 	public static class ItemValue {
 		public final int itemId;
 		public final int quantity;
@@ -153,16 +165,17 @@ public interface CommandTarget {
 		ADD_MESO((byte) 30),
 		SET_MESO((byte) 31),
 		SET_SKILL_LEVEL((byte) 32),
-		ADD_ITEM((byte) 33),
-		CANCEL_DEBUFFS((byte) 34),
-		MAX_ALL_EQUIP_STATS((byte) 35),
-		MAX_INVENTORY_SLOTS((byte) 36),
-		MAX_BUDDY_LIST_SLOTS((byte) 37),
-		BAN((byte) 38),
-		KICK((byte) 39),
-		STUN((byte) 40),
-		CLEAR_INVENTORY_SLOTS((byte) 41),
-		RETURN_TO_REMEMBERED_MAP((byte) 42);
+		SET_QUEST_STATUS((byte) 33),
+		ADD_ITEM((byte) 34),
+		CANCEL_DEBUFFS((byte) 35),
+		MAX_ALL_EQUIP_STATS((byte) 36),
+		MAX_INVENTORY_SLOTS((byte) 37),
+		MAX_BUDDY_LIST_SLOTS((byte) 38),
+		BAN((byte) 39),
+		KICK((byte) 40),
+		STUN((byte) 41),
+		CLEAR_INVENTORY_SLOTS((byte) 42),
+		RETURN_TO_REMEMBERED_MAP((byte) 43);
 
 		private static final Map<Byte, CharacterManipulationKey> lookup;
 

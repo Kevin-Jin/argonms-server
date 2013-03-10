@@ -291,6 +291,7 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 				case Skills.THREATEN:
 					monsterDiseases.add(MonsterStatusEffect.WATK);
 					break;
+				case Skills.DRAGON_ROAR:
 				case Skills.ARROW_BOMB:
 					monsterDiseases.add(MonsterStatusEffect.STUN);
 					break;

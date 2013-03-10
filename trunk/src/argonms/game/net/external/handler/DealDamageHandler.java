@@ -39,7 +39,6 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
 import argonms.game.character.StatusEffectTools;
-import argonms.game.field.Element;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
 import argonms.game.field.MapEntity.EntityType;
@@ -544,6 +543,9 @@ public final class DealDamageHandler {
 						//TODO: min damage still needs to be calculated. Using -20% as mindamage in the meantime seems to work
 						//totDamageToOneMonster = (int) (player.calculateMaxBaseDamage(player.getTotalWatk()) * (SkillDataLoader.getInstance().getSkill(Skills.HEAVENS_HAMMER).getLevel(player.getSkillLevel(Skills.HEAVENS_HAMMER)).getDamage() / 100));
 						//totDamageToOneMonster = (int) (Math.floor(Rng.getGenerator().nextDouble() * (totDamageToOneMonster * .2) + totDamageToOneMonster * .8));
+						break;
+					case Skills.SACRIFICE:
+						player.setHp((short) Math.max(player.getHp() - totDamageToOneMonster * attackEffect.getX() / 100, 1));
 						break;
 					case Skills.POISON_MIST:
 						//TODO: could Poison Mist poison a monster as a basic attack?

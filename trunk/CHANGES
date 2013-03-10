@@ -2826,6 +2826,14 @@
 
 	* Implemented guild BBS.
 
+2013-03-10  GoldenKevin  (revision 209)
+
+	* Sacrifice and Dragon Roar behave exactly as expected.
+	* Do not continuously lose EXP when losing HP (e.g. HP decreasing regions
+	such as El Nath or Aqua Road) while already dead.
+	* Prevent potion or skill use while player is dead.
+	* Added !queststatus command.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

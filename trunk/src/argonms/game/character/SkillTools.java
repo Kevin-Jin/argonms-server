@@ -19,6 +19,7 @@
 package argonms.game.character;
 
 import argonms.common.character.PlayerStatusEffect;
+import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -59,6 +60,10 @@ public final class SkillTools {
 		if (e.getMoneyConsume() > 0) {
 			p.setLocalMesos(e.getMoneyConsume());
 			ret.put(ClientUpdateKey.MESO, Integer.valueOf(p.getMesos()));
+		}
+		if (e.getDataId() == Skills.DRAGON_ROAR) {
+			p.setLocalHp((short) (p.getHp() - p.getCurrentMaxHp() * e.getX() / 100));
+			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		int itemId = e.getItemConsume();
 		short quantity = e.getItemConsumeCount();

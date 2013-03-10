@@ -180,6 +180,7 @@ public final class MonsterStatusEffectTools {
 			}
 			case PLAYER_SKILL: {
 				switch (e.getDataId()) {
+					case Skills.DRAGON_ROAR:
 					case Skills.BLIND:
 					case Skills.HAMSTRING:
 						duration = e.getY() * 1000;

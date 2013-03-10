@@ -116,6 +116,13 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					lew.writeByte(value.skillMasterLevel);
 					break;
 				}
+				case SET_QUEST_STATUS: {
+					QuestStatusValue value = (QuestStatusValue) update.getValue();
+					lew.writeShort(value.questId);
+					lew.writeByte(value.status);
+					lew.writeLong(value.completionTime);
+					break;
+				}
 				case ADD_ITEM: {
 					ItemValue value = (ItemValue) update.getValue();
 					lew.writeInt(value.itemId);
@@ -216,6 +223,13 @@ public class CrossChannelCommandTarget implements CommandTarget {
 					byte skillLevel = packet.readByte();
 					byte skillMasterLevel = packet.readByte();
 					value = new SkillValue(skillId, skillLevel, skillMasterLevel);
+					break;
+				}
+				case SET_QUEST_STATUS: {
+					short questId = packet.readShort();
+					byte status = packet.readByte();
+					long completionTime = packet.readLong();
+					value = new QuestStatusValue(questId, status, completionTime);
 					break;
 				}
 				case ADD_ITEM: {
