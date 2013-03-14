@@ -2834,6 +2834,12 @@
 	* Prevent potion or skill use while player is dead.
 	* Added !queststatus command.
 
+2013-03-13  GoldenKevin  (revision 210)
+
+	* Fixed Combo Attack, Panic, and Coma.
+	* Fixed characters being unable to do certain activities after dropping
+	mesos.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

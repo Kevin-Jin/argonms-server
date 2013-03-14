@@ -1660,6 +1660,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return list;
 	}
 
+	public long getSkillExpireTime(int skillId) {
+		Pair<SkillState, ScheduledFuture<?>> activeSkill = skillFutures.get(Integer.valueOf(skillId));
+		if (activeSkill == null)
+			return 0;
+
+		return activeSkill.left.endTime;
+	}
+
 	public void addToEnergyCharge(int gain) {
 		energyCharge = (short) Math.min(energyCharge + gain, 10000);
 	}
