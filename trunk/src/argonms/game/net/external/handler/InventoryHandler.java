@@ -234,16 +234,16 @@ public final class InventoryHandler {
 		/*int time = */packet.readInt();
 		int amount = packet.readInt();
 		GameCharacter p = gc.getPlayer();
-		if (amount > p.getMesos()) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to drop nonexistent mesos");
-			return;
-		}
 		if (amount < 0) {
 			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to drop negative mesos");
 			return;
 		}
 
-		p.gainMesos(-amount, false);
+		if (!p.gainMesos(-amount, false, true)) {
+			gc.getSession().send(GamePackets.writeEnableActions());
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to drop nonexistent mesos");
+			return;
+		}
 		ItemDrop d = new ItemDrop(amount);
 		p.getMap().drop(d, 0, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), false);
 	}

@@ -27,6 +27,7 @@ import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.net.external.GamePackets;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
@@ -200,6 +201,19 @@ public final class StatusEffectTools {
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
 		effect = getThirdPersonDispelEffect(p, e, e.getEffects());
+		if (p.isVisible() && effect != null)
+			p.getMap().sendToAll(effect, p);
+	}
+
+	public static void updateComboCounter(GameCharacter p, PlayerStatusEffectValues v, short m) {
+		//TODO: don't reset buff icon's expiration indicator
+		int newDuration = (int) (p.getSkillExpireTime(v.getSource()) - System.currentTimeMillis());
+		Map<PlayerStatusEffect, Short> updatedStats = Collections.singletonMap(PlayerStatusEffect.COMBO, Short.valueOf(m));
+		p.addToActiveEffects(PlayerStatusEffect.COMBO, new PlayerStatusEffectValues(v, m));
+		byte[] effect = getFirstPersonApplyEffect(p, v.getEffectsData(), updatedStats, newDuration);
+		if (effect != null)
+			p.getClient().getSession().send(effect);
+		effect = getThirdPersonApplyEffect(p, v.getEffectsData(), updatedStats, newDuration);
 		if (p.isVisible() && effect != null)
 			p.getMap().sendToAll(effect, p);
 	}
@@ -389,7 +403,7 @@ public final class StatusEffectTools {
 				mod = 1;
 				break;
 			case COMBO:
-				mod = (short) ((PlayerSkillEffectsData) e).getX();
+				mod = 1;
 				break;
 			case CHARGE:
 				mod = (short) ((PlayerSkillEffectsData) e).getX();

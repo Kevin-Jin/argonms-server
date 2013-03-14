@@ -478,6 +478,7 @@ public final class DealDamageHandler {
 	private static void applyAttack(AttackInfo attack, AttackType type, final GameCharacter player) {
 		PlayerSkillEffectsData attackEffect = attack.getAttackEffect(player);
 		final GameMap map = player.getMap();
+		PlayerStatusEffectValues combo = player.getEffectValue(PlayerStatusEffect.COMBO);
 		if (attackEffect != null && attack.skill != 0) { //attack skills
 			//apply skill costs
 			if (attack.skill != Skills.HEAL) {
@@ -517,7 +518,24 @@ public final class DealDamageHandler {
 						StatusEffectTools.dispelEffectsAndShowVisuals(player, chargeBuff.getEffectsData());
 					break;
 				}
+				case Skills.SWORD_PANIC:
+				case Skills.AXE_PANIC:
+				case Skills.SWORD_COMA:
+				case Skills.AXE_COMA:
+					if (combo == null) {
+						CheatTracker.get(player.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use Panic or Coma without Combo Attack buff");
+						return;
+					}
+
+					StatusEffectTools.updateComboCounter(player, combo, (short) 1);
+					combo = null; //so that combo is not incremented below...
+					break;
 			}
+		}
+		if (combo != null && !attack.allDamage.isEmpty()) { //TODO: make sure to increment counter for final attack as well
+			short counter = combo.getModifier();
+			if ((counter - 1) < ((PlayerSkillEffectsData) combo.getEffectsData()).getX())
+				StatusEffectTools.updateComboCounter(player, combo, (short) (counter + 1));
 		}
 
 		for (Entry<Integer, int[]> oned : attack.allDamage.entrySet()) {

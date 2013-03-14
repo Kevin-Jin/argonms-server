@@ -869,7 +869,7 @@ public final class GamePackets {
 						(v.getSource() == Skills.SIN_HASTE || v.getSource() == Skills.DIT_HASTE || v.getSource() == Skills.GM_HASTE || v.getSource() == Skills.SUPER_GM_HASTE))
 					break;
 				//fallthrough for non-haste sources
-			case COMBO: //TODO: save (combo + 1) in v.mod!!
+			case COMBO:
 			case JUMP:
 				lew.writeByte((byte) v.getModifier());
 				break;

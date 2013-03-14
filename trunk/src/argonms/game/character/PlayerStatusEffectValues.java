@@ -34,6 +34,11 @@ public class PlayerStatusEffectValues {
 		this.mod = mod;
 	}
 
+	public PlayerStatusEffectValues(PlayerStatusEffectValues existing, short newMod) {
+		this.e = existing.e;
+		this.mod = newMod;
+	}
+
 	public int getSource() {
 		return e.getDataId();
 	}
