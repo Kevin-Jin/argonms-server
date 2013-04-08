@@ -1365,6 +1365,39 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeSpawnPortal(MysticDoor door) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
+
+		lew.writeShort(ClientSendOps.SPAWN_PORTAL);
+		lew.writeInt(door.getMap());
+		lew.writeInt(door.getComplement().getMap());
+		lew.writePos(door.getComplement().getPosition());
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemovePortal() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+
+		lew.writeShort(ClientSendOps.SPAWN_PORTAL);
+		lew.writeInt(GlobalConstants.NULL_MAP);
+		lew.writeInt(GlobalConstants.NULL_MAP);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writePartyPortal(MysticDoor door) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
+
+		lew.writeShort(ClientSendOps.PARTY_LIST);
+		lew.writeShort((short) 0x22);
+		lew.writeInt(door.getMap());
+		lew.writeInt(door.getComplement().getMap());
+		lew.writePos(door.getComplement().getPosition());
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowPlayer(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 
@@ -1912,30 +1945,23 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowMysticDoor(MysticDoor d) {
+	public static byte[] writeShowMysticDoor(MysticDoor d, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 
 		lew.writeShort(ClientSendOps.SHOW_DOOR);
-		lew.writeBool(d.isInTown());
+		lew.writeByte(animation);
 		lew.writeInt(d.getId());
 		lew.writePos(d.getPosition());
 
 		return lew.getBytes();
 	}
 
-	public static byte[] writeRemoveMysticDoor(MysticDoor d) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(d.isInTown() ? 10 : 7);
+	public static byte[] writeRemoveMysticDoor(MysticDoor d, byte animation) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
 
-		//what.
-		if (d.isInTown()) {
-			lew.writeShort(ClientSendOps.SPAWN_PORTAL);
-			lew.writeInt(GlobalConstants.NULL_MAP);
-			lew.writeInt(GlobalConstants.NULL_MAP);
-		} else {
-			lew.writeShort(ClientSendOps.REMOVE_DOOR);
-			lew.writeBool(false);
-			lew.writeInt(d.getId());
-		}
+		lew.writeShort(ClientSendOps.REMOVE_DOOR);
+		lew.writeByte(animation);
+		lew.writeInt(d.getId());
 
 		return lew.getBytes();
 	}

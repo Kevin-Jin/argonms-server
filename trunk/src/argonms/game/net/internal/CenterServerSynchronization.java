@@ -31,6 +31,7 @@ import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
 import argonms.game.character.PartyList;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.net.WorldChannel;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.ChatHandler;
@@ -582,8 +583,15 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		party.lockRead();
 		try {
 			for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
-				mem.getPlayer().setParty(null);
-				mem.getPlayer().getClient().getSession().send(GamePackets.writePartyDisbanded(party.getId(), party.getLeader()));
+				GameCharacter memPlayer = mem.getPlayer();
+
+				memPlayer.setParty(null);
+				memPlayer.getClient().getSession().send(GamePackets.writePartyDisbanded(party.getId(), party.getLeader()));
+				MysticDoor door = memPlayer.getDoor();
+				if (door != null)
+					for (GameCharacter memberPlayer : party.getLocalMembersInMap(door.isInTown() ? door.getMap() : (door = door.getComplement()).getMap()))
+						if (memberPlayer != memPlayer)
+							memberPlayer.getClient().getSession().send(door.getDestructionMessage());
 			}
 		} finally {
 			party.unlockRead();
@@ -639,8 +647,18 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 		} else {
 			party.lockRead();
 			try {
-				for (PartyList.LocalMember mem : party.getMembersInLocalChannel())
-					mem.getPlayer().getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+				for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+					GameCharacter memPlayer = mem.getPlayer();
+					GameCharacter memberPlayer = self.getPlayerById(leaverId);
+
+					memPlayer.getClient().getSession().send(GamePackets.writePartyMemberLeft(party, leaverId, leaverName, leaverExpelled));
+					MysticDoor door = memPlayer.getDoor();
+					if (door != null && (door.isInTown() && door.getMap() == memberPlayer.getMapId() || !door.isInTown() && (door = door.getComplement()).getMap() == memberPlayer.getMapId()))
+						memberPlayer.getClient().getSession().send(door.getDestructionMessage());
+					door = memberPlayer.getDoor();
+					if (door != null && (door.isInTown() && door.getMap() == memPlayer.getMapId() || !door.isInTown() && (door = door.getComplement()).getMap() == memPlayer.getMapId()))
+						memPlayer.getClient().getSession().send(door.getDestructionMessage());
+				}
 			} finally {
 				party.unlockRead();
 			}
@@ -678,9 +696,21 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 						if (mem == joiningPlayer)
 							continue;
 
-						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyMemberJoined(party, joiningPlayer.getName()));
-						mem.getPlayer().pullPartyHp();
-						mem.getPlayer().pushHpToParty();
+						GameCharacter memPlayer = mem.getPlayer();
+						GameCharacter memberPlayer = joiningPlayer.getPlayer();
+						memPlayer.getClient().getSession().send(GamePackets.writePartyMemberJoined(party, joiningPlayer.getName()));
+
+						if (memberPlayer.getMapId() == memPlayer.getMapId()) {
+							memberPlayer.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(memPlayer.getId(), memPlayer.getHp(), memPlayer.getCurrentMaxHp()));
+							memPlayer.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(memberPlayer.getId(), memberPlayer.getHp(), memberPlayer.getCurrentMaxHp()));
+						}
+
+						MysticDoor door = memPlayer.getDoor();
+						if (door != null && (door.isInTown() && door.getMap() == memberPlayer.getMapId() || !door.isInTown() && (door = door.getComplement()).getMap() == memberPlayer.getMapId()))
+							memberPlayer.getClient().getSession().send(door.getShowExistingSpawnMessage());
+						door = memberPlayer.getDoor();
+						if (door != null && (door.isInTown() && door.getMap() == memPlayer.getMapId() || !door.isInTown() && (door = door.getComplement()).getMap() == memPlayer.getMapId()))
+							memPlayer.getClient().getSession().send(door.getShowExistingSpawnMessage());
 					}
 				} finally {
 					party.unlockRead();
@@ -796,9 +826,14 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 						if (mem == member)
 							continue;
 
-						mem.getPlayer().getClient().getSession().send(GamePackets.writePartyList(party));
-						mem.getPlayer().pullPartyHp();
-						mem.getPlayer().pushHpToParty();
+						GameCharacter memPlayer = mem.getPlayer();
+						GameCharacter memberPlayer = member.getPlayer();
+						memPlayer.getClient().getSession().send(GamePackets.writePartyList(party));
+
+						if (memberPlayer.getMapId() == memPlayer.getMapId()) {
+							memberPlayer.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(memPlayer.getId(), memPlayer.getHp(), memPlayer.getCurrentMaxHp()));
+							memPlayer.getClient().getSession().send(GamePackets.writePartyMemberHpUpdate(memberPlayer.getId(), memberPlayer.getHp(), memberPlayer.getCurrentMaxHp()));
+						}
 					}
 				} finally {
 					party.unlockRead();

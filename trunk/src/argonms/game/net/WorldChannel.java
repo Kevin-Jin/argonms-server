@@ -148,6 +148,7 @@ public class WorldChannel {
 	}
 
 	public void requestChannelChange(final GameCharacter p, byte destCh) {
+		p.channelChangeCancelSkills();
 		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {

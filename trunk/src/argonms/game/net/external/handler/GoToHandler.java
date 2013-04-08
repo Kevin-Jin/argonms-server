@@ -26,9 +26,12 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.SkillTools;
 import argonms.game.character.StatusEffectTools;
+import argonms.game.field.MapEntity.EntityType;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.loading.map.PortalData;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
@@ -108,6 +111,28 @@ public final class GoToHandler {
 		} else if (!mapPortals.get(Byte.valueOf(p.getMap().getPortalIdByName(portal.getTargetName()))).getPosition().equals(endPos)) {
 			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to teleport to wrong position");
 		}
+	}
+
+	public static void handleMysticDoor(LittleEndianReader packet, GameClient gc) {
+		int doorId = packet.readInt();
+		boolean toTown = !packet.readBool();
+
+		GameCharacter p = gc.getPlayer();
+		MysticDoor door = (MysticDoor) p.getMap().getEntityById(EntityType.DOOR, doorId);
+		GameCharacter owner = door.getOwner();
+		PartyList party = owner.getParty();
+		if (door == null) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
+			return;
+		}
+		if (owner != p && (party == null || party != p.getParty())) {
+			if (door.isInTown())
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
+			return;
+		}
+
+		p.setPosition(door.getComplement().getPosition());
+		p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
 	}
 
 	public static void handleWarpCs(LittleEndianReader packet, GameClient rc) {

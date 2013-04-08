@@ -2840,6 +2840,17 @@
 	* Fixed characters being unable to do certain activities after dropping
 	mesos.
 
+2013-04-08  GoldenKevin  (revision 211)
+
+	* Selling nonexistent items now counts as only POSSIBLE_PACKET_EDITING
+	rather than CERTAIN_PACKET_EDITING due to false positives.
+	* Fixed Puppet skill state being transferred by PlayerContinuation when
+	changing channels.
+	* Started implementing Mystic Door. Only works properly when Priest is not
+	in a party.
+	* Optimized party HP pushing/pulling when logging into a character that is
+	in a party and when joining a party.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

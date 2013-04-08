@@ -92,6 +92,7 @@ public enum PlayerStatusEffect { //byte numbers are from left to right
 	SHADOW_PARTNER	(0x0400000000000000L, (byte) 4),
 	PUPPET			(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
 	SUMMON			(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
+	MYSTIC_DOOR		(0x0800000000000000L, (byte) 4), //hacky - mask with no visible effects or stat buffs
 	PICKPOCKET		(0x0800000000000000L, (byte) 4),
 	MESO_GUARD		(0x1000000000000000L, (byte) 4),
 	WEAKNESS		(0x4000000000000000L, (byte) 4),

@@ -37,6 +37,7 @@ import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MonsterStatusEffectTools;
 import argonms.game.field.entity.Mob;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
@@ -135,7 +136,7 @@ public final class BuffHandler {
 			}
 			case Skills.MYSTIC_DOOR: {
 				Point position = packet.readPos();
-				//TODO: implement mystic door
+				MysticDoor door = MysticDoor.open(p, position);
 				break;
 			}
 			case Skills.SHADOW_STARS: {
