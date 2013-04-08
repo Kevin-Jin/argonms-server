@@ -34,12 +34,14 @@ import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.entity.ItemDrop;
 import argonms.game.field.entity.Mist;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.Mob.MobDeathListener;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.field.entity.Npc;
 import argonms.game.field.entity.PlayerNpc;
 import argonms.game.field.entity.PlayerSkillSummon;
@@ -69,6 +71,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -93,6 +96,7 @@ public class GameMap {
 	private final Set<Short> occupiedChairs;
 	private final Map<GameCharacter, ScheduledFuture<?>> timeLimitTasks;
 	private final Map<GameCharacter, ScheduledFuture<?>> decHpTasks;
+	private final ConcurrentMap<Byte, Boolean> occupiedMysticDoorSpots;
 	private volatile boolean disableSpawn;
 
 	protected GameMap(MapStats stats) {
@@ -136,6 +140,17 @@ public class GameMap {
 			decHpTasks = new ConcurrentHashMap<GameCharacter, ScheduledFuture<?>>();
 		else
 			decHpTasks = null;
+		boolean isMysticDoorDestination = false;
+		for (PortalData portal : stats.getPortals().values()) {
+			if (portal.getPortalType() == 6) {
+				isMysticDoorDestination = true;
+				break;
+			}
+		}
+		if (isMysticDoorDestination)
+			occupiedMysticDoorSpots = new ConcurrentHashMap<Byte, Boolean>();
+		else
+			occupiedMysticDoorSpots = null;
 	}
 
 	public MapStats getStaticData() {
@@ -173,6 +188,23 @@ public class GameMap {
 		if (p != null)
 			return p.getPosition();
 		return null;
+	}
+
+	public byte getFreeMysticDoorLocation() {
+		for (Entry<Byte, PortalData> entry : stats.getPortals().entrySet()) {
+			Byte portalId = entry.getKey();
+			PortalData portal = entry.getValue();
+			if (portal.getPortalType() == 6) {
+				Boolean existing = occupiedMysticDoorSpots.putIfAbsent(portalId, Boolean.TRUE);
+				if (existing == null || !existing.booleanValue())
+					return portalId.byteValue();
+			}
+		}
+		return -1;
+	}
+
+	public void releaseMysticDoorLocation(byte portalId) {
+		occupiedMysticDoorSpots.remove(Byte.valueOf(portalId));
 	}
 
 	/**
@@ -278,6 +310,15 @@ public class GameMap {
 				case MONSTER:
 					updateMonsterController((Mob) ent);
 					break;
+			}
+		} else if (ent.getEntityType() == EntityType.DOOR) {
+			assert ((MysticDoor) ent).isInTown();
+			GameCharacter owner = ((MysticDoor) ent).getOwner();
+			PartyList party = owner.getParty();
+			if (owner == p || party != null && party == p.getParty()) {
+				p.getClient().getSession().send(ent.getShowExistingSpawnMessage());
+				p.getClient().getSession().send(GamePackets.writeSpawnPortal((MysticDoor) ent));
+				//p.getClient().getSession().send(GamePackets.writePartyPortal((MysticDoor) ent));
 			}
 		}
 	}

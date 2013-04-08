@@ -56,6 +56,7 @@ import argonms.game.field.entity.Miniroom;
 import argonms.game.field.entity.Miniroom.MiniroomType;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.Mob.MobDeathListener;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.quest.QuestChecks;
 import argonms.game.loading.quest.QuestChecks.QuestRequirementType;
@@ -138,6 +139,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private final ConcurrentMap<Short, Pair<MobSkillState, ScheduledFuture<?>>> diseaseFutures;
 	private final ConcurrentMap<Integer, PlayerSkillSummon> summons;
 	private volatile short energyCharge;
+	private volatile MysticDoor door;
 
 	private final Map<Short, QuestEntry> questStatuses;
 	private final Map<QuestRequirementType, Map<Number, List<Short>>> questSubscriptions;
@@ -1696,6 +1698,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		summons.remove(Integer.valueOf(skillId));
 	}
 
+	public MysticDoor getDoor() {
+		return door;
+	}
+
+	public void setDoor(MysticDoor door) {
+		this.door = door;
+	}
+
 	public int getItemEffect() {
 		return 0;
 	}
@@ -1725,17 +1735,20 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			setItemChair(0);
 		else if (mapChair != 0)
 			setMapChair((short) 0);
-		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
-		if (v != null)
-			SkillTools.cancelBuffSkill(this, v.getSource());
 	}
 
-	public void changeMap(GameMap goTo, byte initialPortal) {
+	private void leaveMapAndSetTo(GameMap goTo, byte initialPortal) {
+		mapChangeCancelSkills();
 		leaveMapRoutines();
 		map.removePlayer(this);
 		map = goTo;
-		setPosition(map.getPortalPosition(initialPortal));
+		if (initialPortal != MysticDoor.OUT_OF_TOWN_PORTAL_ID)
+			setPosition(map.getPortalPosition(initialPortal));
 		setFoothold((short) 0);
+	}
+
+	public void changeMap(GameMap goTo, byte initialPortal) {
+		leaveMapAndSetTo(goTo, initialPortal);
 		client.getSession().send(GamePackets.writeChangeMap(goTo.getDataId(), initialPortal, this));
 		if (!isVisible())
 			getClient().getSession().send(GamePackets.writeShowHide());
@@ -1769,15 +1782,39 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	public void changeMapAndChannel(int mapid, byte initialPortal, byte channel) {
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
-			leaveMapRoutines();
-			map.removePlayer(this);
-			map = goTo;
-			setPosition(map.getPortalPosition(initialPortal));
-			setFoothold((short) 0);
+			leaveMapAndSetTo(goTo, initialPortal);
 			//party members will get new map when we connect to new channel
 			if (event != null)
 				event.playerChangedMap(this);
 			GameServer.getChannel(client.getChannel()).requestChannelChange(this, channel);
+		}
+	}
+
+	private void mapChangeCancelSkills() {
+		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
+		if (v != null)
+			StatusEffectTools.dispelEffectsAndShowVisuals(this, v.getEffectsData());
+	}
+
+	public void channelChangeCancelSkills() {
+		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
+		if (v != null)
+			StatusEffectTools.dispelEffectsAndShowVisuals(this, v.getEffectsData());
+		v = getEffectValue(PlayerStatusEffect.MYSTIC_DOOR);
+		if (v != null) {
+			door.setNoDestroyAnimation();
+			StatusEffectTools.dispelEffectsAndShowVisuals(this, v.getEffectsData());
+		}
+	}
+
+	public void logOffCancelSkills() {
+		PlayerStatusEffectValues v = getEffectValue(PlayerStatusEffect.PUPPET);
+		if (v != null)
+			StatusEffectTools.dispelEffectsAndShowVisuals(this, v.getEffectsData());
+		v = getEffectValue(PlayerStatusEffect.MYSTIC_DOOR);
+		if (v != null) {
+			door.setNoDestroyAnimation();
+			StatusEffectTools.dispelEffectsAndShowVisuals(this, v.getEffectsData());
 		}
 	}
 

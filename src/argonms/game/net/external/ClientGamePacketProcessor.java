@@ -197,6 +197,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.BUDDYLIST_MODIFY:
 				BuddyListHandler.handleListModification(reader, gc);
 				break;
+			case ClientRecvOps.USE_DOOR:
+				GoToHandler.handleMysticDoor(reader, gc);
+				break;
 			case ClientRecvOps.CHANGE_BINDING:
 				PlayerMiscHandler.handleBindingChange(reader, gc);
 				break;

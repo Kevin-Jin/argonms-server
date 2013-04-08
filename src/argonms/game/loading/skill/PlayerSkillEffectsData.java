@@ -124,6 +124,9 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 			case Skills.HYPNOTIZE:
 				monsterDiseases.add(MonsterStatusEffect.INERTMOB);
 				break;
+			case Skills.MYSTIC_DOOR:
+				effects.add(PlayerStatusEffect.MYSTIC_DOOR);
+				break;
 			case Skills.HIDE:
 				effects.add(PlayerStatusEffect.HIDE);
 				//kinda hacky, but hide doesn't have a duration
@@ -172,7 +175,6 @@ public class PlayerSkillEffectsData extends BuffsData implements MonsterStatusEf
 					break;
 				case Skills.BOW_SOUL_ARROW:
 				case Skills.XBOW_SOUL_ARROW:
-				case Skills.MYSTIC_DOOR: // hacked buff icon
 					effects.add(PlayerStatusEffect.SOUL_ARROW);
 					break;
 				case Skills.SWORD_ICE_CHARGE:

@@ -18,18 +18,54 @@
 
 package argonms.game.field.entity;
 
+import argonms.common.GlobalConstants;
+import argonms.common.character.PlayerStatusEffect;
+import argonms.common.net.external.CheatTracker;
+import argonms.common.util.Scheduler;
+import argonms.game.GameServer;
+import argonms.game.character.GameCharacter;
+import argonms.game.character.PartyList;
+import argonms.game.character.PlayerStatusEffectValues;
+import argonms.game.character.StatusEffectTools;
 import argonms.game.field.AbstractEntity;
+import argonms.game.field.GameMap;
 import argonms.game.net.external.GamePackets;
+import java.awt.Point;
+import java.lang.ref.WeakReference;
 
 /**
  *
  * @author GoldenKevin
  */
 public class MysticDoor extends AbstractEntity {
-	private final boolean townDoor;
+	public static final byte OUT_OF_TOWN_PORTAL_ID = (byte) 0x80;
 
-	public MysticDoor(boolean town) {
-		this.townDoor = town;
+	public static final byte
+		SPAWN_ANIMATION_FALL = 0,
+		SPAWN_ANIMATION_NONE = 1
+	;
+
+	private static final byte
+		DESTROY_ANIMATION_FADE = 0,
+		DESTROY_ANIMATION_NONE = 1
+	;
+
+	private final WeakReference<GameCharacter> owner;
+	private final GameMap map;
+	private final byte townPortalId;
+	private MysticDoor pipe;
+	private byte mod;
+
+	private MysticDoor(GameCharacter owner, GameMap map, Point position, byte townPortalId) {
+		setPosition(position);
+		this.owner = new WeakReference<GameCharacter>(owner);
+		this.map = map;
+		this.townPortalId = townPortalId;
+		this.mod = DESTROY_ANIMATION_NONE;
+	}
+
+	private void setComplement(MysticDoor complement) {
+		this.pipe = complement;
 	}
 
 	@Override
@@ -38,7 +74,11 @@ public class MysticDoor extends AbstractEntity {
 	}
 
 	public boolean isInTown() {
-		return townDoor;
+		return townPortalId != OUT_OF_TOWN_PORTAL_ID;
+	}
+
+	public byte getPortalId() {
+		return townPortalId;
 	}
 
 	@Override
@@ -48,21 +88,138 @@ public class MysticDoor extends AbstractEntity {
 
 	@Override
 	public boolean isVisible() {
-		return true;
+		return !isInTown();
 	}
 
 	@Override
 	public byte[] getShowNewSpawnMessage() {
-		return GamePackets.writeShowMysticDoor(this);
+		return GamePackets.writeShowMysticDoor(this, SPAWN_ANIMATION_FALL);
 	}
 
 	@Override
 	public byte[] getShowExistingSpawnMessage() {
-		return getShowNewSpawnMessage();
+		return GamePackets.writeShowMysticDoor(this, SPAWN_ANIMATION_NONE);
 	}
 
 	@Override
 	public byte[] getDestructionMessage() {
-		return GamePackets.writeRemoveMysticDoor(this);
+		return GamePackets.writeRemoveMysticDoor(this, mod);
+	}
+
+	public GameCharacter getOwner() {
+		return owner.get();
+	}
+
+	public int getMap() {
+		return map.getDataId();
+	}
+
+	public MysticDoor getComplement() {
+		return pipe;
+	}
+
+	public void setNoDestroyAnimation() {
+		mod = DESTROY_ANIMATION_NONE;
+		pipe.mod = DESTROY_ANIMATION_NONE;
+	}
+
+	/**
+	 * 
+	 * @param owner
+	 * @param position
+	 * @return MysticDoor instance spawned in owner's map.
+	 */
+	public static MysticDoor open(GameCharacter owner, Point position) {
+		//waiting until StatusEffectTools.applyEffects is called in order to
+		//dispel any existing doors is problematic because we overwrite owner's
+		//door state in this method, so just cancel the existing buff here if applicable
+		PlayerStatusEffectValues existingDoor = owner.getEffectValue(PlayerStatusEffect.MYSTIC_DOOR);
+		if (existingDoor != null) {
+			owner.getDoor().setNoDestroyAnimation();
+			StatusEffectTools.dispelEffectsAndShowVisuals(owner, existingDoor.getEffectsData());
+		}
+
+		GameMap sourceMap = owner.getMap();
+		if (sourceMap.getReturnMap() == GlobalConstants.NULL_MAP) {
+			CheatTracker.get(owner.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to open mystic door with no return map");
+			return null;
+		}
+
+		GameMap destinationMap = GameServer.getChannel(owner.getClient().getChannel()).getMapFactory().getMap(sourceMap.getReturnMap());
+		byte destinationPortal = destinationMap.getFreeMysticDoorLocation();
+		if (destinationPortal == -1)
+			return null;
+
+		final MysticDoor source = new MysticDoor(owner, sourceMap, position, OUT_OF_TOWN_PORTAL_ID);
+		final MysticDoor destination = new MysticDoor(owner, destinationMap, destinationMap.getPortalPosition(destinationPortal), destinationPortal);
+		source.setComplement(destination);
+		destination.setComplement(source);
+		sourceMap.spawnEntity(source);
+		destinationMap.spawnEntity(destination);
+
+		PartyList party = owner.getParty();
+		if (party != null) {
+			byte[] message1 = destination.getShowNewSpawnMessage();
+			byte[] message2 = GamePackets.writeSpawnPortal(destination);
+			//byte[] message3 = GamePackets.writePartyPortal(destination);
+			for (GameCharacter mem : party.getLocalMembersInMap(sourceMap.getReturnMap())) {
+				mem.getClient().getSession().send(message1);
+				mem.getClient().getSession().send(message2);
+				//mem.getClient().getSession().send(message3);
+			}
+		}
+		assert owner.getMapId() != destination.map.getDataId();
+
+		owner.setDoor(source);
+
+		Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
+			public void run() {
+				source.mod = DESTROY_ANIMATION_FADE;
+				destination.mod = DESTROY_ANIMATION_FADE;
+			}
+		}, 2000);
+
+		return source;
+	}
+
+	public static void close(GameCharacter owner) {
+		MysticDoor door = owner.getDoor();
+		if (door == null)
+			return;
+
+		door.map.destroyEntity(door);
+		door.pipe.map.destroyEntity(door.pipe);
+
+		PartyList party = owner.getParty();
+		if (!door.isInTown()) {
+			byte[] message1 = door.pipe.getDestructionMessage();
+			byte[] message2 = GamePackets.writeRemovePortal();
+			if (party != null) {
+				for (GameCharacter mem : party.getLocalMembersInMap(door.pipe.map.getDataId())) {
+					mem.getClient().getSession().send(message1);
+					mem.getClient().getSession().send(message2);
+				}
+			} else if (owner.getMapId() == door.pipe.map.getDataId()) {
+				owner.getClient().getSession().send(message1);
+				owner.getClient().getSession().send(message2);
+			}
+			door.pipe.map.releaseMysticDoorLocation(door.pipe.townPortalId);
+		} else {
+			byte[] message1 = door.getDestructionMessage();
+			byte[] message2 = GamePackets.writeRemovePortal();
+			if (party != null) {
+				for (GameCharacter mem : party.getLocalMembersInMap(door.map.getDataId())) {
+					mem.getClient().getSession().send(message1);
+					mem.getClient().getSession().send(message2);
+				}
+			} else if (owner.getMapId() == door.map.getDataId()) {
+				owner.getClient().getSession().send(message1);
+				owner.getClient().getSession().send(message2);
+			}
+			door.map.releaseMysticDoorLocation(door.townPortalId);
+		}
+
+		owner.setDoor(null);
 	}
 }

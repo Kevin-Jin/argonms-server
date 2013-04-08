@@ -23,6 +23,7 @@ import argonms.common.character.Skills;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.BuffsData;
 import argonms.common.util.Scheduler;
+import argonms.game.field.entity.MysticDoor;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.MobSkillEffectsData;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
@@ -432,6 +433,9 @@ public final class StatusEffectTools {
 			case CURSE:
 				mod = 1;
 				break;
+			case MYSTIC_DOOR:
+				mod = 1;
+				break;
 		}
 		return new PlayerStatusEffectValues(e, mod);
 	}
@@ -574,6 +578,9 @@ public final class StatusEffectTools {
 			case WEAKNESS:
 				break;
 			case CURSE:
+				break;
+			case MYSTIC_DOOR:
+				MysticDoor.close(p);
 				break;
 		}
 	}

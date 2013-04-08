@@ -105,8 +105,10 @@ public class GameClient extends RemoteClient {
 
 	private void dissociate(boolean quickCleanup, boolean changingChannels) {
 		if (player != null) {
-			if (!changingChannels)
+			if (!changingChannels) {
+				player.logOffCancelSkills();
 				player.prepareLogOff(quickCleanup);
+			}
 			if (!quickCleanup) {
 				GameServer.getChannel(getChannel()).removePlayer(player);
 				RoomInviteQueue.getInstance().cancelAll(player);

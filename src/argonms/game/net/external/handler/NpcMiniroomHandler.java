@@ -156,7 +156,7 @@ public final class NpcMiniroomHandler {
 					return;
 				}
 				if (item == null || item.getDataId() != itemId || !InventoryTools.isRechargeable(itemId) && item.getQuantity() < quantity) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to sell nonexistent items to NPC shop");
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to sell nonexistent items to NPC shop");
 					return;
 				}
 				int price = ItemDataLoader.getInstance().getWholePrice(itemId) * quantity;
