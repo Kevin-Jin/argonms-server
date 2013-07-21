@@ -852,7 +852,27 @@ public final class GamePackets {
 		lew.writeInt(mapid);
 		lew.writeByte(spawnPoint);
 		lew.writeShort(p.getHp()); // hp (???)
-		lew.writeByte((byte) 0);
+		lew.writeBool(false);
+		//long questMask = 0x1FFFFFFFFFFFFFFL;
+		long questMask = TimeTool.unixToWindowsTime(System.currentTimeMillis());
+		lew.writeLong(questMask);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeChangeMap(int mapid, Point position, GameCharacter p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(26);
+
+		lew.writeShort(ClientSendOps.CHANGE_MAP);
+		lew.writeInt(p.getClient().getChannel() - 1);
+		lew.writeShort((short) 2);
+		lew.writeShort((short) 0);
+		lew.writeInt(mapid);
+		lew.writeByte(MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+		lew.writeShort(p.getHp()); // hp (???)
+		lew.writeBool(true);
+		lew.writeInt(position.x);
+		lew.writeInt(position.y);
 		//long questMask = 0x1FFFFFFFFFFFFFFL;
 		long questMask = TimeTool.unixToWindowsTime(System.currentTimeMillis());
 		lew.writeLong(questMask);
@@ -1039,8 +1059,8 @@ public final class GamePackets {
 		} else {
 			if (!leaderDoor.isInTown())
 				leaderDoor = leaderDoor.getComplement();
-			lew.writeInt(leaderDoor.getMap());
-			lew.writeInt(leaderDoor.getComplement().getMap());
+			lew.writeInt(leaderDoor.getMapId());
+			lew.writeInt(leaderDoor.getComplement().getMapId());
 			lew.writePos(leaderDoor.getComplement().getPosition());
 		}
 
@@ -1379,8 +1399,8 @@ public final class GamePackets {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
 
 		lew.writeShort(ClientSendOps.SPAWN_PORTAL);
-		lew.writeInt(door.getMap());
-		lew.writeInt(door.getComplement().getMap());
+		lew.writeInt(door.getMapId());
+		lew.writeInt(door.getComplement().getMapId());
 		lew.writePos(door.getComplement().getPosition());
 
 		return lew.getBytes();

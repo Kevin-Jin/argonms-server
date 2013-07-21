@@ -267,6 +267,18 @@ public class PartyList extends IntraworldGroupList<
 		return allMembers[position];
 	}
 
+	/**
+	 * This PartyList must be at least read locked when this method is called.
+	 * @param position
+	 * @return 
+	 */
+	public byte getPositionById(int playerId) {
+		for (byte i = 0; i < 6; i++)
+			if (allMembers[i].getPlayerId() == playerId)
+				return i;
+		return -1;
+	}
+
 	@Override
 	public boolean isFull() {
 		int count = localMembers.size();

@@ -128,13 +128,12 @@ public final class GoToHandler {
 			}
 			if (!door.isInTown())
 				door = door.getComplement();
-			if (door.getMap() != p.getMapId() || owner != p && (party == null || party != p.getParty())) {
+			if (door.getMapId() != p.getMapId() || owner != p && (party == null || party != p.getParty())) {
 				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
 				return;
 			}
 
-			p.setPosition(door.getComplement().getPosition());
-			p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+			p.changeMap(door.getComplement().getMap(), door.getComplement().getPosition());
 		} else {
 			GameCharacter p = gc.getPlayer();
 			MysticDoor door = (MysticDoor) p.getMap().getEntityById(EntityType.DOOR, doorId);
@@ -149,8 +148,7 @@ public final class GoToHandler {
 				return;
 			}
 
-			p.setPosition(door.getComplement().getPosition());
-			p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+			p.changeMap(door.getComplement().getMap(), door.getComplement().getPosition());
 		}
 	}
 
