@@ -315,11 +315,8 @@ public class GameMap {
 			assert ((MysticDoor) ent).isInTown();
 			GameCharacter owner = ((MysticDoor) ent).getOwner();
 			PartyList party = owner.getParty();
-			if (owner == p || party != null && party == p.getParty()) {
+			if (owner == p || party != null && party == p.getParty())
 				p.getClient().getSession().send(ent.getShowExistingSpawnMessage());
-				p.getClient().getSession().send(GamePackets.writeSpawnPortal((MysticDoor) ent));
-				//p.getClient().getSession().send(GamePackets.writePartyPortal((MysticDoor) ent));
-			}
 		}
 	}
 

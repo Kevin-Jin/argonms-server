@@ -65,6 +65,7 @@ import argonms.game.loading.shop.NpcShop.ShopSlot;
 import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.net.external.handler.GuildListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -1009,30 +1010,39 @@ public final class GamePackets {
 			for (PartyList.Member member : partyMembers)
 				lew.writeInt(member.getMapId());
 
-			//if (leaving) {
+			if (leaving) {
 				lew.writeBytes(new byte[4 * 4 * 6]);
-			/*} else {
-				for (Party.Member member : partyMembers) {
+			} else {
+				for (PartyList.Member member : partyMembers) {
 					lew.writeInt(member.getDoorTown());
 					lew.writeInt(member.getDoorTarget());
-					lew.writeInt(member.getDoorPosition().x);
-					lew.writeInt(member.getDoorPosition().y);
+					Point pos = member.getDoorPosition();
+					lew.writeInt(pos.x);
+					lew.writeInt(pos.y);
 				}
-			}*/
+			}
 		} finally {
 			party.unlockRead();
 		}
 	}
 
-	public static byte[] writePartyCreated(int partyId) {
+	public static byte[] writePartyCreated(int partyId, MysticDoor leaderDoor) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 
 		lew.writeShort(ClientSendOps.PARTY_LIST);
 		lew.writeByte(PartyListHandler.PARTY_CREATED);
 		lew.writeInt(partyId);
-		lew.writeInt(GlobalConstants.NULL_MAP);
-		lew.writeInt(GlobalConstants.NULL_MAP);
-		lew.writeInt(0);
+		if (leaderDoor == null) {
+			lew.writeInt(GlobalConstants.NULL_MAP);
+			lew.writeInt(GlobalConstants.NULL_MAP);
+			lew.writeInt(0);
+		} else {
+			if (!leaderDoor.isInTown())
+				leaderDoor = leaderDoor.getComplement();
+			lew.writeInt(leaderDoor.getMap());
+			lew.writeInt(leaderDoor.getComplement().getMap());
+			lew.writePos(leaderDoor.getComplement().getPosition());
+		}
 
 		return lew.getBytes();
 	}
@@ -1382,18 +1392,6 @@ public final class GamePackets {
 		lew.writeShort(ClientSendOps.SPAWN_PORTAL);
 		lew.writeInt(GlobalConstants.NULL_MAP);
 		lew.writeInt(GlobalConstants.NULL_MAP);
-
-		return lew.getBytes();
-	}
-
-	public static byte[] writePartyPortal(MysticDoor door) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16);
-
-		lew.writeShort(ClientSendOps.PARTY_LIST);
-		lew.writeShort((short) 0x22);
-		lew.writeInt(door.getMap());
-		lew.writeInt(door.getComplement().getMap());
-		lew.writePos(door.getComplement().getPosition());
 
 		return lew.getBytes();
 	}

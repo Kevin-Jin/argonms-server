@@ -115,24 +115,43 @@ public final class GoToHandler {
 
 	public static void handleMysticDoor(LittleEndianReader packet, GameClient gc) {
 		int doorId = packet.readInt();
-		boolean toTown = !packet.readBool();
+		boolean inTown = packet.readBool();
 
-		GameCharacter p = gc.getPlayer();
-		MysticDoor door = (MysticDoor) p.getMap().getEntityById(EntityType.DOOR, doorId);
-		GameCharacter owner = door.getOwner();
-		PartyList party = owner.getParty();
-		if (door == null) {
-			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
-			return;
-		}
-		if (owner != p && (party == null || party != p.getParty())) {
-			if (door.isInTown())
+		if (inTown) {
+			GameCharacter p = gc.getPlayer();
+			GameCharacter owner = GameServer.getChannel(gc.getChannel()).getPlayerById(doorId);
+			PartyList party = owner.getParty();
+			MysticDoor door = owner.getDoor();
+			if (door == null) {
 				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
-			return;
-		}
+				return;
+			}
+			if (!door.isInTown())
+				door = door.getComplement();
+			if (door.getMap() != p.getMapId() || owner != p && (party == null || party != p.getParty())) {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
+				return;
+			}
 
-		p.setPosition(door.getComplement().getPosition());
-		p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+			p.setPosition(door.getComplement().getPosition());
+			p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+		} else {
+			GameCharacter p = gc.getPlayer();
+			MysticDoor door = (MysticDoor) p.getMap().getEntityById(EntityType.DOOR, doorId);
+			GameCharacter owner = door.getOwner();
+			PartyList party = owner.getParty();
+			if (door == null) {
+				CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent mystic door");
+				return;
+			}
+			if (owner != p && (party == null || party != p.getParty())) {
+				p.getClient().getSession().send(GamePackets.writeEnableActions());
+				return;
+			}
+
+			p.setPosition(door.getComplement().getPosition());
+			p.changeMap(door.getComplement().getMap(), MysticDoor.OUT_OF_TOWN_PORTAL_ID);
+		}
 	}
 
 	public static void handleWarpCs(LittleEndianReader packet, GameClient rc) {

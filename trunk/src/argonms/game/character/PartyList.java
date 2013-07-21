@@ -18,6 +18,8 @@
 
 package argonms.game.character;
 
+import argonms.common.GlobalConstants;
+import java.awt.Point;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,6 +69,21 @@ public class PartyList extends IntraworldGroupList<
 		@Override
 		public int getMapId() {
 			return 0;
+		}
+
+		@Override
+		public int getDoorTown() {
+			return GlobalConstants.NULL_MAP;
+		}
+
+		@Override
+		public int getDoorTarget() {
+			return GlobalConstants.NULL_MAP;
+		}
+
+		@Override
+		public Point getDoorPosition() {
+			return new Point();
 		}
 
 		public static EmptyMember getInstance() {

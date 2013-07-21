@@ -156,21 +156,22 @@ public class MysticDoor extends AbstractEntity {
 		destination.setComplement(source);
 		sourceMap.spawnEntity(source);
 		destinationMap.spawnEntity(destination);
+		owner.setDoor(source);
 
 		PartyList party = owner.getParty();
+		//byte[] spawnPacket = destination.getShowNewSpawnMessage();
 		if (party != null) {
-			byte[] message1 = destination.getShowNewSpawnMessage();
-			byte[] message2 = GamePackets.writeSpawnPortal(destination);
-			//byte[] message3 = GamePackets.writePartyPortal(destination);
-			for (GameCharacter mem : party.getLocalMembersInMap(sourceMap.getReturnMap())) {
-				mem.getClient().getSession().send(message1);
-				mem.getClient().getSession().send(message2);
-				//mem.getClient().getSession().send(message3);
+			byte[] updatedParty = GamePackets.writePartyList(party);
+			for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+				GameCharacter memPlayer = mem.getPlayer();
+				//if (memPlayer.getMapId() == destination.getMap())
+					//memPlayer.getClient().getSession().send(spawnPacket);
+				memPlayer.getClient().getSession().send(updatedParty);
 			}
+		} else {
+			owner.getClient().getSession().send(GamePackets.writeSpawnPortal(destination));
+			//assert owner.getMapId() != destination.getMap(); //no need to send spawnPacket
 		}
-		assert owner.getMapId() != destination.map.getDataId();
-
-		owner.setDoor(source);
 
 		Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
@@ -188,38 +189,28 @@ public class MysticDoor extends AbstractEntity {
 		if (door == null)
 			return;
 
+		if (!door.isInTown())
+			door = door.pipe;
 		door.map.destroyEntity(door);
 		door.pipe.map.destroyEntity(door.pipe);
+		owner.setDoor(null);
 
 		PartyList party = owner.getParty();
-		if (!door.isInTown()) {
-			byte[] message1 = door.pipe.getDestructionMessage();
-			byte[] message2 = GamePackets.writeRemovePortal();
-			if (party != null) {
-				for (GameCharacter mem : party.getLocalMembersInMap(door.pipe.map.getDataId())) {
-					mem.getClient().getSession().send(message1);
-					mem.getClient().getSession().send(message2);
-				}
-			} else if (owner.getMapId() == door.pipe.map.getDataId()) {
-				owner.getClient().getSession().send(message1);
-				owner.getClient().getSession().send(message2);
+		byte[] destroyPacket = door.getDestructionMessage();
+		if (party != null) {
+			byte[] updatedParty = GamePackets.writePartyList(party);
+			for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
+				GameCharacter memPlayer = mem.getPlayer();
+				memPlayer.getClient().getSession().send(updatedParty);
+				if (memPlayer.getMapId() == door.getMap())
+					memPlayer.getClient().getSession().send(destroyPacket);
 			}
-			door.pipe.map.releaseMysticDoorLocation(door.pipe.townPortalId);
 		} else {
-			byte[] message1 = door.getDestructionMessage();
-			byte[] message2 = GamePackets.writeRemovePortal();
-			if (party != null) {
-				for (GameCharacter mem : party.getLocalMembersInMap(door.map.getDataId())) {
-					mem.getClient().getSession().send(message1);
-					mem.getClient().getSession().send(message2);
-				}
-			} else if (owner.getMapId() == door.map.getDataId()) {
-				owner.getClient().getSession().send(message1);
-				owner.getClient().getSession().send(message2);
-			}
-			door.map.releaseMysticDoorLocation(door.townPortalId);
+			owner.getClient().getSession().send(GamePackets.writeRemovePortal());
+			if (owner.getMapId() == door.getMap())
+				owner.getClient().getSession().send(destroyPacket);
 		}
 
-		owner.setDoor(null);
+		door.map.releaseMysticDoorLocation(door.townPortalId);
 	}
 }
