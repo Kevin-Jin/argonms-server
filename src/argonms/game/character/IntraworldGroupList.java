@@ -18,6 +18,9 @@
 
 package argonms.game.character;
 
+import argonms.common.GlobalConstants;
+import argonms.game.field.entity.MysticDoor;
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +45,9 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		public short getLevel();
 		public byte getChannel();
 		public int getMapId();
+		public int getDoorTown();
+		public int getDoorTarget();
+		public Point getDoorPosition();
 	}
 
 	public static class RemoteMember implements Member {
@@ -97,6 +103,21 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 			return 0;
 		}
 
+		@Override
+		public int getDoorTown() {
+			return GlobalConstants.NULL_MAP;
+		}
+
+		@Override
+		public int getDoorTarget() {
+			return GlobalConstants.NULL_MAP;
+		}
+
+		@Override
+		public Point getDoorPosition() {
+			return new Point();
+		}
+
 		public void setLevel(short newValue) {
 			level = newValue;
 		}
@@ -145,6 +166,36 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 		@Override
 		public int getMapId() {
 			return player.getMapId();
+		}
+
+		@Override
+		public int getDoorTown() {
+			MysticDoor door = player.getDoor();
+			if (door == null)
+				return GlobalConstants.NULL_MAP;
+			if (door.isInTown())
+				return door.getMap();
+			return door.getComplement().getMap();
+		}
+
+		@Override
+		public int getDoorTarget() {
+			MysticDoor door = player.getDoor();
+			if (door == null)
+				return GlobalConstants.NULL_MAP;
+			if (!door.isInTown())
+				return door.getMap();
+			return door.getComplement().getMap();
+		}
+
+		@Override
+		public Point getDoorPosition() {
+			MysticDoor door = player.getDoor();
+			if (door == null)
+				return new Point();
+			if (!door.isInTown())
+				return door.getPosition();
+			return door.getComplement().getPosition();
 		}
 	}
 

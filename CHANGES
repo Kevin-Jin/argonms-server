@@ -2851,6 +2851,13 @@
 	* Optimized party HP pushing/pulling when logging into a character that is
 	in a party and when joining a party.
 
+2013-07-21  GoldenKevin  (revision 212)
+
+	* Fully implemented Mystic Door for players not in a party.
+	* Implemented fully functional Mystic Door for parties, with visual glitches
+	(i.e. doors in towns are duplicated and misplaced and warp players to a
+	wrong location in the map that the skill was cast in).
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
