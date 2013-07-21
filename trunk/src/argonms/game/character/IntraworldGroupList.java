@@ -174,8 +174,8 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 			if (door == null)
 				return GlobalConstants.NULL_MAP;
 			if (door.isInTown())
-				return door.getMap();
-			return door.getComplement().getMap();
+				return door.getMapId();
+			return door.getComplement().getMapId();
 		}
 
 		@Override
@@ -184,8 +184,8 @@ public abstract class IntraworldGroupList<M extends IntraworldGroupList.Member,
 			if (door == null)
 				return GlobalConstants.NULL_MAP;
 			if (!door.isInTown())
-				return door.getMap();
-			return door.getComplement().getMap();
+				return door.getMapId();
+			return door.getComplement().getMapId();
 		}
 
 		@Override

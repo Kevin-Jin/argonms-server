@@ -1737,19 +1737,17 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			setMapChair((short) 0);
 	}
 
-	private void leaveMapAndSetTo(GameMap goTo, byte initialPortal) {
+	private void leaveMapAndSetTo(GameMap goTo, Point initialPosition) {
 		mapChangeCancelSkills();
 		leaveMapRoutines();
 		map.removePlayer(this);
 		map = goTo;
-		if (initialPortal != MysticDoor.OUT_OF_TOWN_PORTAL_ID)
-			setPosition(map.getPortalPosition(initialPortal));
+		if (initialPosition != null)
+			setPosition(initialPosition);
 		setFoothold((short) 0);
 	}
 
-	public void changeMap(GameMap goTo, byte initialPortal) {
-		leaveMapAndSetTo(goTo, initialPortal);
-		client.getSession().send(GamePackets.writeChangeMap(goTo.getDataId(), initialPortal, this));
+	public void changeMap(GameMap goTo) {
 		if (!isVisible())
 			getClient().getSession().send(GamePackets.writeShowHide());
 		map.spawnPlayer(this);
@@ -1764,6 +1762,18 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		}
 		if (event != null)
 			event.playerChangedMap(this);
+	}
+
+	public void changeMap(GameMap goTo, byte initialPortal) {
+		leaveMapAndSetTo(goTo, goTo.getPortalPosition(initialPortal));
+		client.getSession().send(GamePackets.writeChangeMap(goTo.getDataId(), initialPortal, this));
+		changeMap(goTo);
+	}
+
+	public void changeMap(GameMap goTo, Point initialPosition) {
+		leaveMapAndSetTo(goTo, initialPosition);
+		client.getSession().send(GamePackets.writeChangeMap(goTo.getDataId(), initialPosition, this));
+		changeMap(goTo);
 	}
 
 	public boolean changeMap(int mapid, byte initialPortal) {
@@ -1782,7 +1792,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	public void changeMapAndChannel(int mapid, byte initialPortal, byte channel) {
 		GameMap goTo = GameServer.getChannel(client.getChannel()).getMapFactory().getMap(mapid);
 		if (goTo != null) {
-			leaveMapAndSetTo(goTo, initialPortal);
+			leaveMapAndSetTo(goTo, goTo.getPortalPosition(initialPortal));
 			//party members will get new map when we connect to new channel
 			if (event != null)
 				event.playerChangedMap(this);

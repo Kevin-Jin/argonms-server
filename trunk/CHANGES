@@ -2858,6 +2858,17 @@
 	(i.e. doors in towns are duplicated and misplaced and warp players to a
 	wrong location in the map that the skill was cast in).
 
+2013-07-21  GoldenKevin  (revision 213)
+
+	* Fixed wrong initial position when player changes maps by entering a
+	portal, causing them to appear to fly across the map to players in the
+	destination map.
+	* Fixed all issues with duplicate Mystic Doors, wrong warp positions when
+	using a door, and wrong placement of Mystic Doors in towns.
+	* Fixed leader's name not appearing above preexisting Mystic Door in a town
+	when creating a new party.
+	* Added missing locks in MysticDoor.open and MysticDoor.close.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

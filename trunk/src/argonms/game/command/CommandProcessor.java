@@ -109,6 +109,7 @@ public class CommandProcessor {
 
 			@Override
 			public void doAction(CommandCaller caller, CommandArguments args, CommandOutput resp) {
+				//TODO: use GameCharacter.changeMap(GameMap, Point) for more precise warping.
 				String warpeeName = args.extractTarget(null, null);
 				if (warpeeName == null) {
 					resp.printErr(getUsage());
