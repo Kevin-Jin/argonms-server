@@ -30,6 +30,7 @@ import argonms.game.character.DiseaseTools;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PlayerStatusEffectValues;
 import argonms.game.character.StatusEffectTools;
+import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import java.util.EnumMap;
@@ -50,12 +51,12 @@ public final class ItemTools {
 		return max;
 	}
 
-	private static Map<ClientUpdateKey, Number> itemRecovers(GameCharacter p, ItemEffectsData e) {
+	private static Map<ClientUpdateKey, Number> itemRecovers(GameCharacter p, ItemEffectsData e, int statIncreasePercent) {
 		//might as well save ourself some bandwidth and don't send an individual
 		//packet for each changed stat
 		Map<ClientUpdateKey, Number> ret = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
 		if (e.getHpRecover() != 0) {
-			p.setLocalHp((short) Math.min(p.getHp() + e.getHpRecover(), p.getCurrentMaxHp()));
+			p.setLocalHp((short) Math.min(p.getHp() + e.getHpRecover() * statIncreasePercent / 100, p.getCurrentMaxHp()));
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		if (e.getHpRecoverPercent() != 0) {
@@ -65,7 +66,7 @@ public final class ItemTools {
 			ret.put(ClientUpdateKey.HP, Short.valueOf(p.getHp()));
 		}
 		if (e.getMpRecover() != 0) {
-			p.setLocalMp((short) Math.min(p.getMp() + e.getMpRecover(), p.getCurrentMaxMp()));
+			p.setLocalMp((short) Math.min(p.getMp() + e.getMpRecover() * statIncreasePercent / 100, p.getCurrentMaxMp()));
 			ret.put(ClientUpdateKey.MP, Short.valueOf(p.getMp()));
 		}
 		if (e.getMpRecoverPercent() != 0) {
@@ -115,17 +116,30 @@ public final class ItemTools {
 	 */
 	public static void useItem(final GameCharacter p, final int itemId) {
 		ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
-		Map<ClientUpdateKey, Number> statChanges = itemRecovers(p, e);
+
+		byte alchemistLevel = p.getSkillLevel(Skills.ALCHEMIST);
+		int statIncreasePercent;
+		int duration;
+		if (alchemistLevel == 0) {
+			statIncreasePercent = 100;
+			duration = e.getDuration();
+		} else {
+			PlayerSkillEffectsData alc = SkillDataLoader.getInstance().getSkill(Skills.ALCHEMIST).getLevel(alchemistLevel);
+			statIncreasePercent = alc.getX();
+			duration = e.getDuration() * alc.getY() / 100;
+		}
+
+		Map<ClientUpdateKey, Number> statChanges = itemRecovers(p, e, statIncreasePercent);
 		if (!statChanges.isEmpty())
 			p.getClient().getSession().send(GamePackets.writeUpdatePlayerStats(statChanges, false));
-		if (e.getDuration() > 0) { //buff item
-			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1);
+		if (duration > 0) { //buff item
+			StatusEffectTools.applyEffectsAndShowVisuals(p, StatusEffectTools.ACTIVE_BUFF, e, (byte) -1, duration);
 			p.addCancelEffectTask(e, Scheduler.getInstance().runAfterDelay(new Runnable() {
 				@Override
 				public void run() {
 					cancelBuffItem(p, itemId);
 				}
-			}, e.getDuration()), (byte) 0, System.currentTimeMillis() + e.getDuration());
+			}, duration), (byte) 0, System.currentTimeMillis() + duration);
 		}
 	}
 
