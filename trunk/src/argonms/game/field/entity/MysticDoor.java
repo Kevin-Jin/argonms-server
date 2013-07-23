@@ -172,15 +172,12 @@ public class MysticDoor extends AbstractEntity {
 		destinationMap.spawnEntity(destination);
 		owner.setDoor(source);
 
-		//byte[] spawnPacket = destination.getShowNewSpawnMessage();
 		if (party != null) {
 			byte[] updatedParty = GamePackets.writePartyList(party);
 			party.lockRead();
 			try {
 				for (PartyList.LocalMember mem : party.getMembersInLocalChannel()) {
 					GameCharacter memPlayer = mem.getPlayer();
-					//if (memPlayer.getMapId() == destination.getMap())
-						//memPlayer.getClient().getSession().send(spawnPacket);
 					memPlayer.getClient().getSession().send(updatedParty);
 				}
 			} finally {
@@ -188,7 +185,6 @@ public class MysticDoor extends AbstractEntity {
 			}
 		} else {
 			owner.getClient().getSession().send(GamePackets.writeSpawnPortal(destination));
-			//assert owner.getMapId() != destination.getMap(); //no need to send spawnPacket
 		}
 
 		Scheduler.getInstance().runAfterDelay(new Runnable() {

@@ -740,8 +740,6 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 						if (door != null) {
 							if (!door.isInTown())
 								door = door.getComplement();
-							//if (door.getMapId() == memberPlayer.getMapId())
-								//memberPlayer.getClient().getSession().send(door.getShowExistingSpawnMessage());
 							door.setPosition(door.getMap().getPortalPosition(door.getMap().getMysticDoorPortalId(party.getPositionById(memPlayer.getId()))));
 							memPlayer.getClient().getSession().send(GamePackets.writeSpawnPortal(door));
 						}
@@ -749,8 +747,6 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 						if (door != null) {
 							if (!door.isInTown())
 								door = door.getComplement();
-							//if (door.getMapId() == memPlayer.getMapId())
-								//memPlayer.getClient().getSession().send(door.getShowExistingSpawnMessage());
 							door.setPosition(door.getMap().getPortalPosition(door.getMap().getMysticDoorPortalId(party.getPositionById(memberPlayer.getId()))));
 							memberPlayer.getClient().getSession().send(GamePackets.writeSpawnPortal(door));
 						}

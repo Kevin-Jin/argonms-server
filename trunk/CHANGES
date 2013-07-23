@@ -2869,6 +2869,11 @@
 	when creating a new party.
 	* Added missing locks in MysticDoor.open and MysticDoor.close.
 
+2013-07-23  GoldenKevin  (revision 214)
+
+	* Cleaned up comments for Mystic Doors.
+	* Fixed Alchemist.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
