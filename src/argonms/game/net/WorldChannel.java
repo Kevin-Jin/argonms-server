@@ -22,6 +22,7 @@ import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PlayerLog;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.Pair;
@@ -145,9 +146,9 @@ public class WorldChannel {
 		sendNewLoad((short) 0);
 	}
 
-	private void channelChangeError(GameCharacter p) {
-		//TODO: IMPLEMENT/SHOW ERROR MESSAGE
+	private void channelChangeError(GameCharacter p, byte msg) {
 		queuedChannelChanges.remove(Integer.valueOf(p.getId()));
+		p.getClient().getSession().send(GamePackets.writeServerMigrateFailed(msg));
 		p.getClient().getSession().send(GamePackets.writeEnableActions());
 	}
 
@@ -156,19 +157,44 @@ public class WorldChannel {
 		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
 			@Override
 			public void run() {
-				channelChangeError(p);
+				channelChangeError(p, (byte) 1);
 			}
 		}, CHANNEL_CHANGE_TIMEOUT)));
 		worldComm.sendChannelChangeRequest(destCh, p);
 	}
 
+	public void requestShopEntry(final GameCharacter p, final boolean cashShop) {
+		if (!worldComm.shopServerConnected()) {
+			p.getClient().getSession().send(GamePackets.writeServerMigrateFailed(cashShop ? (byte) 2 : (byte) 3));
+			p.getClient().getSession().send(GamePackets.writeEnableActions());
+			return;
+		}
+
+		p.channelChangeCancelSkills();
+		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(ChannelSynchronizationOps.CHANNEL_CASH_SHOP), Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
+			public void run() {
+				channelChangeError(p, cashShop ? (byte) 2 : (byte) 3);
+			}
+		}, CHANNEL_CHANGE_TIMEOUT)));
+		worldComm.sendEnterShopRequest(p, cashShop);
+	}
+
 	public void performChannelChange(int playerId) {
 		Pair<Byte, ScheduledFuture<?>> channelChangeState = queuedChannelChanges.remove(Integer.valueOf(playerId));
 		channelChangeState.right.cancel(false);
+		byte errorCode = 0;
 		byte[] destHost;
 		int destPort;
 		try {
-			Pair<byte[], Integer> hostAndPort = worldComm.getChannelHost(channelChangeState.left.byteValue());
+			Pair<byte[], Integer> hostAndPort;
+			if (channelChangeState.left.byteValue() != ChannelSynchronizationOps.CHANNEL_CASH_SHOP) {
+				errorCode = 1;
+				hostAndPort = worldComm.getChannelHost(channelChangeState.left.byteValue());
+			} else {
+				errorCode = 2;
+				hostAndPort = worldComm.getShopHost();
+			}
 			destHost = hostAndPort.left;
 			destPort = hostAndPort.right.intValue();
 		} catch (UnknownHostException e) {
@@ -181,7 +207,7 @@ public class WorldChannel {
 			p.getClient().setMigratingHost();
 			p.getClient().getSession().send(CommonPackets.writeNewGameHost(destHost, destPort));
 		} else {
-			channelChangeError(p);
+			channelChangeError(p, errorCode);
 		}
 	}
 

@@ -22,6 +22,7 @@ import argonms.common.character.BuddyListEntry;
 import argonms.common.character.Cooldown;
 import argonms.common.character.LoggedInPlayer;
 import argonms.common.character.QuestEntry;
+import argonms.common.character.ShopPlayerContinuation;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory;
@@ -29,6 +30,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
+import argonms.shop.ShopServer;
 import argonms.shop.net.external.ShopClient;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -62,6 +64,7 @@ public class ShopCharacter extends LoggedInPlayer {
 	private final Map<Integer, SkillEntry> skills;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<Short, QuestEntry> questStatuses;
+	private ShopPlayerContinuation returnContext;
 
 	private ShopCharacter() {
 		super();
@@ -120,6 +123,23 @@ public class ShopCharacter extends LoggedInPlayer {
 				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
 			}
 		}));
+	}
+
+	public ShopPlayerContinuation getReturnContext() {
+		returnContext.compactForReturn();
+		return returnContext;
+	}
+
+	public void prepareChannelChange() {
+		if (partyId != 0)
+			ShopServer.getInstance().getCrossServerInterface().sendPartyMemberLogOffNotifications(this, false);
+		if (guildId != 0)
+			ShopServer.getInstance().getCrossServerInterface().sendGuildMemberLogOffNotifications(this, false);
+		saveCharacter();
+	}
+
+	public void saveCharacter() {
+		
 	}
 
 	public static ShopCharacter loadPlayer(ShopClient c, int id) {

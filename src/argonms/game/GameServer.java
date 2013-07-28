@@ -344,11 +344,21 @@ public class GameServer implements LocalServer {
 	}
 
 	public void registerShop(String host, int port) {
-		LOG.log(Level.INFO, "Shop server registered as {0}:{1}.", new Object[] { host, port });
+		try {
+			byte[] ip = InetAddress.getByName(host).getAddress();
+			for (WorldChannel ch : channels.values())
+				ch.getCrossServerInterface().addShopServer(ip, port);
+			LOG.log(Level.INFO, "Shop server registered as {0}:{1}.", new Object[] { host, port });
+		} catch (UnknownHostException e) {
+			LOG.log(Level.INFO, "Could not accept shop server because its"
+					+ " address could not be resolved!", e);
+		}
 	}
 
 	public void unregisterShop() {
 		LOG.log(Level.INFO, "Shop server unregistered.");
+		for (WorldChannel ch : channels.values())
+			ch.getCrossServerInterface().removeShopServer();
 	}
 
 	public void updateRemoteChannelPort(byte channel, int port) {

@@ -63,6 +63,12 @@ public class CenterShopPacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.CHANNEL_PORT_CHANGE:
 				processChannelPortChange(packet);
 				break;
+			case CenterRemoteOps.SHOP_CHANNEL_SHOP_SYNCHRONIZATION:
+				processChannelShopSynchronization(packet);
+				break;
+			case CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION:
+				processCenterServerSynchronization(packet);
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled interserver packet {0} bytes long:\n{1}", new Object[] { packet.available() + 2, packet });
 				break;
@@ -91,5 +97,14 @@ public class CenterShopPacketProcessor extends CenterRemotePacketProcessor {
 		byte channel = packet.readByte();
 		int newPort = packet.readInt();
 		local.getWorld(Byte.valueOf(world)).setPort(channel, newPort);
+		local.getCrossServerInterface().changeChannelPort(world, channel, newPort);
+	}
+
+	private void processChannelShopSynchronization(LittleEndianReader packet) {
+		ShopServer.getInstance().getCrossServerInterface().receivedChannelShopSynchronizationPacket(packet);
+	}
+
+	private void processCenterServerSynchronization(LittleEndianReader packet) {
+		ShopServer.getInstance().getCrossServerInterface().receivedCenterServerSynchronizationPacket(packet);
 	}
 }

@@ -71,6 +71,9 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 			case CenterRemoteOps.CROSS_CHANNEL_SYNCHRONIZATION:
 				processCrossChannelSynchronization(packet);
 				break;
+			case CenterRemoteOps.SHOP_CHANNEL_SHOP_SYNCHRONIZATION:
+				processShopChannelSynchronization(packet);
+				break;
 			case CenterRemoteOps.CENTER_SERVER_SYNCHRONIZATION:
 				processCenterServerSynchronization(packet);
 				break;
@@ -117,6 +120,11 @@ public class CenterGamePacketProcessor extends CenterRemotePacketProcessor {
 	private void processCrossChannelSynchronization(LittleEndianReader packet) {
 		byte channel = packet.readByte();
 		GameServer.getChannel(channel).getCrossServerInterface().receivedCrossProcessCrossChannelSynchronizationPacket(packet);
+	}
+
+	private void processShopChannelSynchronization(LittleEndianReader packet) {
+		byte channel = packet.readByte();
+		GameServer.getChannel(channel).getCrossServerInterface().receivedShopChannelSynchronizationPacket(packet);
 	}
 
 	private void processCenterServerSynchronization(LittleEndianReader packet) {

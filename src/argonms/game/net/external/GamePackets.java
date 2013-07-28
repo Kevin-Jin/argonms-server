@@ -2028,6 +2028,23 @@ public final class GamePackets {
 			move.serialize(lew);
 	}
 
+	/**
+	 * Error message to the client if a user cannot warp to another area.
+	 * @param type Message to be sent. Possible values :<br>
+	 *             0x01 (1) - You cannot move that channel. Please try again later.
+	 *             0x02 (2) - You cannot go into the cash shop. Please try again later.
+	 *             0x03 (3) - The Item-Trading shop is currently unavailable, please try again later.
+	 *             0x04 (4) - You cannot go into the trade shop, due to the limitation of user count.
+	 *             0x05 (5) - You do not meet the minimum level requirement to access the Trade Shop.
+	 * @return 
+	 */
+	public static byte[] writeServerMigrateFailed(byte msg) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter ();
+		lew.writeShort(ClientSendOps.BLOCK_MIGRATE);
+		lew.writeByte(msg);
+		return lew.getBytes();
+	}
+
 	public static byte[] writePrivateChatMessage(byte type, String name, String message) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7
 				+ name.length() + message.length());
