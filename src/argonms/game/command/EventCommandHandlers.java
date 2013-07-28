@@ -19,15 +19,14 @@
 package argonms.game.command;
 
 import argonms.common.UserPrivileges;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Rng;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
-import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.ChatHandler;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -77,7 +76,7 @@ public class EventCommandHandlers implements CommandCollection<CommandCaller> {
 				}
 				try {
 					String message = "The dice has been rolled. The result is " + (Rng.getGenerator().nextInt(Integer.parseInt(possibilities)) + 1) + ".";
-					caller.getMap().sendToAll(GamePackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+					caller.getMap().sendToAll(CommonPackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 				} catch (NumberFormatException e) {
 					resp.printErr(possibilities + " is not a valid number of possibilities.");
 					resp.printErr(usage);

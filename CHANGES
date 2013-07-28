@@ -2893,6 +2893,13 @@
 	* Partially implemented ShopHandler so that a player connecting to the
 	server will at least see the cash shop interface.
 
+2013-07-28  GoldenKevin  (revision 217)
+
+	* Added news ticker message functionality to shop server.
+	* Implemented shop server packets for cash shop balance, wishlist, max
+	characters, storage inventory capacity, cash shop inventory, and gift
+	inventory.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

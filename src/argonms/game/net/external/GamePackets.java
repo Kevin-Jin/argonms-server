@@ -2081,20 +2081,6 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeServerMessage(byte type, String message, byte channel, boolean megaEar) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter((type == 3 ? 7 : type == 4 ? 6 : 5) + message.length());
-		lew.writeShort(ClientSendOps.SERVER_MESSAGE);
-		lew.writeByte(type);
-		if (type == 4) //scrolling message ticker
-			lew.writeBool(true);
-		lew.writeLengthPrefixedString(message);
-		if (type == 3) { //smega
-			lew.writeByte((byte) (channel - 1));
-			lew.writeBool(megaEar);
-		}
-		return lew.getBytes();
-	}
-
 	public static byte[] writeWhisperMessge(String name, String message, byte channel) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + message.length());
 		lew.writeShort(ClientSendOps.WHISPER);

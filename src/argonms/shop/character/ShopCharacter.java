@@ -25,7 +25,6 @@ import argonms.common.character.QuestEntry;
 import argonms.common.character.ShopPlayerContinuation;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.IInventory;
-import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
@@ -59,18 +58,24 @@ public class ShopCharacter extends LoggedInPlayer {
 	private ShopBuddyList buddies;
 	private int partyId;
 	private int guildId;
-	private Inventory shopInventory;
+	private byte maxCharacters;
+	private short storageInventoryCapacity;
+	private CashShopStaging shopInventory;
 	private int mesos;
+	private final int[] cashShopBalance;
 	private final Map<Integer, SkillEntry> skills;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<Short, QuestEntry> questStatuses;
+	private final List<Integer> wishList;
 	private ShopPlayerContinuation returnContext;
 
 	private ShopCharacter() {
 		super();
+		cashShopBalance = new int[4];
 		skills = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		questStatuses = new HashMap<Short, QuestEntry>();
+		wishList = new ArrayList<Integer>(10);
 	}
 
 	@Override
@@ -91,9 +96,25 @@ public class ShopCharacter extends LoggedInPlayer {
 		return guildId;
 	}
 
+	public short getMaxCharacters() {
+		return maxCharacters;
+	}
+
+	public short getStorageInventoryCapacity() {
+		return storageInventoryCapacity;
+	}
+
 	@Override
 	public int getMesos() {
 		return mesos;
+	}
+
+	public int getCashShopCurrency(int type) {
+		return cashShopBalance[type - 1];
+	}
+
+	public CashShopStaging getCashShopInventory() {
+		return shopInventory;
 	}
 
 	@Override
@@ -109,6 +130,10 @@ public class ShopCharacter extends LoggedInPlayer {
 	@Override
 	public Map<Short, QuestEntry> getAllQuests() {
 		return Collections.unmodifiableMap(questStatuses);
+	}
+
+	public List<Integer> getWishListSerialNumbers() {
+		return Collections.unmodifiableList(wishList);
 	}
 
 	private void removeCooldown(int skill) {
@@ -148,7 +173,7 @@ public class ShopCharacter extends LoggedInPlayer {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`name` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`characters`,`a`.`storageslots`,`a`.`paypalnx`,`a`.`maplepoints`,`a`.`gamecardnx` "
 					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
@@ -168,9 +193,15 @@ public class ShopCharacter extends LoggedInPlayer {
 			p.mesos = rs.getInt(26);
 			short maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
+			p.maxCharacters = rs.getByte(43);
+			p.storageInventoryCapacity = rs.getShort(44);
+			p.cashShopBalance[0] = rs.getInt(45);
+			p.cashShopBalance[1] = rs.getInt(46);
+			p.cashShopBalance[3] = rs.getInt(47);
 			rs.close();
 			ps.close();
 
+			p.shopInventory = new CashShopStaging();
 			EnumMap<InventoryType, IInventory> invUnion = new EnumMap<InventoryType, IInventory>(p.getInventories());
 			invUnion.put(InventoryType.CASH_SHOP, p.shopInventory);
 			ps = con.prepareStatement("SELECT * FROM `inventoryitems` WHERE "
@@ -262,6 +293,12 @@ public class ShopCharacter extends LoggedInPlayer {
 			} finally {
 				DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
 			}
+
+			ps = con.prepareStatement("SELECT `sn` FROM `wishlists` WHERE `characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			while (rs.next())
+				p.wishList.add(Integer.valueOf(rs.getInt(1)));
 			return p;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load character " + id + " from database", ex);

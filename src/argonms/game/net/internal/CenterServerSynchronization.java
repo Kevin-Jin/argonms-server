@@ -21,6 +21,7 @@ package argonms.game.net.internal;
 import argonms.common.net.internal.CrossProcessSynchronization;
 import argonms.common.character.CenterServerSynchronizationOps;
 import argonms.common.character.inventory.Inventory;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -1436,7 +1437,7 @@ public class CenterServerSynchronization extends CrossProcessSynchronization {
 			//TODO: get packet for guild contract rejection
 			for (GuildList.LocalMember m : guild.getMembersInLocalChannel()) {
 				m.getPlayer().setGuild(null);
-				m.getPlayer().getClient().getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), "Guild contract was not unanimous.", (byte) -1, true));
+				m.getPlayer().getClient().getSession().send(CommonPackets.writeServerMessage(ChatHandler.TextStyle.OK_BOX.byteValue(), "Guild contract was not unanimous.", (byte) -1, true));
 				if (m.getRank() == 1)
 					master = m.getPlayer();
 			}
