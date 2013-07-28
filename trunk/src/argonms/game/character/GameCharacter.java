@@ -1726,6 +1726,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			miniroom.leaveRoom(this);
 			miniroom = null;
 		}
+		//TODO: close chalkboard
 		if (getItemChair() != 0)
 			setItemChair(0);
 		else if (mapChair != 0)

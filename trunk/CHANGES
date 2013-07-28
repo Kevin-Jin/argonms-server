@@ -2881,6 +2881,18 @@
 	* Fixed partner rings serialization in CommonPackets.writeCharData.
 	* Fixed ShopCharacter.loadPlayer.
 
+2013-07-28  GoldenKevin  (revision 216)
+
+	* Display an error message in the chat when channel change or shop entry
+	fails.
+	* Set up communication infrastructure for shop server.
+	* Game server supports migrating player to the shop server.
+	* Implemented the necessary channel scan, chatroom, buddy notifications,
+	party notifications, and guild notifications functionality between game and
+	shop server.
+	* Partially implemented ShopHandler so that a player connecting to the
+	server will at least see the cash shop interface.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

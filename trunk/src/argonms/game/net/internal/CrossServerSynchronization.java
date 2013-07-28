@@ -19,6 +19,7 @@
 package argonms.game.net.internal;
 
 import argonms.common.character.BuddyListEntry;
+import argonms.common.character.ShopPlayerContinuation;
 import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.collections.LockableMap;
 import argonms.common.util.collections.Pair;
@@ -73,6 +74,7 @@ public class CrossServerSynchronization {
 	private final LockableMap<Byte, CrossChannelSynchronization> allChannelsInWorld;
 	private final LockableMap<Byte, CrossProcessCrossChannelSynchronization> remoteChannelsInWorld;
 	private CenterServerSynchronization intraworldGroups;
+	private ChannelShopSynchronization shopServer;
 	private final ReadWriteLock locks;
 	private final WorldChannel self;
 
@@ -187,9 +189,49 @@ public class CrossServerSynchronization {
 		}
 	}
 
+	public Pair<byte[], Integer> getShopHost() throws UnknownHostException {
+		lockRead();
+		try {
+			return new Pair<byte[], Integer>(shopServer.getIpAddress(), Integer.valueOf(shopServer.getPort()));
+		} finally {
+			unlockRead();
+		}
+	}
+
+	public void addShopServer(byte[] host, int port) {
+		lockWrite();
+		try {
+			shopServer = new ChannelShopSynchronization(this, self.getWorld(), self.getChannelId(), host, port);
+		} finally {
+			unlockWrite();
+		}
+	}
+
+	public void removeShopServer() {
+		lockWrite();
+		try {
+			shopServer = null;
+		} finally {
+			unlockWrite();
+		}
+	}
+
+	public boolean shopServerConnected() {
+		lockRead();
+		try {
+			return shopServer != null;
+		} finally {
+			unlockRead();
+		}
+	}
+
 	public void receivedCrossProcessCrossChannelSynchronizationPacket(LittleEndianReader packet) {
 		byte srcCh = packet.readByte();
 		remoteChannelsInWorld.getWhenSafe(Byte.valueOf(srcCh)).receivedCrossProcessCrossChannelSynchronizationPacket(packet);
+	}
+
+	public void receivedShopChannelSynchronizationPacket(LittleEndianReader packet) {
+		shopServer.receivedShopChannelSynchronizationPacket(packet);
 	}
 
 	public void receivedCenterServerSynchronizationPacket(LittleEndianReader packet) {
@@ -198,6 +240,10 @@ public class CrossServerSynchronization {
 
 	public void sendChannelChangeRequest(byte destCh, GameCharacter p) {
 		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendPlayerContext(p.getId(), new PlayerContinuation(p));
+	}
+
+	public void sendEnterShopRequest(GameCharacter p, boolean cashShop) {
+		shopServer.sendPlayerContext(p.getId(), new ShopPlayerContinuation(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getEnergyCharge(), p.getChatRoom() == null ? 0 : p.getChatRoom().getRoomId(), cashShop));
 	}
 
 	/* package-private */ void receivedChannelChangeRequest(byte srcCh, int playerId, PlayerContinuation context) {
@@ -230,6 +276,10 @@ public class CrossServerSynchronization {
 						return result.left.byteValue();
 					else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
 						return 0;
+				remaining++;
+			}
+			if (shopServer != null) {
+				shopServer.callPlayerExistsCheck(queue, name);
 				remaining++;
 			}
 

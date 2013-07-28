@@ -244,7 +244,7 @@ public abstract class GameOrShopPacketProcessor extends RemoteCenterPacketProces
 		try {
 			List<CenterGameInterface> gameServers = CenterServer.getInstance().getAllServersOfWorld(world, ServerType.UNDEFINED);
 			for (Byte channel : room.allChannels()) {
-				if (channel.byteValue() == leaver.getChannel())
+				if (channel.byteValue() == leaver.getChannel() && respondTo != null)
 					continue;
 
 				for (CenterGameInterface cgi : gameServers) {

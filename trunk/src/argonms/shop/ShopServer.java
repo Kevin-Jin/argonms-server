@@ -21,22 +21,26 @@ package argonms.shop;
 import argonms.common.GlobalConstants;
 import argonms.common.LocalServer;
 import argonms.common.ServerType;
+import argonms.common.character.ShopPlayerContinuation;
 import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
+import argonms.common.util.collections.Pair;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
 import argonms.shop.net.external.ShopClient;
 import argonms.shop.net.internal.ShopCenterInterface;
+import argonms.shop.net.internal.ShopCrossServerSynchronization;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -50,6 +54,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,9 +65,12 @@ import java.util.logging.Logger;
  */
 public class ShopServer implements LocalServer {
 	private static final Logger LOG = Logger.getLogger(ShopServer.class.getName());
+	private static final int CHANNEL_CHANGE_TIMEOUT = 2000;
 
 	private static ShopServer instance;
 
+	private final Map<Integer, ShopPlayerContinuation> channelChangeData;
+	private final Map<Integer, Pair<Byte, ScheduledFuture<?>>> queuedChannelChanges;
 	private ClientListener<ShopClient> handler;
 	private ShopCenterInterface sci;
 	private String address;
@@ -73,10 +82,16 @@ public class ShopServer implements LocalServer {
 	private boolean useNio;
 	private boolean centerConnected;
 	private final PlayerLog<ShopCharacter> storage;
+	private final Map<Integer, ShopPlayerContinuation> enterServerData;
+	private final ShopCrossServerSynchronization worldComm;
 
 	private ShopServer() {
+		channelChangeData = new ConcurrentHashMap<Integer, ShopPlayerContinuation>();
+		queuedChannelChanges = new ConcurrentHashMap<Integer, Pair<Byte, ScheduledFuture<?>>>();
 		onlineWorlds = new HashMap<Byte, ShopWorld>();
 		storage = new PlayerLog<ShopCharacter>();
+		enterServerData = new ConcurrentHashMap<Integer, ShopPlayerContinuation>();
+		worldComm = new ShopCrossServerSynchronization();
 	}
 
 	public void init() {
@@ -245,6 +260,7 @@ public class ShopServer implements LocalServer {
 				onlineWorlds.put(Byte.valueOf(world), w);
 			}
 			w.addGameServer(ip, ports, serverId);
+			worldComm.addChannels(world, serverId, ip, ports);
 			LOG.log(Level.INFO, "{0} server registered as {1}.", new Object[] { ServerType.getName(serverId), host });
 		} catch (UnknownHostException e) {
 			LOG.log(Level.INFO, "Could not accept " + ServerType.getName(serverId)
@@ -256,7 +272,7 @@ public class ShopServer implements LocalServer {
 		LOG.log(Level.INFO, "{0} server unregistered.", ServerType.getName(serverId));
 		Byte oW = Byte.valueOf(world);
 		ShopWorld w = onlineWorlds.get(oW);
-		w.removeGameServer(serverId);
+		worldComm.removeChannels(world, w.removeGameServer(serverId));
 		if (w.getChannelCount() == 0)
 			onlineWorlds.remove(oW);
 	}
@@ -297,6 +313,40 @@ public class ShopServer implements LocalServer {
 
 	public ShopCharacter getPlayerByName(String name) {
 		return storage.getPlayer(name);
+	}
+
+	public void requestChannelChange(final ShopCharacter p, byte destCh) {
+		queuedChannelChanges.put(Integer.valueOf(p.getId()), new Pair<Byte, ScheduledFuture<?>>(Byte.valueOf(destCh), Scheduler.getInstance().runAfterDelay(new Runnable() {
+			@Override
+			public void run() {
+				queuedChannelChanges.remove(Integer.valueOf(p.getId()));
+			}
+		}, CHANNEL_CHANGE_TIMEOUT)));
+		worldComm.sendChannelChangeRequest(destCh, p);
+	}
+
+	public void performChannelChange(int playerId) {
+		ShopCharacter p = storage.getPlayer(playerId);
+		Pair<Byte, ScheduledFuture<?>> channelChangeState = queuedChannelChanges.remove(Integer.valueOf(playerId));
+		channelChangeState.right.cancel(false);
+		Pair<byte[], Integer> hostAndPort = worldComm.getChannelHost(p.getClient().getWorld(), channelChangeState.left.byteValue());
+		byte[] destHost = hostAndPort.left;
+		int destPort = hostAndPort.right.intValue();
+		p.prepareChannelChange();
+		p.getClient().setMigratingHost();
+		p.getClient().getSession().send(CommonPackets.writeNewGameHost(destHost, destPort));
+	}
+
+	public void storePlayerBuffs(int playerId, ShopPlayerContinuation context) {
+		enterServerData.put(Integer.valueOf(playerId), context);
+	}
+
+	public ShopPlayerContinuation getServerEntryContext(ShopCharacter p) {
+		return enterServerData.remove(Integer.valueOf(p.getId()));
+	}
+
+	public ShopCrossServerSynchronization getCrossServerInterface() {
+		return worldComm;
 	}
 
 	public static ShopServer getInstance() {

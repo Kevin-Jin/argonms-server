@@ -78,6 +78,9 @@ public class GameCenterPacketProcessor extends GameOrShopPacketProcessor {
 			case RemoteCenterOps.CROSS_CHANNEL_SYNCHRONIZATION:
 				processCrossChannelSynchronization(packet);
 				break;
+			case RemoteCenterOps.SHOP_CHANNEL_SHOP_SYNCHRONIZATION:
+				processChannelShopSynchronization(packet);
+				break;
 			case RemoteCenterOps.CENTER_SERVER_SYNCHRONIZATION:
 				processCenterServerSynchronization(packet);
 				break;
@@ -124,6 +127,13 @@ public class GameCenterPacketProcessor extends GameOrShopPacketProcessor {
 		for (CenterGameInterface cgi : CenterServer.getInstance().getAllServersOfWorld(r.getWorld(), ServerType.UNDEFINED))
 			if (cgi.isOnline() && cgi.getChannels().contains(Byte.valueOf(channel)))
 				cgi.getSession().send(message);
+	}
+
+	private void processChannelShopSynchronization(LittleEndianReader packet) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(packet.available() + 1);
+		lew.writeByte(CenterRemoteOps.SHOP_CHANNEL_SHOP_SYNCHRONIZATION);
+		lew.writeBytes(packet.readBytes(packet.available()));
+		CenterServer.getInstance().sendToShop(lew.getBytes());
 	}
 
 	private void processCenterServerSynchronization(LittleEndianReader packet) {

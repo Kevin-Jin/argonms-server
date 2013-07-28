@@ -354,7 +354,7 @@ public final class CommonPackets {
 		//for wedding or "love" rings?
 		lew.writeShort((short) 0);
 		lew.writeShort((short) 0);
-		lew.writeShort((byte) rings.size());
+		lew.writeShort((short) rings.size());
 		for (Ring ring : rings) {
 			lew.writeInt(ring.getPartnerCharId());
 			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);

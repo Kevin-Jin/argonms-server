@@ -152,8 +152,8 @@ public final class GoToHandler {
 		}
 	}
 
-	public static void handleWarpCs(LittleEndianReader packet, GameClient rc) {
-		
+	public static void handleWarpCs(LittleEndianReader packet, GameClient gc) {
+		GameServer.getChannel(gc.getChannel()).requestShopEntry(gc.getPlayer(), true);
 	}
 
 	private GoToHandler() {
