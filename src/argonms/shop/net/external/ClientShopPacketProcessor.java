@@ -36,7 +36,7 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 	public void process(LittleEndianReader reader, ShopClient sc) {
 		switch (reader.readShort()) {
 			case ClientRecvOps.PLAYER_CONNECTED:
-				ShopHandler.handlePlayerConnection(reader, sc);
+				EnterShopHandler.handlePlayerConnection(reader, sc);
 				break;
 			case ClientRecvOps.PONG:
 				sc.getSession().receivedPong();
@@ -46,6 +46,9 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 				break;
 			case ClientRecvOps.AES_IV_UPDATE_REQUEST:
 				//no-op
+				break;
+			case ClientRecvOps.CHANGE_MAP:
+				CashShopHandler.handleReturnToChannel(reader, sc);
 				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });

@@ -37,7 +37,7 @@ import java.util.Collection;
  *
  * @author GoldenKevin
  */
-public final class ShopHandler {
+public final class EnterShopHandler {
 	public static void handlePlayerConnection(LittleEndianReader packet, ShopClient sc) {
 		int cid = packet.readInt();
 		ShopCharacter player = ShopCharacter.loadPlayer(sc, cid);
@@ -69,6 +69,7 @@ public final class ShopHandler {
 			sserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player);
 		if (context.getChatroomId() != 0)
 			sserv.getCrossServerInterface().sendLeaveChatroom(context.getChatroomId(), player);
+		player.setReturnContext(context);
 
 		sc.getSession().send(writeGender(player.getGender()));
 		if (context.isEnteringCashShop())
@@ -364,7 +365,7 @@ public final class ShopHandler {
 		return lew.getBytes();
 	}
 
-	private ShopHandler() {
+	private EnterShopHandler() {
 		//uninstantiable...
 	}
 }

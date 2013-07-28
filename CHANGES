@@ -2900,6 +2900,10 @@
 	characters, storage inventory capacity, cash shop inventory, and gift
 	inventory.
 
+2013-07-28  GoldenKevin  (revision 218)
+
+	* Implemented exit button in cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
