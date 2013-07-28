@@ -150,6 +150,10 @@ public class ShopCharacter extends LoggedInPlayer {
 		}));
 	}
 
+	public void setReturnContext(ShopPlayerContinuation context) {
+		returnContext = context;
+	}
+
 	public ShopPlayerContinuation getReturnContext() {
 		returnContext.compactForReturn();
 		return returnContext;

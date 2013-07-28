@@ -252,7 +252,10 @@ public class CrossServerSynchronization {
 	}
 
 	public void sendChannelChangeAcceptance(byte destCh, int playerId) {
-		allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
+		if (destCh != ChannelSynchronizationOps.CHANNEL_CASH_SHOP)
+			allChannelsInWorld.getWhenSafe(Byte.valueOf(destCh)).sendChannelChangeAcceptance(playerId);
+		else
+			shopServer.sendChannelChangeAcceptance(playerId);
 	}
 
 	/* package-private */ void receivedChannelChangeAcceptance(byte srcCh, int playerId) {
