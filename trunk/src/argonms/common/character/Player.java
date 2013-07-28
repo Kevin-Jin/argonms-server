@@ -461,7 +461,7 @@ public abstract class Player {
 				int inventoryKey = rs.getInt(1);
 				if (InventoryTools.isEquip(itemid)) {
 					Equip e;
-					if (InventoryTools.isRing(itemid)) {
+					if (InventoryTools.isPartnerRing(itemid)) {
 						e = new Ring(itemid);
 						ips = con.prepareStatement("SELECT * FROM `inventoryrings` WHERE `inventoryitemid` = ?");
 						ips.setInt(1, inventoryKey);

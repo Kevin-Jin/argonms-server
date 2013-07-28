@@ -2874,6 +2874,13 @@
 	* Cleaned up comments for Mystic Doors.
 	* Fixed Alchemist.
 
+2013-07-28  GoldenKevin  (revision 215)
+
+	* Abstracted and refactored some game server specific code to prepare for a
+	shop server implementation.
+	* Fixed partner rings serialization in CommonPackets.writeCharData.
+	* Fixed ShopCharacter.loadPlayer.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

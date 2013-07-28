@@ -18,14 +18,15 @@
 
 package argonms.game.net.external.handler;
 
-import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.net.external.RemoteClient;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameServer;
+import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
@@ -273,7 +274,7 @@ public final class BuddyListHandler {
 		//sendBuddyInviteRetracted will attempt to remove our invite to buddy if he is found logged into a channel (no effect if tryRetractInvite is true and is the second case)
 		} else if (!tryRetractInvite || !GameServer.getChannel(client.getChannel()).getCrossServerInterface().sendBuddyInviteRetracted(p, deletedId)) {
 			//if buddy is concluded to be offline, attempt to remove invite to him on database (no effect if tryRetractInvite is true and is the second case) or make his entry HALF_OPEN
-			assert !accountLoggedIn(deletedId) || GameServer.getChannel(client.getChannel()).getCrossServerInterface().scanChannelOfPlayer(removed.getName(), false) == 0;
+			assert !accountLoggedIn(deletedId) || GameServer.getChannel(client.getChannel()).getCrossServerInterface().scanChannelOfPlayer(removed.getName(), false) <= ChannelSynchronizationOps.CHANNEL_CASH_SHOP;
 			Connection con = null;
 			PreparedStatement ps = null;
 			try {

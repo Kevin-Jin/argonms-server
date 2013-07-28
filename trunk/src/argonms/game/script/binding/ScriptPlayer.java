@@ -19,13 +19,13 @@
 package argonms.game.script.binding;
 
 import argonms.common.UserPrivileges;
-import argonms.common.character.BuddyList;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
 import argonms.game.GameServer;
+import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
 import argonms.game.loading.skill.SkillDataLoader;

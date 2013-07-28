@@ -19,7 +19,6 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
-import argonms.common.character.BuddyList;
 import argonms.common.character.KeyBinding;
 import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
@@ -30,6 +29,7 @@ import argonms.common.util.TimeTool;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
+import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.SkillMacro;
 import argonms.game.character.SkillTools;

@@ -20,7 +20,7 @@ package argonms.game.net;
 
 import argonms.common.net.external.ClientListener;
 import argonms.common.net.external.ClientListener.ClientFactory;
-import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PlayerLog;
 import argonms.common.net.internal.RemoteCenterOps;
 import argonms.common.util.Scheduler;
@@ -96,6 +96,10 @@ public class WorldChannel {
 					map.respawnMobs();
 			}
 		}, 0, 15000);
+	}
+
+	public byte getWorld() {
+		return world;
 	}
 
 	public byte getChannelId() {
@@ -175,7 +179,7 @@ public class WorldChannel {
 		if (destHost != null && destPort != -1) {
 			p.prepareChannelChange();
 			p.getClient().setMigratingHost();
-			p.getClient().getSession().send(writeNewGameHost(destHost, destPort));
+			p.getClient().getSession().send(CommonPackets.writeNewGameHost(destHost, destPort));
 		} else {
 			channelChangeError(p);
 		}
@@ -244,14 +248,5 @@ public class WorldChannel {
 
 	public CrossServerSynchronization getCrossServerInterface() {
 		return worldComm;
-	}
-
-	private static byte[] writeNewGameHost(byte[] host, int port) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
-		lew.writeShort(ClientSendOps.GAME_HOST_ADDRESS);
-		lew.writeBool(true);
-		lew.writeBytes(host);
-		lew.writeShort((short) port);
-		return lew.getBytes();
 	}
 }

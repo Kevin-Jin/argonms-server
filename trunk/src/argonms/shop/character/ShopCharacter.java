@@ -18,6 +18,7 @@
 
 package argonms.shop.character;
 
+import argonms.common.character.BuddyListEntry;
 import argonms.common.character.Cooldown;
 import argonms.common.character.LoggedInPlayer;
 import argonms.common.character.QuestEntry;
@@ -33,10 +34,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -51,7 +54,9 @@ public class ShopCharacter extends LoggedInPlayer {
 
 	private ShopClient client;
 
-	private short maxBuddies;
+	private ShopBuddyList buddies;
+	private int partyId;
+	private int guildId;
 	private Inventory shopInventory;
 	private int mesos;
 	private final Map<Integer, SkillEntry> skills;
@@ -71,8 +76,16 @@ public class ShopCharacter extends LoggedInPlayer {
 	}
 
 	@Override
-	public byte getBuddyListCapacity() {
-		return (byte) maxBuddies;
+	public ShopBuddyList getBuddyList() {
+		return buddies;
+	}
+
+	public int getPartyId() {
+		return partyId;
+	}
+
+	public int getGuildId() {
+		return guildId;
 	}
 
 	@Override
@@ -117,7 +130,7 @@ public class ShopCharacter extends LoggedInPlayer {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
 			ps = con.prepareStatement("SELECT `c`.*,`a`.`name` "
 					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
-					+ "WHERE `id` = ?");
+					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
 			rs = ps.executeQuery();
 			if (!rs.next()) {
@@ -133,7 +146,7 @@ public class ShopCharacter extends LoggedInPlayer {
 			p.client = c;
 			p.loadPlayerStats(rs, id);
 			p.mesos = rs.getInt(26);
-			p.maxBuddies = rs.getShort(32);
+			short maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
 			rs.close();
 			ps.close();
@@ -165,6 +178,38 @@ public class ShopCharacter extends LoggedInPlayer {
 			rs = ps.executeQuery();
 			while (rs.next())
 				p.addCooldown(rs.getInt(1), rs.getShort(2));
+			rs.close();
+			ps.close();
+
+			List<BuddyListEntry> buddies = new ArrayList<BuddyListEntry>();
+			ps = con.prepareStatement("SELECT `e`.`buddy` AS `id`,"
+					+ "IF(ISNULL(`c`.`name`),`e`.`buddyname`,`c`.`name`) AS `name`,`e`.`status` "
+					+ "FROM `buddyentries` `e` LEFT JOIN `characters` `c` ON `c`.`id` = `e`.`buddy` "
+					+ "WHERE `owner` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				byte status = rs.getByte(3);
+				if (status != BuddyListEntry.STATUS_INVITED)
+					buddies.add(new BuddyListEntry(rs.getInt(1), rs.getString(2), status));
+			}
+			rs.close();
+			ps.close();
+			p.buddies = new ShopBuddyList(maxBuddies, buddies);
+
+			ps = con.prepareStatement("SELECT `partyid` FROM `parties` WHERE `characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			if (rs.next())
+				p.partyId = rs.getInt(1);
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `g`.`id` FROM `guilds` `g` LEFT JOIN `guildmembers` `m` ON `g`.`id` = `m`.`guildid` WHERE `m`.`characterid` = ?");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			if (rs.next())
+				p.guildId = rs.getInt(1);
 			rs.close();
 			ps.close();
 

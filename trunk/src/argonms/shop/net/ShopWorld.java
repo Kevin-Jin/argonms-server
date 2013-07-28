@@ -47,13 +47,13 @@ public class ShopWorld {
 		gameToChannelMapping.put(Byte.valueOf(serverId), ports.keySet());
 	}
 
-	public void removeGameServer(byte serverId) {
+	public Set<Byte> removeGameServer(byte serverId) {
 		Byte oSi = Byte.valueOf(serverId);
 		for (Byte ch : gameToChannelMapping.get(oSi)) {
 			hosts.remove(ch);
 			channelPorts.remove(ch);
 		}
-		gameToChannelMapping.remove(oSi);
+		return gameToChannelMapping.remove(oSi);
 	}
 
 	public int getChannelCount() {

@@ -35,8 +35,10 @@ import argonms.common.character.inventory.Ring;
 import argonms.common.util.TimeTool;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -59,6 +61,15 @@ public final class CommonPackets {
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP,
 		GlobalConstants.NULL_MAP, GlobalConstants.NULL_MAP
 	};
+
+	public static byte[] writeNewGameHost(byte[] host, int port) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		lew.writeShort(ClientSendOps.GAME_HOST_ADDRESS);
+		lew.writeBool(true);
+		lew.writeBytes(host);
+		lew.writeShort((short) port);
+		return lew.getBytes();
+	}
 
 	/**
 	 * Append item expiration time info to an existing LittleEndianWriter.
@@ -240,7 +251,7 @@ public final class CommonPackets {
 	public static void writeCharData(LittleEndianWriter lew, LoggedInPlayer p) {
 		lew.writeLong(-1);
 		writeCharStats(lew, p);
-		lew.writeByte(p.getBuddyListCapacity());
+		lew.writeByte((byte) p.getBuddyList().getCapacity());
 
 		lew.writeInt(p.getMesos()); // mesos
 		lew.writeByte((byte) p.getInventory(InventoryType.EQUIP).getMaxSlots()); // equip slots
@@ -252,7 +263,7 @@ public final class CommonPackets {
 		Map<Short, InventorySlot> iv = p.getInventory(InventoryType.EQUIPPED).getAll();
 		Map<Short, InventorySlot> visible = new TreeMap<Short, InventorySlot>();
 		Map<Short, InventorySlot> masked = new TreeMap<Short, InventorySlot>();
-		Map<Short, Ring> rings = new TreeMap<Short, Ring>();
+		List<Ring> rings = new ArrayList<Ring>();
 		synchronized(iv) {
 			for (Entry<Short, InventorySlot> entry : iv.entrySet()) {
 				InventorySlot item = entry.getValue();
@@ -261,7 +272,7 @@ public final class CommonPackets {
 				else
 					visible.put(entry.getKey(), item);
 				if (item.getType() == ItemType.RING)
-					rings.put(entry.getKey(), (Ring) item);
+					rings.add((Ring) item);
 			}
 		}
 
@@ -272,7 +283,17 @@ public final class CommonPackets {
 			writeItemInfo(lew, item.getKey().shortValue(), item.getValue());
 		lew.writeByte((byte) 0); //end of masked equipped
 
-		for (InventoryType invType : new InventoryType[] { InventoryType.EQUIP, InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
+		iv = p.getInventory(InventoryType.EQUIP).getAll();
+		synchronized(iv) {
+			for (Entry<Short, InventorySlot> entry : iv.entrySet()) {
+				if (entry.getValue().getType() == ItemType.RING)
+					rings.add((Ring) entry.getValue());
+				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
+			}
+		}
+		lew.writeByte((byte) 0); //end of equip inventory
+
+		for (InventoryType invType : new InventoryType[] { InventoryType.USE, InventoryType.SETUP, InventoryType.ETC, InventoryType.CASH }) {
 			iv = p.getInventory(invType).getAll();
 			synchronized(iv) {
 				for (Entry<Short, InventorySlot> entry : iv.entrySet())
@@ -329,30 +350,19 @@ public final class CommonPackets {
 			lew.writeLong(TimeTool.unixToWindowsTime(completedQuest.getValue().getCompletionTime()));
 		}
 
-		//dude, what the fuck was that guy who wrote this smoking?
-		boolean FR_last = false;
-		if (!rings.isEmpty())
-			lew.writeShort((short) 0);
-		for (Ring ring : rings.values()) {
-			lew.writeShort((short) 0);
-			lew.writeShort((short) 1);
+		//friendship rings work correctly, but maybe other zeros are counts
+		//for wedding or "love" rings?
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 0);
+		lew.writeShort((byte) rings.size());
+		for (Ring ring : rings) {
 			lew.writeInt(ring.getPartnerCharId());
 			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
 			lew.writeLong(ring.getUniqueId());
-			lew.writeInt((int) ring.getPartnerRingId()); //this is definitely wrong, considering UIDs are 64-bit long
-			if (ring.getDataId() >= 1112800 && ring.getDataId() <= 1112803 || ring.getDataId() <= 1112806 || ring.getDataId() <= 1112807 || ring.getDataId() <= 1112809) {
-				FR_last = true;
-				lew.writeInt(0);
-				lew.writeInt(ring.getDataId());
-				lew.writeShort((short) 0);
-			} else {
-				if (rings.size() > 1)
-					lew.writeShort((short) 0);
-				FR_last = false;
-			}
+			lew.writeLong(ring.getPartnerRingId());
+			lew.writeInt(ring.getDataId());
 		}
-		//if (!FR_last)
-			lew.writeLong(0);
+		lew.writeShort((short) 0);
 
 		for (int i = 0; i < 5; i++)
 			lew.writeInt(ROCK_MAPS[i]);

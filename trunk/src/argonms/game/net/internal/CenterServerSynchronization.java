@@ -18,6 +18,7 @@
 
 package argonms.game.net.internal;
 
+import argonms.common.net.internal.CrossProcessSynchronization;
 import argonms.common.character.CenterServerSynchronizationOps;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.net.internal.RemoteCenterOps;

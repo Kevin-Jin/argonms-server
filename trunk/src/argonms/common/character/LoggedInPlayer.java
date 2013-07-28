@@ -35,7 +35,7 @@ public abstract class LoggedInPlayer extends Player {
 		questLocks = new ReentrantReadWriteLock();
 	}
 
-	public abstract byte getBuddyListCapacity();
+	public abstract ReadableBuddyList getBuddyList();
 
 	public abstract int getMesos();
 

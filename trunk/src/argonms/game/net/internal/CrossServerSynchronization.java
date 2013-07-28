@@ -18,13 +18,14 @@
 
 package argonms.game.net.internal;
 
-import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.collections.LockableMap;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.GameRegistry;
 import argonms.game.GameServer;
+import argonms.game.character.BuddyList;
 import argonms.game.character.Chatroom;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
@@ -65,12 +66,6 @@ public class CrossServerSynchronization {
 		PRIVATE_CHAT_TYPE_BUDDY = 0,
 		PRIVATE_CHAT_TYPE_PARTY = 1,
 		PRIVATE_CHAT_TYPE_GUILD = 2
-	;
-
-	private static final byte
-		SCAN_PLAYER_CHANNEL_NO_MATCH = 0,
-		SCAN_PLAYER_CHANNEL_HIDDEN = 1,
-		SCAN_PLAYER_CHANNEL_FOUND = 2
 	;
 
 	/* package-private */ static final int BLOCKING_CALL_TIMEOUT = 2000; //in milliseconds
@@ -229,9 +224,9 @@ public class CrossServerSynchronization {
 				Pair<Byte, Object> result;
 				//address any results that have since responded, for a possibility of early out
 				while ((result = queue.poll()) != null)
-					if ((findResult = ((Byte) result.right).byteValue()) == SCAN_PLAYER_CHANNEL_NO_MATCH)
+					if ((findResult = ((Byte) result.right).byteValue()) == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_NO_MATCH)
 						remaining--;
-					else if (!ignoreHidden || findResult == SCAN_PLAYER_CHANNEL_FOUND)
+					else if (!ignoreHidden || findResult == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_FOUND)
 						return result.left.byteValue();
 					else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
 						return 0;
@@ -245,9 +240,9 @@ public class CrossServerSynchronization {
 					LOG.log(Level.FINE, "Cross process player search timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
 					return 0;
 				}
-				if ((findResult = ((Byte) result.right).byteValue()) == SCAN_PLAYER_CHANNEL_NO_MATCH)
+				if ((findResult = ((Byte) result.right).byteValue()) == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_NO_MATCH)
 					remaining--;
-				else if (!ignoreHidden || findResult == SCAN_PLAYER_CHANNEL_FOUND)
+				else if (!ignoreHidden || findResult == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_FOUND)
 					return result.left.byteValue();
 				else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
 					return 0;
@@ -266,10 +261,10 @@ public class CrossServerSynchronization {
 	/* package-private */ byte makePlayerExistsResult(String name) {
 		GameCharacter p = self.getPlayerByName(name);
 		if (p == null)
-			return SCAN_PLAYER_CHANNEL_NO_MATCH;
+			return ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_NO_MATCH;
 		if (!p.isVisible())
-			return SCAN_PLAYER_CHANNEL_HIDDEN;
-		return SCAN_PLAYER_CHANNEL_FOUND;
+			return ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_HIDDEN;
+		return ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_FOUND;
 	}
 
 	public void sendPrivateChat(byte type, int[] recipients, GameCharacter p, String message) {
@@ -581,12 +576,13 @@ public class CrossServerSynchronization {
 			if (entry == null)
 				continue;
 
-			entry.setChannel(srcCh);
+			entry.setChannel(srcCh != ChannelSynchronizationOps.CHANNEL_CASH_SHOP ? srcCh : BuddyListEntry.CASH_SHOP_CHANNEL);
 			p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
 			p.getClient().getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
 		}
 
-		sendReturnBuddyLogInNotifications(srcCh, sender, localRecipients, false);
+		if (srcCh > ChannelSynchronizationOps.CHANNEL_CASH_SHOP)
+			sendReturnBuddyLogInNotifications(srcCh, sender, localRecipients, false);
 		return localRecipients.size();
 	}
 
