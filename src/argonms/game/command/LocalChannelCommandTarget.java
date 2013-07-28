@@ -19,7 +19,6 @@
 package argonms.game.command;
 
 import argonms.common.GlobalConstants;
-import argonms.common.character.BuddyList;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
 import argonms.common.character.inventory.Equip;
@@ -31,6 +30,7 @@ import argonms.common.net.external.ClientSession;
 import argonms.common.util.TimeTool;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
+import argonms.game.character.BuddyList;
 import argonms.game.character.DiseaseTools;
 import argonms.game.character.ExpTables;
 import argonms.game.character.GameCharacter;

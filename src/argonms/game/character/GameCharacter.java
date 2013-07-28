@@ -19,8 +19,11 @@
 package argonms.game.character;
 
 import argonms.common.GlobalConstants;
-import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
+import argonms.common.character.BuffState;
+import argonms.common.character.BuffState.ItemState;
+import argonms.common.character.BuffState.MobSkillState;
+import argonms.common.character.BuffState.SkillState;
 import argonms.common.character.Cooldown;
 import argonms.common.character.KeyBinding;
 import argonms.common.character.LoggedInPlayer;
@@ -45,9 +48,6 @@ import argonms.common.util.Rng;
 import argonms.common.util.collections.LockableList;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
-import argonms.game.character.BuffState.ItemState;
-import argonms.game.character.BuffState.MobSkillState;
-import argonms.game.character.BuffState.SkillState;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -65,7 +65,6 @@ import argonms.game.loading.quest.QuestItemStats;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
-import argonms.game.net.external.handler.BuddyListHandler;
 import argonms.game.script.EventManipulator;
 import java.awt.Point;
 import java.lang.ref.WeakReference;
@@ -1396,13 +1395,9 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return location;
 	}
 
+	@Override
 	public BuddyList getBuddyList() {
 		return buddies;
-	}
-
-	@Override
-	public byte getBuddyListCapacity() {
-		return (byte) buddies.getCapacity();
 	}
 
 	public void equipChanged(Equip e, boolean putOn, boolean permanent) {

@@ -18,6 +18,7 @@
 
 package argonms.game.character;
 
+import argonms.common.character.BuffState.MobSkillState;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory;
@@ -30,7 +31,6 @@ import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Scheduler;
-import argonms.game.character.BuffState.MobSkillState;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;

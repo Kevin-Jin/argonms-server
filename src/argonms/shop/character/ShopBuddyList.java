@@ -16,40 +16,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.game.character;
+package argonms.shop.character;
+
+import argonms.common.character.BuddyListEntry;
+import argonms.common.character.ReadableBuddyList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
  * @author GoldenKevin
  */
-public abstract class BuffState {
-	public final long endTime;
+public class ShopBuddyList implements ReadableBuddyList {
+	private final short capacity;
+	private final List<BuddyListEntry> buddies;
 
-	protected BuffState(long endTime) {
-		this.endTime = endTime;
+	public ShopBuddyList(short capacity, List<BuddyListEntry> buddies) {
+		this.capacity = capacity;
+		this.buddies = Collections.unmodifiableList(buddies);
 	}
 
-	public static class SkillState extends BuffState {
-		public final byte level;
-
-		protected SkillState(byte level, long endTime) {
-			super(endTime);
-			this.level = level;
-		}
+	@Override
+	public Collection<BuddyListEntry> getBuddies() {
+		return buddies;
 	}
 
-	public static class ItemState extends BuffState {
-		protected ItemState(long endTime) {
-			super(endTime);
-		}
-	}
-
-	public static class MobSkillState extends BuffState {
-		public final byte level;
-
-		protected MobSkillState(byte level, long endTime) {
-			super(endTime);
-			this.level = level;
-		}
+	@Override
+	public short getCapacity() {
+		return capacity;
 	}
 }

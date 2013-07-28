@@ -20,6 +20,7 @@ package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
@@ -69,14 +70,14 @@ public final class ChatHandler {
 			case COMMAND_FIND: {
 				String toFind = reader.readLengthPrefixedString();
 				byte channel = GameServer.getChannel(gc.getChannel()).getCrossServerInterface().scanChannelOfPlayer(toFind, true);
-				if (channel == gc.getChannel()) {
+				if (channel == gc.getChannel())
 					gc.getSession().send(writeFindResultSameChannel(toFind, GameServer.getChannel(channel).getPlayerByName(toFind).getMapId()));
-				} else if (channel != 0) {
-					gc.getSession().send(writeFindResultDiffChannel(toFind, channel));
-				} else {
-					//TODO: try shop server
+				else if (channel == ChannelSynchronizationOps.CHANNEL_CASH_SHOP)
+					gc.getSession().send(writeFindResultCashShop(toFind));
+				else if (channel == ChannelSynchronizationOps.CHANNEL_OFFLINE)
 					gc.getSession().send(writeWhisperOutcome(toFind, false));
-				}
+				else
+					gc.getSession().send(writeFindResultDiffChannel(toFind, channel));
 				break;
 			}
 			case COMMAND_WHISPER: {

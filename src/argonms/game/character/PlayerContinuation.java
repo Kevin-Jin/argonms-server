@@ -18,13 +18,14 @@
 
 package argonms.game.character;
 
+import argonms.common.character.AbstractPlayerContinuation;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.Skills;
 import argonms.common.util.Scheduler;
 import argonms.game.GameServer;
-import argonms.game.character.BuffState.ItemState;
-import argonms.game.character.BuffState.MobSkillState;
-import argonms.game.character.BuffState.SkillState;
+import argonms.common.character.BuffState.ItemState;
+import argonms.common.character.BuffState.MobSkillState;
+import argonms.common.character.BuffState.SkillState;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.loading.skill.PlayerSkillEffectsData;
@@ -40,84 +41,34 @@ import java.util.Map.Entry;
  *
  * @author GoldenKevin
  */
-public class PlayerContinuation {
-	private final Map<Integer, ItemState> activeItems;
-	private final Map<Integer, SkillState> activeSkills;
-	private final Map<Short, MobSkillState> activeDebuffs;
+public class PlayerContinuation extends AbstractPlayerContinuation {
 	private final Map<Integer, PlayerSkillSummon> activeSummons;
-	private short energyCharge;
-	private int chatroomId;
 
 	public PlayerContinuation(GameCharacter p) {
-		activeItems = p.activeItemsList();
-		activeSkills = p.activeSkillsList();
-		activeDebuffs = p.activeMobSkillsList();
-		activeSummons = p.getAllSummons();
-		energyCharge = p.getEnergyCharge();
+		super(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getEnergyCharge());
 		if (p.getChatRoom() != null)
-			chatroomId = p.getChatRoom().getRoomId();
+			setChatroomId(p.getChatRoom().getRoomId());
+		activeSummons = p.getAllSummons();
 	}
 
 	public PlayerContinuation() {
-		activeItems = new HashMap<Integer, ItemState>();
-		activeSkills = new HashMap<Integer, SkillState>();
-		activeDebuffs = new HashMap<Short, MobSkillState>();
+		super();
 		activeSummons = new HashMap<Integer, PlayerSkillSummon>();
-	}
-
-	public Map<Integer, ItemState> getActiveItems() {
-		return activeItems;
-	}
-
-	public Map<Integer, SkillState> getActiveSkills() {
-		return activeSkills;
-	}
-
-	public Map<Short, MobSkillState> getActiveDebuffs() {
-		return activeDebuffs;
 	}
 
 	public Map<Integer, PlayerSkillSummon> getActiveSummons() {
 		return activeSummons;
 	}
 
-	public short getEnergyCharge() {
-		return energyCharge;
-	}
-
-	public int getChatroomId() {
-		return chatroomId;
-	}
-
-	public void addItemBuff(int itemId, long endTime) {
-		activeItems.put(Integer.valueOf(itemId), new ItemState(endTime));
-	}
-
-	public void addSkillBuff(int skillId, byte level, long endTime) {
-		activeSkills.put(Integer.valueOf(skillId), new SkillState(level, endTime));
-	}
-
-	public void addMonsterDebuff(short skillId, byte level, long endTime) {
-		activeDebuffs.put(Short.valueOf(skillId), new MobSkillState(level, endTime));
-	}
-
 	public void addActiveSummon(int skillId, int pId, Point pos, byte stance) {
 		activeSummons.put(Integer.valueOf(skillId), new PlayerSkillSummon(pId,
-				skillId, activeSkills.get(Integer.valueOf(skillId)).level, pos, stance));
-	}
-
-	public void setEnergyCharge(short val) {
-		energyCharge = val;
-	}
-
-	public void setChatroomId(int roomId) {
-		chatroomId = roomId;
+				skillId, getActiveSkills().get(Integer.valueOf(skillId)).level, pos, stance));
 	}
 
 	public void applyTo(final GameCharacter p) {
-		for (Entry<Integer, ItemState> item : activeItems.entrySet())
+		for (Entry<Integer, ItemState> item : getActiveItems().entrySet())
 			ItemTools.localUseBuffItem(p, item.getKey().intValue(), item.getValue().endTime);
-		for (Entry<Integer, SkillState> skill : activeSkills.entrySet()) {
+		for (Entry<Integer, SkillState> skill : getActiveSkills().entrySet()) {
 			int skillId = skill.getKey().intValue();
 			SkillState skillState = skill.getValue();
 			if (SkillDataLoader.getInstance().getSkill(skillId).isSummon()) {
@@ -145,15 +96,15 @@ public class PlayerContinuation {
 				SkillTools.localUseBuffSkill(p, skillId, skillState.level, skillState.endTime);
 			}
 		}
-		for (Entry<Short, MobSkillState> debuff : activeDebuffs.entrySet()) {
+		for (Entry<Short, MobSkillState> debuff : getActiveDebuffs().entrySet()) {
 			MobSkillState debuffState = debuff.getValue();
 			DiseaseTools.localApplyDebuff(p, debuff.getKey().shortValue(), debuffState.level, debuffState.endTime);
 		}
-		if (energyCharge != 0) {
+		if (getEnergyCharge() != 0) {
 			p.resetEnergyCharge();
-			p.addToEnergyCharge(energyCharge);
+			p.addToEnergyCharge(getEnergyCharge());
 		}
-		if (chatroomId != 0)
-			GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerChangedChannels(p, chatroomId);
+		if (getChatroomId() != 0)
+			GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerChangedChannels(p, getChatroomId());
 	}
 }

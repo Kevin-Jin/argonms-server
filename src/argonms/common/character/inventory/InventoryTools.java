@@ -509,7 +509,7 @@ public final class InventoryTools {
 		Integer oId = Integer.valueOf(itemId);
 		if (!equipCache.containsKey(oId)) {
 			Equip e;
-			if (isRing(itemId))
+			if (isPartnerRing(itemId))
 				e = new Ring(itemId);
 			else if (isMount(itemId))
 				e = new TamingMob(itemId);
@@ -782,8 +782,13 @@ public final class InventoryTools {
 	}
 
 	public static boolean isRing(int itemId) {
-		return (itemId >= 1112000 && itemId < 1112100 ||
-				itemId >= 1112800 && itemId < 1112803);
+		return (itemId >= 1112000 && itemId < 1113000);
+	}
+
+	public static boolean isPartnerRing(int itemId) {
+		return (itemId >= 1112001 && itemId <= 1112006 || //"love" rings
+				itemId >= 1112800 && itemId <= 1112802 || //friendship rings
+				itemId >= 1112803 && itemId <= 1112807 || itemId == 1112809); //wedding rings
 	}
 
 	public static boolean isMount(int itemId) {

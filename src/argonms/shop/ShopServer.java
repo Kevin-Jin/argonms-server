@@ -270,10 +270,6 @@ public class ShopServer implements LocalServer {
 		return onlineWorlds.get(Byte.valueOf(world));
 	}
 
-	public static ShopServer getInstance() {
-		return instance;
-	}
-
 	@Override
 	public String getExternalIp() {
 		return address;
@@ -281,6 +277,10 @@ public class ShopServer implements LocalServer {
 
 	public int getClientPort() {
 		return port;
+	}
+
+	public ShopCenterInterface getCenterInterface() {
+		return sci;
 	}
 
 	public void addPlayer(ShopCharacter p) {
@@ -297,6 +297,10 @@ public class ShopServer implements LocalServer {
 
 	public ShopCharacter getPlayerByName(String name) {
 		return storage.getPlayer(name);
+	}
+
+	public static ShopServer getInstance() {
+		return instance;
 	}
 
 	public static void main(String[] args) {

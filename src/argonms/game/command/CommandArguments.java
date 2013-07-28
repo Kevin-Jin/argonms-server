@@ -19,6 +19,7 @@
 package argonms.game.command;
 
 import argonms.common.character.Player;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import java.util.Iterator;
@@ -157,7 +158,7 @@ public class CommandArguments implements Iterator<String> {
 			return new LocalChannelCommandTarget(onLocalChannel);
 
 		byte channel = GameServer.getChannel(caller.getChannel()).getCrossServerInterface().scanChannelOfPlayer(name, false);
-		if (channel != 0)
+		if (channel > ChannelSynchronizationOps.CHANNEL_CASH_SHOP)
 			return new CrossChannelCommandTarget(caller.getChannel(), channel, name);
 
 		if (Player.characterExists(name, caller.getWorld()))

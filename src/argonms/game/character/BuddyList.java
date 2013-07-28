@@ -16,8 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package argonms.common.character;
+package argonms.game.character;
 
+import argonms.common.character.BuddyListEntry;
+import argonms.common.character.ReadableBuddyList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -29,7 +31,7 @@ import java.util.Set;
  *
  * @author GoldenKevin
  */
-public class BuddyList {
+public class BuddyList implements ReadableBuddyList {
 	private short capacity;
 	private final Map<Integer, BuddyListEntry> buddies;
 	private final Map<Integer, String> pendingInvites;
@@ -44,6 +46,7 @@ public class BuddyList {
 		return buddies.get(Integer.valueOf(id));
 	}
 
+	@Override
 	public Collection<BuddyListEntry> getBuddies() {
 		return Collections.unmodifiableCollection(buddies.values());
 	}
@@ -76,6 +79,7 @@ public class BuddyList {
 		return buddies.size() >= capacity;
 	}
 
+	@Override
 	public short getCapacity() {
 		return capacity;
 	}

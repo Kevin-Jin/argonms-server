@@ -19,7 +19,6 @@
 package argonms.game.net.external;
 
 import argonms.common.GlobalConstants;
-import argonms.common.character.BuddyList;
 import argonms.common.character.BuddyListEntry;
 import argonms.common.character.PlayerStatusEffect;
 import argonms.common.character.QuestEntry;
@@ -39,6 +38,7 @@ import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
+import argonms.game.character.BuddyList;
 import argonms.game.character.Chatroom;
 import argonms.game.character.ClientUpdateKey;
 import argonms.game.character.GameCharacter;
