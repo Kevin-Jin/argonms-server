@@ -19,8 +19,8 @@
 package argonms.game.command;
 
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.ChatHandler.TextStyle;
 
 /**
@@ -41,12 +41,12 @@ public interface CommandOutput {
 
 		@Override
 		public void printOut(String message) {
-			ses.send(GamePackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+			ses.send(CommonPackets.writeServerMessage(TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 		}
 
 		@Override
 		public void printErr(String message) {
-			ses.send(GamePackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+			ses.send(CommonPackets.writeServerMessage(TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 		}
 	}
 }

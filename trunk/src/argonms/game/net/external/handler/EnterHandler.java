@@ -94,7 +94,7 @@ public final class EnterHandler {
 		gc.getSession().send(writeMacros(player.getMacros()));
 		String serverMessage = GameServer.getVariables().getNewsTickerMessage();
 		if (!serverMessage.isEmpty())
-			gc.getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.TICKER.byteValue(), serverMessage, (byte) -1, true));
+			gc.getSession().send(CommonPackets.writeServerMessage(ChatHandler.TextStyle.TICKER.byteValue(), serverMessage, (byte) -1, true));
 
 		/*player.checkMessenger();
 		player.checkBerserk();

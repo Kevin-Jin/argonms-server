@@ -119,4 +119,13 @@ public abstract class ChannelOrShopSynchronization extends CrossProcessSynchroni
 
 		handler.receivedBuddyLogOffNotifications(sender, recipients);
 	}
+
+	public void sendWorldWideNotice(byte style, String message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7 + message.length());
+		writeSynchronizationPacketHeader(lew, ChannelSynchronizationOps.SYNCHRONIZED_NOTICE);
+		lew.writeByte(style);
+		lew.writeLengthPrefixedString(message);
+
+		writeSynchronizationPacket(lew.getBytes());
+	}
 }

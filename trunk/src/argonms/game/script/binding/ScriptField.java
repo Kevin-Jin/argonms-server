@@ -18,6 +18,7 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.net.external.CommonPackets;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -67,7 +68,7 @@ public class ScriptField {
 	}
 
 	public void blueMessage(String message) {
-		map.sendToAll(GamePackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		map.sendToAll(CommonPackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void showTimer(int seconds) {

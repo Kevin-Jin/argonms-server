@@ -80,6 +80,9 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 			case ChannelSynchronizationOps.PLAYER_SEARCH:
 				receivedPlayerExistsCheck(packet);
 				break;
+			case ChannelSynchronizationOps.SYNCHRONIZED_NOTICE:
+				receivedWorldWideNotice(packet);
+				break;
 		}
 	}
 
@@ -200,5 +203,15 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 			lew.writeInt(receiver.intValue());
 
 		writeShopChannelSynchronizationPacket(lew.getBytes());
+	}
+
+	private void receivedWorldWideNotice(LittleEndianReader packet) {
+		byte style = packet.readByte();
+		String message = packet.readLengthPrefixedString();
+
+		if (style == (byte) 4)
+			ShopServer.getInstance().setNewsTickerMessage(message);
+
+		ShopServer.getInstance().serverWideMessage(style, message);
 	}
 }

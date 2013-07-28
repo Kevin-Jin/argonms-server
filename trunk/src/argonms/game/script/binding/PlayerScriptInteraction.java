@@ -18,11 +18,11 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
 import argonms.game.character.MapMemoryVariable;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.ChatHandler;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -58,11 +58,11 @@ public abstract class PlayerScriptInteraction {
 	}
 
 	public void sayInChat(String message) {
-		client.getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		client.getSession().send(CommonPackets.writeServerMessage(ChatHandler.TextStyle.LIGHT_BLUE_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void sayErrorInChat(String message) {
-		client.getSession().send(GamePackets.writeServerMessage(ChatHandler.TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
+		client.getSession().send(CommonPackets.writeServerMessage(ChatHandler.TextStyle.RED_TEXT_CLEAR_BG.byteValue(), message, (byte) -1, true));
 	}
 
 	public void rememberMap(String variable) {

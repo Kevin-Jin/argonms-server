@@ -25,6 +25,7 @@ import argonms.common.loading.DataFileType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
 import argonms.common.net.external.CheatTracker;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.RemoteClient;
 import argonms.common.net.internal.RemoteCenterSession;
 import argonms.common.util.DatabaseManager;
@@ -40,7 +41,6 @@ import argonms.game.loading.reactor.ReactorDataLoader;
 import argonms.game.loading.shop.NpcShopDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.WorldChannel;
-import argonms.game.net.external.GamePackets;
 import argonms.game.net.internal.CrossServerSynchronization;
 import argonms.game.net.internal.GameCenterInterface;
 import argonms.game.script.NpcScriptManager;
@@ -397,7 +397,7 @@ public class GameServer implements LocalServer {
 	}
 
 	public void serverWideMessage(byte style, String message) {
-		byte[] packet = GamePackets.writeServerMessage(style, message, (byte) -1, true);
+		byte[] packet = CommonPackets.writeServerMessage(style, message, (byte) -1, true);
 		for (WorldChannel chn : GameServer.getInstance().getChannels().values())
 			for (GameCharacter p : chn.getConnectedPlayers())
 				p.getClient().getSession().send(packet);

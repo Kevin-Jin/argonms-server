@@ -1069,6 +1069,9 @@ public class CrossServerSynchronization {
 					triedGameServers.add(Byte.valueOf(ccs.getServerId()));
 				}
 			}
+			if (shopServer != null)
+				shopServer.sendWorldWideNotice(style, message);
+			//TODO: ticker must be sent to all worlds
 		} finally {
 			unlockRead();
 		}

@@ -84,6 +84,7 @@ public class ShopServer implements LocalServer {
 	private final PlayerLog<ShopCharacter> storage;
 	private final Map<Integer, ShopPlayerContinuation> enterServerData;
 	private final ShopCrossServerSynchronization worldComm;
+	private String ticker;
 
 	private ShopServer() {
 		channelChangeData = new ConcurrentHashMap<Integer, ShopPlayerContinuation>();
@@ -112,6 +113,8 @@ public class ShopServer implements LocalServer {
 			centerPort = Integer.parseInt(prop.getProperty("argonms.shop.center.port"));
 			authKey = prop.getProperty("argonms.shop.auth.key");
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.shop.usenio"));
+
+			ticker = prop.getProperty("argonms.shop.tickermessage");
 
 			String temp = prop.getProperty("argonms.shop.tz");
 			//always set default TimeZone setting last in this block so the
@@ -347,6 +350,20 @@ public class ShopServer implements LocalServer {
 
 	public ShopCrossServerSynchronization getCrossServerInterface() {
 		return worldComm;
+	}
+
+	public String getNewsTickerMessage() {
+		return ticker;
+	}
+
+	public void setNewsTickerMessage(String message) {
+		ticker = message;
+	}
+
+	public void serverWideMessage(byte style, String message) {
+		byte[] packet = CommonPackets.writeServerMessage(style, message, (byte) -1, true);
+		for (ShopCharacter p : storage.getConnectedPlayers())
+			p.getClient().getSession().send(packet);
 	}
 
 	public static ShopServer getInstance() {

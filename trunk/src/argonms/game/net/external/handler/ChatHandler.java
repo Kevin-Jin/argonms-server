@@ -20,6 +20,7 @@ package argonms.game.net.external.handler;
 
 import argonms.common.UserPrivileges;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -156,7 +157,7 @@ public final class ChatHandler {
 			case LIGHT_BLUE_TEXT_WHITE_BG:
 			case RED_TEXT_CLEAR_BG:
 			case LIGHT_BLUE_TEXT_CLEAR_BG:
-				return GamePackets.writeServerMessage(ts.byteValue(), p.getName() + " : " + message, p.getClient().getChannel(), megaEar);
+				return CommonPackets.writeServerMessage(ts.byteValue(), p.getName() + " : " + message, p.getClient().getChannel(), megaEar);
 			case ORANGE_TEXT_CLEAR_BG:
 			case PURPLE_TEXT_CLEAR_BG:
 			case PINK_TEXT_CLEAR_BG:
