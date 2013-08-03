@@ -19,6 +19,7 @@
 package argonms.shop.net.external.handler;
 
 import argonms.common.character.ShopPlayerContinuation;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
@@ -325,7 +326,7 @@ public final class EnterShopHandler {
 		} finally {
 			inv.unlockRead();
 		}
-		lew.writeShort(p.getStorageInventoryCapacity());
+		lew.writeShort(p.getInventory(Inventory.InventoryType.CASH).getMaxSlots());
 		lew.writeShort(p.getMaxCharacters());
 		return lew.getBytes();
 	}

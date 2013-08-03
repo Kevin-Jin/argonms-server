@@ -2904,6 +2904,12 @@
 
 	* Implemented exit button in cash shop.
 
+2013-08-03  GoldenKevin  (revision 219)
+
+	* Support for the newest Kvj format.
+	* Fix improper package interpretation of "storage slots" in shop server.
+	* Load commodities and cash packages from SQL or Kvj in shop server.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
