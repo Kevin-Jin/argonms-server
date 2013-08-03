@@ -28,14 +28,6 @@ import java.io.IOException;
  * @author GoldenKevin
  */
 public class KvjStringDataLoader extends StringDataLoader {
-	private static final byte
-		NEXT = 1,
-		NAME = 2,
-		MAP_NAME = 3,
-		STREET_NAME = 4,
-		MSG = 5
-	;
-
 	private final String dataPath;
 
 	protected KvjStringDataLoader(String wzPath) {
@@ -47,74 +39,57 @@ public class KvjStringDataLoader extends StringDataLoader {
 		String dir = dataPath + "String.wz" + File.separatorChar;
 		LittleEndianReader reader;
 		Integer key;
+		String str;
 		try {
-			for (String s : new String[] { "Eqp", "Consume", "Ins", "Etc", "Cash", "Pet" }) {
+			reader = new LittleEndianByteArrayReader(new File(dir + "Cash.img.kvj"));
+			for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+				key = Integer.valueOf(id);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					itemNames.put(key, str);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					itemMsgs.put(key, str);
+			}
+			for (String s : new String[] { "Eqp", "Consume", "Ins", "Etc", "Pet" }) {
 				reader = new LittleEndianByteArrayReader(new File(dir + s + ".img.kvj"));
-				key = null;
-				for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
-					switch (now) {
-						case NEXT:
-							key = Integer.valueOf(reader.readInt());
-							break;
-						case NAME:
-							itemNames.put(key, reader.readNullTerminatedString());
-							break;
-						case MSG:
-							itemMsgs.put(key, reader.readNullTerminatedString());
-							break;
-					}
+				for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+					key = Integer.valueOf(id);
+					str = reader.readNullTerminatedString();
+					if (!str.isEmpty())
+						itemNames.put(key, str);
 				}
 			}
 			reader = new LittleEndianByteArrayReader(new File(dir + "Map.img.kvj"));
-			key = null;
-			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
-				switch (now) {
-					case NEXT:
-						key = Integer.valueOf(reader.readInt());
-						break;
-					case MAP_NAME:
-						mapNames.put(key, reader.readNullTerminatedString());
-						break;
-					case STREET_NAME:
-						streetNames.put(key, reader.readNullTerminatedString());
-						break;
-				}
+			for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+				key = Integer.valueOf(id);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					mapNames.put(key, str);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					streetNames.put(key, str);
 			}
 			reader = new LittleEndianByteArrayReader(new File(dir + "Mob.img.kvj"));
-			key = null;
-			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
-				switch (now) {
-					case NEXT:
-						key = Integer.valueOf(reader.readInt());
-						break;
-					case NAME:
-						mobNames.put(key, reader.readNullTerminatedString());
-						break;
-				}
+			for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+				key = Integer.valueOf(id);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					mobNames.put(key, str);
 			}
 			reader = new LittleEndianByteArrayReader(new File(dir + "Npc.img.kvj"));
-			key = null;
-			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
-				switch (now) {
-					case NEXT:
-						key = Integer.valueOf(reader.readInt());
-						break;
-					case NAME:
-						npcNames.put(key, reader.readNullTerminatedString());
-						break;
-				}
+			for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+				key = Integer.valueOf(id);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					npcNames.put(key, str);
 			}
 			reader = new LittleEndianByteArrayReader(new File(dir + "Skill.img.kvj"));
-			key = null;
-			for (byte now = reader.readByte(); now != -1; now = reader.readByte()) {
-				switch (now) {
-					case NEXT:
-						key = Integer.valueOf(reader.readInt());
-						break;
-					case NAME:
-						skillNames.put(key, reader.readNullTerminatedString());
-						break;
-				}
+			for (int id = reader.readInt(); id != -1; id = reader.readInt()) {
+				key = Integer.valueOf(id);
+				str = reader.readNullTerminatedString();
+				if (!str.isEmpty())
+					skillNames.put(key, str);
 			}
 			return true;
 		} catch (IOException ex) {

@@ -59,7 +59,6 @@ public class ShopCharacter extends LoggedInPlayer {
 	private int partyId;
 	private int guildId;
 	private byte maxCharacters;
-	private short storageInventoryCapacity;
 	private CashShopStaging shopInventory;
 	private int mesos;
 	private final int[] cashShopBalance;
@@ -98,10 +97,6 @@ public class ShopCharacter extends LoggedInPlayer {
 
 	public short getMaxCharacters() {
 		return maxCharacters;
-	}
-
-	public short getStorageInventoryCapacity() {
-		return storageInventoryCapacity;
 	}
 
 	@Override
@@ -177,7 +172,7 @@ public class ShopCharacter extends LoggedInPlayer {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`characters`,`a`.`storageslots`,`a`.`paypalnx`,`a`.`maplepoints`,`a`.`gamecardnx` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`characters`,`a`.`paypalnx`,`a`.`maplepoints`,`a`.`gamecardnx` "
 					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
@@ -198,10 +193,9 @@ public class ShopCharacter extends LoggedInPlayer {
 			short maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
 			p.maxCharacters = rs.getByte(43);
-			p.storageInventoryCapacity = rs.getShort(44);
-			p.cashShopBalance[0] = rs.getInt(45);
-			p.cashShopBalance[1] = rs.getInt(46);
-			p.cashShopBalance[3] = rs.getInt(47);
+			p.cashShopBalance[0] = rs.getInt(44);
+			p.cashShopBalance[1] = rs.getInt(45);
+			p.cashShopBalance[3] = rs.getInt(46);
 			rs.close();
 			ps.close();
 

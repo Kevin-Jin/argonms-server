@@ -36,6 +36,7 @@ import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.Pair;
 import argonms.shop.character.ShopCharacter;
+import argonms.shop.loading.cashshop.CashShopDataLoader;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
 import argonms.shop.net.external.ShopClient;
@@ -213,11 +214,15 @@ public class ShopServer implements LocalServer {
 
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
 		StringDataLoader.setInstance(wzType, wzPath);
+		CashShopDataLoader.setInstance(wzType, wzPath);
 		ItemDataLoader.setInstance(wzType, wzPath);
 		long start, end;
 		start = System.nanoTime();
 		System.out.print("Loading String data...");
 		StringDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
+		System.out.print("Loading Commodity and Package data...");
+		CashShopDataLoader.getInstance().loadAll();
 		System.out.println("\tDone!");
 		if (preloadAll) {
 			System.out.print("Loading Item data...");
