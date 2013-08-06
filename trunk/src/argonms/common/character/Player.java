@@ -312,25 +312,27 @@ public abstract class Player {
 	}
 
 	public static void commitInventory(int characterId, int accountId, Pet[] pets, Connection con, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
-		PreparedStatement ps = null, eps = null, rps = null, pps = null, mps = null;
+		PreparedStatement ps = null, eps = null, rps = null, pps = null, mps = null, cps = null;
 		ResultSet rs = null;
 		try {
 			ps = con.prepareStatement("INSERT INTO `inventoryitems` "
-				+ "(`characterid`,`accountid`,`inventorytype`,`position`,`itemid`,`expiredate`,`uniqueid`,`owner`,`quantity`) "
-				+ "VALUES (?,?,?,?,?,?,?,?,?)",
+				+ "(`characterid`,`accountid`,`inventorytype`,`position`,`itemid`,`expiredate`,`owner`,`quantity`) "
+				+ "VALUES (?,?,?,?,?,?,?,?)",
 				Statement.RETURN_GENERATED_KEYS);
 			eps = con.prepareStatement("INSERT INTO `inventoryequipment` "
 					+ "(`inventoryitemid`,`upgradeslots`,`level`,`str`,`dex`,`int`,`luk`,`hp`,`mp`,`watk`,`matk`,`wdef`,`mdef`,`acc`,`avoid`,`hands`,`speed`,`jump`) "
 					+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 			rps = con.prepareStatement("INSERT INTO `inventoryrings` "
 					+ "(`inventoryitemid`,`partnerchrid`,`partnerringid`) "
-					+ "VALUES(?,?,?)");
+					+ "VALUES (?,?,?)");
 			pps = con.prepareStatement("INSERT INTO `inventorypets` "
 					+ "(`inventoryitemid`,`position`,`name`,`level`,`closeness`,`fullness`,`expired`) "
 					+ "VALUES (?,?,?,?,?,?,?)");
 			mps = con.prepareStatement("INSERT INTO `inventorymounts` "
 					+ "(`inventoryitemid`,`level`,`exp`,`tiredness`) "
 					+ "VALUES (?,?,?,?)");
+			cps = con.prepareStatement("UPDATE `cashshoppurchases` "
+					+ "SET `inventoryitemid` = ? WHERE `uniqueid` = ?");
 			ps.setInt(1, characterId);
 			ps.setInt(2, accountId);
 			for (Entry<InventoryType, ? extends IInventory> ent : inventories.entrySet()) {
@@ -352,21 +354,21 @@ public abstract class Player {
 						ps.setShort(4, e.getKey().shortValue());
 						ps.setInt(5, item.getDataId());
 						ps.setLong(6, item.getExpiration());
-						ps.setLong(7, item.getUniqueId());
-						ps.setString(8, item.getOwner());
-						ps.setShort(9, item.getQuantity());
+						ps.setString(7, item.getOwner());
+						ps.setShort(8, item.getQuantity());
 						//TODO: refactor so we can use addBatch here for inventories
 						//(equip, ring, pet, mount) and for items. Run getGeneratedKeys()
 						//after executeBatch to get generated keys for each item
 						//in iteration order...
 
+						int inventoryKey = -1;
 						switch (item.getType()) {
 							case RING: {
 								Ring ring = (Ring) item;
 
 								ps.executeUpdate(); //need the generated keys, so no batch
 								rs = ps.getGeneratedKeys();
-								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								inventoryKey = rs.next() ? rs.getInt(1) : -1;
 								rs.close();
 
 								setEquipUpdateVariables(ring, inventoryKey, eps);
@@ -381,7 +383,7 @@ public abstract class Player {
 							case EQUIP: {
 								ps.executeUpdate(); //need the generated keys, so no batch
 								rs = ps.getGeneratedKeys();
-								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								inventoryKey = rs.next() ? rs.getInt(1) : -1;
 								rs.close();
 
 								setEquipUpdateVariables((Equip) item, inventoryKey, eps);
@@ -393,7 +395,7 @@ public abstract class Player {
 
 								ps.executeUpdate(); //need the generated keys, so no batch
 								rs = ps.getGeneratedKeys();
-								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								inventoryKey = rs.next() ? rs.getInt(1) : -1;
 								rs.close();
 
 								pps.setInt(1, inventoryKey);
@@ -411,7 +413,7 @@ public abstract class Player {
 
 								ps.executeUpdate(); //need the generated keys, so no batch
 								rs = ps.getGeneratedKeys();
-								int inventoryKey = rs.next() ? rs.getInt(1) : -1;
+								inventoryKey = rs.next() ? rs.getInt(1) : -1;
 								rs.close();
 
 								setEquipUpdateVariables(mount, inventoryKey, eps);
@@ -425,8 +427,21 @@ public abstract class Player {
 								break;
 							}
 							case ITEM:
-								ps.addBatch();
+								if (item.getUniqueId() == 0) {
+									ps.addBatch();
+								} else {
+									ps.executeUpdate(); //need the generated keys, so no batch
+									rs = ps.getGeneratedKeys();
+									inventoryKey = rs.next() ? rs.getInt(1) : -1;
+									rs.close();
+								}
 								break;
+						}
+
+						if (item.getUniqueId() != 0) {
+							cps.setInt(1, inventoryKey);
+							cps.setLong(2, item.getUniqueId());
+							cps.addBatch();
 						}
 					}
 				}
@@ -436,7 +451,9 @@ public abstract class Player {
 			rps.executeBatch();
 			pps.executeBatch();
 			mps.executeBatch();
+			cps.executeBatch();
 		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, cps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, mps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, pps, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, null, rps, null);
@@ -533,12 +550,20 @@ public abstract class Player {
 						item = pet;
 					} else {
 						item = new Item(itemid);
-						item.setQuantity(rs.getShort(10));
+						item.setQuantity(rs.getShort(9));
 					}
 				}
+				if (InventoryTools.isCashItem(itemid)) {
+					ips = con.prepareStatement("SELECT `uniqueid` FROM `cashshoppurchases` WHERE `inventoryitemid` = ?");
+					ips.setInt(1, inventoryKey);
+					irs = ips.executeQuery();
+					if (irs.next())
+						item.setUniqueId(irs.getLong(1));
+					irs.close();
+					ips.close();
+				}
 				item.setExpiration(rs.getLong(7));
-				item.setUniqueId(rs.getLong(8));
-				item.setOwner(rs.getString(9));
+				item.setOwner(rs.getString(8));
 				inventories.get(inventoryType).put(position, item);
 			}
 		} finally {

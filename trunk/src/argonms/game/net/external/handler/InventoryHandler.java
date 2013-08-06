@@ -86,7 +86,7 @@ public final class InventoryHandler {
 			}
 			InventorySlot toDrop;
 			short newQty = (short) (item.getQuantity() - qty);
-			if (newQty == 0 || InventoryTools.isRechargeable(item.getDataId())) {
+			if (newQty == 0 || InventoryTools.isRechargeable(item.getDataId()) || InventoryTools.isCashItem(item.getDataId())) {
 				inv.remove(src);
 				toDrop = item;
 				gc.getSession().send(GamePackets.writeInventoryClearSlot(type, src));
@@ -269,7 +269,8 @@ public final class InventoryHandler {
 	private static boolean notStackable(InventorySlot src, InventorySlot dst, short slotMax) {
 		return dst == null || src.getDataId() != dst.getDataId() || slotMax == 1
 				|| InventoryTools.isThrowingStar(src.getDataId())
-				|| InventoryTools.isBullet(src.getDataId());
+				|| InventoryTools.isBullet(src.getDataId())
+				|| InventoryTools.isCashItem(dst.getDataId());
 	}
 
 	private static void exchange(GameCharacter p, InventoryType type, short src, short dst) {

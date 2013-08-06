@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-DROP TABLE IF EXISTS `uniqueid`;
  DROP TABLE IF EXISTS `infractions`;
   DROP TABLE IF EXISTS `macbans`;
  DROP TABLE IF EXISTS `bans`;
@@ -36,6 +35,7 @@ DROP TABLE IF EXISTS `uniqueid`;
   DROP TABLE IF EXISTS `buddyentries`;
    DROP TABLE IF EXISTS `questmobprogress`;
   DROP TABLE IF EXISTS `queststatuses`;
+   DROP TABLE IF EXISTS `cashshoppurchases`;
    DROP TABLE IF EXISTS `inventoryrings`;
    DROP TABLE IF EXISTS `inventorypets`;
    DROP TABLE IF EXISTS `inventorymounts`;
@@ -119,7 +119,6 @@ CREATE TABLE `inventoryitems` (
   `position` SMALLINT(6) NOT NULL,
   `itemid` INT(11) NOT NULL,
   `expiredate` BIGINT(20) NOT NULL,
-  `uniqueid` BIGINT(20) NOT NULL,
   `owner` VARCHAR(12),
   `quantity` SMALLINT(6) NOT NULL,
   PRIMARY KEY (`inventoryitemid`),
@@ -190,6 +189,17 @@ CREATE TABLE `inventoryrings` (
   KEY (`inventoryitemid`),
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE `cashshoppurchases` (
+  `uniqueid` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `inventoryitemid` INT(10) UNSIGNED DEFAULT NULL,
+  `purchaseracctid` INT(11) DEFAULT NULL,
+  `gifterchrname` VARCHAR(13) DEFAULT NULL,
+  `serialnumber` INT(11) DEFAULT NULL,
+  PRIMARY KEY (`uniqueid`),
+  KEY (`inventoryitemid`),
+  CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE SET NULL
+) Engine=InnoDB;
 
 CREATE TABLE `queststatuses` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -416,11 +426,6 @@ CREATE TABLE `infractions` (
   `pardoned` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`entryid`),
   KEY (`accountid`)
-) ENGINE=InnoDB;
-
-CREATE TABLE `uniqueid` (
-  `nextuid` BIGINT(20) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`nextuid`)
 ) ENGINE=InnoDB;
 
 DROP PROCEDURE IF EXISTS `updateranks`;

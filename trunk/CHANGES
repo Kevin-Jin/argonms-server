@@ -2910,6 +2910,16 @@
 	* Fix improper package interpretation of "storage slots" in shop server.
 	* Load commodities and cash packages from SQL or Kvj in shop server.
 
+2013-08-05  GoldenKevin  (revision 220)
+
+	* Preserve unique ID of InventorySlots. Stacks of cash items that were not
+	created at the same time through purchase, drop pickup, or !give command
+	cannot be broken or consolidated.
+	* Unique ID moved from `inventoryitems` table to new `cashshoppurchases`
+	table that also holds other cash shop purchase information. `uniqueid` table
+	is no longer needed and has been removed.
+	* Merged UniqueIdGenerator with InventoryTools.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
