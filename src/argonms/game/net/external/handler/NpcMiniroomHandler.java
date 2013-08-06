@@ -18,7 +18,6 @@
 
 package argonms.game.net.external.handler;
 
-import argonms.common.UniqueIdGenerator;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
@@ -40,16 +39,12 @@ import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author GoldenKevin
  */
 public final class NpcMiniroomHandler {
-	private static final Logger LOG = Logger.getLogger(NpcMiniroomHandler.class.getName());
-
 	private static final byte
 		//shop
 		ACT_BUY = 0,
@@ -84,14 +79,14 @@ public final class NpcMiniroomHandler {
 				int price = packet.readInt();
 
 				NpcShop.ShopSlot item = shop.get(position);
+				if (item == null || item.itemId != itemId || item.price != price) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from NPC shop");
+					return;
+				}
 				int totalPrice = price * quantity;
 				int totalQuantity = item.quantity * quantity;
 				if (quantity < 0) {
 					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy negative quantity from NPC shop");
-					return;
-				}
-				if (item == null || item.itemId != itemId || item.price != price) {
-					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from NPC shop");
 					return;
 				}
 				GameCharacter p = gc.getPlayer();
@@ -276,20 +271,13 @@ public final class NpcMiniroomHandler {
 					return;
 				}
 				p.gainMesos(-keeper.getDepositCost(), false);
-				if (quantity == item.getQuantity() || InventoryTools.isRechargeable(itemId)) {
+				if (quantity == item.getQuantity() || InventoryTools.isRechargeable(itemId) || InventoryTools.isCashItem(itemId)) {
 					storageInv.put(inv.remove(slot));
 					gc.getSession().send(GamePackets.writeInventoryClearSlot(invType, slot));
 				} else {
 					InventorySlot split = item.clone();
 					item.setQuantity((short) (item.getQuantity() - quantity));
 					split.setQuantity(quantity);
-					if (item.getUniqueId() != 0) {
-						try {
-							split.setUniqueId(UniqueIdGenerator.getAndIncrement());
-						} catch (Exception e) {
-							LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
-						}
-					}
 					storageInv.put(split);
 					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
 				}

@@ -19,13 +19,18 @@
 package argonms.common.character.inventory;
 
 import argonms.common.StatEffect;
-import argonms.common.UniqueIdGenerator;
 import argonms.common.character.Player;
 import argonms.common.character.inventory.Equip.WeaponType;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.string.StringDataLoader;
+import argonms.common.util.DatabaseManager;
 import argonms.common.util.Rng;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -112,6 +117,18 @@ public final class InventoryTools {
 		equipCache = new HashMap<Integer, Equip>();
 	}
 
+	/**
+	 * Finds the ceiling of (x / y)
+	 * @param x must be non-negative
+	 * @param y must be positive
+	 * @return
+	 */
+	private static int ceil(int x, int y) {
+		if (x == 0)
+			return 0;
+		return ((x - 1) / y) + 1;
+	}
+
 	public static int slotsNeeded(Inventory inv, int itemid, int remQty, boolean breakRechargeableStack) {
 		if (remQty <= 0)
 			return 0;
@@ -122,6 +139,9 @@ public final class InventoryTools {
 			//receiving player because of higher claw/gun mastery for).
 			//the item will be stacked to the given quantity in one slot.
 			return 1;
+
+		if (isCashItem(itemid))
+			return ceil(remQty, ItemDataLoader.getInstance().getSlotMax(itemid));
 
 		//TODO: use getPersonalSlotMax, but this is in argonms.common. X.X
 		short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
@@ -159,6 +179,23 @@ public final class InventoryTools {
 		return slots;
 	}
 
+	private static long generateCashPurchase() throws Exception {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
+			ps = con.prepareStatement("INSERT INTO `cashshoppurchases` VALUES ()", Statement.RETURN_GENERATED_KEYS);
+			ps.executeUpdate();
+			rs = ps.getGeneratedKeys();
+			return rs.next() ? rs.getLong(1) : -1;
+		} catch (SQLException e) {
+			throw new Exception("Database access error while acquiring next unique id.", e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
+		}
+	}
+
 	public static InventorySlot makeItemWithId(int itemid) {
 		InventorySlot item;
 		if (isEquip(itemid)) {
@@ -171,7 +208,7 @@ public final class InventoryTools {
 		}
 		if (isCashItem(itemid)) {
 			try {
-				item.setUniqueId(UniqueIdGenerator.getAndIncrement());
+				item.setUniqueId(generateCashPurchase());
 			} catch (Exception e) {
 				LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
 			}
@@ -224,7 +261,7 @@ public final class InventoryTools {
 		} else if (quantity > 0) {
 			boolean equip = isEquip(itemid);
 			boolean pet = isPet(itemid);
-			boolean updateUid = isCashItem(itemid);
+			boolean cashItem = isCashItem(itemid);
 			//TODO: getPersonalSlotMax, but this is in argonms.common. X.X
 			short slotMax = ItemDataLoader.getInstance().getSlotMax(itemid);
 			short invEnd = inv.getMaxSlots();
@@ -234,29 +271,31 @@ public final class InventoryTools {
 			int qtyDelta;
 			Map<Short, InventorySlot> slots = inv.getAll();
 			synchronized(slots) {
-				for (Map.Entry<Short, InventorySlot> entry : slots.entrySet()) {
-					slotItem = entry.getValue();
-					if (slotItem.getDataId() != itemid)
-						continue;
-					slotQty = slotItem.getQuantity();
-					qtyDelta = Math.min(slotMax - slotQty, quantity);
-					if (qtyDelta <= 0)
-						continue;
-					quantity -= qtyDelta;
-					//assert (!equip && !pet);
-					slotItem.setQuantity((short) (slotQty + qtyDelta));
-					modifiedSlots.add(entry.getKey());
-					if (quantity == 0)
-						break;
+				if (!cashItem) {
+					for (Map.Entry<Short, InventorySlot> entry : slots.entrySet()) {
+						slotItem = entry.getValue();
+						if (slotItem.getDataId() != itemid)
+							continue;
+						slotQty = slotItem.getQuantity();
+						qtyDelta = Math.min(slotMax - slotQty, quantity);
+						if (qtyDelta <= 0)
+							continue;
+						quantity -= qtyDelta;
+						//assert (!equip && !pet);
+						slotItem.setQuantity((short) (slotQty + qtyDelta));
+						modifiedSlots.add(entry.getKey());
+						if (quantity == 0)
+							break;
+					}
 				}
 				for (short i = 1; i <= invEnd && quantity != 0; i++) {
 					slotItem = inv.get(i);
 					if (slotItem == null) {
 						if (clone) {
 							item = item.clone();
-							if (updateUid) {
+							if (cashItem) {
 								try {
-									item.setUniqueId(UniqueIdGenerator.getAndIncrement());
+									item.setUniqueId(generateCashPurchase());
 								} catch (Exception e) {
 									LOG.log(Level.WARNING, "Failed to set new uid for cash item.", e);
 								}
