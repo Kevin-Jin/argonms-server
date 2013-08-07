@@ -31,6 +31,7 @@ import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.shop.ShopServer;
 import argonms.shop.net.external.ShopClient;
+import argonms.shop.net.external.ShopPackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -53,6 +54,12 @@ import java.util.logging.Logger;
 public class ShopCharacter extends LoggedInPlayer {
 	private static final Logger LOG = Logger.getLogger(ShopCharacter.class.getName());
 
+	public static final int
+		PAYPAL_NX = 1,
+		MAPLE_POINTS = 2,
+		GAME_CARD_NX = 4
+	;
+
 	private ShopClient client;
 
 	private ShopBuddyList buddies;
@@ -61,7 +68,7 @@ public class ShopCharacter extends LoggedInPlayer {
 	private byte maxCharacters;
 	private CashShopStaging shopInventory;
 	private int mesos;
-	private final int[] cashShopBalance;
+	private final AtomicInteger[] cashShopBalance;
 	private final Map<Integer, SkillEntry> skills;
 	private final Map<Integer, Cooldown> cooldowns;
 	private final Map<Short, QuestEntry> questStatuses;
@@ -70,7 +77,7 @@ public class ShopCharacter extends LoggedInPlayer {
 
 	private ShopCharacter() {
 		super();
-		cashShopBalance = new int[4];
+		cashShopBalance = new AtomicInteger[4];
 		skills = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		questStatuses = new HashMap<Short, QuestEntry>();
@@ -105,7 +112,21 @@ public class ShopCharacter extends LoggedInPlayer {
 	}
 
 	public int getCashShopCurrency(int type) {
-		return cashShopBalance[type - 1];
+		return cashShopBalance[type - 1].get();
+	}
+
+	public void setCashShopCurrency(int type, int newVal) {
+		cashShopBalance[type - 1].set(newVal);
+		getClient().getSession().send(ShopPackets.writeCashShopCurrencyBalance(this));
+	}
+
+	public boolean gainCashShopCurrency(int type, int gain) {
+		long newValue = (long) getCashShopCurrency(type) + gain;
+		if (newValue <= Integer.MAX_VALUE && newValue >= 0) {
+			setCashShopCurrency(type, (int) newValue);
+			return true;
+		}
+		return false;
 	}
 
 	public CashShopStaging getCashShopInventory() {
@@ -163,7 +184,109 @@ public class ShopCharacter extends LoggedInPlayer {
 	}
 
 	public void saveCharacter() {
-		
+		int prevTransactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
+		boolean prevAutoCommit = true;
+		Connection con = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			prevTransactionIsolation = con.getTransactionIsolation();
+			prevAutoCommit = con.getAutoCommit();
+			con.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			con.setAutoCommit(false);
+			updateDbAccount(con);
+			updateDbStats(con);
+			updateDbInventory(con);
+			con.commit();
+		} catch (Throwable ex) {
+			LOG.log(Level.WARNING, "Could not save character " + getDataId() + ". Rolling back all changes...", ex);
+			if (con != null) {
+				try {
+					con.rollback();
+				} catch (SQLException ex2) {
+					LOG.log(Level.WARNING, "Error rolling back character.", ex2);
+				}
+			}
+		} finally {
+			if (con != null) {
+				try {
+					con.setAutoCommit(prevAutoCommit);
+					con.setTransactionIsolation(prevTransactionIsolation);
+				} catch (SQLException ex) {
+					LOG.log(Level.WARNING, "Could not reset Connection config after saving character " + getDataId(), ex);
+				}
+			}
+			DatabaseManager.cleanup(DatabaseType.STATE, null, null, con);
+		}
+	}
+
+	private void updateDbAccount(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("UPDATE `accounts` SET `paypalnx` = ?, `maplepoints` = ?, `gamecardnx` = ? WHERE `id` = ?");
+			ps.setInt(1, getCashShopCurrency(PAYPAL_NX));
+			ps.setInt(2, getCashShopCurrency(MAPLE_POINTS));
+			ps.setInt(3, getCashShopCurrency(GAME_CARD_NX));
+			ps.setInt(4, client.getAccountId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save account-info of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
+	private void updateDbStats(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("UPDATE `characters` SET "
+					+ "`mesos` = ?, `equipslots` = ?, `useslots` = ?, `setupslots` = ?, `etcslots` = ?, `cashslots` = ? "
+					+ "WHERE `id` = ?");
+			ps.setInt(1, mesos);
+			ps.setShort(2, getInventory(InventoryType.EQUIP).getMaxSlots());
+			ps.setShort(3, getInventory(InventoryType.USE).getMaxSlots());
+			ps.setShort(4, getInventory(InventoryType.SETUP).getMaxSlots());
+			ps.setShort(5, getInventory(InventoryType.ETC).getMaxSlots());
+			ps.setShort(6, getInventory(InventoryType.CASH).getMaxSlots());
+			ps.setInt(7, getDataId());
+			int updateRows = ps.executeUpdate();
+			if (updateRows < 1)
+				LOG.log(Level.WARNING, "Updating a deleted character with name {0} of account {1}.",
+						new Object[] { name, client.getAccountId() });
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save stats of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
+		}
+	}
+
+	private void updateDbInventory(Connection con) throws SQLException {
+		String invUpdate = "DELETE FROM `inventoryitems` WHERE "
+				+ "`characterid` = ? AND `inventorytype` <= " + InventoryType.CASH.byteValue()
+				+ " OR `accountid` = ? AND `inventorytype` = " + InventoryType.CASH_SHOP.byteValue();
+		PreparedStatement ps = null, ips = null;
+		ResultSet rs = null;
+		try {
+			ps = con.prepareStatement(invUpdate);
+			ps.setInt(1, getDataId());
+			ps.setInt(2, client.getAccountId());
+			ps.executeUpdate();
+			ps.close();
+
+			EnumMap<InventoryType, IInventory> union = new EnumMap<InventoryType, IInventory>(getInventories());
+			union.put(InventoryType.CASH_SHOP, shopInventory);
+			commitInventory(con, union);
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save inventory of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
+		}
+	}
+
+	@Override
+	protected void loadInventory(Connection con, ResultSet rs, Map<InventoryType, ? extends IInventory> inventories) throws SQLException {
+		super.loadInventory(con, rs, inventories);
+		shopInventory.loadPurchaseProperties(getClient().getAccountId());
 	}
 
 	public static ShopCharacter loadPlayer(ShopClient c, int id) {
@@ -193,9 +316,9 @@ public class ShopCharacter extends LoggedInPlayer {
 			short maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
 			p.maxCharacters = rs.getByte(43);
-			p.cashShopBalance[0] = rs.getInt(44);
-			p.cashShopBalance[1] = rs.getInt(45);
-			p.cashShopBalance[3] = rs.getInt(46);
+			p.cashShopBalance[PAYPAL_NX - 1] = new AtomicInteger(rs.getInt(44));
+			p.cashShopBalance[MAPLE_POINTS - 1] = new AtomicInteger(rs.getInt(45));
+			p.cashShopBalance[GAME_CARD_NX - 1] = new AtomicInteger(rs.getInt(46));
 			rs.close();
 			ps.close();
 

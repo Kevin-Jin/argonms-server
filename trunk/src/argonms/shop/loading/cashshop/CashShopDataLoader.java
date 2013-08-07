@@ -39,6 +39,14 @@ public abstract class CashShopDataLoader {
 
 	public abstract boolean loadAll();
 
+	public Commodity getCommodity(int serialNumber) {
+		return commodities.get(Integer.valueOf(serialNumber));
+	}
+
+	public int[] getSnsForPackage(int packageNumber) {
+		return packages.get(Integer.valueOf(packageNumber));
+	}
+
 	public static void setInstance(DataFileType wzType, String wzPath) {
 		if (instance == null) {
 			switch (wzType) {

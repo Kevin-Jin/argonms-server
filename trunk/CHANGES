@@ -2920,6 +2920,17 @@
 	is no longer needed and has been removed.
 	* Merged UniqueIdGenerator with InventoryTools.
 
+2013-08-07  GoldenKevin  (revision 221)
+
+	* CashShopStaging is now an implementation of IInventory rather than an
+	extension of Inventory because it has no concept of slot positions.
+	* Implemented ShopCharacter persistence. State is committed whenever the
+	save character packet is received and when the player exits the shop.
+	* Use AtomicIntegers for keeping track of cash because volatile array
+	elements are a pain to implement.
+	* Implemented buying of items from cash shop and transferring cash items to
+	and from staging. Added code stubs for more cash shop operations.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
