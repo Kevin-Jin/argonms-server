@@ -50,6 +50,12 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 			case ClientRecvOps.CHANGE_MAP:
 				CashShopHandler.handleReturnToChannel(reader, sc);
 				break;
+			case ClientRecvOps.BUY_CS_ITEM:
+				CashShopHandler.handleAction(reader, sc);
+				break;
+			case ClientRecvOps.PLAYER_UPDATE:
+				sc.getPlayer().saveCharacter();
+				break;
 			default:
 				LOG.log(Level.FINE, "Received unhandled client packet {0} bytes long:\n{1}", new Object[] { reader.available() + 2, reader });
 				break;

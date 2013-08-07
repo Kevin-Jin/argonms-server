@@ -82,7 +82,7 @@ public final class EnterShopHandler {
 			sc.getSession().send(ShopPackets.writeCashShopCurrencyBalance(player));
 			sc.getSession().send(writeCashItemStagingInventory(player));
 			sc.getSession().send(writeGiftedCashItems(player));
-			sc.getSession().send(ShopPackets.writeCashItemWishList(player, false));
+			sc.getSession().send(ShopPackets.writePopulateWishList(player));
 		} else {
 			//sc.getSession().send(MaplePacketCreator.MTSWantedListingOver(0, 0));
 			//sc.getSession().send(MaplePacketCreator.showMTSCash(player));
@@ -309,20 +309,10 @@ public final class EnterShopHandler {
 		CashShopStaging inv = p.getCashShopInventory();
 		inv.lockRead();
 		try {
-			Collection<InventorySlot> items = inv.getAll().values();
+			Collection<InventorySlot> items = inv.getAllValues();
 			lew.writeShort((short) items.size());
-			for (InventorySlot item : items) {
-				lew.writeLong(item.getUniqueId());
-				lew.writeInt(inv.getAccount(item.getUniqueId(), p.getClient().getAccountId()));
-				lew.writeInt(0);
-				lew.writeInt(item.getDataId());
-				lew.writeInt(0);
-				lew.writeShort(item.getQuantity());
-				lew.writeLengthPrefixedString(item.getOwner()); //gifted items should have owner set to purchaser
-				lew.writeLong(item.getExpiration());
-				lew.writeInt(inv.getSn(item.getUniqueId()));
-				lew.writeInt(0);
-			}
+			for (InventorySlot item : items)
+				ShopPackets.writeStagingSlot(lew, inv.getPurchaseProperties(item.getUniqueId()), item);
 		} finally {
 			inv.unlockRead();
 		}
