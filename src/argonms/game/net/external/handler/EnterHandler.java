@@ -24,6 +24,7 @@ import argonms.common.character.Skills;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.RemoteClient;
+import argonms.common.net.internal.ChannelSynchronizationOps;
 import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
 import argonms.common.util.input.LittleEndianReader;
@@ -70,7 +71,7 @@ public final class EnterHandler {
 		//TODO: although shop server is not interchannel, we still have to keep
 		//track of the PlayerContext in shop so that non-expired buffs from
 		//before we entered the shop could be applied
-		boolean firstLogIn = !cserv.applyBuffsFromLastChannel(player);
+		byte originChannel = cserv.applyBuffsFromLastChannel(player);
 		if (player.isVisible() && player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
@@ -78,16 +79,16 @@ public final class EnterHandler {
 		//TODO: although shop server is not interchannel, we need to display our
 		//buddies that are online in the shop server
 		BuddyList bList = player.getBuddyList();
-		if (firstLogIn) {
+		if (originChannel == ChannelSynchronizationOps.CHANNEL_OFFLINE)
 			gc.getSession().send(GamePackets.writeBuddyList(BuddyListHandler.ADD, bList));
-			for (Entry<Integer, String> invite : bList.getInvites())
+		if (originChannel <= ChannelSynchronizationOps.CHANNEL_CASH_SHOP)
+			for (Entry<Integer, String> invite : bList.getInvites()) //also do this if coming from shop server
 				gc.getSession().send(GamePackets.writeBuddyInvite(invite.getKey().intValue(), invite.getValue()));
-		}
 		cserv.getCrossServerInterface().sendExchangeBuddyLogInNotifications(player);
 		if (player.getParty() != null)
 			cserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player);
 		if (player.getGuild() != null)
-			cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player, firstLogIn);
+			cserv.getCrossServerInterface().sendGuildMemberLogInNotifications(player, originChannel == ChannelSynchronizationOps.CHANNEL_OFFLINE);
 
 		//player.showNote();
 		gc.getSession().send(writeKeymap(player.getKeyMap()));

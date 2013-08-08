@@ -120,6 +120,7 @@ public class ChannelShopSynchronization extends ChannelOrShopSynchronization {
 			context.addActiveSummon(packet.readInt(), playerId, packet.readPos(), packet.readByte());
 		context.setEnergyCharge(packet.readShort());
 		context.setChatroomId(packet.readInt());
+		context.setOriginChannel(targetCh);
 
 		handler.receivedChannelChangeRequest(targetCh, playerId, context);
 	}
@@ -140,6 +141,9 @@ public class ChannelShopSynchronization extends ChannelOrShopSynchronization {
 				break;
 			case ChannelSynchronizationOps.BUDDY_ONLINE:
 				receivedSentBuddyLogInNotifications(packet);
+				break;
+			case ChannelSynchronizationOps.BUDDY_ONLINE_RESPONSE:
+				receivedReturnedBuddyLogInNotifications(packet);
 				break;
 			case ChannelSynchronizationOps.BUDDY_OFFLINE:
 				receivedBuddyLogOffNotifications(packet);

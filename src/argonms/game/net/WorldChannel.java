@@ -215,12 +215,12 @@ public class WorldChannel {
 		channelChangeData.put(Integer.valueOf(playerId), context);
 	}
 
-	public boolean applyBuffsFromLastChannel(GameCharacter p) {
+	public byte applyBuffsFromLastChannel(GameCharacter p) {
 		PlayerContinuation context = channelChangeData.remove(Integer.valueOf(p.getId()));
 		if (context == null)
-			return false;
+			return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 		context.applyTo(p);
-		return true;
+		return context.getOriginChannel();
 	}
 
 	private void sendNewLoad(short now) {

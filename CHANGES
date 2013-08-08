@@ -2931,6 +2931,19 @@
 	* Implemented buying of items from cash shop and transferring cash items to
 	and from staging. Added code stubs for more cash shop operations.
 
+2013-08-08  GoldenKevin  (revision 222)
+
+	* Players get their buddy list updated if a buddy in the cash shop exits the
+	shop without returning to a channel, e.g. by crashing or hitting Alt-F4.
+	* Buddy discovery now works for players in the cash shop. Logging into a
+	character with a buddy in the cash shop will show that buddy as in the cash
+	shop as opposed to offline.
+	* Display all queued buddy invites when a player leaves the cash shop in
+	case another player sent an invite while the recipient was in the shop and
+	unable to respond.
+	* Fixed whisper and /find command reporting that offline players are in the
+	cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

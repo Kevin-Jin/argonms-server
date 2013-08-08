@@ -226,6 +226,7 @@ public class CrossProcessCrossChannelSynchronization extends ChannelOrShopSynchr
 			context.addActiveSummon(packet.readInt(), playerId, packet.readPos(), packet.readByte());
 		context.setEnergyCharge(packet.readShort());
 		context.setChatroomId(packet.readInt());
+		context.setOriginChannel(targetCh);
 
 		handler.receivedChannelChangeRequest(targetCh, playerId, context);
 	}
@@ -385,19 +386,6 @@ public class CrossProcessCrossChannelSynchronization extends ChannelOrShopSynchr
 	}
 
 	@Override
-	public int exchangeBuddyLogInNotifications(int sender, int[] recipients) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + recipients.length * 4);
-		writeSynchronizationPacketHeader(lew, ChannelSynchronizationOps.BUDDY_ONLINE);
-		lew.writeInt(sender);
-		lew.writeByte((byte) recipients.length);
-		for (int i = 0; i < recipients.length; i++)
-			lew.writeInt(recipients[i]);
-
-		writeSynchronizationPacket(lew.getBytes());
-		return 0;
-	}
-
-	@Override
 	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + senders.size() * 4);
 		writeSynchronizationPacketHeader(lew, ChannelSynchronizationOps.BUDDY_ONLINE_RESPONSE);
@@ -408,17 +396,6 @@ public class CrossProcessCrossChannelSynchronization extends ChannelOrShopSynchr
 		lew.writeBool(bubble);
 
 		writeSynchronizationPacket(lew.getBytes());
-	}
-
-	private void receivedReturnedBuddyLogInNotifications(LittleEndianReader packet) {
-		int recipient = packet.readInt();
-		byte count = packet.readByte();
-		List<Integer> senders = new ArrayList<Integer>();
-		for (int i = 0; i < count; i++)
-			senders.add(Integer.valueOf(packet.readInt()));
-		boolean bubble = packet.readBool();
-
-		handler.receivedReturnedBuddyLogInNotifications(recipient, senders, bubble, targetCh);
 	}
 
 	@Override

@@ -30,14 +30,13 @@ import java.util.Map;
 public class ShopPlayerContinuation extends AbstractPlayerContinuation {
 	private final Map<Integer, BuffState.PlayerSummonState> activeSummons;
 
-	private byte lastChannel;
 	private boolean cashShop;
 
 	public ShopPlayerContinuation(Map<Integer, BuffState.ItemState> activeItems,
 			Map<Integer, BuffState.SkillState> activeSkills,
 			Map<Short, BuffState.MobSkillState> activeDebuffs,
-			short energyCharge, int chatroom, boolean isEnteringCashShop) {
-		super(activeItems, activeSkills, activeDebuffs, energyCharge);
+			byte channel, short energyCharge, int chatroom, boolean isEnteringCashShop) {
+		super(activeItems, activeSkills, activeDebuffs, channel, energyCharge);
 		setChatroomId(chatroom);
 		activeSummons = new HashMap<Integer, BuffState.PlayerSummonState>();
 		cashShop = isEnteringCashShop;
@@ -52,10 +51,6 @@ public class ShopPlayerContinuation extends AbstractPlayerContinuation {
 		return activeSummons;
 	}
 
-	public byte getReturnChannel() {
-		return lastChannel;
-	}
-
 	/**
 	 * Returns false if the player is entering the MTS.
 	 * @return 
@@ -66,10 +61,6 @@ public class ShopPlayerContinuation extends AbstractPlayerContinuation {
 
 	public void addActiveSummon(int skillId, Point pos, byte stance) {
 		activeSummons.put(Integer.valueOf(skillId), new BuffState.PlayerSummonState(pos, stance));
-	}
-
-	public void setReturnChannel(byte channel) {
-		lastChannel = channel;
 	}
 
 	public void setEnteringCashShop(boolean cashShop) {
