@@ -24,6 +24,7 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.shop.character.ShopCharacter;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -166,6 +167,24 @@ public class ShopCrossServerSynchronization {
 		try {
 			for (ShopChannelSynchronization scs : allChannels.get(Byte.valueOf(p.getClient().getWorld())).values())
 				scs.sendBuddyLogInNotifications(p.getId(), recipients);
+		} finally {
+			unlockRead();
+		}
+	}
+
+	public void sendBuddyLogOffNotifications(ShopCharacter p) {
+		Collection<BuddyListEntry> buddies = p.getBuddyList().getBuddies();
+		if (buddies.isEmpty())
+			return;
+		int[] recipients = new int[buddies.size()];
+		int i = 0;
+		for (BuddyListEntry buddy : buddies)
+			if (buddy.getStatus() == BuddyListEntry.STATUS_MUTUAL)
+				recipients[i++] = buddy.getId();
+		lockRead();
+		try {
+			for (ShopChannelSynchronization scs : allChannels.get(Byte.valueOf(p.getClient().getWorld())).values())
+				scs.sendBuddyLogOffNotifications(p.getId(), recipients);
 		} finally {
 			unlockRead();
 		}

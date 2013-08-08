@@ -62,7 +62,7 @@ public final class EnterShopHandler {
 			return;
 		}
 
-		sc.setChannel(context.getReturnChannel());
+		sc.setChannel(context.getOriginChannel());
 		sserv.getCrossServerInterface().sendBuddyLogInNotifications(player);
 		if (player.getPartyId() != 0)
 			sserv.getCrossServerInterface().sendPartyMemberLogInNotifications(player);

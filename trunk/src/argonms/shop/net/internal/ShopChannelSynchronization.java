@@ -28,6 +28,8 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.shop.ShopServer;
 import argonms.shop.character.ShopCharacter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -79,6 +81,9 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 				break;
 			case ChannelSynchronizationOps.PLAYER_SEARCH:
 				receivedPlayerExistsCheck(packet);
+				break;
+			case ChannelSynchronizationOps.BUDDY_ONLINE:
+				receivedSentBuddyLogInNotifications(packet);
 				break;
 			case ChannelSynchronizationOps.SYNCHRONIZED_NOTICE:
 				receivedWorldWideNotice(packet);
@@ -143,7 +148,7 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 		context.setEnergyCharge(packet.readShort());
 		context.setChatroomId(packet.readInt());
 		context.setEnteringCashShop(packet.readBool());
-		context.setReturnChannel(targetCh);
+		context.setOriginChannel(targetCh);
 
 		ShopServer.getInstance().storePlayerBuffs(playerId, context);
 		sendChannelChangeAcceptance(playerId);
@@ -182,7 +187,7 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 		writeShopChannelSynchronizationPacket(lew.getBytes());
 	}
 
-	public int sendBuddyLogInNotifications(int sender, int[] recipients) {
+	public void sendBuddyLogInNotifications(int sender, int[] recipients) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + recipients.length * 4);
 		writeShopChannelSynchronizationPacketHeader(lew, ChannelSynchronizationOps.BUDDY_ONLINE);
 		lew.writeInt(sender);
@@ -191,7 +196,33 @@ public class ShopChannelSynchronization extends CrossProcessSynchronization {
 			lew.writeInt(recipients[i]);
 
 		writeShopChannelSynchronizationPacket(lew.getBytes());
-		return 0;
+	}
+
+	protected void receivedSentBuddyLogInNotifications(LittleEndianReader packet) {
+		int sender = packet.readInt();
+		byte receiversCount = packet.readByte();
+		int[] receivers = new int[receiversCount];
+		for (int i = 0; i < receiversCount; i++)
+			receivers[i] = packet.readInt();
+
+		List<Integer> localRecipients = new ArrayList<Integer>();
+		for (int recipient : receivers)
+			if (ShopServer.getInstance().getPlayerById(recipient) != null)
+				localRecipients.add(Integer.valueOf(recipient));
+
+		sendReturnBuddyLogInNotifications(sender, localRecipients, false);
+	}
+
+	public void sendReturnBuddyLogInNotifications(int recipient, List<Integer> senders, boolean bubble) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10 + senders.size() * 4);
+		writeShopChannelSynchronizationPacketHeader(lew, ChannelSynchronizationOps.BUDDY_ONLINE_RESPONSE);
+		lew.writeInt(recipient);
+		lew.writeByte((byte) senders.size());
+		for (Integer sender : senders)
+			lew.writeInt(sender.intValue());
+		lew.writeBool(bubble);
+
+		writeShopChannelSynchronizationPacket(lew.getBytes());
 	}
 
 	public void sendBuddyLogOffNotifications(int sender, int[] recipients) {

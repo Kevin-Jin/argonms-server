@@ -243,7 +243,7 @@ public class CrossServerSynchronization {
 	}
 
 	public void sendEnterShopRequest(GameCharacter p, boolean cashShop) {
-		shopServer.sendPlayerContext(p.getId(), new ShopPlayerContinuation(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getEnergyCharge(), p.getChatRoom() == null ? 0 : p.getChatRoom().getRoomId(), cashShop));
+		shopServer.sendPlayerContext(p.getId(), new ShopPlayerContinuation(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getClient().getChannel(), p.getEnergyCharge(), p.getChatRoom() == null ? 0 : p.getChatRoom().getRoomId(), cashShop));
 	}
 
 	/* package-private */ void receivedChannelChangeRequest(byte srcCh, int playerId, PlayerContinuation context) {
@@ -278,7 +278,7 @@ public class CrossServerSynchronization {
 					else if (!ignoreHidden || findResult == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_FOUND)
 						return result.left.byteValue();
 					else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
-						return 0;
+						return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 				remaining++;
 			}
 			if (shopServer != null) {
@@ -291,21 +291,21 @@ public class CrossServerSynchronization {
 				Pair<Byte, Object> result = queue.poll(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 				if (result == null) {
 					LOG.log(Level.FINE, "Cross process player search timeout after " + BLOCKING_CALL_TIMEOUT + " milliseconds");
-					return 0;
+					return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 				}
 				if ((findResult = ((Byte) result.right).byteValue()) == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_NO_MATCH)
 					remaining--;
 				else if (!ignoreHidden || findResult == ChannelSynchronizationOps.SCAN_PLAYER_CHANNEL_FOUND)
 					return result.left.byteValue();
 				else //if (ignoreHidden && value == SCAN_PLAYER_HIDDEN)
-					return 0;
+					return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 			}
-			return 0;
+			return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 		} catch (InterruptedException e) {
 			//propagate the interrupted status further up to our worker
 			//executor service and see if they care - we don't care about it
 			Thread.currentThread().interrupt();
-			return 0;
+			return ChannelSynchronizationOps.CHANNEL_OFFLINE;
 		} finally {
 			unlockRead();
 		}
@@ -582,7 +582,7 @@ public class CrossServerSynchronization {
 			if (entry == null)
 				continue;
 
-			entry.setChannel(srcCh);
+			entry.setChannel(srcCh != ChannelSynchronizationOps.CHANNEL_CASH_SHOP ? srcCh : BuddyListEntry.CASH_SHOP_CHANNEL);
 			if (bubble)
 				p.getClient().getSession().send(GamePackets.writeBuddyLoggedIn(entry));
 		}
@@ -610,6 +610,8 @@ public class CrossServerSynchronization {
 			for (CrossChannelSynchronization ccs : allChannelsInWorld.values())
 				if ((remaining -= ccs.exchangeBuddyLogInNotifications(p.getId(), recipients)) <= 0)
 					break;
+			if (remaining > 0 && shopServer != null)
+				shopServer.exchangeBuddyLogInNotifications(p.getId(), recipients);
 		} finally {
 			unlockRead();
 		}

@@ -29,16 +29,18 @@ public abstract class AbstractPlayerContinuation {
 	private final Map<Integer, BuffState.ItemState> activeItems;
 	private final Map<Integer, BuffState.SkillState> activeSkills;
 	private final Map<Short, BuffState.MobSkillState> activeDebuffs;
+	private byte lastChannel;
 	private short energyCharge;
 	private int chatroomId;
 
 	public AbstractPlayerContinuation(Map<Integer, BuffState.ItemState> activeItems,
 			Map<Integer, BuffState.SkillState> activeSkills,
 			Map<Short, BuffState.MobSkillState> activeDebuffs,
-			short energyCharge) {
+			byte channel, short energyCharge) {
 		this.activeItems = activeItems;
 		this.activeSkills = activeSkills;
 		this.activeDebuffs = activeDebuffs;
+		this.lastChannel = channel;
 	}
 
 	public AbstractPlayerContinuation() {
@@ -59,6 +61,10 @@ public abstract class AbstractPlayerContinuation {
 		return activeDebuffs;
 	}
 
+	public byte getOriginChannel() {
+		return lastChannel;
+	}
+
 	public short getEnergyCharge() {
 		return energyCharge;
 	}
@@ -77,6 +83,10 @@ public abstract class AbstractPlayerContinuation {
 
 	public void addMonsterDebuff(short skillId, byte level, long endTime) {
 		activeDebuffs.put(Short.valueOf(skillId), new BuffState.MobSkillState(level, endTime));
+	}
+
+	public void setOriginChannel(byte channel) {
+		lastChannel = channel;
 	}
 
 	public void setEnergyCharge(short val) {

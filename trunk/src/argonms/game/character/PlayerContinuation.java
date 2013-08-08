@@ -45,7 +45,7 @@ public class PlayerContinuation extends AbstractPlayerContinuation {
 	private final Map<Integer, PlayerSkillSummon> activeSummons;
 
 	public PlayerContinuation(GameCharacter p) {
-		super(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getEnergyCharge());
+		super(p.activeItemsList(), p.activeSkillsList(), p.activeMobSkillsList(), p.getClient().getChannel(), p.getEnergyCharge());
 		if (p.getChatRoom() != null)
 			setChatroomId(p.getChatRoom().getRoomId());
 		activeSummons = p.getAllSummons();

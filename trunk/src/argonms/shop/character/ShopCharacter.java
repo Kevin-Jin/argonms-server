@@ -175,12 +175,25 @@ public class ShopCharacter extends LoggedInPlayer {
 		return returnContext;
 	}
 
+	private void prepareExitChannel() {
+		saveCharacter();
+	}
+
 	public void prepareChannelChange() {
 		if (partyId != 0)
 			ShopServer.getInstance().getCrossServerInterface().sendPartyMemberLogOffNotifications(this, false);
 		if (guildId != 0)
 			ShopServer.getInstance().getCrossServerInterface().sendGuildMemberLogOffNotifications(this, false);
-		saveCharacter();
+		prepareExitChannel();
+	}
+
+	public void prepareLogOff() {
+		ShopServer.getInstance().getCrossServerInterface().sendBuddyLogOffNotifications(this);
+		if (partyId != 0)
+			ShopServer.getInstance().getCrossServerInterface().sendPartyMemberLogOffNotifications(this, true);
+		if (guildId != 0)
+			ShopServer.getInstance().getCrossServerInterface().sendGuildMemberLogOffNotifications(this, true);
+		prepareExitChannel();
 	}
 
 	public void saveCharacter() {

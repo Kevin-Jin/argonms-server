@@ -78,6 +78,8 @@ public class ShopClient extends RemoteClient {
 
 	private void dissociate() {
 		if (player != null) {
+			if (!isMigrating())
+				player.prepareLogOff();
 			ShopServer.getInstance().removePlayer(player);
 			player = null;
 		}

@@ -25,6 +25,8 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.game.GameServer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -100,6 +102,18 @@ public abstract class ChannelOrShopSynchronization extends CrossProcessSynchroni
 		consumer.offer(new Pair<Byte, Object>(Byte.valueOf(targetCh), Byte.valueOf(result)));
 	}
 
+	public int exchangeBuddyLogInNotifications(int sender, int[] recipients) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9 + recipients.length * 4);
+		writeSynchronizationPacketHeader(lew, ChannelSynchronizationOps.BUDDY_ONLINE);
+		lew.writeInt(sender);
+		lew.writeByte((byte) recipients.length);
+		for (int i = 0; i < recipients.length; i++)
+			lew.writeInt(recipients[i]);
+
+		writeSynchronizationPacket(lew.getBytes());
+		return 0;
+	}
+
 	protected void receivedSentBuddyLogInNotifications(LittleEndianReader packet) {
 		int sender = packet.readInt();
 		byte receiversCount = packet.readByte();
@@ -108,6 +122,17 @@ public abstract class ChannelOrShopSynchronization extends CrossProcessSynchroni
 			receivers[i] = packet.readInt();
 
 		handler.receivedSentBuddyLogInNotifications(sender, receivers, targetCh);
+	}
+
+	protected void receivedReturnedBuddyLogInNotifications(LittleEndianReader packet) {
+		int recipient = packet.readInt();
+		byte count = packet.readByte();
+		List<Integer> senders = new ArrayList<Integer>(count);
+		for (int i = 0; i < count; i++)
+			senders.add(Integer.valueOf(packet.readInt()));
+		boolean bubble = packet.readBool();
+
+		handler.receivedReturnedBuddyLogInNotifications(recipient, senders, bubble, targetCh);
 	}
 
 	protected void receivedBuddyLogOffNotifications(LittleEndianReader packet) {
