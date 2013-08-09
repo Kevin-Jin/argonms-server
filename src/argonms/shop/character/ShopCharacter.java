@@ -30,8 +30,8 @@ import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.shop.ShopServer;
+import argonms.shop.net.external.CashShopPackets;
 import argonms.shop.net.external.ShopClient;
-import argonms.shop.net.external.ShopPackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -68,6 +68,7 @@ public class ShopCharacter extends LoggedInPlayer {
 	private byte maxCharacters;
 	private CashShopStaging shopInventory;
 	private int mesos;
+	private int birthday;
 	private final AtomicInteger[] cashShopBalance;
 	private final Map<Integer, SkillEntry> skills;
 	private final Map<Integer, Cooldown> cooldowns;
@@ -106,6 +107,10 @@ public class ShopCharacter extends LoggedInPlayer {
 		return maxCharacters;
 	}
 
+	public int getBirthday() {
+		return birthday;
+	}
+
 	@Override
 	public int getMesos() {
 		return mesos;
@@ -117,7 +122,7 @@ public class ShopCharacter extends LoggedInPlayer {
 
 	public void setCashShopCurrency(int type, int newVal) {
 		cashShopBalance[type - 1].set(newVal);
-		getClient().getSession().send(ShopPackets.writeCashShopCurrencyBalance(this));
+		getClient().getSession().send(CashShopPackets.writeCashShopCurrencyBalance(this));
 	}
 
 	public boolean gainCashShopCurrency(int type, int gain) {
@@ -308,7 +313,7 @@ public class ShopCharacter extends LoggedInPlayer {
 		ResultSet rs = null;
 		try {
 			con = DatabaseManager.getConnection(DatabaseType.STATE);
-			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`characters`,`a`.`paypalnx`,`a`.`maplepoints`,`a`.`gamecardnx` "
+			ps = con.prepareStatement("SELECT `c`.*,`a`.`name`,`a`.`characters`,`a`.`birthday`,`a`.`paypalnx`,`a`.`maplepoints`,`a`.`gamecardnx` "
 					+ "FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` "
 					+ "WHERE `c`.`id` = ?");
 			ps.setInt(1, id);
@@ -329,9 +334,10 @@ public class ShopCharacter extends LoggedInPlayer {
 			short maxBuddies = rs.getShort(32);
 			c.setAccountName(rs.getString(42));
 			p.maxCharacters = rs.getByte(43);
-			p.cashShopBalance[PAYPAL_NX - 1] = new AtomicInteger(rs.getInt(44));
-			p.cashShopBalance[MAPLE_POINTS - 1] = new AtomicInteger(rs.getInt(45));
-			p.cashShopBalance[GAME_CARD_NX - 1] = new AtomicInteger(rs.getInt(46));
+			p.birthday = rs.getInt(44);
+			p.cashShopBalance[PAYPAL_NX - 1] = new AtomicInteger(rs.getInt(45));
+			p.cashShopBalance[MAPLE_POINTS - 1] = new AtomicInteger(rs.getInt(46));
+			p.cashShopBalance[GAME_CARD_NX - 1] = new AtomicInteger(rs.getInt(47));
 			rs.close();
 			ps.close();
 
@@ -440,5 +446,25 @@ public class ShopCharacter extends LoggedInPlayer {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
 		}
+	}
+
+	public static int getAccountIdFromName(String name) {
+		int id = -1;
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			con = DatabaseManager.getConnection(DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `a`.`id` FROM `characters` `c` LEFT JOIN `accounts` `a` ON `c`.`accountid` = `a`.`id` WHERE `c`.`name` = ?");
+			ps.setString(1, name);
+			rs = ps.executeQuery();
+			if (rs.next())
+				id = rs.getInt(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not find account id of character " + name, ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, con);
+		}
+		return id;
 	}
 }
