@@ -19,8 +19,6 @@
 package argonms.shop.net.external.handler;
 
 import argonms.common.character.ShopPlayerContinuation;
-import argonms.common.character.inventory.Inventory;
-import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.RemoteClient;
@@ -28,11 +26,9 @@ import argonms.common.util.HexTool;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.shop.ShopServer;
-import argonms.shop.character.CashShopStaging;
 import argonms.shop.character.ShopCharacter;
+import argonms.shop.net.external.CashShopPackets;
 import argonms.shop.net.external.ShopClient;
-import argonms.shop.net.external.ShopPackets;
-import java.util.Collection;
 
 /**
  *
@@ -79,10 +75,10 @@ public final class EnterShopHandler {
 			sc.getSession().send(writeEnterMts(player));
 		//sc.getSession().send(ShopPackets.writeEnableCsOrMts());
 		if (context.isEnteringCashShop()) {
-			sc.getSession().send(ShopPackets.writeCashShopCurrencyBalance(player));
-			sc.getSession().send(writeCashItemStagingInventory(player));
-			sc.getSession().send(writeGiftedCashItems(player));
-			sc.getSession().send(ShopPackets.writePopulateWishList(player));
+			sc.getSession().send(CashShopPackets.writeCashShopCurrencyBalance(player));
+			sc.getSession().send(CashShopPackets.writeCashItemStagingInventory(player));
+			sc.getSession().send(CashShopPackets.writeGiftedCashItems(player));
+			sc.getSession().send(CashShopPackets.writePopulateWishList(player));
 		} else {
 			//sc.getSession().send(MaplePacketCreator.MTSWantedListingOver(0, 0));
 			//sc.getSession().send(MaplePacketCreator.showMTSCash(player));
@@ -95,7 +91,7 @@ public final class EnterShopHandler {
 
 		String serverMessage = ShopServer.getInstance().getNewsTickerMessage();
 		if (!serverMessage.isEmpty())
-			sc.getSession().send(ShopPackets.writeNewsTickerMessage(serverMessage));
+			sc.getSession().send(CashShopPackets.writeNewsTickerMessage(serverMessage));
 	}
 
 	private static byte[] writeGender(byte gender) {
@@ -299,46 +295,6 @@ public final class EnterShopHandler {
 		lew.writeBytes(ADDITIONAL_MODDED_CS_ITEMS);
 		//No idea what this is, definitely not an sn.
 		lew.writeBytes(ADDITIONAL_CS_BYTES);
-		return lew.getBytes();
-	}
-
-	public static byte[] writeCashItemStagingInventory(ShopCharacter p) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.CASH_SHOP);
-		lew.writeByte(ShopPackets.INVENTORY);
-		CashShopStaging inv = p.getCashShopInventory();
-		inv.lockRead();
-		try {
-			Collection<InventorySlot> items = inv.getAllValues();
-			lew.writeShort((short) items.size());
-			for (InventorySlot item : items)
-				ShopPackets.writeStagingSlot(lew, inv.getPurchaseProperties(item.getUniqueId()), item);
-		} finally {
-			inv.unlockRead();
-		}
-		lew.writeShort(p.getInventory(Inventory.InventoryType.CASH).getMaxSlots());
-		lew.writeShort(p.getMaxCharacters());
-		return lew.getBytes();
-	}
-
-	public static byte[] writeGiftedCashItems(ShopCharacter p) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
-		lew.writeShort(ClientSendOps.CASH_SHOP);
-		lew.writeByte(ShopPackets.GIFTS);
-		CashShopStaging inv = p.getCashShopInventory();
-		inv.lockRead();
-		try {
-			Collection<CashShopStaging.CashItemGift> gifts = inv.getGiftedItems();
-			lew.writeShort((short) gifts.size());
-			for (CashShopStaging.CashItemGift gift : gifts) {
-				lew.writeLong(gift.getUniqueId());
-				lew.writeInt(gift.getItemId());
-				lew.writePaddedAsciiString(gift.getSender(), 13);
-				lew.writePaddedAsciiString(gift.getMessage(), 73);
-			}
-		} finally {
-			inv.unlockRead();
-		}
 		return lew.getBytes();
 	}
 

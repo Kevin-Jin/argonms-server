@@ -201,6 +201,17 @@ CREATE TABLE `cashshoppurchases` (
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE SET NULL
 ) Engine=InnoDB;
 
+CREATE TABLE `cashitemgiftnotes` (
+  `giftid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `uniqueid` BIGINT(20) NOT NULL,
+  `recipientacctid` INT(11) NOT NULL,
+  `message` VARCHAR(72) NOT NULL,
+  PRIMARY KEY (`giftid`),
+  KEY (`uniqueid`),
+  KEY (`recipientacctid`),
+  CONSTRAINT FOREIGN KEY (`uniqueid`) REFERENCES `cashshoppurchases` (`uniqueid`) ON DELETE CASCADE
+) Engine=InnoDB;
+
 CREATE TABLE `queststatuses` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `characterid` INT(11) NOT NULL,

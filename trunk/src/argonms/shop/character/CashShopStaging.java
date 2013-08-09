@@ -18,15 +18,24 @@
 
 package argonms.shop.character;
 
+import argonms.common.character.Player;
 import argonms.common.character.inventory.IInventory;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.Pet;
 import argonms.common.util.DatabaseManager;
+import argonms.common.util.collections.Pair;
+import argonms.shop.ShopServer;
+import argonms.shop.loading.cashshop.Commodity;
+import argonms.shop.net.external.CashShopPackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,16 +54,23 @@ public class CashShopStaging implements IInventory {
 
 	private static final short MAX_SLOTS = 0xFF;
 
-	public static class CashItemGift {
+	public static class CashItemGiftNotification {
 		private final long uniqueId;
 		private final int itemId;
 		private final String sender;
 		private final String message;
 
-		public CashItemGift(long uniqueId, int dataId, String sender, String message) {
+		public CashItemGiftNotification(long uniqueId, int dataId, String sender, String message) {
 			this.uniqueId = uniqueId;
 			this.itemId = dataId;
 			this.sender = sender;
+			this.message = message;
+		}
+
+		public CashItemGiftNotification(CashPurchaseProperties props, InventorySlot slot, String message) {
+			uniqueId = slot.getUniqueId();
+			itemId = slot.getDataId();
+			sender = props.getGifterCharacterName();
 			this.message = message;
 		}
 
@@ -135,7 +151,7 @@ public class CashShopStaging implements IInventory {
 	private final ReadWriteLock locks;
 	private final Map<Long, InventorySlot> slots;
 	private final Map<Long, CashPurchaseProperties> purchaseProperties;
-	private final List<CashItemGift> gifts;
+	private final List<CashItemGiftNotification> giftNotifications;
 
 	public CashShopStaging() {
 		//forgo to the overhead of ConcurrentHashMap. with no scripts and
@@ -143,7 +159,7 @@ public class CashShopStaging implements IInventory {
 		locks = new ReentrantReadWriteLock();
 		slots = new LinkedHashMap<Long, InventorySlot>();
 		purchaseProperties = new HashMap<Long, CashPurchaseProperties>();
-		gifts = new ArrayList<CashItemGift>();
+		giftNotifications = new ArrayList<CashItemGiftNotification>();
 	}
 
 	public void loadPurchaseProperties(int accountId) {
@@ -151,6 +167,7 @@ public class CashShopStaging implements IInventory {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
+		boolean locked = false;
 		try {
 			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
 
@@ -162,10 +179,49 @@ public class CashShopStaging implements IInventory {
 					purchaseProperties.put(uniqueId, CashPurchaseProperties.loadFromDatabase(rs, slots.get(uniqueId).getDataId(), accountId));
 				rs.close();
 			}
+			ps.close();
+
+			ps = con.prepareStatement("LOCK TABLE `cashitemgiftnotes` WRITE");
+			ps.executeUpdate();
+			locked = true;
+			ps.close();
+
+			ps = con.prepareStatement("SELECT `uniqueid`,`message` FROM `cashitemgiftnotes` WHERE `recipientacctid` = ?");
+			ps.setInt(1, accountId);
+			rs = ps.executeQuery();
+			while (rs.next()) {
+				Long oUid = Long.valueOf(rs.getLong(1));
+				InventorySlot item = slots.get(oUid);
+				CashPurchaseProperties props = purchaseProperties.get(oUid);
+				if (item == null || props == null) {
+					LOG.log(Level.FINE, "Dropping gift with unique ID {0} for {1}. Missing item data or not owned by recipient.", new Object[] { oUid, Integer.valueOf(accountId) });
+					continue;
+				}
+
+				giftNotifications.add(new CashItemGiftNotification(props, item, rs.getString(2)));
+			}
+			rs.close();
+			ps.close();
+
+			ps = con.prepareStatement("DELETE FROM `cashitemgiftnotes` WHERE `recipientacctid` = ?");
+			ps.setInt(1, accountId);
+			ps.executeUpdate();
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not load cash shop purchase properties from database", ex);
 		} finally {
-			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, null);
+			if (locked) {
+				DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, null);
+				try {
+					ps = con.prepareStatement("UNLOCK TABLE");
+					ps.executeUpdate();
+				} catch (SQLException e) {
+					throw new RuntimeException("Could not unlock uniqueid table.", e);
+				} finally {
+					DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, null, ps, con);
+				}
+			} else {
+				DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
+			}
 			unlockWrite();
 		}
 	}
@@ -235,8 +291,22 @@ public class CashShopStaging implements IInventory {
 		return purchaseProperties.get(Long.valueOf(uniqueId));
 	}
 
-	public Collection<CashItemGift> getGiftedItems() {
-		return gifts;
+	/**
+	 * This CashShopStaging must be read locked while the returned collection is in scope.
+	 * @return 
+	 */
+	public Collection<CashItemGiftNotification> getGiftedItems() {
+		return giftNotifications;
+	}
+
+	public void newGiftedItem(CashItemGiftNotification gift) {
+		lockWrite();
+		try {
+			giftNotifications.clear();
+			giftNotifications.add(gift);
+		} finally {
+			unlockWrite();
+		}
 	}
 
 	public InventorySlot getByUniqueId(long uniqueId) {
@@ -296,6 +366,102 @@ public class CashShopStaging implements IInventory {
 			LOG.log(Level.WARNING, "Could not attach cash shop purchase properties to database", ex);
 		} finally {
 			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
+		}
+	}
+
+	public static Pair<InventorySlot, CashPurchaseProperties> createItem(Commodity c, int serialNumber, int senderAcctId, String senderName) {
+		InventorySlot item = InventoryTools.makeItemWithId(c.itemDataId);
+		item.setExpiration(System.currentTimeMillis() + (c.period * 1000 * 60 * 60 * 24));
+		if (c.quantity != 1)
+			item.setQuantity(c.quantity);
+
+		CashShopStaging.CashPurchaseProperties props = new CashShopStaging.CashPurchaseProperties(senderAcctId, senderName, serialNumber);
+		CashShopStaging.attachCashPurchaseProperties(item.getUniqueId(), props);
+
+		return new Pair<InventorySlot, CashPurchaseProperties>(item, props);
+	}
+
+	public static boolean giveGift(int senderAcctId, String senderName, int recipientAcctId, Commodity c, int serialNumber, String message) {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		boolean locked = false;
+		try {
+			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
+
+			ShopCharacter recipient = null;
+			ps = con.prepareStatement("SELECT `id` FROM `characters` WHERE `accountid` = ?");
+			ps.setInt(1, recipientAcctId);
+			rs = ps.executeQuery();
+			while (recipient == null && rs.next())
+				recipient = ShopServer.getInstance().getPlayerById(rs.getInt(1));
+			rs.close();
+			ps.close();
+			if (recipient != null) {
+				if (recipient.getCashShopInventory().isFull())
+					return false;
+
+				Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+				recipient.getCashShopInventory().append(item.left, item.right);
+				recipient.getCashShopInventory().newGiftedItem(new CashItemGiftNotification(item.left.getUniqueId(), item.left.getDataId(), senderName, message));
+				recipient.getClient().getSession().send(CashShopPackets.writeGiftedCashItems(recipient));
+				return true;
+			}
+
+			ps = con.prepareStatement("SELECT MAX(`position`) FROM `inventoryitems` WHERE `accountid` = ? AND `inventorytype` = " + Inventory.InventoryType.CASH_SHOP.byteValue());
+			ps.setInt(1, recipientAcctId);
+			rs = ps.executeQuery();
+			final short position = (short) ((rs.next() ? rs.getShort(1) : 0) + 1);
+			if (position > MAX_SLOTS)
+				return false;
+			rs.close();
+			ps.close();
+
+			final Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+
+			Player.commitInventory(recipientAcctId, recipientAcctId, new Pet[3], con, Collections.singletonMap(Inventory.InventoryType.CASH_SHOP, new IInventory() {
+				@Override
+				public void put(short position, InventorySlot item) {
+					throw new UnsupportedOperationException("Player.commitInventory should not be mutating inventory.");
+				}
+
+				@Override
+				public Map<Short, InventorySlot> getAll() {
+					return Collections.singletonMap(Short.valueOf(position), item.left);
+				}
+
+				@Override
+				public short getMaxSlots() {
+					throw new UnsupportedOperationException("Player.commitInventory should not need capacity.");
+				}
+			}));
+
+			ps = con.prepareStatement("LOCK TABLE `cashitemgiftnotes` WRITE");
+			ps.executeUpdate();
+			locked = true;
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `cashitemgiftnotes` (`uniqueid`,`recipientacctid`,`message`) VALUES (?,?,?)");
+			ps.setLong(1, item.left.getUniqueId());
+			ps.setInt(2, recipientAcctId);
+			ps.setString(3, message);
+			ps.executeUpdate();
+			return true;
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not insert new cash item gift to database", ex);
+			return false;
+		} finally {
+			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, null);
+			if (locked) {
+				try {
+					ps = con.prepareStatement("UNLOCK TABLE");
+					ps.executeUpdate();
+				} catch (SQLException e) {
+					throw new RuntimeException("Could not unlock uniqueid table.", e);
+				} finally {
+					DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
+				}
+			}
 		}
 	}
 }

@@ -2944,6 +2944,11 @@
 	* Fixed whisper and /find command reporting that offline players are in the
 	cash shop.
 
+2013-08-09  GoldenKevin  (revision 223)
+
+	* Implemented cash item gifting in the cash shop.
+	* Cleaned up cash shop packets.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

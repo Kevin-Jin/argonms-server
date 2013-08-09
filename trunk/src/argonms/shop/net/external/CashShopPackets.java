@@ -18,6 +18,7 @@
 
 package argonms.shop.net.external;
 
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
@@ -25,13 +26,14 @@ import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.shop.character.CashShopStaging;
 import argonms.shop.character.ShopCharacter;
+import java.util.Collection;
 
 /**
  *
  * @author GoldenKevin
  */
-public class ShopPackets {
-	public static byte //sub opcodes for ClientSendOps.CASH_SHOP
+public class CashShopPackets {
+	private static byte //sub opcodes for ClientSendOps.CASH_SHOP
 		INVENTORY = 0x2F,
 		GIFTS = 0x31,
 		DISPLAY_WISH_LIST = 0x33,
@@ -105,16 +107,65 @@ public class ShopPackets {
 		return CommonPackets.writeServerMessage((byte) 4, message, (byte) -1, true);
 	}
 
-	/*public static byte[] writeEnableCsUse4() {
-		return argonms.common.util.HexTool.getByteArrayFromHexString("9F 00 00 00 00 00 00 00 00 00 00 00 00 00");
-	}*/
-
 	public static byte[] writeCashShopCurrencyBalance(ShopCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
 		lew.writeShort(ClientSendOps.CS_BALANCE);
 		lew.writeInt(p.getCashShopCurrency(1)); // Paypal/PayByCash NX
 		lew.writeInt(p.getCashShopCurrency(2)); // Maple Points
 		lew.writeInt(p.getCashShopCurrency(4)); // Game Card NX
+		return lew.getBytes();
+	}
+
+	private static void writeStagingSlot(LittleEndianWriter lew, CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
+		lew.writeLong(item.getUniqueId());
+		lew.writeInt(props.getPurchaserAccountId());
+		lew.writeInt(0);
+		lew.writeInt(item.getDataId());
+		lew.writeInt(props.getSerialNumber());
+		lew.writeShort(item.getQuantity());
+		lew.writePaddedAsciiString(props.getGifterCharacterName(), 13);
+		CommonPackets.writeItemExpire(lew, item.getExpiration(), true);
+		lew.writeInt(props.getSerialNumber());
+		lew.writeInt(0);
+	}
+
+	public static byte[] writeCashItemStagingInventory(ShopCharacter p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(INVENTORY);
+		CashShopStaging inv = p.getCashShopInventory();
+		inv.lockRead();
+		try {
+			Collection<InventorySlot> items = inv.getAllValues();
+			lew.writeShort((short) items.size());
+			for (InventorySlot item : items)
+				writeStagingSlot(lew, inv.getPurchaseProperties(item.getUniqueId()), item);
+		} finally {
+			inv.unlockRead();
+		}
+		lew.writeShort(p.getInventory(Inventory.InventoryType.CASH).getMaxSlots());
+		lew.writeShort(p.getMaxCharacters());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGiftedCashItems(ShopCharacter p) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(GIFTS);
+		CashShopStaging inv = p.getCashShopInventory();
+		inv.lockRead();
+		try {
+			Collection<CashShopStaging.CashItemGiftNotification> gifts = inv.getGiftedItems();
+			lew.writeShort((short) gifts.size());
+			for (CashShopStaging.CashItemGiftNotification gift : gifts) {
+				lew.writeLong(gift.getUniqueId());
+				lew.writeInt(gift.getItemId());
+				lew.writePaddedAsciiString(gift.getSender(), 13);
+				lew.writePaddedAsciiString(gift.getMessage(), 73);
+			}
+		} finally {
+			inv.unlockRead();
+		}
 		return lew.getBytes();
 	}
 
@@ -141,19 +192,6 @@ public class ShopPackets {
 		lew.writeByte(UPDATE_WISH_LIST);
 		writeCashItemWishList(lew, p);
 		return lew.getBytes();
-	}
-
-	public static void writeStagingSlot(LittleEndianWriter lew, CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
-		lew.writeLong(item.getUniqueId());
-		lew.writeInt(props.getPurchaserAccountId());
-		lew.writeInt(0);
-		lew.writeInt(item.getDataId());
-		lew.writeInt(props.getSerialNumber());
-		lew.writeShort(item.getQuantity());
-		lew.writePaddedAsciiString(props.getGifterCharacterName(), 13);
-		CommonPackets.writeItemExpire(lew, item.getExpiration(), true);
-		lew.writeInt(props.getSerialNumber());
-		lew.writeInt(0);
 	}
 
 	public static byte[] writeInsertToStaging(CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
@@ -186,6 +224,18 @@ public class ShopPackets {
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(MOVE_TO_STAGING);
 		writeStagingSlot(lew, props, item);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeGiftSent(String recipient, int itemId, int price) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(SEND_GIFT);
+		lew.writeLengthPrefixedString(recipient);
+		lew.writeInt(itemId);
+		lew.writeShort((short) 0);
+		lew.writeShort((short) 0);
+		lew.writeInt(price);
 		return lew.getBytes();
 	}
 }
