@@ -2949,6 +2949,16 @@
 	* Implemented cash item gifting in the cash shop.
 	* Cleaned up cash shop packets.
 
+2013-08-10  GoldenKevin  (revision 224)
+
+	* Fixed expiration date overflow when buying from the cash shop.
+	* Downgraded incorrectly assigned CERTAIN_PACKET_EDITING infractions to
+	POSSIBLE_PACKET_EDITING in cash shop handling.
+	* Send error messages to players when they get an infraction to help with
+	debugging wrongful cheat tracker checks.
+	* Implemented wish list changes.
+	* Implemented inventory expansion from the cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

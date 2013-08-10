@@ -38,8 +38,11 @@ public class CashShopPackets {
 		GIFTS = 0x31,
 		DISPLAY_WISH_LIST = 0x33,
 		UPDATE_WISH_LIST = 0x39,
+		WISH_LIST_ERROR = 0x3A,
 		INSERT_TO_STAGING = 0x3B,
 		ERROR = 0x3C,
+		UPDATE_INVENTORY_SLOTS = 0x44,
+		UPDATE_STORAGE_SLOTS = 0x46,
 		MOVE_FROM_STAGING = 0x4A,
 		MOVE_TO_STAGING = 0x4C,
 		EXPIRE_ITEM = 0x4E,
@@ -194,6 +197,14 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeWishListError() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(WISH_LIST_ERROR);
+		lew.writeByte((byte) 0);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeInsertToStaging(CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(58);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
@@ -207,6 +218,23 @@ public class CashShopPackets {
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(ERROR);
 		lew.writeByte(message);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateInventorySlots(Inventory.InventoryType invType, short newCapacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(UPDATE_INVENTORY_SLOTS);
+		lew.writeByte(invType.byteValue());
+		lew.writeShort(newCapacity);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeUpdateStorageSlots(short newCapacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(UPDATE_STORAGE_SLOTS);
+		lew.writeShort(newCapacity);
 		return lew.getBytes();
 	}
 
@@ -228,7 +256,7 @@ public class CashShopPackets {
 	}
 
 	public static byte[] writeGiftSent(String recipient, int itemId, int price) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + recipient.length());
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(SEND_GIFT);
 		lew.writeLengthPrefixedString(recipient);
