@@ -371,7 +371,7 @@ public class CashShopStaging implements IInventory {
 
 	public static Pair<InventorySlot, CashPurchaseProperties> createItem(Commodity c, int serialNumber, int senderAcctId, String senderName) {
 		InventorySlot item = InventoryTools.makeItemWithId(c.itemDataId);
-		item.setExpiration(System.currentTimeMillis() + (c.period * 1000 * 60 * 60 * 24));
+		item.setExpiration(System.currentTimeMillis() + (c.period * 1000L * 60 * 60 * 24));
 		if (c.quantity != 1)
 			item.setQuantity(c.quantity);
 

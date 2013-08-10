@@ -18,6 +18,7 @@
 
 package argonms.shop.net.external.handler;
 
+import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.CheatTracker;
@@ -30,6 +31,7 @@ import argonms.shop.loading.cashshop.CashShopDataLoader;
 import argonms.shop.loading.cashshop.Commodity;
 import argonms.shop.net.external.CashShopPackets;
 import argonms.shop.net.external.ShopClient;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -80,11 +82,13 @@ public class CashShopHandler {
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
 		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(currencyType, -c.price)) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy item from cash shop with nonexistent cash");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy item from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
@@ -111,11 +115,13 @@ public class CashShopHandler {
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
 		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to gift nonexistent item from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price)) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to gift item from cash shop with nonexistent cash");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to gift item from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
@@ -129,15 +135,137 @@ public class CashShopHandler {
 	}
 
 	private static void updateWishList(ShopCharacter p, LittleEndianReader packet) {
-		
+		List<Integer> newList = new ArrayList<Integer>();
+		CashShopDataLoader csdl = CashShopDataLoader.getInstance();
+		for (int i = 0; i < 10; i++) {
+			int sn = packet.readInt();
+			if (sn != 0) {
+				if (csdl.getCommodity(sn) == null) {
+					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to add nonexistent item to wishlist from cash shop");
+					p.getClient().getSession().send(CashShopPackets.writeWishListError());
+					return;
+				}
+
+				newList.add(Integer.valueOf(sn));
+			}
+		}
+		p.setWishList(newList);
+		p.getClient().getSession().send(CashShopPackets.writeChangeWishList(p));
+	}
+
+	private static int getMaxInventorySlots(short job, Inventory.InventoryType type) {
+		//somehow related to job advancement inventory expansion, but not exactly?
+		//e.g. don't third, fourth job advancements get inventory expansion too?
+		int max = 48;
+		switch (PlayerJob.getJobPath(job)) {
+			case PlayerJob.CLASS_WARRIOR:
+				switch (type) {
+					case EQUIP:
+					case SETUP:
+						max += 4;
+						break;
+					case USE:
+					case ETC:
+						max += 4;
+						if (PlayerJob.getAdvancement(job) > 1)
+							max += 4;
+						break;
+				}
+				break;
+			case PlayerJob.CLASS_MAGICIAN:
+				switch (type) {
+					case ETC:
+						if (PlayerJob.getAdvancement(job) > 1)
+							max += 4;
+						break;
+				}
+				break;
+			case PlayerJob.CLASS_BOWMAN:
+				switch (type) {
+					case EQUIP:
+					case USE:
+						max += 4;
+						break;
+					case ETC:
+						if (PlayerJob.getAdvancement(job) > 1)
+							max += 4;
+						break;
+				}
+				break;
+			case PlayerJob.CLASS_THIEF:
+			case PlayerJob.CLASS_PIRATE:
+				switch (type) {
+					case EQUIP:
+					case ETC:
+						max += 4;
+						break;
+					case USE:
+						if (PlayerJob.getAdvancement(job) > 1)
+							max += 4;
+						break;
+				}
+				break;
+		}
+		return max;
 	}
 
 	private static void buyInventorySlots(ShopCharacter p, LittleEndianReader packet) {
-		
+		packet.readByte();
+		byte currencyType = packet.readByte();
+		packet.readByte();
+		packet.readShort();
+		boolean hasSerial = packet.readBool();
+		Inventory.InventoryType invType;
+		int cost;
+		if (hasSerial) {
+			int sn = packet.readInt();
+			LOG.log(Level.INFO, "Unhandled item, SN {0}", sn);
+			return;
+		} else {
+			invType = Inventory.InventoryType.valueOf(packet.readByte());
+			cost = 4000;
+		}
+
+		Inventory inv = p.getInventory(invType);
+		short currentSlots = inv.getMaxSlots();
+
+		if (currentSlots + 4 > getMaxInventorySlots(p.getJob(), invType)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy too many " + invType + " slots in cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
+			return;
+		}
+
+		if (!p.gainCashShopCurrency(currencyType, -cost)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy " + invType + " slots from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		short newCapacity = p.getInventory(invType).increaseCapacity((short) 4);
+		p.getClient().getSession().send(CashShopPackets.writeUpdateInventorySlots(invType, newCapacity));
 	}
 
 	private static void buyCashInventorySlots(ShopCharacter p, LittleEndianReader packet) {
-		
+		packet.readByte();
+		byte currencyType = packet.readByte();
+
+		Inventory inv = p.getInventory(Inventory.InventoryType.CASH);
+		short currentSlots = inv.getMaxSlots();
+
+		if (currentSlots + 4 > getMaxInventorySlots(p.getJob(), Inventory.InventoryType.CASH)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy too many storage slots in cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
+			return;
+		}
+
+		if (!p.gainCashShopCurrency(currencyType, -4000)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy storage slots from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		short newCapacity = p.getInventory(Inventory.InventoryType.CASH).increaseCapacity((short) 4);
+		p.getClient().getSession().send(CashShopPackets.writeUpdateStorageSlots(newCapacity));
 	}
 
 	private static void buyCharacterSlots(ShopCharacter p, LittleEndianReader packet) {
@@ -151,7 +279,7 @@ public class CashShopHandler {
 		packet.readByte();
 		InventorySlot item = p.getCashShopInventory().getByUniqueId(uniqueId);
 		if (item == null) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to transfer nonexistent cash shop item from staging");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to transfer nonexistent cash shop item from staging");
 			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}
@@ -182,7 +310,7 @@ public class CashShopHandler {
 			}
 		}
 		if (item == null) {
-			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to transfer nonexistent cash shop item to staging");
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to transfer nonexistent cash shop item to staging");
 			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}

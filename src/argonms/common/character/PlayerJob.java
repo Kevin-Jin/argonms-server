@@ -90,6 +90,22 @@ public final class PlayerJob {
 		return (bitstring & (1 << jobPath)) != 0;
 	}
 
+	public static int getAdvancement(short jobid) {
+		if (jobid == JOB_BEGINNER)
+			return 0; //no job advancement
+		if (jobid % 100 == 0)
+			return 1; //first job advancement
+		switch (jobid % 10) {
+			case 0:
+				return 2; //second job advancement
+			case 1:
+				return 3; //third job advancement
+			case 2:
+				return 4; //fourth job advancement
+		}
+		return -1;
+	}
+
 	public static int getJobPath(short jobid) {
 		return (jobid / 100);
 	}

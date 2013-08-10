@@ -157,6 +157,11 @@ public class ShopCharacter extends LoggedInPlayer {
 		return Collections.unmodifiableList(wishList);
 	}
 
+	public void setWishList(List<Integer> newList) {
+		wishList.clear();
+		wishList.addAll(newList);
+	}
+
 	private void removeCooldown(int skill) {
 		cooldowns.remove(Integer.valueOf(skill)).cancel();
 	}
@@ -214,6 +219,7 @@ public class ShopCharacter extends LoggedInPlayer {
 			updateDbAccount(con);
 			updateDbStats(con);
 			updateDbInventory(con);
+			updateDbWishList(con);
 			con.commit();
 		} catch (Throwable ex) {
 			LOG.log(Level.WARNING, "Could not save character " + getDataId() + ". Rolling back all changes...", ex);
@@ -298,6 +304,28 @@ public class ShopCharacter extends LoggedInPlayer {
 		} finally {
 			DatabaseManager.cleanup(DatabaseType.STATE, null, ips, null);
 			DatabaseManager.cleanup(DatabaseType.STATE, rs, ps, null);
+		}
+	}
+
+	private void updateDbWishList(Connection con) throws SQLException {
+		PreparedStatement ps = null;
+		try {
+			ps = con.prepareStatement("DELETE FROM `wishlists` WHERE `characterid` = ?");
+			ps.setInt(1, getDataId());
+			ps.executeUpdate();
+			ps.close();
+
+			ps = con.prepareStatement("INSERT INTO `wishlists` (`characterid`,`sn`) VALUES (?,?)");
+			ps.setInt(1, getDataId());
+			for (Integer sn : wishList) {
+				ps.setInt(2, sn.intValue());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new SQLException("Failed to save wishlist of character " + name, e);
+		} finally {
+			DatabaseManager.cleanup(DatabaseType.STATE, null, ps, null);
 		}
 	}
 
