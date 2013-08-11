@@ -22,11 +22,13 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
+import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
 import argonms.shop.character.CashShopStaging;
 import argonms.shop.character.ShopCharacter;
 import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -41,6 +43,7 @@ public class CashShopPackets {
 		WISH_LIST_ERROR = 0x3A,
 		INSERT_TO_STAGING = 0x3B,
 		ERROR = 0x3C,
+		REDEEM_COUPON = 0x3D,
 		UPDATE_INVENTORY_SLOTS = 0x44,
 		UPDATE_STORAGE_SLOTS = 0x46,
 		MOVE_FROM_STAGING = 0x4A,
@@ -218,6 +221,19 @@ public class CashShopPackets {
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(ERROR);
 		lew.writeByte(message);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeCouponRewards(List<Pair<InventorySlot, CashShopStaging.CashPurchaseProperties>> itemRewards, int maplePointsReward, int mesosReward) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16 + itemRewards.size() * 55);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(REDEEM_COUPON);
+		lew.writeByte((byte) itemRewards.size());
+		for (Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item : itemRewards)
+			writeStagingSlot(lew, item.right, item.left);
+		lew.writeInt(maplePointsReward);
+		lew.writeInt(0);
+		lew.writeInt(mesosReward);
 		return lew.getBytes();
 	}
 

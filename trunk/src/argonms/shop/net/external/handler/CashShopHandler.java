@@ -27,6 +27,8 @@ import argonms.common.util.input.LittleEndianReader;
 import argonms.shop.ShopServer;
 import argonms.shop.character.CashShopStaging;
 import argonms.shop.character.ShopCharacter;
+import argonms.shop.coupon.Coupon;
+import argonms.shop.coupon.CouponFactory;
 import argonms.shop.loading.cashshop.CashShopDataLoader;
 import argonms.shop.loading.cashshop.Commodity;
 import argonms.shop.net.external.CashShopPackets;
@@ -46,7 +48,6 @@ public class CashShopHandler {
 	private static final Logger LOG = Logger.getLogger(CashShopHandler.class.getName());
 
 	private static final byte //handleAction opcodes
-		REDEEM_COUPON = 0,
 		BUY_SIMPLE_ITEM = 3,
 		GIFT_ITEM = 4,
 		UPDATE_WISH_LIST = 5,
@@ -69,10 +70,6 @@ public class CashShopHandler {
 		}
 		
 		ShopServer.getInstance().requestChannelChange(sc.getPlayer(), sc.getChannel());
-	}
-
-	private static void redeemCoupon(ShopCharacter p, LittleEndianReader packet) {
-		
 	}
 
 	private static void buySimpleItem(ShopCharacter p, LittleEndianReader packet) {
@@ -344,9 +341,6 @@ public class CashShopHandler {
 	public static void handleAction(LittleEndianReader packet, ShopClient sc) {
 		ShopCharacter p = sc.getPlayer();
 		switch (packet.readByte()) {
-			case REDEEM_COUPON:
-				redeemCoupon(p, packet);
-				break;
 			case BUY_SIMPLE_ITEM:
 				buySimpleItem(p, packet);
 				break;
@@ -389,6 +383,45 @@ public class CashShopHandler {
 			default:
 				LOG.log(Level.INFO, "Received unhandled cash shop action packet:\n{0}", packet);
 				break;
+		}
+	}
+
+	public static void handleRedeemCoupon(LittleEndianReader packet, ShopClient sc) {
+		packet.readShort();
+		String code = packet.readLengthPrefixedString();
+		Coupon c = CouponFactory.getInstance().getCoupon(code);
+		if (c == null) {
+			sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_NUMBER));
+			return;
+		}
+		synchronized (c) {
+			if (!c.exists()) {
+				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_NUMBER));
+				return;
+			}
+
+			if (c.getExpireDate() <= System.currentTimeMillis()) {
+				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_EXPIRED));
+				return;
+			}
+
+			if (!c.canUse(sc.getAccountId())) {
+				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_USED));
+				return;
+			}
+
+			c.use(sc.getAccountId());
+			CouponFactory.getInstance().commitCoupon(c);
+
+			List<Pair<InventorySlot, CashShopStaging.CashPurchaseProperties>> items = c.createItems(sc.getAccountId());
+			if (!items.isEmpty()) {
+				CashShopStaging inv = sc.getPlayer().getCashShopInventory();
+				for (Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item : items)
+					inv.append(item.left, item.right);
+			}
+			sc.getPlayer().gainCashShopCurrency(ShopCharacter.MAPLE_POINTS, c.getMaplePointsReward());
+			sc.getPlayer().gainMesos(c.getMesosReward());
+			sc.getSession().send(CashShopPackets.writeCouponRewards(items, c.getMaplePointsReward(), c.getMesosReward()));
 		}
 	}
 }

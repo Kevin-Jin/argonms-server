@@ -103,7 +103,7 @@ public abstract class LittleEndianReader {
 	}
 
 	public String readLengthPrefixedString() {
-		return readKnownLengthAsciiString(readShort());
+		return readKnownLengthAsciiString(readShort() & 0xFFFF);
 	}
 
 	/**

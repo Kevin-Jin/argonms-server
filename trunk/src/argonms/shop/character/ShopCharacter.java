@@ -67,7 +67,7 @@ public class ShopCharacter extends LoggedInPlayer {
 	private int guildId;
 	private byte maxCharacters;
 	private CashShopStaging shopInventory;
-	private int mesos;
+	private volatile int mesos;
 	private int birthday;
 	private final AtomicInteger[] cashShopBalance;
 	private final Map<Integer, SkillEntry> skills;
@@ -114,6 +114,15 @@ public class ShopCharacter extends LoggedInPlayer {
 	@Override
 	public int getMesos() {
 		return mesos;
+	}
+
+	public boolean gainMesos(int gain) {
+		long newValue = (long) mesos + gain;
+		if (newValue <= Integer.MAX_VALUE && newValue >= 0) {
+			mesos = (int) newValue;
+			return true;
+		}
+		return false;
 	}
 
 	public int getCashShopCurrency(int type) {
