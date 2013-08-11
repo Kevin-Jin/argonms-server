@@ -148,6 +148,10 @@ public class CashShopStaging implements IInventory {
 		}
 	}
 
+	public interface ItemManipulator {
+		public void manipulate(InventorySlot item);
+	}
+
 	private final ReadWriteLock locks;
 	private final Map<Long, InventorySlot> slots;
 	private final Map<Long, CashPurchaseProperties> purchaseProperties;
@@ -381,7 +385,7 @@ public class CashShopStaging implements IInventory {
 		return new Pair<InventorySlot, CashPurchaseProperties>(item, props);
 	}
 
-	public static boolean giveGift(int senderAcctId, String senderName, int recipientAcctId, Commodity c, int serialNumber, String message) {
+	public static boolean giveGift(int senderAcctId, String senderName, int recipientAcctId, Commodity c, int serialNumber, String message, ItemManipulator itemManipulator) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -402,6 +406,8 @@ public class CashShopStaging implements IInventory {
 					return false;
 
 				Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+				if (itemManipulator != null)
+					itemManipulator.manipulate(item.left);
 				recipient.getCashShopInventory().append(item.left, item.right);
 				recipient.getCashShopInventory().newGiftedItem(new CashItemGiftNotification(item.left.getUniqueId(), item.left.getDataId(), senderName, message));
 				recipient.getClient().getSession().send(CashShopPackets.writeGiftedCashItems(recipient));
@@ -418,6 +424,8 @@ public class CashShopStaging implements IInventory {
 			ps.close();
 
 			final Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+			if (itemManipulator != null)
+				itemManipulator.manipulate(item.left);
 
 			Player.commitInventory(recipientAcctId, recipientAcctId, new Pet[3], con, Collections.singletonMap(Inventory.InventoryType.CASH_SHOP, new IInventory() {
 				@Override

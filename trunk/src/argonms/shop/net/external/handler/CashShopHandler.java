@@ -18,9 +18,11 @@
 
 package argonms.shop.net.external.handler;
 
+import argonms.common.character.Player;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.Ring;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
@@ -56,7 +58,7 @@ public class CashShopHandler {
 		BUY_CHARACTER_SLOTS = 8,
 		TAKE_FROM_STAGING = 12,
 		PLACE_INTO_STAGING = 13,
-		BUY_LOVE_RING = 27,
+		BUY_COUPLE_RING = 27,
 		BUY_PACKAGE = 28,
 		GIFT_PACKAGE = 29,
 		BUY_ITEM_WITH_MESOS = 30,
@@ -87,17 +89,18 @@ public class CashShopHandler {
 			return;
 		}
 
+		if (p.getCashShopInventory().isFull()) {
+			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
 		if (!p.gainCashShopCurrency(currencyType, -c.price)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy item from cash shop with nonexistent cash");
 			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
-		if (p.getCashShopInventory().isFull()) {
-			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
-			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
-			return;
-		}
 		Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
 		p.getCashShopInventory().append(item.left, item.right);
 		p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(item.right, item.left));
@@ -120,18 +123,20 @@ public class CashShopHandler {
 			return;
 		}
 
-		if (!p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price)) {
+		if (p.getCashShopCurrency(ShopCharacter.GAME_CARD_NX) < c.price) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to gift item from cash shop with nonexistent cash");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
 		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
-		if (!CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message)) {
+		if (!CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, null)) {
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
 			return;
 		}
 
+
+		p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price);
 		p.getClient().getSession().send(CashShopPackets.writeGiftSent(recipient, c.itemDataId, c.price));
 	}
 
@@ -338,8 +343,58 @@ public class CashShopHandler {
 		p.getClient().getSession().send(CashShopPackets.writeMoveToStaging(props, item));
 	}
 
-	private static void buyLoveRing(ShopCharacter p, LittleEndianReader packet) {
-		
+	private static void buyCoupleRing(final ShopCharacter p, LittleEndianReader packet) {
+		int enteredBirthday = packet.readInt();
+		int currencyType = packet.readInt();
+		final int serialNumber = packet.readInt();
+		final String recipient = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+		if (p.getBirthday() != 0 && p.getBirthday() != enteredBirthday) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_BIRTHDAY));
+			return;
+		}
+
+		final Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
+		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent couple ring from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		if (p.getCashShopInventory().isFull()) {
+			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		if (p.getCashShopCurrency(currencyType) < c.price) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy couple ring from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
+		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, new CashShopStaging.ItemManipulator() {
+			@Override
+			public void manipulate(InventorySlot partnersRing) {
+				Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> ourRing = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
+				Ring ring = (Ring) ourRing.left;
+				ring.setPartnerCharId(Player.getIdFromName(recipient));
+				ring.setPartnerRingId(partnersRing.getUniqueId());
+				p.getCashShopInventory().append(ourRing.left, ourRing.right);
+				p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(ourRing.right, ourRing.left));
+
+				ring = (Ring) partnersRing;
+				ring.setPartnerCharId(p.getId());
+				ring.setPartnerRingId(ourRing.left.getUniqueId());
+			}
+		});
+		if (!success) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		p.gainCashShopCurrency(currencyType, -c.price);
 	}
 
 	private static void buyPackage(ShopCharacter p, LittleEndianReader packet) {
@@ -354,8 +409,58 @@ public class CashShopHandler {
 		
 	}
 
-	private static void buyFriendshipRing(ShopCharacter p, LittleEndianReader packet) {
-		
+	private static void buyFriendshipRing(final ShopCharacter p, LittleEndianReader packet) {
+		int enteredBirthday = packet.readInt();
+		int currencyType = packet.readInt();
+		final int serialNumber = packet.readInt();
+		final String recipient = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+		if (p.getBirthday() != 0 && p.getBirthday() != enteredBirthday) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_BIRTHDAY));
+			return;
+		}
+
+		final Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
+		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent friendship ring from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		if (p.getCashShopInventory().isFull()) {
+			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		if (p.getCashShopCurrency(currencyType) < c.price) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy friendship ring from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
+		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, new CashShopStaging.ItemManipulator() {
+			@Override
+			public void manipulate(InventorySlot partnersRing) {
+				Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> ourRing = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
+				Ring ring = (Ring) ourRing.left;
+				ring.setPartnerCharId(Player.getIdFromName(recipient));
+				ring.setPartnerRingId(partnersRing.getUniqueId());
+				p.getCashShopInventory().append(ourRing.left, ourRing.right);
+				p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(ourRing.right, ourRing.left));
+
+				ring = (Ring) partnersRing;
+				ring.setPartnerCharId(p.getId());
+				ring.setPartnerRingId(ourRing.left.getUniqueId());
+			}
+		});
+		if (!success) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		p.gainCashShopCurrency(currencyType, -c.price);
 	}
 
 	public static void handleAction(LittleEndianReader packet, ShopClient sc) {
@@ -385,8 +490,8 @@ public class CashShopHandler {
 			case PLACE_INTO_STAGING:
 				transferToStaging(p, packet);
 				break;
-			case BUY_LOVE_RING:
-				buyLoveRing(p, packet);
+			case BUY_COUPLE_RING:
+				buyCoupleRing(p, packet);
 				break;
 			case BUY_PACKAGE:
 				buyPackage(p, packet);

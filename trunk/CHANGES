@@ -2969,6 +2969,12 @@
 	* Implemented buy character slots in cash shop.
 	* Corrected cash shop error message packets.
 
+2013-08-11  GoldenKevin  (revision 227)
+
+	* Do not take cash unless the staging inventory has room.
+	* Fixed all packets for couple and friendship rings.
+	* Implemented buy couple and friendship rings in cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
