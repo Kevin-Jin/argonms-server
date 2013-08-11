@@ -143,7 +143,7 @@ public final class ClientRecvOps {
 		PARTY_SEARCH_REGISTER = 0xBD,
 		PARTY_SEARCH_START = 0xBF,
 		PLAYER_UPDATE = 0xC0,
-		TOUCHING_CS = 0xC5,
+		CHECK_CASH = 0xC5,
 		BUY_CS_ITEM = 0xC6,
 		COUPON_CODE = 0xC7,
 		MAPLE_TV = 0xD4,

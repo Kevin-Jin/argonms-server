@@ -72,6 +72,10 @@ public class CashShopHandler {
 		ShopServer.getInstance().requestChannelChange(sc.getPlayer(), sc.getChannel());
 	}
 
+	public static void handleCheckCash(LittleEndianReader packet, ShopClient sc) {
+		sc.getSession().send(CashShopPackets.writeCashShopCurrencyBalance(sc.getPlayer()));
+	}
+
 	private static void buySimpleItem(ShopCharacter p, LittleEndianReader packet) {
 		packet.readByte();
 		int currencyType = packet.readInt();
@@ -79,19 +83,19 @@ public class CashShopHandler {
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
 		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from cash shop");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(currencyType, -c.price)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy item from cash shop with nonexistent cash");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
 		if (p.getCashShopInventory().isFull()) {
 			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INVENTORY_FULL));
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
 			return;
 		}
 		Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
@@ -105,26 +109,26 @@ public class CashShopHandler {
 		String recipient = packet.readLengthPrefixedString();
 		String message = packet.readLengthPrefixedString();
 		if (p.getBirthday() != 0 && p.getBirthday() != enteredBirthday) {
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_BIRTHDAY));
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_BIRTHDAY));
 			return;
 		}
 
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
 		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to gift nonexistent item from cash shop");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to gift item from cash shop with nonexistent cash");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
 		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
 		if (!CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message)) {
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INVENTORY_FULL));
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
 			return;
 		}
 
@@ -139,7 +143,7 @@ public class CashShopHandler {
 			if (sn != 0) {
 				if (csdl.getCommodity(sn) == null) {
 					CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to add nonexistent item to wishlist from cash shop");
-					p.getClient().getSession().send(CashShopPackets.writeWishListError());
+					p.getClient().getSession().send(CashShopPackets.writeWishListError(CashShopPackets.ERROR_OUT_OF_STOCK));
 					return;
 				}
 
@@ -208,9 +212,7 @@ public class CashShopHandler {
 
 	private static void buyInventorySlots(ShopCharacter p, LittleEndianReader packet) {
 		packet.readByte();
-		byte currencyType = packet.readByte();
-		packet.readByte();
-		packet.readShort();
+		int currencyType = packet.readInt();
 		boolean hasSerial = packet.readBool();
 		Inventory.InventoryType invType;
 		int cost;
@@ -228,13 +230,13 @@ public class CashShopHandler {
 
 		if (currentSlots + 4 > getMaxInventorySlots(p.getJob(), invType)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy too many " + invType + " slots in cash shop");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
+			p.getClient().getSession().send(CashShopPackets.writeBuyInventorySlotsError(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(currencyType, -cost)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy " + invType + " slots from cash shop with nonexistent cash");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			p.getClient().getSession().send(CashShopPackets.writeBuyInventorySlotsError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
@@ -244,20 +246,20 @@ public class CashShopHandler {
 
 	private static void buyCashInventorySlots(ShopCharacter p, LittleEndianReader packet) {
 		packet.readByte();
-		byte currencyType = packet.readByte();
+		int currencyType = packet.readInt();
 
 		Inventory inv = p.getInventory(Inventory.InventoryType.CASH);
 		short currentSlots = inv.getMaxSlots();
 
 		if (currentSlots + 4 > getMaxInventorySlots(p.getJob(), Inventory.InventoryType.CASH)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy too many storage slots in cash shop");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
+			p.getClient().getSession().send(CashShopPackets.writeBuyStorageSlotsError(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
 			return;
 		}
 
 		if (!p.gainCashShopCurrency(currencyType, -4000)) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy storage slots from cash shop with nonexistent cash");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			p.getClient().getSession().send(CashShopPackets.writeBuyStorageSlotsError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
 			return;
 		}
 
@@ -266,7 +268,25 @@ public class CashShopHandler {
 	}
 
 	private static void buyCharacterSlots(ShopCharacter p, LittleEndianReader packet) {
-		
+		packet.readByte();
+		int currencyType = packet.readInt();
+
+		short currentSlots = p.getMaxCharacters();
+
+		if (currentSlots + 1 > 6) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy too many characters slots in cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeBuyCharacterSlotsError(CashShopPackets.ERROR_TOO_MANY_CASH_ITEMS));
+			return;
+		}
+
+		if (!p.gainCashShopCurrency(currencyType, -6900)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy character slots from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeBuyCharacterSlotsError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		short newCapacity = p.increaseMaxCharacters();
+		p.getClient().getSession().send(CashShopPackets.writeUpdateCharacterSlots(newCapacity));
 	}
 
 	private static void transferFromStaging(ShopCharacter p, LittleEndianReader packet) {
@@ -277,14 +297,14 @@ public class CashShopHandler {
 		InventorySlot item = p.getCashShopInventory().getByUniqueId(uniqueId);
 		if (item == null) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to transfer nonexistent cash shop item from staging");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
+			p.getClient().getSession().send(CashShopPackets.writeTakeError(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}
 
 		Inventory inv = p.getInventory(type);
 		List<Short> freeSlots = inv.getFreeSlots(1);
 		if (freeSlots.isEmpty()) {
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_INVENTORY_FULL));
+			p.getClient().getSession().send(CashShopPackets.writeTakeError(CashShopPackets.ERROR_INVENTORY_FULL));
 			return;
 		}
 
@@ -308,7 +328,7 @@ public class CashShopHandler {
 		}
 		if (item == null) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to transfer nonexistent cash shop item to staging");
-			p.getClient().getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_UNKNOWN));
+			p.getClient().getSession().send(CashShopPackets.writePlaceError(CashShopPackets.ERROR_UNKNOWN));
 			return;
 		}
 
@@ -391,22 +411,22 @@ public class CashShopHandler {
 		String code = packet.readLengthPrefixedString();
 		Coupon c = CouponFactory.getInstance().getCoupon(code);
 		if (c == null) {
-			sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_NUMBER));
+			sc.getSession().send(CashShopPackets.writeCouponError(CashShopPackets.ERROR_COUPON_NUMBER));
 			return;
 		}
 		synchronized (c) {
 			if (!c.exists()) {
-				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_NUMBER));
+				sc.getSession().send(CashShopPackets.writeCouponError(CashShopPackets.ERROR_COUPON_NUMBER));
 				return;
 			}
 
 			if (c.getExpireDate() <= System.currentTimeMillis()) {
-				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_EXPIRED));
+				sc.getSession().send(CashShopPackets.writeCouponError(CashShopPackets.ERROR_COUPON_EXPIRED));
 				return;
 			}
 
 			if (!c.canUse(sc.getAccountId())) {
-				sc.getSession().send(CashShopPackets.writeCashShopOperationFailure(CashShopPackets.ERROR_COUPON_USED));
+				sc.getSession().send(CashShopPackets.writeCouponError(CashShopPackets.ERROR_COUPON_USED));
 				return;
 			}
 

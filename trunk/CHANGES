@@ -2963,6 +2963,12 @@
 
 	* Implemented coupon codes in cash shop.
 
+2013-08-10  GoldenKevin  (revision 226)
+
+	* Enable actions after player clicks Check Cash button in cash shop.
+	* Implemented buy character slots in cash shop.
+	* Corrected cash shop error message packets.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

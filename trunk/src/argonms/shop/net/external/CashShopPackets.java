@@ -42,14 +42,22 @@ public class CashShopPackets {
 		UPDATE_WISH_LIST = 0x39,
 		WISH_LIST_ERROR = 0x3A,
 		INSERT_TO_STAGING = 0x3B,
-		ERROR = 0x3C,
+		BUY_ERROR = 0x3C,
 		REDEEM_COUPON = 0x3D,
+		COUPON_ERROR = 0x40,
 		UPDATE_INVENTORY_SLOTS = 0x44,
+		INVENTORY_SLOTS_ERROR = 0x45,
 		UPDATE_STORAGE_SLOTS = 0x46,
+		STORAGE_SLOTS_ERROR = 0x47,
+		UPDATE_CHARACTER_SLOTS = 0x48,
+		CHARACTER_SLOTS_ERROR = 0x49,
 		MOVE_FROM_STAGING = 0x4A,
+		MOVE_FROM_STAGING_ERROR = 0x4B,
 		MOVE_TO_STAGING = 0x4C,
+		MOVE_TO_STAGING_ERROR = 0x4D,
 		EXPIRE_ITEM = 0x4E,
-		SEND_GIFT = 0x6B
+		SEND_GIFT = 0x6B,
+		GIFT_ERROR = 0x6C
 	;
 
 	public static byte
@@ -76,6 +84,7 @@ public class CashShopPackets {
 		ERROR_PREMIUM_SERVICE = (byte) 0x92,
 		ERROR_INVALID_RECIPIENT = (byte) 0x93,
 		ERROR_RECIPIENT_NAME = (byte) 0x94,
+		ERROR_OUT_OF_STOCK = (byte) 0x96,
 		ERROR_INSUFFICIENT_MESOS = (byte) 0x98,
 		ERROR_CASH_SHOP_IN_BETA = (byte) 0x99,
 		ERROR_BIRTHDAY = (byte) 0x9A,
@@ -200,12 +209,16 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeWishListError() {
+	private static byte[] writeSimpleError(byte header, byte message) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
-		lew.writeByte(WISH_LIST_ERROR);
-		lew.writeByte((byte) 0);
+		lew.writeByte(header);
+		lew.writeByte(message);
 		return lew.getBytes();
+	}
+
+	public static byte[] writeWishListError(byte message) {
+		return writeSimpleError(WISH_LIST_ERROR, message);
 	}
 
 	public static byte[] writeInsertToStaging(CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
@@ -216,12 +229,8 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeCashShopOperationFailure(byte message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
-		lew.writeShort(ClientSendOps.CASH_SHOP);
-		lew.writeByte(ERROR);
-		lew.writeByte(message);
-		return lew.getBytes();
+	public static byte[] writeBuyError(byte message) {
+		return writeSimpleError(BUY_ERROR, message);
 	}
 
 	public static byte[] writeCouponRewards(List<Pair<InventorySlot, CashShopStaging.CashPurchaseProperties>> itemRewards, int maplePointsReward, int mesosReward) {
@@ -237,6 +246,10 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeCouponError(byte message) {
+		return writeSimpleError(COUPON_ERROR, message);
+	}
+
 	public static byte[] writeUpdateInventorySlots(Inventory.InventoryType invType, short newCapacity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
@@ -246,12 +259,32 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeBuyInventorySlotsError(byte message) {
+		return writeSimpleError(INVENTORY_SLOTS_ERROR, message);
+	}
+
 	public static byte[] writeUpdateStorageSlots(short newCapacity) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(UPDATE_STORAGE_SLOTS);
 		lew.writeShort(newCapacity);
 		return lew.getBytes();
+	}
+
+	public static byte[] writeBuyStorageSlotsError(byte message) {
+		return writeSimpleError(STORAGE_SLOTS_ERROR, message);
+	}
+
+	public static byte[] writeUpdateCharacterSlots(short newCapacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(UPDATE_CHARACTER_SLOTS);
+		lew.writeShort(newCapacity);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeBuyCharacterSlotsError(byte message) {
+		return writeSimpleError(CHARACTER_SLOTS_ERROR, message);
 	}
 
 	public static byte[] writeMoveFromStaging(InventorySlot item, short destPos) {
@@ -263,12 +296,20 @@ public class CashShopPackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeTakeError(byte message) {
+		return writeSimpleError(MOVE_FROM_STAGING_ERROR, message);
+	}
+
 	public static byte[] writeMoveToStaging(CashShopStaging.CashPurchaseProperties props, InventorySlot item) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(58);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(MOVE_TO_STAGING);
 		writeStagingSlot(lew, props, item);
 		return lew.getBytes();
+	}
+
+	public static byte[] writePlaceError(byte message) {
+		return writeSimpleError(MOVE_TO_STAGING_ERROR, message);
 	}
 
 	public static byte[] writeGiftSent(String recipient, int itemId, int price) {
@@ -281,5 +322,9 @@ public class CashShopPackets {
 		lew.writeShort((short) 0);
 		lew.writeInt(price);
 		return lew.getBytes();
+	}
+
+	public static byte[] writeGiftError(byte message) {
+		return writeSimpleError(GIFT_ERROR, message);
 	}
 }
