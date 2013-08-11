@@ -2975,6 +2975,13 @@
 	* Fixed all packets for couple and friendship rings.
 	* Implemented buy couple and friendship rings in cash shop.
 
+2013-08-11  GoldenKevin  (revision 228)
+
+	* Implemented SN blocking system in cash shop. Initialized to block stock of
+	Safety Charms and Venus Fireworks that should not be on sale.
+	* Formatted some of the unknown bytes used in EnterShopHandler.writeEnterCs
+	to make the packet structure a bit clearer.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

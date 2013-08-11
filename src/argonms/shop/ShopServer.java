@@ -51,9 +51,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -86,6 +88,7 @@ public class ShopServer implements LocalServer {
 	private final Map<Integer, ShopPlayerContinuation> enterServerData;
 	private final ShopCrossServerSynchronization worldComm;
 	private String ticker;
+	private final Set<Integer> blockedSerials;
 
 	private ShopServer() {
 		channelChangeData = new ConcurrentHashMap<Integer, ShopPlayerContinuation>();
@@ -94,6 +97,19 @@ public class ShopServer implements LocalServer {
 		storage = new PlayerLog<ShopCharacter>();
 		enterServerData = new ConcurrentHashMap<Integer, ShopPlayerContinuation>();
 		worldComm = new ShopCrossServerSynchronization();
+		blockedSerials = new HashSet<Integer>();
+	}
+
+	private void setBlockedSerials(Scanner scan) {
+		while (scan.hasNext()) {
+			String line = scan.nextLine();
+			int comment = line.indexOf('#');
+			if (comment != -1)
+				line = line.substring(0, comment);
+			line = line.trim();
+			if (!line.isEmpty())
+				blockedSerials.add(Integer.valueOf(Integer.parseInt(line)));
+		}
 	}
 
 	public void init() {
@@ -192,8 +208,11 @@ public class ShopServer implements LocalServer {
 		try {
 			scan = new Scanner(new FileReader(System.getProperty("argonms.ct.macbanblacklist.file", "macbanblacklist.txt")));
 			CheatTracker.setBlacklistedMacBans(scan);
+			scan.close();
+			scan = new Scanner(new FileReader(System.getProperty("argonms.shop.blockedserials.file", "blockedcashshopserialnumbers.txt")));
+			setBlockedSerials(scan);
 		} catch (IOException ex) {
-			LOG.log(Level.SEVERE, "Could not load macban blacklist!", ex);
+			LOG.log(Level.SEVERE, "Could not load macban and SN blacklist!", ex);
 			System.exit(3);
 			return;
 		} finally {
@@ -369,6 +388,10 @@ public class ShopServer implements LocalServer {
 		byte[] packet = CommonPackets.writeServerMessage(style, message, (byte) -1, true);
 		for (ShopCharacter p : storage.getConnectedPlayers())
 			p.getClient().getSession().send(packet);
+	}
+
+	public Set<Integer> getBlockedSerials() {
+		return blockedSerials;
 	}
 
 	public static ShopServer getInstance() {

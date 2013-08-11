@@ -83,7 +83,7 @@ public class CashShopHandler {
 		int currencyType = packet.readInt();
 		int serialNumber = packet.readInt();
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
-		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent item from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
@@ -117,7 +117,7 @@ public class CashShopHandler {
 		}
 
 		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
-		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to gift nonexistent item from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
@@ -355,7 +355,7 @@ public class CashShopHandler {
 		}
 
 		final Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
-		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent couple ring from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
@@ -421,7 +421,7 @@ public class CashShopHandler {
 		}
 
 		final Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
-		if (c == null || !c.onSale/* || ShopServer.getInstance().isBlocked(serialNumber)*/) {
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent friendship ring from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;

@@ -23,5 +23,6 @@ java -Xmx600m -Dargonms.shop.config.file=shop.properties \
 -Djava.util.logging.config.file=logging.properties \
 -Dargonms.db.config.file=db.properties \
 -Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
+-Dargonms.shop.blockedserials.file=blockedcashshopserialnumbers.txt \
 -Dargonms.data.dir=wz/ \
 argonms.shop.ShopServer
