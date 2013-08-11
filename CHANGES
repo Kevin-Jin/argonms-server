@@ -2959,6 +2959,10 @@
 	* Implemented wish list changes.
 	* Implemented inventory expansion from the cash shop.
 
+2013-08-10  GoldenKevin  (revision 225)
+
+	* Implemented coupon codes in cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

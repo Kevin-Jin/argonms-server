@@ -53,6 +53,9 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 			case ClientRecvOps.BUY_CS_ITEM:
 				CashShopHandler.handleAction(reader, sc);
 				break;
+			case ClientRecvOps.COUPON_CODE:
+				CashShopHandler.handleRedeemCoupon(reader, sc);
+				break;
 			case ClientRecvOps.PLAYER_UPDATE:
 				sc.getPlayer().saveCharacter();
 				break;
