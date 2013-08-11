@@ -107,6 +107,10 @@ public class ShopCharacter extends LoggedInPlayer {
 		return maxCharacters;
 	}
 
+	public short increaseMaxCharacters() {
+		return ++maxCharacters;
+	}
+
 	public int getBirthday() {
 		return birthday;
 	}
@@ -255,11 +259,12 @@ public class ShopCharacter extends LoggedInPlayer {
 	private void updateDbAccount(Connection con) throws SQLException {
 		PreparedStatement ps = null;
 		try {
-			ps = con.prepareStatement("UPDATE `accounts` SET `paypalnx` = ?, `maplepoints` = ?, `gamecardnx` = ? WHERE `id` = ?");
-			ps.setInt(1, getCashShopCurrency(PAYPAL_NX));
-			ps.setInt(2, getCashShopCurrency(MAPLE_POINTS));
-			ps.setInt(3, getCashShopCurrency(GAME_CARD_NX));
-			ps.setInt(4, client.getAccountId());
+			ps = con.prepareStatement("UPDATE `accounts` SET `characters` = ?, `paypalnx` = ?, `maplepoints` = ?, `gamecardnx` = ? WHERE `id` = ?");
+			ps.setByte(1, maxCharacters);
+			ps.setInt(2, getCashShopCurrency(PAYPAL_NX));
+			ps.setInt(3, getCashShopCurrency(MAPLE_POINTS));
+			ps.setInt(4, getCashShopCurrency(GAME_CARD_NX));
+			ps.setInt(5, client.getAccountId());
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save account-info of character " + name, e);
