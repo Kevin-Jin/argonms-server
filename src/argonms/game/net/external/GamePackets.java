@@ -67,7 +67,6 @@ import argonms.game.net.external.handler.GuildListHandler;
 import argonms.game.net.external.handler.PartyListHandler;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -242,34 +241,44 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	private static void writeRings(LittleEndianWriter lew, Map<Short, InventorySlot> equippedInv) {
+		Ring coupleRing = null, friendshipRing = null, weddingRing = null;
+		synchronized(equippedInv) {
+			for (InventorySlot item : equippedInv.values())
+				if (item.getType() == ItemType.RING)
+					if (InventoryTools.isCoupleRing(item.getDataId()))
+						coupleRing = (Ring) item;
+					else if (InventoryTools.isFriendshipRing(item.getDataId()))
+						friendshipRing = (Ring) item;
+					else if (InventoryTools.isWeddingRing(item.getDataId()))
+						weddingRing = (Ring) item;
+		}
+		if (coupleRing != null) {
+			lew.writeByte((byte) 1);
+			lew.writeLong(coupleRing.getUniqueId());
+			lew.writeLong(coupleRing.getPartnerRingId());
+			lew.writeInt(coupleRing.getDataId());
+		} else {
+			lew.writeByte((byte) 0);
+		}
+		if (friendshipRing != null) {
+			lew.writeByte((byte) 1);
+			lew.writeLong(friendshipRing.getUniqueId());
+			lew.writeLong(friendshipRing.getPartnerRingId());
+			lew.writeInt(friendshipRing.getDataId());
+		} else {
+			lew.writeByte((byte) 0);
+		}
+		lew.writeByte((byte) 0); //possibly wedding ring
+	}
+
 	public static byte[] writeUpdateAvatar(GameCharacter p) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.UPDATE_AVATAR);
 		lew.writeInt(p.getId());
 		lew.writeBool(true);
 		CommonPackets.writeAvatar(lew, p, false);
-		Map<Short, InventorySlot> equippedC = p.getInventory(InventoryType.EQUIPPED).getAll();
-		List<Ring> rings = new ArrayList<Ring>();
-		synchronized(equippedC) {
-			for (InventorySlot item : equippedC.values())
-				if (item.getType() == ItemType.RING)
-					rings.add((Ring) item);
-		}
-		Collections.sort(rings);
-		lew.writeByte((byte) 0);
-		if (rings.size() > 0) {
-			for (Ring ring : rings) {
-				lew.writeBool(true);
-				lew.writeLong(ring.getUniqueId());
-				lew.writeLong(ring.getPartnerRingId());
-				lew.writeInt(ring.getDataId());
-			}
-		} else {
-			lew.writeBool(false);
-		}
-		lew.writeShort((short) 0);
-		lew.writeShort((short) 0);
-
+		writeRings(lew, p.getInventory(InventoryType.EQUIPPED).getAll());
 		return lew.getBytes();
 	}
 
@@ -1531,29 +1540,9 @@ public final class GamePackets {
 			writeMiniroomBalloon(lew, room);
 		else
 			lew.writeByte(MiniroomType.NONE.byteValue());
-		/*lew.writeShort((short) 0);
-		Map<Short, InventorySlot> equippedC = p.getInventory(InventoryType.EQUIPPED).getAll();
-		List<Ring> rings = new ArrayList<Ring>();
-		for (Entry<Short, InventorySlot> slot : equippedC.entrySet()) {
-			if (slot.getValue().getType() == ItemType.RING) {
-				rings.add((Ring) slot.getValue());
-			}
-		}
-		if (rings.size() > 0) {
-			lew.writeByte((byte) 0);
-			for (Ring ring : rings) {
-				lew.writeByte((byte) 1);
-				lew.writeLong(ring.getUniqueId());
-				lew.writeLong(ring.getPartnerRingId());
-				lew.writeInt(ring.getDataId());
-			}
-			lew.writeShort((short) 0);
-		} else {
-			lew.writeInt(0);
-		}*/
 		lew.writeByte((byte) 0);
-		lew.writeInt(0);
-		lew.writeInt(0);
+		writeRings(lew, p.getInventory(InventoryType.EQUIPPED).getAll());
+		lew.writeByte((byte) 0);
 		return lew.getBytes();
 	}
 

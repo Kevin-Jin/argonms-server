@@ -824,10 +824,20 @@ public final class InventoryTools {
 		return (itemId >= 1112000 && itemId < 1113000);
 	}
 
+	public static boolean isCoupleRing(int itemId) {
+		return (itemId >= 1112001 && itemId <= 1112006);
+	}
+
+	public static boolean isFriendshipRing(int itemId) {
+		return (itemId >= 1112800 && itemId <= 1112802);
+	}
+
+	public static boolean isWeddingRing(int itemId) {
+		return (itemId >= 1112803 && itemId <= 1112807 || itemId == 1112809);
+	}
+
 	public static boolean isPartnerRing(int itemId) {
-		return (itemId >= 1112001 && itemId <= 1112006 || //"love" rings
-				itemId >= 1112800 && itemId <= 1112802 || //friendship rings
-				itemId >= 1112803 && itemId <= 1112807 || itemId == 1112809); //wedding rings
+		return (isCoupleRing(itemId) || isFriendshipRing(itemId) || isWeddingRing(itemId));
 	}
 
 	public static boolean isMount(int itemId) {

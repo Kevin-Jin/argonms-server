@@ -263,7 +263,9 @@ public final class CommonPackets {
 		Map<Short, InventorySlot> iv = p.getInventory(InventoryType.EQUIPPED).getAll();
 		Map<Short, InventorySlot> visible = new TreeMap<Short, InventorySlot>();
 		Map<Short, InventorySlot> masked = new TreeMap<Short, InventorySlot>();
-		List<Ring> rings = new ArrayList<Ring>();
+		List<Ring> coupleRings = new ArrayList<Ring>();
+		List<Ring> friendshipRings = new ArrayList<Ring>();
+		List<Ring> weddingRings = new ArrayList<Ring>();
 		synchronized(iv) {
 			for (Entry<Short, InventorySlot> entry : iv.entrySet()) {
 				InventorySlot item = entry.getValue();
@@ -272,7 +274,12 @@ public final class CommonPackets {
 				else
 					visible.put(entry.getKey(), item);
 				if (item.getType() == ItemType.RING)
-					rings.add((Ring) item);
+					if (InventoryTools.isCoupleRing(item.getDataId()))
+						coupleRings.add((Ring) item);
+					else if (InventoryTools.isFriendshipRing(item.getDataId()))
+						friendshipRings.add((Ring) item);
+					else if (InventoryTools.isWeddingRing(item.getDataId()))
+						weddingRings.add((Ring) item);
 			}
 		}
 
@@ -287,7 +294,12 @@ public final class CommonPackets {
 		synchronized(iv) {
 			for (Entry<Short, InventorySlot> entry : iv.entrySet()) {
 				if (entry.getValue().getType() == ItemType.RING)
-					rings.add((Ring) entry.getValue());
+					if (InventoryTools.isCoupleRing(entry.getValue().getDataId()))
+						coupleRings.add((Ring) entry.getValue());
+					else if (InventoryTools.isFriendshipRing(entry.getValue().getDataId()))
+						friendshipRings.add((Ring) entry.getValue());
+					else if (InventoryTools.isWeddingRing(entry.getValue().getDataId()))
+						weddingRings.add((Ring) entry.getValue());
 				writeItemInfo(lew, entry.getKey().shortValue(), entry.getValue());
 			}
 		}
@@ -350,19 +362,23 @@ public final class CommonPackets {
 			lew.writeLong(TimeTool.unixToWindowsTime(completedQuest.getValue().getCompletionTime()));
 		}
 
-		//friendship rings work correctly, but maybe other zeros are counts
-		//for wedding or "love" rings?
 		lew.writeShort((short) 0);
-		lew.writeShort((short) 0);
-		lew.writeShort((short) rings.size());
-		for (Ring ring : rings) {
+		lew.writeShort((short) (coupleRings.size()));
+		for (Ring ring : coupleRings) {
+			lew.writeInt(ring.getPartnerCharId());
+			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
+			lew.writeLong(ring.getUniqueId());
+			lew.writeLong(ring.getPartnerRingId());
+		}
+		lew.writeShort((short) friendshipRings.size());
+		for (Ring ring : friendshipRings) {
 			lew.writeInt(ring.getPartnerCharId());
 			lew.writePaddedAsciiString(Player.getNameFromId(ring.getPartnerCharId()), 13);
 			lew.writeLong(ring.getUniqueId());
 			lew.writeLong(ring.getPartnerRingId());
 			lew.writeInt(ring.getDataId());
 		}
-		lew.writeShort((short) 0);
+		lew.writeShort((short) 0); //possibly wedding ring
 
 		for (int i = 0; i < 5; i++)
 			lew.writeInt(ROCK_MAPS[i]);
