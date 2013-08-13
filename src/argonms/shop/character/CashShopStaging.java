@@ -27,6 +27,7 @@ import argonms.common.character.inventory.Pet;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.collections.Pair;
 import argonms.shop.ShopServer;
+import argonms.shop.loading.cashshop.CashShopDataLoader;
 import argonms.shop.loading.cashshop.Commodity;
 import argonms.shop.net.external.CashShopPackets;
 import java.sql.Connection;
@@ -149,7 +150,7 @@ public class CashShopStaging implements IInventory {
 	}
 
 	public interface ItemManipulator {
-		public void manipulate(InventorySlot item);
+		public boolean manipulate(InventorySlot item, int serialNumber, Commodity c);
 	}
 
 	private final ReadWriteLock locks;
@@ -354,6 +355,15 @@ public class CashShopStaging implements IInventory {
 		}
 	}
 
+	public boolean canFit(int add) {
+		lockRead();
+		try {
+			return slots.size() + add <= getMaxSlots();
+		} finally {
+			unlockRead();
+		}
+	}
+
 	public static void attachCashPurchaseProperties(long uniqueId, CashPurchaseProperties props) {
 		Connection con = null;
 		PreparedStatement ps = null;
@@ -385,7 +395,7 @@ public class CashShopStaging implements IInventory {
 		return new Pair<InventorySlot, CashPurchaseProperties>(item, props);
 	}
 
-	public static boolean giveGift(int senderAcctId, String senderName, int recipientAcctId, Commodity c, int serialNumber, String message, ItemManipulator itemManipulator) {
+	public static boolean giveGift(int senderAcctId, String senderName, int recipientAcctId, int[] serialNumbers, String message, ItemManipulator itemManipulator) {
 		Connection con = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -402,30 +412,44 @@ public class CashShopStaging implements IInventory {
 			rs.close();
 			ps.close();
 			if (recipient != null) {
-				if (recipient.getCashShopInventory().isFull())
+				if (!recipient.getCashShopInventory().canFit(serialNumbers.length))
 					return false;
 
-				Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
-				if (itemManipulator != null)
-					itemManipulator.manipulate(item.left);
-				recipient.getCashShopInventory().append(item.left, item.right);
-				recipient.getCashShopInventory().newGiftedItem(new CashItemGiftNotification(item.left.getUniqueId(), item.left.getDataId(), senderName, message));
-				recipient.getClient().getSession().send(CashShopPackets.writeGiftedCashItems(recipient));
+				CashShopDataLoader csdl = CashShopDataLoader.getInstance();
+				for (int serialNumber : serialNumbers) {
+					Commodity c = csdl.getCommodity(serialNumber);
+					Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+					if (itemManipulator != null && !itemManipulator.manipulate(item.left, serialNumber, c))
+						continue;
+
+					recipient.getCashShopInventory().append(item.left, item.right);
+					recipient.getCashShopInventory().newGiftedItem(new CashItemGiftNotification(item.left.getUniqueId(), item.left.getDataId(), senderName, message));
+					recipient.getClient().getSession().send(CashShopPackets.writeCashItemStagingInventory(recipient));
+					recipient.getClient().getSession().send(CashShopPackets.writeGiftedCashItems(recipient));
+				}
 				return true;
 			}
 
 			ps = con.prepareStatement("SELECT MAX(`position`) FROM `inventoryitems` WHERE `accountid` = ? AND `inventorytype` = " + Inventory.InventoryType.CASH_SHOP.byteValue());
 			ps.setInt(1, recipientAcctId);
 			rs = ps.executeQuery();
-			final short position = (short) ((rs.next() ? rs.getShort(1) : 0) + 1);
-			if (position > MAX_SLOTS)
+			short position = (short) ((rs.next() ? rs.getShort(1) : 0) + 1);
+			if (position - 1 + serialNumbers.length > MAX_SLOTS)
 				return false;
 			rs.close();
 			ps.close();
 
-			final Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
-			if (itemManipulator != null)
-				itemManipulator.manipulate(item.left);
+			final Map<Short, InventorySlot> inv = new LinkedHashMap<Short, InventorySlot>(serialNumbers.length);
+			CashShopDataLoader csdl = CashShopDataLoader.getInstance();
+			for (int serialNumber : serialNumbers) {
+				Commodity c = csdl.getCommodity(serialNumber);
+				final Pair<InventorySlot, CashPurchaseProperties> item = createItem(c, serialNumber, senderAcctId, senderName);
+				if (itemManipulator != null && !itemManipulator.manipulate(item.left, serialNumber, c))
+					continue;
+
+				inv.put(Short.valueOf(position), item.left);
+				position++;
+			}
 
 			Player.commitInventory(recipientAcctId, recipientAcctId, new Pet[3], con, Collections.singletonMap(Inventory.InventoryType.CASH_SHOP, new IInventory() {
 				@Override
@@ -435,7 +459,7 @@ public class CashShopStaging implements IInventory {
 
 				@Override
 				public Map<Short, InventorySlot> getAll() {
-					return Collections.singletonMap(Short.valueOf(position), item.left);
+					return inv;
 				}
 
 				@Override
@@ -450,10 +474,13 @@ public class CashShopStaging implements IInventory {
 			ps.close();
 
 			ps = con.prepareStatement("INSERT INTO `cashitemgiftnotes` (`uniqueid`,`recipientacctid`,`message`) VALUES (?,?,?)");
-			ps.setLong(1, item.left.getUniqueId());
 			ps.setInt(2, recipientAcctId);
 			ps.setString(3, message);
-			ps.executeUpdate();
+			for (InventorySlot item : inv.values()) {
+				ps.setLong(1, item.getUniqueId());
+				ps.addBatch();
+			}
+			ps.executeBatch();
 			return true;
 		} catch (SQLException ex) {
 			LOG.log(Level.WARNING, "Could not insert new cash item gift to database", ex);

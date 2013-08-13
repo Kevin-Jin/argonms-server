@@ -2995,6 +2995,13 @@
 	* Fixed error 38 when writing cash shop error ERROR_OUT_OF_STOCK.
 	* Implemented buying items with mesos in cash shop.
 
+2013-08-13  GoldenKevin  (revision 231)
+
+	* Check recipient name when sending gifts.
+	* Gift recipients logged into the cash shop will see newly received gifts in
+	their staging.
+	* Implement buying and gifting packages.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
