@@ -27,6 +27,7 @@ import argonms.common.loading.StatusEffectsData;
 import argonms.common.loading.StatusEffectsData.MonsterStatusEffectsData;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -238,11 +239,11 @@ public class Mob extends AbstractEntity {
 				short pos;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+					ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+					ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 				}
 				killer.itemCountChanged(itemId);
 				ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));

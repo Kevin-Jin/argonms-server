@@ -29,6 +29,7 @@ import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.GameServer;
@@ -53,7 +54,7 @@ public final class InventoryHandler {
 		GameCharacter p = gc.getPlayer();
 		if (src < 0 && dst > 0) { //unequip
 			InventoryTools.unequip(p.getInventory(InventoryType.EQUIPPED), p.getInventory(InventoryType.EQUIP), src, dst);
-			gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
+			gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 1));
 			p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(dst), false, true);
 			p.getMap().sendToAll(GamePackets.writeUpdateAvatar(p), p);
 			if (p.getChatRoom() != null)
@@ -61,14 +62,14 @@ public final class InventoryHandler {
 		} else if (dst < 0) { //equip
 			short[] result = InventoryTools.equip(p.getInventory(InventoryType.EQUIP), p.getInventory(InventoryType.EQUIPPED), src, dst);
 			if (result != null) {
-				gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
+				gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, src, dst, (byte) 2));
 				if (result.length == 0 && p.getInventory(InventoryType.EQUIP).get(src) != null || result.length == 2 && src != result[1]) {
 					//swapped out an equip
 					p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(src), false, true);
 				}
 				if (result.length == 2) {
 					//swapped out an additional equip
-					gc.getSession().send(GamePackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
+					gc.getSession().send(CommonPackets.writeInventoryMoveItem(InventoryType.EQUIP, result[0], result[1], (byte) 1));
 					p.equipChanged((Equip) p.getInventory(InventoryType.EQUIP).get(result[1]), false, true);
 				}
 				p.equipChanged((Equip) p.getInventory(InventoryType.EQUIPPED).get(dst), true, true);
@@ -76,7 +77,7 @@ public final class InventoryHandler {
 				if (p.getChatRoom() != null)
 					GameServer.getChannel(p.getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(p, p.getChatRoom().getRoomId());
 			} else {
-				gc.getSession().send(GamePackets.writeInventoryNoChange());
+				gc.getSession().send(CommonPackets.writeInventoryNoChange());
 			}
 		} else if (dst == 0) { //drop
 			Inventory inv = p.getInventory(src >= 0 ? type : InventoryType.EQUIPPED);
@@ -89,7 +90,7 @@ public final class InventoryHandler {
 			if (newQty == 0 || InventoryTools.isRechargeable(item.getDataId()) || InventoryTools.isCashItem(item.getDataId())) {
 				inv.remove(src);
 				toDrop = item;
-				gc.getSession().send(GamePackets.writeInventoryClearSlot(type, src));
+				gc.getSession().send(CommonPackets.writeInventoryClearSlot(type, src));
 				if (src < 0) {
 					//dropped an equipped equip
 					p.equipChanged((Equip) toDrop, false, true);
@@ -101,7 +102,7 @@ public final class InventoryHandler {
 				item.setQuantity(newQty);
 				toDrop = item.clone();
 				toDrop.setQuantity(qty);
-				gc.getSession().send(GamePackets.writeInventoryDropItem(type, src, newQty));
+				gc.getSession().send(CommonPackets.writeInventoryDropItem(type, src, newQty));
 			}
 			ItemDrop d = new ItemDrop(toDrop);
 			p.getMap().drop(d, 0, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), !ItemDataLoader.getInstance().canDrop(toDrop.getDataId()));
@@ -120,11 +121,11 @@ public final class InventoryHandler {
 					short rest = (short) (total - slotMax);
 					move.setQuantity(rest);
 					replace.setQuantity(slotMax);
-					gc.getSession().send(GamePackets.writeInventoryMoveItemShiftQuantities(type, src, rest, dst, slotMax));
+					gc.getSession().send(CommonPackets.writeInventoryMoveItemShiftQuantities(type, src, rest, dst, slotMax));
 				} else { //combine
 					replace.setQuantity((short) total);
 					inv.remove(src);
-					gc.getSession().send(GamePackets.writeInventoryMoveItemCombineQuantities(type, src, dst, (short) total));
+					gc.getSession().send(CommonPackets.writeInventoryMoveItemCombineQuantities(type, src, dst, (short) total));
 				}
 			}
 		}
@@ -144,9 +145,9 @@ public final class InventoryHandler {
 		}
 		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
 		if (changed != null)
-			gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
+			gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
 		else
-			gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, slot));
+			gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		p.itemCountChanged(itemId);
 		//TODO: packet edit check for valid map (can't use victoria island scrolls in orbis e.g.)
 
@@ -201,7 +202,7 @@ public final class InventoryHandler {
 		if (result == -1) { //no upgrade slots
 			p.equipChanged(equip, true, true); //put equip back on
 
-			gc.getSession().send(GamePackets.writeInventoryNoChange());
+			gc.getSession().send(CommonPackets.writeInventoryNoChange());
 			if (legendarySpirit)
 				p.getMap().sendToAll(writeScrollResult(p.getId(), result, false, legendarySpirit));
 		} else {
@@ -225,7 +226,7 @@ public final class InventoryHandler {
 				p.equipChanged(equip, true, true); //put equip back on
 			}
 
-			gc.getSession().send(GamePackets.writeInventoryUpdateEquipFromScroll(scrollSlot, whiteScrollSlot, equipSlot, scroll, whiteScroll, equip));
+			gc.getSession().send(CommonPackets.writeInventoryUpdateEquipFromScroll(scrollSlot, whiteScrollSlot, equipSlot, scroll, whiteScroll, equip));
 			p.getMap().sendToAll(writeScrollResult(p.getId(), result, cursed, legendarySpirit));
 		}
 	}
@@ -259,7 +260,7 @@ public final class InventoryHandler {
 		//not thread safe if two players try picking it up at the exact same time).
 		ItemDrop d = (ItemDrop) p.getMap().getEntityById(EntityType.DROP, eid);
 		if (d == null || !d.isAlive()) {
-			gc.getSession().send(GamePackets.writeInventoryNoChange());
+			gc.getSession().send(CommonPackets.writeInventoryNoChange());
 			gc.getSession().send(GamePackets.writeShowInventoryFull());
 			return;
 		}
@@ -280,7 +281,7 @@ public final class InventoryHandler {
 		inv.put(dst, item1);
 		if (item2 != null)
 			inv.put(src, item2);
-		p.getClient().getSession().send(GamePackets.writeInventoryMoveItem(type, src, dst, (byte) -1));
+		p.getClient().getSession().send(CommonPackets.writeInventoryMoveItem(type, src, dst, (byte) -1));
 	}
 
 	private static byte[] writeScrollResult(int playerId, byte success, boolean cursed, boolean legendarySpirit) {

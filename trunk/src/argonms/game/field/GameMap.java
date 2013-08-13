@@ -27,6 +27,7 @@ import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Scheduler;
 import argonms.common.util.collections.LockableList;
 import argonms.common.util.collections.LockableMap;
@@ -549,7 +550,7 @@ public class GameMap {
 				d.pickUp(p.getId());
 				destroyEntity(d);
 			} else {
-				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
+				p.getClient().getSession().send(CommonPackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 			}
 		} else {
@@ -567,11 +568,11 @@ public class GameMap {
 					short pos;
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+						ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+						ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 					}
 					p.itemCountChanged(itemid);
 				} else {
@@ -579,7 +580,7 @@ public class GameMap {
 				}
 				p.getClient().getSession().send(GamePackets.writeShowItemGain(itemid, qty));
 			} else {
-				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
+				p.getClient().getSession().send(CommonPackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 			}
 		}

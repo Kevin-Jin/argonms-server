@@ -248,6 +248,173 @@ public final class CommonPackets {
 		writeItemInfo(lew, item, true, false);
 	}
 
+	public static byte[] writeInventoryUpdateSlotQuantity(InventoryType type, short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(pos);
+		lew.writeShort(item.getQuantity());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryNoChange() {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 0);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdateEquipStats(short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+		lew.writeByte(InventoryType.EQUIP.byteValue());
+		lew.writeShort(pos);
+		CommonPackets.writeItemInfo(lew, item, true, false);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItemCombineQuantities(InventoryType type, short src, short dst, short total) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 2);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(src);
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(dst);
+		lew.writeShort(total);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdateEquipFromScroll(short scrollPos, short whiteScrollPos, short equipPos, InventorySlot scroll, InventorySlot whiteScroll, InventorySlot equip) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) (whiteScrollPos == 0 ? 2 : 3));
+		if (scroll == null) {
+			lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+		} else {
+			lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+			lew.writeByte(InventoryType.USE.byteValue());
+			lew.writeShort(scrollPos);
+			lew.writeShort(scroll.getQuantity());
+		}
+		if (whiteScrollPos != 0) {
+			if (whiteScroll == null) {
+				lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+				lew.writeByte(InventoryType.USE.byteValue());
+				lew.writeShort(whiteScrollPos);
+			} else {
+				lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+				lew.writeByte(InventoryType.USE.byteValue());
+				lew.writeShort(whiteScrollPos);
+				lew.writeShort(whiteScroll.getQuantity());
+			}
+		}
+		if (equip == null) {
+			lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+			lew.writeByte(InventoryType.EQUIP.byteValue());
+			lew.writeShort(equipPos);
+			if (equipPos < 0) {
+				lew.writeBool(true);
+			}
+		} else {
+			lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+			lew.writeByte(InventoryType.EQUIP.byteValue());
+			lew.writeShort(equipPos);
+			CommonPackets.writeItemInfo(lew, equip, true, false);
+		}
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryClearSlot(InventoryType type, short slot) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(slot >= 0 ? 8 : 9);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(slot);
+		if (slot < 0) {
+			lew.writeBool(true);
+		}
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItemShiftQuantities(InventoryType type, short src, short srcQty, short dst, short dstQty) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 2);
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(src);
+		lew.writeShort(srcQty);
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(dst);
+		lew.writeShort(dstQty);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryDropItem(InventoryType type, short src, short quantity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_QUANTITY_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(src);
+		lew.writeShort(quantity);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryMoveItem(InventoryType type, short src, short dst, byte equipIndicator) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(equipIndicator == -1 ? 10 : 11);
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CHANGE_POSITION);
+		lew.writeByte(type.byteValue());
+		lew.writeShort(src);
+		lew.writeShort(dst);
+		if (equipIndicator != -1) {
+			lew.writeByte(equipIndicator);
+		}
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryAddSlot(InventoryType type, short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 1);
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+		lew.writeByte(type.byteValue());
+		lew.writeByte((byte) pos);
+		CommonPackets.writeItemInfo(lew, (short) 0, item);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdateCapacity(InventoryType type, short capacity) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		lew.writeShort(ClientSendOps.UPDATE_INVENTORY_CAPACITY);
+		lew.writeByte(type.byteValue());
+		lew.writeByte((byte) capacity);
+		return lew.getBytes();
+	}
+
 	public static void writeCharData(LittleEndianWriter lew, LoggedInPlayer p) {
 		lew.writeLong(-1);
 		writeCharStats(lew, p);

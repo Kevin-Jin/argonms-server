@@ -22,6 +22,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
+import argonms.common.net.external.PacketSubHeaders;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;
@@ -57,7 +58,8 @@ public class CashShopPackets {
 		MOVE_TO_STAGING_ERROR = 0x4D,
 		EXPIRE_ITEM = 0x4E,
 		SEND_GIFT = 0x6B,
-		GIFT_ERROR = 0x6C
+		GIFT_ERROR = 0x6C,
+		BUY_MESO_ITEM = 0x6D
 	;
 
 	public static byte
@@ -210,10 +212,12 @@ public class CashShopPackets {
 	}
 
 	private static byte[] writeSimpleError(byte header, byte message) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(4);
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(message != ERROR_OUT_OF_STOCK ? 4 : 8);
 		lew.writeShort(ClientSendOps.CASH_SHOP);
 		lew.writeByte(header);
 		lew.writeByte(message);
+		if (message == ERROR_OUT_OF_STOCK)
+			lew.writeInt(0);
 		return lew.getBytes();
 	}
 
@@ -326,5 +330,16 @@ public class CashShopPackets {
 
 	public static byte[] writeGiftError(byte message) {
 		return writeSimpleError(GIFT_ERROR, message);
+	}
+
+	public static byte[] writeBuyMesoItem(short quantity, short pos, int itemId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(15);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(BUY_MESO_ITEM);
+		lew.writeInt(1); //amount of items to change
+		lew.writeShort(quantity);
+		lew.writeShort(pos);
+		lew.writeInt(itemId);
+		return lew.getBytes();
 	}
 }

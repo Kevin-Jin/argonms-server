@@ -27,6 +27,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.TimeTool;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
@@ -223,7 +224,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 						changedSlots = InventoryTools.addToInventory(inv, value.itemId, value.quantity);
 						for (Short s : changedSlots.addedOrRemovedSlots) {
 							pos = s.shortValue();
-							ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+							ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 						}
 					} else {
 						int quantity;
@@ -237,12 +238,12 @@ public class LocalChannelCommandTarget implements CommandTarget {
 						changedSlots = InventoryTools.removeFromInventory(inv, value.itemId, quantity, true);
 						for (Short s : changedSlots.addedOrRemovedSlots) {
 							pos = s.shortValue();
-							ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+							ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 						}
 					}
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+						ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 					}
 					target.itemCountChanged(value.itemId);
 					break;
@@ -278,7 +279,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 							e.setSpeed((short) 40);
 							e.setJump((short) 23);
 							target.equipChanged(e, true, true);
-							target.getClient().getSession().send(GamePackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
+							target.getClient().getSession().send(CommonPackets.writeInventoryUpdateEquipStats(item.getKey().shortValue(), e));
 						}
 					}
 				}
@@ -286,7 +287,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					for (Inventory.InventoryType type : new Inventory.InventoryType[] { Inventory.InventoryType.EQUIP, Inventory.InventoryType.USE, Inventory.InventoryType.SETUP, Inventory.InventoryType.ETC, Inventory.InventoryType.CASH }) {
 						Inventory inv = target.getInventory(type);
 						inv.increaseCapacity((short) 0xFF);
-						target.getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(type, (short) 0xFF));
+						target.getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(type, (short) 0xFF));
 					}
 					StorageInventory inv = target.getStorageInventory();
 					inv.increaseCapacity((short) 0xFF);
@@ -325,7 +326,7 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					for (short slot = value.startSlot; slot <= upperBound; slot++) {
 						InventorySlot removed = inv.remove(slot);
 						if (removed != null) {
-							target.getClient().getSession().send(GamePackets.writeInventoryClearSlot(value.type, slot));
+							target.getClient().getSession().send(CommonPackets.writeInventoryClearSlot(value.type, slot));
 							target.itemCountChanged(removed.getDataId());
 						}
 					}

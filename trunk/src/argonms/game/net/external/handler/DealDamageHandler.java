@@ -30,6 +30,7 @@ import argonms.common.character.inventory.InventoryTools.WeaponClass;
 import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Rng;
 import argonms.common.util.Scheduler;
 import argonms.common.util.input.LittleEndianReader;
@@ -170,9 +171,9 @@ public final class DealDamageHandler {
 				slot.setQuantity((short) (slot.getQuantity() - useQty));
 				if (slot.getQuantity() == 0 && !InventoryTools.isRechargeable(attack.ammoItemId)) {
 					p.getInventory(InventoryType.USE).remove(attack.ammoSlot);
-					gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
+					gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, attack.ammoSlot));
 				} else {
-					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, attack.ammoSlot, slot));
+					gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, attack.ammoSlot, slot));
 				}
 			}
 			if (attack.cashAmmoSlot != 0) { //NX throwing stars

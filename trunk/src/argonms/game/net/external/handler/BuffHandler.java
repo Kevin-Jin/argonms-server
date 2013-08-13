@@ -26,6 +26,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
@@ -403,9 +404,9 @@ public final class BuffHandler {
 		}
 		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
 		if (changed != null)
-			gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
+			gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, changed));
 		else
-			gc.getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.USE, slot));
+			gc.getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.USE, slot));
 		p.itemCountChanged(itemId);
 		ItemTools.useItem(p, itemId);
 	}
