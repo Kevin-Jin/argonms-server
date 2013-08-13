@@ -2982,6 +2982,12 @@
 	* Formatted some of the unknown bytes used in EnterShopHandler.writeEnterCs
 	to make the packet structure a bit clearer.
 
+2013-08-13  GoldenKevin  (revision 229)
+
+	* Implemented Best Item list in cash shop.
+	* Implemented custom commodity overrides in cash shop.
+	* Implemented limited quantity commodities in cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

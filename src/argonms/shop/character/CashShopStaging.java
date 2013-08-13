@@ -472,4 +472,23 @@ public class CashShopStaging implements IInventory {
 			}
 		}
 	}
+
+	public static int[] getBestItems() {
+		Connection con = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		int[] bestItems = new int[5];
+		try {
+			con = DatabaseManager.getConnection(DatabaseManager.DatabaseType.STATE);
+			ps = con.prepareStatement("SELECT `serialnumber` FROM `cashshoppurchases` WHERE `serialnumber` IS NOT NULL GROUP BY `serialnumber` ORDER BY COUNT(*) DESC LIMIT 5");
+			rs = ps.executeQuery();
+			for (int i = 0; rs.next(); i++)
+				bestItems[i] = rs.getInt(1);
+		} catch (SQLException ex) {
+			LOG.log(Level.WARNING, "Could not get best cash items from database", ex);
+		} finally {
+			DatabaseManager.cleanup(DatabaseManager.DatabaseType.STATE, rs, ps, con);
+		}
+		return bestItems;
+	}
 }
