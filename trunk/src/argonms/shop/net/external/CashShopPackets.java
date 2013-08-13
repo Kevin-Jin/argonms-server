@@ -22,7 +22,6 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.net.external.CommonPackets;
-import argonms.common.net.external.PacketSubHeaders;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.common.util.output.LittleEndianWriter;

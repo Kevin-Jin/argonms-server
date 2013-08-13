@@ -159,11 +159,15 @@ public class CashShopHandler {
 		}
 
 		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
-		if (!CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, null)) {
-			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+		if (recipientAcct == -1) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_RECIPIENT_NAME));
 			return;
 		}
 
+		if (!CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, new int[] { serialNumber }, message, null)) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
 
 		p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price);
 		p.getClient().getSession().send(CashShopPackets.writeGiftSent(recipient, c.itemDataId, c.price));
@@ -415,9 +419,14 @@ public class CashShopHandler {
 		}
 
 		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
-		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, new CashShopStaging.ItemManipulator() {
+		if (recipientAcct == -1) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_RECIPIENT_NAME));
+			return;
+		}
+
+		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, new int[] { serialNumber }, message, new CashShopStaging.ItemManipulator() {
 			@Override
-			public void manipulate(InventorySlot partnersRing) {
+			public boolean manipulate(InventorySlot partnersRing, int serialNumber, Commodity c) {
 				Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> ourRing = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
 				Ring ring = (Ring) ourRing.left;
 				ring.setPartnerCharId(Player.getIdFromName(recipient));
@@ -428,6 +437,7 @@ public class CashShopHandler {
 				ring = (Ring) partnersRing;
 				ring.setPartnerCharId(p.getId());
 				ring.setPartnerRingId(ourRing.left.getUniqueId());
+				return true;
 			}
 		});
 		if (!success) {
@@ -439,11 +449,137 @@ public class CashShopHandler {
 	}
 
 	private static void buyPackage(ShopCharacter p, LittleEndianReader packet) {
-		
+		packet.readByte();
+		int currencyType = packet.readInt();
+		int serialNumber = packet.readInt();
+
+		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent package from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
+		}
+
+		int[] serialNumbers = CashShopDataLoader.getInstance().getSnsForPackage(c.itemDataId);
+		if (serialNumbers == null) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy invalid package from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		if (!p.getCashShopInventory().canFit(serialNumbers.length)) {
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		if (!p.gainCashShopCurrency(currencyType, -c.price)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy item from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		for (int individualSerialNumber : serialNumbers) {
+			c = CashShopDataLoader.getInstance().getCommodity(individualSerialNumber);
+			if (c == null || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber)))
+				continue;
+
+			lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+			if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(individualSerialNumber))) {
+				synchronized (lc) {
+					if (lc.getRemainingStock() == 0)
+						continue;
+
+					LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+				}
+			}
+
+			Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item = CashShopStaging.createItem(c, individualSerialNumber, p.getClient().getAccountId(), null);
+			p.getCashShopInventory().append(item.left, item.right);
+			p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(item.right, item.left));
+		}
 	}
 
 	private static void giftPackage(ShopCharacter p, LittleEndianReader packet) {
-		
+		int enteredBirthday = packet.readInt();
+		int serialNumber = packet.readInt();
+		String recipient = packet.readLengthPrefixedString();
+		String message = packet.readLengthPrefixedString();
+		if (p.getBirthday() != 0 && p.getBirthday() != enteredBirthday) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_BIRTHDAY));
+			return;
+		}
+
+		Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent package from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
+		}
+
+		int[] serialNumbers = CashShopDataLoader.getInstance().getSnsForPackage(c.itemDataId);
+		if (serialNumbers == null) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy invalid package from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		if (p.getCashShopCurrency(ShopCharacter.GAME_CARD_NX) < c.price) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to gift item from cash shop with nonexistent cash");
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INSUFFICIENT_CASH));
+			return;
+		}
+
+		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
+		if (recipientAcct == -1) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_RECIPIENT_NAME));
+			return;
+		}
+
+		CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, serialNumbers, message, new CashShopStaging.ItemManipulator() {
+			@Override
+			public boolean manipulate(InventorySlot partnersRing, int serialNumber, Commodity c) {
+				if (c == null || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber)))
+					return false;
+
+				LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+				if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+					synchronized (lc) {
+						if (lc.getRemainingStock() == 0)
+							return false;
+
+						LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+					}
+				}
+				return true;
+			}
+		});
+
+		p.gainCashShopCurrency(ShopCharacter.GAME_CARD_NX, -c.price);
+		p.getClient().getSession().send(CashShopPackets.writeGiftSent(recipient, c.itemDataId, c.price));
 	}
 
 	private static void buyQuestItem(ShopCharacter p, LittleEndianReader packet) {
@@ -544,9 +680,14 @@ public class CashShopHandler {
 		}
 
 		int recipientAcct = ShopCharacter.getAccountIdFromName(recipient);
-		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, c, serialNumber, message, new CashShopStaging.ItemManipulator() {
+		if (recipientAcct == -1) {
+			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_RECIPIENT_NAME));
+			return;
+		}
+
+		boolean success = CashShopStaging.giveGift(p.getClient().getAccountId(), p.getName(), recipientAcct, new int[] { serialNumber }, message, new CashShopStaging.ItemManipulator() {
 			@Override
-			public void manipulate(InventorySlot partnersRing) {
+			public boolean manipulate(InventorySlot partnersRing, int serialNumber, Commodity c) {
 				Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> ourRing = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
 				Ring ring = (Ring) ourRing.left;
 				ring.setPartnerCharId(Player.getIdFromName(recipient));
@@ -557,6 +698,7 @@ public class CashShopHandler {
 				ring = (Ring) partnersRing;
 				ring.setPartnerCharId(p.getId());
 				ring.setPartnerRingId(ourRing.left.getUniqueId());
+				return true;
 			}
 		});
 		if (!success) {
