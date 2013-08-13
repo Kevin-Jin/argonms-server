@@ -24,6 +24,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
@@ -75,11 +76,11 @@ public class ScriptPlayer {
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+				ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+				ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 			}
 			getPlayer().itemCountChanged(itemId);
 			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
@@ -97,11 +98,11 @@ public class ScriptPlayer {
 			short pos;
 			for (Short s : changedSlots.modifiedSlots) {
 				pos = s.shortValue();
-				ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+				ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 			}
 			for (Short s : changedSlots.addedOrRemovedSlots) {
 				pos = s.shortValue();
-				ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+				ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 			}
 			getPlayer().itemCountChanged(itemId);
 			ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));
@@ -230,27 +231,27 @@ public class ScriptPlayer {
 
 	public void gainEquipInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.EQUIP).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.EQUIP, newCap));
+		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.EQUIP, newCap));
 	}
 
 	public void gainUseInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.USE).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.USE, newCap));
+		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.USE, newCap));
 	}
 
 	public void gainSetupInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.SETUP).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.SETUP, newCap));
+		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.SETUP, newCap));
 	}
 
 	public void gainEtcInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.ETC).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
+		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.ETC, newCap));
 	}
 
 	public void gainCashInventorySlots(short delta) {
 		short newCap = getPlayer().getInventory(Inventory.InventoryType.CASH).increaseCapacity(delta);
-		getPlayer().getClient().getSession().send(GamePackets.writeInventoryUpdateCapacity(Inventory.InventoryType.CASH, newCap));
+		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.CASH, newCap));
 	}
 
 	public void gainSp(short gain) {

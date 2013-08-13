@@ -1,3 +1,2 @@
 {
-	"1022061": { "serials": [10001911, 20200073], "startAmount": 1, "beginDate": 20080808, "endDate": 20080813, "beginHour": 8, "endHour": 18 }
 }

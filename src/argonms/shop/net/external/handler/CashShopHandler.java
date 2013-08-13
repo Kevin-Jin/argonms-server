@@ -22,8 +22,11 @@ import argonms.common.character.Player;
 import argonms.common.character.PlayerJob;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.character.inventory.Ring;
 import argonms.common.net.external.CheatTracker;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.collections.Pair;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.shop.ShopServer;
@@ -444,7 +447,58 @@ public class CashShopHandler {
 	}
 
 	private static void buyQuestItem(ShopCharacter p, LittleEndianReader packet) {
-		
+		int serialNumber = packet.readInt();
+		if (serialNumber / 10000000 != 8) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy cash only item from cash shop with mesos");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		final Commodity c = CashShopDataLoader.getInstance().getCommodity(serialNumber);
+		if (c == null || !c.onSale || ShopServer.getInstance().getBlockedSerials().contains(Integer.valueOf(serialNumber))) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent mesos item from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+			return;
+		}
+
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
+		}
+
+		Inventory.InventoryType invType = InventoryTools.getCategory(c.itemDataId);
+		Inventory inv = p.getInventory(invType);
+		if (inv.hasItem(c.itemDataId, 1)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy already owned mesos item from cash shop");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_UNKNOWN));
+			return;
+		}
+
+		if (!InventoryTools.canFitEntirely(inv, c.itemDataId, c.quantity, false)) {
+			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
+			return;
+		}
+
+		if (!p.gainMesos(-c.price)) {
+			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to buy mesos item from cash shop with nonexistent mesos");
+			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INSUFFICIENT_MESOS));
+			return;
+		}
+
+		UpdatedSlots s = InventoryTools.addToInventory(inv, c.itemDataId, c.quantity);
+		assert s.modifiedSlots.isEmpty();
+		for (Short pos : s.addedOrRemovedSlots) {
+			p.getClient().getSession().send(CommonPackets.writeInventoryAddSlot(invType, pos, inv.get(pos.shortValue())));
+			p.getClient().getSession().send(CashShopPackets.writeBuyMesoItem(inv.get(pos.shortValue()).getQuantity(), pos.shortValue(), c.itemDataId));
+		}
 	}
 
 	private static void buyFriendshipRing(final ShopCharacter p, LittleEndianReader packet) {

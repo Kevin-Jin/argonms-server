@@ -85,7 +85,7 @@ public class Trade extends Miniroom {
 			GameCharacter p = getPlayerByPosition(i);
 			byte traderPos = (byte) ((i + 1) % 2);
 			if (((long) p.getMesos() + mesos[traderPos]) > Integer.MAX_VALUE) {
-				p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
+				p.getClient().getSession().send(CommonPackets.writeInventoryNoChange());
 				p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 				return false;
 			}
@@ -115,7 +115,7 @@ public class Trade extends Miniroom {
 
 			for (Map.Entry<InventoryType, Integer> netEmptySlotChange : netEmptySlotRemovals.entrySet()) {
 				if (p.getInventory(netEmptySlotChange.getKey()).freeSlots() < netEmptySlotChange.getValue().intValue()) {
-					p.getClient().getSession().send(GamePackets.writeInventoryNoChange());
+					p.getClient().getSession().send(CommonPackets.writeInventoryNoChange());
 					p.getClient().getSession().send(GamePackets.writeShowInventoryFull());
 					return false;
 				}
@@ -157,11 +157,11 @@ public class Trade extends Miniroom {
 				short pos;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+					ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+					ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 				}
 				to.itemCountChanged(item.getDataId());
 				if (taxAndShowGain)

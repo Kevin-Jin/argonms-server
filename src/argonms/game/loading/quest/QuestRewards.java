@@ -26,6 +26,7 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Rng;
 import argonms.common.util.TimeTool;
 import argonms.common.util.collections.Pair;
@@ -148,11 +149,11 @@ public class QuestRewards {
 		short pos;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
-			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+			ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
-			ses.send(GamePackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+			ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
 		}
 		p.itemCountChanged(itemId);
 		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));
@@ -168,11 +169,11 @@ public class QuestRewards {
 		short pos;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
-			ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+			ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
-			ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+			ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 		}
 		p.itemCountChanged(itemId);
 		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));

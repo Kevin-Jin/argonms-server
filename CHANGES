@@ -2988,6 +2988,13 @@
 	* Implemented custom commodity overrides in cash shop.
 	* Implemented limited quantity commodities in cash shop.
 
+2013-08-13  GoldenKevin  (revision 230)
+
+	* Removed test lines from cashshopblockedserialnumbers.txt,
+	cashshopcommodityoverrides.txt, and cashshoplimitedcommodities.txt.
+	* Fixed error 38 when writing cash shop error ERROR_OUT_OF_STOCK.
+	* Implemented buying items with mesos in cash shop.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -21,6 +21,7 @@ package argonms.game.script.binding;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.ClientSession;
+import argonms.common.net.external.CommonPackets;
 import argonms.game.GameServer;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.PartyList;
@@ -105,11 +106,11 @@ public class ScriptParty {
 					short pos;
 					for (Short s : changedSlots.modifiedSlots) {
 						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+						ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						pos = s.shortValue();
-						ses.send(GamePackets.writeInventoryClearSlot(type, pos));
+						ses.send(CommonPackets.writeInventoryClearSlot(type, pos));
 					}
 					player.itemCountChanged(itemId);
 					ses.send(GamePackets.writeShowItemGainFromQuest(itemId, -quantity));

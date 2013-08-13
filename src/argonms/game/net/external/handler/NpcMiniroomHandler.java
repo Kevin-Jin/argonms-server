@@ -36,7 +36,6 @@ import argonms.game.character.inventory.StorageInventory;
 import argonms.game.loading.npc.NpcStorageKeeper;
 import argonms.game.loading.shop.NpcShop;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -125,11 +124,11 @@ public final class NpcMiniroomHandler {
 					p.gainMesos(-totalPrice, false);
 					for (Short s : changedSlots.modifiedSlots) {
 						short pos = s.shortValue();
-						gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
+						gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
 					}
 					for (Short s : changedSlots.addedOrRemovedSlots) {
 						short pos = s.shortValue();
-						gc.getSession().send(GamePackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
+						gc.getSession().send(CommonPackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
 					}
 					gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_ADD_ITEM));
 					p.itemCountChanged(itemId);
@@ -157,7 +156,7 @@ public final class NpcMiniroomHandler {
 				int price = ItemDataLoader.getInstance().getWholePrice(itemId) * quantity;
 				if (InventoryTools.isRechargeable(itemId)) {
 					inventory.remove(slot);
-					gc.getSession().send(GamePackets.writeInventoryClearSlot(invType, slot));
+					gc.getSession().send(CommonPackets.writeInventoryClearSlot(invType, slot));
 					int rechargeCost = shop.rechargeCost(itemId, item.getQuantity());
 					if (rechargeCost < 0)
 						rechargeCost = (int) Math.ceil(ItemDataLoader.getInstance().getUnitPrice(itemId) * item.getQuantity());
@@ -165,10 +164,10 @@ public final class NpcMiniroomHandler {
 						price += rechargeCost;
 				} else if (item.getQuantity() == quantity) {
 					inventory.remove(slot);
-					gc.getSession().send(GamePackets.writeInventoryClearSlot(invType, slot));
+					gc.getSession().send(CommonPackets.writeInventoryClearSlot(invType, slot));
 				} else {
 					item.setQuantity((short) (item.getQuantity() - quantity));
-					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
+					gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
 				}
 				p.itemCountChanged(itemId);
 				p.gainMesos(price, false);
@@ -192,7 +191,7 @@ public final class NpcMiniroomHandler {
 				}
 				item.setQuantity(slotMax);
 				p.gainMesos(-rechargeCost, false);
-				gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, item));
+				gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(InventoryType.USE, slot, item));
 				gc.getSession().send(writeConfirmShopTransaction(TRANSACTION_CHANGE_ITEM));
 				break;
 			}
@@ -236,11 +235,11 @@ public final class NpcMiniroomHandler {
 				short pos;
 				for (Short s : changedSlots.modifiedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
+					ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(invType, pos, p.getInventory(invType).get(pos)));
 				}
 				for (Short s : changedSlots.addedOrRemovedSlots) {
 					pos = s.shortValue();
-					ses.send(GamePackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
+					ses.send(CommonPackets.writeInventoryAddSlot(invType, pos, p.getInventory(invType).get(pos)));
 				}
 				p.itemCountChanged(item.getDataId());
 				ses.send(writeStorageWithdrawal(storageInv, invType));
@@ -273,13 +272,13 @@ public final class NpcMiniroomHandler {
 				p.gainMesos(-keeper.getDepositCost(), false);
 				if (quantity == item.getQuantity() || InventoryTools.isRechargeable(itemId) || InventoryTools.isCashItem(itemId)) {
 					storageInv.put(inv.remove(slot));
-					gc.getSession().send(GamePackets.writeInventoryClearSlot(invType, slot));
+					gc.getSession().send(CommonPackets.writeInventoryClearSlot(invType, slot));
 				} else {
 					InventorySlot split = item.clone();
 					item.setQuantity((short) (item.getQuantity() - quantity));
 					split.setQuantity(quantity);
 					storageInv.put(split);
-					gc.getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
+					gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(invType, slot, item));
 				}
 				p.itemCountChanged(item.getDataId());
 				gc.getSession().send(writeStorageDeposit(storageInv, invType));

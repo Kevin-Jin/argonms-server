@@ -19,6 +19,7 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.net.external.CheatTracker;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
 import argonms.game.field.MapEntity.EntityType;

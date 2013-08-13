@@ -1117,9 +1117,9 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		} else if (inv.hasItem(5130000, 1)) { //safety charm
 			InventoryTools.UpdatedSlots changedSlots = InventoryTools.removeFromInventory(inv, 5130000, 1, false);
 			for (Short s : changedSlots.modifiedSlots)
-				getClient().getSession().send(GamePackets.writeInventoryUpdateSlotQuantity(InventoryType.CASH, s.shortValue(), inv.get(s.shortValue())));
+				getClient().getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(InventoryType.CASH, s.shortValue(), inv.get(s.shortValue())));
 			for (Short s : changedSlots.addedOrRemovedSlots)
-				getClient().getSession().send(GamePackets.writeInventoryClearSlot(InventoryType.CASH, s.shortValue()));
+				getClient().getSession().send(CommonPackets.writeInventoryClearSlot(InventoryType.CASH, s.shortValue()));
 			itemCountChanged(5130000);
 			getClient().getSession().send(GamePackets.writeSelfCharmEffect((short) Math.min(0xFF, InventoryTools.getAmountOfItem(inv, 5130000)), (short) 99));
 			lossPercent = 0;
