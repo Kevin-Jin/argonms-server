@@ -33,6 +33,8 @@ import argonms.shop.coupon.Coupon;
 import argonms.shop.coupon.CouponFactory;
 import argonms.shop.loading.cashshop.CashShopDataLoader;
 import argonms.shop.loading.cashshop.Commodity;
+import argonms.shop.loading.limitedcommodity.LimitedCommodity;
+import argonms.shop.loading.limitedcommodity.LimitedCommodityDataLoader;
 import argonms.shop.net.external.CashShopPackets;
 import argonms.shop.net.external.ShopClient;
 import java.util.ArrayList;
@@ -89,6 +91,18 @@ public class CashShopHandler {
 			return;
 		}
 
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
+		}
+
 		if (p.getCashShopInventory().isFull()) {
 			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
 			p.getClient().getSession().send(CashShopPackets.writeBuyError(CashShopPackets.ERROR_INVENTORY_FULL));
@@ -121,6 +135,18 @@ public class CashShopHandler {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to gift nonexistent item from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
+		}
+
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
 		}
 
 		if (p.getCashShopCurrency(ShopCharacter.GAME_CARD_NX) < c.price) {
@@ -361,6 +387,18 @@ public class CashShopHandler {
 			return;
 		}
 
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
+		}
+
 		if (p.getCashShopInventory().isFull()) {
 			//or maybe client already prevents us from doing this, in which case POSSIBLE_PACKET_EDITING?
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_INVENTORY_FULL));
@@ -425,6 +463,18 @@ public class CashShopHandler {
 			CheatTracker.get(p.getClient()).suspicious(CheatTracker.Infraction.CERTAIN_PACKET_EDITING, "Tried to buy nonexistent friendship ring from cash shop");
 			p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
 			return;
+		}
+
+		LimitedCommodity lc = LimitedCommodityDataLoader.getInstance().getLimitedCommodity(c.itemDataId);
+		if (lc != null && lc.getSerialNumbers().contains(Integer.valueOf(serialNumber))) {
+			synchronized (lc) {
+				if (lc.getRemainingStock() == 0) {
+					p.getClient().getSession().send(CashShopPackets.writeGiftError(CashShopPackets.ERROR_OUT_OF_STOCK));
+					return;
+				}
+
+				LimitedCommodityDataLoader.getInstance().commitUsed(c.itemDataId, lc.incrementUsed());
+			}
 		}
 
 		if (p.getCashShopInventory().isFull()) {

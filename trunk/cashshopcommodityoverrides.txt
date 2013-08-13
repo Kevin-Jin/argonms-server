@@ -1,0 +1,12 @@
+{
+	"10000000": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 48, "onSale": true, "class": 1 },
+	"10000001": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 47, "onSale": true, "class": 2 },
+	"10000002": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 46, "onSale": true, "class": 3 },
+	"10000003": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 45, "onSale": true, "class": 1 },
+	"10000004": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 44, "onSale": true, "class": 2 },
+	"10000005": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 43, "onSale": true, "class": 3 },
+	"10000006": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 42, "onSale": true, "class": 1 },
+	"10000007": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 41, "onSale": true, "class": 2 },
+	"10000008": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 40, "onSale": true, "class": 3 },
+	"10000009": { "itemId": 4000016, "price": 2147483647, "count": 32767, "priority": 39, "onSale": true, "class": 1 }
+}

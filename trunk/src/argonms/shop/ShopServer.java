@@ -37,6 +37,8 @@ import argonms.common.util.Scheduler;
 import argonms.common.util.collections.Pair;
 import argonms.shop.character.ShopCharacter;
 import argonms.shop.loading.cashshop.CashShopDataLoader;
+import argonms.shop.loading.commodityoverride.CommodityOverrideDataLoader;
+import argonms.shop.loading.limitedcommodity.LimitedCommodityDataLoader;
 import argonms.shop.net.ShopWorld;
 import argonms.shop.net.external.ClientShopPacketProcessor;
 import argonms.shop.net.external.ShopClient;
@@ -88,6 +90,7 @@ public class ShopServer implements LocalServer {
 	private final Map<Integer, ShopPlayerContinuation> enterServerData;
 	private final ShopCrossServerSynchronization worldComm;
 	private String ticker;
+	private String commodityOverridePath, limitedCommodityPath;
 	private final Set<Integer> blockedSerials;
 
 	private ShopServer() {
@@ -132,6 +135,9 @@ public class ShopServer implements LocalServer {
 			useNio = Boolean.parseBoolean(prop.getProperty("argonms.shop.usenio"));
 
 			ticker = prop.getProperty("argonms.shop.tickermessage");
+
+			commodityOverridePath = System.getProperty("argonms.shop.commodityoverride.file", "cashshopcommodityoverrides.txt");
+			limitedCommodityPath = System.getProperty("argonms.shop.limitedcommodity.file", "cashshoplimitedcommodities.txt");
 
 			String temp = prop.getProperty("argonms.shop.tz");
 			//always set default TimeZone setting last in this block so the
@@ -209,7 +215,7 @@ public class ShopServer implements LocalServer {
 			scan = new Scanner(new FileReader(System.getProperty("argonms.ct.macbanblacklist.file", "macbanblacklist.txt")));
 			CheatTracker.setBlacklistedMacBans(scan);
 			scan.close();
-			scan = new Scanner(new FileReader(System.getProperty("argonms.shop.blockedserials.file", "blockedcashshopserialnumbers.txt")));
+			scan = new Scanner(new FileReader(System.getProperty("argonms.shop.blockedserials.file", "cashshopblockedserialnumbers.txt")));
 			setBlockedSerials(scan);
 		} catch (IOException ex) {
 			LOG.log(Level.SEVERE, "Could not load macban and SN blacklist!", ex);
@@ -234,6 +240,8 @@ public class ShopServer implements LocalServer {
 	private void initializeData(boolean preloadAll, DataFileType wzType, String wzPath) {
 		StringDataLoader.setInstance(wzType, wzPath);
 		CashShopDataLoader.setInstance(wzType, wzPath);
+		CommodityOverrideDataLoader.setInstance(wzType, wzPath);
+		LimitedCommodityDataLoader.setInstance(wzType, wzPath);
 		ItemDataLoader.setInstance(wzType, wzPath);
 		long start, end;
 		start = System.nanoTime();
@@ -242,6 +250,12 @@ public class ShopServer implements LocalServer {
 		System.out.println("\tDone!");
 		System.out.print("Loading Commodity and Package data...");
 		CashShopDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
+		System.out.print("Loading commodity override data...");
+		CommodityOverrideDataLoader.getInstance().loadAll();
+		System.out.println("\tDone!");
+		System.out.print("Loading limited commodity data...");
+		LimitedCommodityDataLoader.getInstance().loadAll();
 		System.out.println("\tDone!");
 		if (preloadAll) {
 			System.out.print("Loading Item data...");
@@ -388,6 +402,14 @@ public class ShopServer implements LocalServer {
 		byte[] packet = CommonPackets.writeServerMessage(style, message, (byte) -1, true);
 		for (ShopCharacter p : storage.getConnectedPlayers())
 			p.getClient().getSession().send(packet);
+	}
+
+	public String getCommodityOverridePath() {
+		return commodityOverridePath;
+	}
+
+	public String getLimitedCommodityPath() {
+		return limitedCommodityPath;
 	}
 
 	public Set<Integer> getBlockedSerials() {
