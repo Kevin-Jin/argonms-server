@@ -277,7 +277,7 @@ public final class MiniroomHandler {
 			return;
 		}
 		InventorySlot itemToPut;
-		if (item.getQuantity() != quantity && !InventoryTools.isRechargeable(item.getDataId())) {
+		if (item.getQuantity() != quantity && !InventoryTools.isRechargeable(item.getDataId()) && !InventoryTools.isCashItem(item.getDataId())) {
 			item.setQuantity((short) (item.getQuantity() - quantity));
 			itemToPut = item.clone();
 			itemToPut.setQuantity(quantity);

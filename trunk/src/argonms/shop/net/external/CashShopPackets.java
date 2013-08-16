@@ -315,6 +315,14 @@ public class CashShopPackets {
 		return writeSimpleError(MOVE_TO_STAGING_ERROR, message);
 	}
 
+	public static byte[] writeItemExpired(long uniqueId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		lew.writeShort(ClientSendOps.CASH_SHOP);
+		lew.writeByte(EXPIRE_ITEM);
+		lew.writeLong(uniqueId);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeGiftSent(String recipient, int itemId, int price) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(17 + recipient.length());
 		lew.writeShort(ClientSendOps.CASH_SHOP);

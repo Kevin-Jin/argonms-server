@@ -92,6 +92,8 @@ public final class EnterShopHandler {
 			sc.getSession().send(CashShopPackets.writeCashItemStagingInventory(player));
 			sc.getSession().send(CashShopPackets.writeGiftedCashItems(player));
 			sc.getSession().send(CashShopPackets.writePopulateWishList(player));
+
+			player.checkForExpiredItems();
 		} else {
 			//sc.getSession().send(MaplePacketCreator.MTSWantedListingOver(0, 0));
 			//sc.getSession().send(MaplePacketCreator.showMTSCash(player));

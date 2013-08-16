@@ -511,13 +511,23 @@ public final class GamePackets {
 	}
 
 	public static byte[] writeQuestComplete(short questId, long completionTime) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(14);
 
 		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
 		lew.writeByte(PacketSubHeaders.STATUS_INFO_QUEST);
 		lew.writeShort(questId);
 		lew.writeByte(QuestEntry.STATE_COMPLETED);
 		lew.writeLong(TimeTool.unixToWindowsTime(completionTime));
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeItemExpired(int itemId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(7);
+
+		lew.writeShort(ClientSendOps.SHOW_STATUS_INFO);
+		lew.writeByte(PacketSubHeaders.STATUS_INFO_EXPIRE);
+		lew.writeInt(itemId);
 
 		return lew.getBytes();
 	}

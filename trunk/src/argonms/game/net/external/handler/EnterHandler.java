@@ -97,9 +97,8 @@ public final class EnterHandler {
 		if (!serverMessage.isEmpty())
 			gc.getSession().send(CommonPackets.writeServerMessage(ChatHandler.TextStyle.TICKER.byteValue(), serverMessage, (byte) -1, true));
 
-		/*player.checkMessenger();
-		player.checkBerserk();
-		player.itemExpireTask();*/
+		player.checkForExpiredItems();
+		//player.checkBerserk();
 	}
 
 	public static void handleShipDockedCheck(LittleEndianReader packet, GameClient gc) {

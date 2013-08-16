@@ -26,6 +26,8 @@ import argonms.common.character.ShopPlayerContinuation;
 import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.Pet;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
@@ -40,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,12 +80,20 @@ public class ShopCharacter extends LoggedInPlayer {
 	private ShopPlayerContinuation returnContext;
 
 	private ShopCharacter() {
-		super();
 		cashShopBalance = new AtomicInteger[4];
 		skills = new HashMap<Integer, SkillEntry>();
 		cooldowns = new HashMap<Integer, Cooldown>();
 		questStatuses = new HashMap<Short, QuestEntry>();
 		wishList = new ArrayList<Integer>(10);
+
+		itemExpireTask = new ItemExpireTask() {
+			@Override
+			protected void onExpire(long uniqueId) {
+				InventorySlot item = shopInventory.getByUniqueId(uniqueId);
+				if (item != null && expireItem(item))
+					shopInventory.removeByUniqueId(uniqueId);
+			}
+		};
 	}
 
 	@Override
@@ -118,6 +129,33 @@ public class ShopCharacter extends LoggedInPlayer {
 	@Override
 	public int getMesos() {
 		return mesos;
+	}
+
+	private boolean expireItem(InventorySlot item) {
+		if (item.getType() == InventorySlot.ItemType.PET) {
+			Pet pet = (Pet) item;
+			if (!pet.isExpired())
+				pet.setExpired(true);
+				//no packet I believe. Staging inventory doesn't even show expiration date for pets
+			return false;
+		} else {
+			getClient().getSession().send(CashShopPackets.writeItemExpired(item.getUniqueId()));
+			return true;
+		}
+	}
+
+	@Override
+	public void checkForExpiredItems() {
+		long now = System.currentTimeMillis();
+		for (Iterator<InventorySlot> iter = getCashShopInventory().getAllValues().iterator(); iter.hasNext(); ) {
+			InventorySlot item = iter.next();
+			if (item.getExpiration() != 0)
+				if (now < item.getExpiration())
+					itemExpireTask.addExpire(item.getExpiration(), item.getUniqueId());
+				else if (expireItem(item))
+					iter.remove();
+		}
+		super.checkForExpiredItems();
 	}
 
 	public boolean gainMesos(int gain) {

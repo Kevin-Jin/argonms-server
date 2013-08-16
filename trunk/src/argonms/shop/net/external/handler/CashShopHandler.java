@@ -120,6 +120,7 @@ public class CashShopHandler {
 
 		Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item = CashShopStaging.createItem(c, serialNumber, p.getClient().getAccountId(), null);
 		p.getCashShopInventory().append(item.left, item.right);
+		p.onExpirableItemAdded(item.left);
 		p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(item.right, item.left));
 	}
 
@@ -432,6 +433,7 @@ public class CashShopHandler {
 				ring.setPartnerCharId(Player.getIdFromName(recipient));
 				ring.setPartnerRingId(partnersRing.getUniqueId());
 				p.getCashShopInventory().append(ourRing.left, ourRing.right);
+				p.onExpirableItemAdded(ourRing.left);
 				p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(ourRing.right, ourRing.left));
 
 				ring = (Ring) partnersRing;
@@ -507,6 +509,7 @@ public class CashShopHandler {
 
 			Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item = CashShopStaging.createItem(c, individualSerialNumber, p.getClient().getAccountId(), null);
 			p.getCashShopInventory().append(item.left, item.right);
+			p.onExpirableItemAdded(item.left);
 			p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(item.right, item.left));
 		}
 	}
@@ -693,6 +696,7 @@ public class CashShopHandler {
 				ring.setPartnerCharId(Player.getIdFromName(recipient));
 				ring.setPartnerRingId(partnersRing.getUniqueId());
 				p.getCashShopInventory().append(ourRing.left, ourRing.right);
+				p.onExpirableItemAdded(ourRing.left);
 				p.getClient().getSession().send(CashShopPackets.writeInsertToStaging(ourRing.right, ourRing.left));
 
 				ring = (Ring) partnersRing;
@@ -787,8 +791,10 @@ public class CashShopHandler {
 			List<Pair<InventorySlot, CashShopStaging.CashPurchaseProperties>> items = c.createItems(sc.getAccountId());
 			if (!items.isEmpty()) {
 				CashShopStaging inv = sc.getPlayer().getCashShopInventory();
-				for (Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item : items)
+				for (Pair<InventorySlot, CashShopStaging.CashPurchaseProperties> item : items) {
 					inv.append(item.left, item.right);
+					sc.getPlayer().onExpirableItemAdded(item.left);
+				}
 			}
 			sc.getPlayer().gainCashShopCurrency(ShopCharacter.MAPLE_POINTS, c.getMaplePointsReward());
 			sc.getPlayer().gainMesos(c.getMesosReward());

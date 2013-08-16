@@ -38,6 +38,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
+import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.TamingMob;
 import argonms.common.loading.StatusEffectsData;
 import argonms.common.net.external.CommonPackets;
@@ -90,6 +91,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -127,6 +129,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private StorageInventory storage;
 	private int itemChair;
 	private short mapChair;
+	private final AtomicLong nextTransientItemUniqueId;
 
 	private final ConcurrentMap<Byte, KeyBinding> bindings;
 	private volatile SkillMacro[] skillMacros;
@@ -156,8 +159,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private EventManipulator event;
 
 	private GameCharacter () {
-		//doesn't need to be synchronized because we only add/remove entries
-		//before we can possibly get them
+		nextTransientItemUniqueId = new AtomicLong(0); //first value is -1 because of decrementAndGet
+
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();
 		skillEntries = new ConcurrentHashMap<Integer, SkillEntry>();
 		cooldowns = new ConcurrentHashMap<Integer, Cooldown>();
@@ -178,6 +181,24 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		//doesn't need to be synchronized because we only add/remove entries
 		//before we can possibly get them
 		wishList = new ArrayList<Integer>(10);
+
+		itemExpireTask = new ItemExpireTask() {
+			@Override
+			protected void onExpire(long uniqueId) {
+				for (Map.Entry<Inventory.InventoryType, Inventory> inv : getInventories().entrySet()) {
+					for (Iterator<Map.Entry<Short, InventorySlot>> iter = inv.getValue().getAll().entrySet().iterator(); iter.hasNext(); ) {
+						Map.Entry<Short, InventorySlot> slotEntry = iter.next();
+						InventorySlot item = slotEntry.getValue();
+						if (item.getUniqueId() != uniqueId)
+							continue;
+
+						if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item))
+							iter.remove();
+						return;
+					}
+				}
+			}
+		};
 	}
 
 	public void saveCharacter() {
@@ -874,6 +895,58 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	@Override
 	public GameClient getClient() {
 		return client;
+	}
+
+	public long generateTransientUniqueIdForQuestItem() {
+		return nextTransientItemUniqueId.decrementAndGet();
+	}
+
+	private boolean expireItem(Inventory.InventoryType invType, short slot, InventorySlot item) {
+		if (item.getType() == InventorySlot.ItemType.PET) {
+			Pet pet = (Pet) item;
+			if (!pet.isExpired()) {
+				pet.setExpired(true);
+				for (int i = 0; i < getPets().length; i++) {
+					if (pet == getPets()[i]) {
+						//TODO: unequip pet
+						break;
+					}
+				}
+				//TODO: has packet?
+			}
+			return false;
+		} else {
+			if (slot < 0) {
+				//expired an equipped equip
+				equipChanged((Equip) item, false, true);
+				getMap().sendToAll(GamePackets.writeUpdateAvatar(GameCharacter.this), GameCharacter.this);
+				if (getChatRoom() != null)
+					GameServer.getChannel(getClient().getChannel()).getCrossServerInterface().sendChatroomPlayerLookUpdate(GameCharacter.this, getChatRoom().getRoomId());
+			}
+			getClient().getSession().send(CommonPackets.writeInventoryClearSlot(invType != InventoryType.EQUIPPED ? invType : InventoryType.EQUIP, slot));
+			getClient().getSession().send(GamePackets.writeItemExpired(item.getDataId()));
+			return true;
+		}
+	}
+
+	@Override
+	public void checkForExpiredItems() {
+		long now = System.currentTimeMillis();
+		for (Map.Entry<Inventory.InventoryType, Inventory> inv : getInventories().entrySet()) {
+			for (Iterator<Map.Entry<Short, InventorySlot>> iter = inv.getValue().getAll().entrySet().iterator(); iter.hasNext(); ) {
+				Map.Entry<Short, InventorySlot> slotEntry = iter.next();
+				InventorySlot item = slotEntry.getValue();
+				if (item.getExpiration() != 0) {
+					if (item.getUniqueId() == 0) //some quest items have expiration times
+						item.setUniqueId(generateTransientUniqueIdForQuestItem());
+					if (now < item.getExpiration())
+						itemExpireTask.addExpire(item.getExpiration(), item.getUniqueId());
+					else if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item))
+						iter.remove();
+				}
+			}
+		}
+		super.checkForExpiredItems();
 	}
 
 	public void setExp(int newExp) {

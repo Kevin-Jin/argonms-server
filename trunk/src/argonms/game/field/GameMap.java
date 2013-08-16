@@ -564,6 +564,7 @@ public class GameMap {
 				destroyEntity(d);
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
 					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty, false);
+					p.onExpirableItemAdded(pickedUp);
 					ClientSession<?> ses = p.getClient().getSession();
 					short pos;
 					for (Short s : changedSlots.modifiedSlots) {
