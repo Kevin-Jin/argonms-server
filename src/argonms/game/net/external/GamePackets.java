@@ -227,6 +227,14 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeCooldown(int skill, short seconds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
+		lew.writeShort(ClientSendOps.COOLDOWN);
+		lew.writeInt(skill);
+		lew.writeShort(seconds);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeUpdateSkillLevel(int skillid, byte level, byte masterlevel) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(18);
 
