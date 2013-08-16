@@ -83,7 +83,7 @@ public class JsonCommodityOverrideDataLoader extends CommodityOverrideDataLoader
 				}
 				mods.put(sn, properties);
 			}
-			return true;
+			return super.loadAll();
 		} catch (IOException ex) {
 			LOG.log(Level.WARNING, "Error with reading cashshopcommodityoverrides.txt", ex);
 			return false;

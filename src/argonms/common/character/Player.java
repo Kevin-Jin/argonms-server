@@ -74,6 +74,8 @@ public abstract class Player {
 	private final Pet[] pets;
 
 	protected Player() {
+		//doesn't need to be synchronized because we only add/remove entries
+		//before we can possibly get them
 		inventories = new EnumMap<InventoryType, Inventory>(InventoryType.class);
 		pets = new Pet[3];
 	}
@@ -427,7 +429,7 @@ public abstract class Player {
 								break;
 							}
 							case ITEM:
-								if (item.getUniqueId() == 0) {
+								if (item.getUniqueId() <= 0) {
 									ps.addBatch();
 								} else {
 									ps.executeUpdate(); //need the generated keys, so no batch
@@ -438,7 +440,7 @@ public abstract class Player {
 								break;
 						}
 
-						if (item.getUniqueId() != 0) {
+						if (item.getUniqueId() > 0) {
 							cps.setInt(1, inventoryKey);
 							cps.setLong(2, item.getUniqueId());
 							cps.addBatch();

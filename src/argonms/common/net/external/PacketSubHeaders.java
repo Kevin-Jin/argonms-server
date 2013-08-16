@@ -38,6 +38,7 @@ public final class PacketSubHeaders {
 	public static final byte //byte constants
 		STATUS_INFO_INVENTORY = 0,
 		STATUS_INFO_QUEST = 1,
+		STATUS_INFO_EXPIRE = 2,
 		STATUS_INFO_EXP = 3,
 		STATUS_INFO_FAME = 4,
 		STATUS_INFO_MESOS = 5,

@@ -153,6 +153,7 @@ public class Trade extends Miniroom {
 				InventoryType type = InventoryTools.getCategory(item.getDataId());
 				Inventory inv = to.getInventory(type);
 				UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, item, item.getQuantity(), false);
+				to.onExpirableItemAdded(item);
 				ClientSession<?> ses = to.getClient().getSession();
 				short pos;
 				for (Short s : changedSlots.modifiedSlots) {

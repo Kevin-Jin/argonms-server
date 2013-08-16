@@ -25,6 +25,7 @@ import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.InventoryTools.UpdatedSlots;
+import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.ClientSession;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.Rng;
@@ -142,18 +143,32 @@ public class QuestRewards {
 		Inventory inv = p.getInventory(InventoryTools.getCategory(itemId));
 		InventorySlot slot = InventoryTools.makeItemWithId(itemId);
 		//period is stored in minutes for quests
-		if (period != 0)
+		if (period != 0) {
+			//if this ever becomes false, InventoryTools.slotsNeeded(),
+			//InventoryTools.addToInventory(Inventory, InventorySlot, int, boolean),
+			//InventoryHandler.handleItemMove(), InventoryHandler.notStackable(),
+			//MiniroomHandler.tradeSetItems(), and NpcMiniroomHandler.handleNpcStorageAction()
+			//need to be generalized from cash items to items with expirations
+			assert ItemDataLoader.getInstance().getSlotMax(itemId) == 1;
 			slot.setExpiration(System.currentTimeMillis() + (period * 1000 * 60));
+		}
 		UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, slot, quantity, true);
 		ClientSession<?> ses = p.getClient().getSession();
 		short pos;
 		for (Short s : changedSlots.modifiedSlots) {
 			pos = s.shortValue();
-			ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, inv.get(pos)));
+			slot = inv.get(pos);
+			assert period == 0;
+			ses.send(CommonPackets.writeInventoryUpdateSlotQuantity(type, pos, slot));
 		}
 		for (Short s : changedSlots.addedOrRemovedSlots) {
 			pos = s.shortValue();
-			ses.send(CommonPackets.writeInventoryAddSlot(type, pos, inv.get(pos)));
+			slot = inv.get(pos);
+			if (period != 0) {
+				slot.setUniqueId(p.generateTransientUniqueIdForQuestItem());
+				p.onExpirableItemAdded(slot);
+			}
+			ses.send(CommonPackets.writeInventoryAddSlot(type, pos, slot));
 		}
 		p.itemCountChanged(itemId);
 		ses.send(GamePackets.writeShowItemGainFromQuest(itemId, quantity));

@@ -23,12 +23,12 @@ package argonms.shop.loading.cashshop;
  * @author GoldenKevin
  */
 public class Commodity {
-	public final int itemDataId;
-	public final short quantity;
-	public final int price;
-	public final byte period;
-	public final byte gender;
-	public final boolean onSale;
+	public int itemDataId;
+	public short quantity;
+	public int price;
+	public byte period;
+	public byte gender;
+	public boolean onSale;
 
 	public Commodity(int itemDataId, short quantity, int price, byte period, byte gender, boolean onSale) {
 		this.itemDataId = itemDataId;

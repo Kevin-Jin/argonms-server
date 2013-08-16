@@ -385,7 +385,10 @@ public class CashShopStaging implements IInventory {
 
 	public static Pair<InventorySlot, CashPurchaseProperties> createItem(Commodity c, int serialNumber, int senderAcctId, String senderName) {
 		InventorySlot item = InventoryTools.makeItemWithId(c.itemDataId);
-		item.setExpiration(System.currentTimeMillis() + (c.period * 1000L * 60 * 60 * 24));
+		if (!InventoryTools.isPet(c.itemDataId))
+			item.setExpiration(System.currentTimeMillis() + (c.period * 1000L * 60 * 60 * 24));
+		else
+			item.setExpiration(System.currentTimeMillis() + (90L * 1000 * 60 * 60 * 24));
 		if (c.quantity != 1)
 			item.setQuantity(c.quantity);
 
@@ -423,6 +426,7 @@ public class CashShopStaging implements IInventory {
 						continue;
 
 					recipient.getCashShopInventory().append(item.left, item.right);
+					recipient.onExpirableItemAdded(item.left);
 					recipient.getCashShopInventory().newGiftedItem(new CashItemGiftNotification(item.left.getUniqueId(), item.left.getDataId(), senderName, message));
 					recipient.getClient().getSession().send(CashShopPackets.writeCashItemStagingInventory(recipient));
 					recipient.getClient().getSession().send(CashShopPackets.writeGiftedCashItems(recipient));

@@ -18,7 +18,14 @@
 
 package argonms.common.character;
 
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.util.Scheduler;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -27,8 +34,68 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author GoldenKevin
  */
 public abstract class LoggedInPlayer extends Player {
+	protected static abstract class ItemExpireTask implements Runnable {
+		private final NavigableMap<Long, Set<Long>> itemExpires;
+		private ScheduledFuture<?> nextItemExpire;
+		private long scheduledRun;
+		private Set<Long> uniqueIds;
+
+		public ItemExpireTask() {
+			itemExpires = new TreeMap<Long, Set<Long>>();
+		}
+
+		public synchronized void addExpire(long expiration, long uniqueId) {
+			Set<Long> sameTimeExpires = itemExpires.get(Long.valueOf(expiration));
+			if (sameTimeExpires == null) {
+				sameTimeExpires = new HashSet<Long>();
+				itemExpires.put(Long.valueOf(expiration), sameTimeExpires);
+				if (itemExpires.firstKey().longValue() == expiration) {
+					//just added item is at front of queue
+					if (nextItemExpire == null) {
+						//schedule it if nothing else is scheduled
+						scheduleNext();
+					} else if (expiration < scheduledRun) {
+						//move it ahead of scheduled - note that run() is synchronized with this method
+						nextItemExpire.cancel(false);
+						itemExpires.put(Long.valueOf(scheduledRun), uniqueIds);
+						scheduleNext();
+					}
+					//if expiration > scheduledRun, it'll be picked up later on by scheduleNext(), which is synchronized with this method
+					//if expiration == scheduledRun, it'll be picked up by run(), which is synchronized with this method
+				}
+			}
+			sameTimeExpires.add(Long.valueOf(uniqueId));
+		}
+
+		protected abstract void onExpire(long uniqueId);
+
+		public synchronized void scheduleNext() {
+			Map.Entry<Long, Set<Long>> entry = itemExpires.pollFirstEntry();
+			if (entry != null) {
+				scheduledRun = entry.getKey().longValue();
+				uniqueIds = entry.getValue();
+				nextItemExpire = Scheduler.getInstance().runAfterDelay(this, scheduledRun - System.currentTimeMillis());
+			} else {
+				nextItemExpire = null;
+			}
+		}
+
+		@Override
+		public synchronized void run() {
+			for (Long oUniqueId : uniqueIds)
+				onExpire(oUniqueId.longValue());
+			scheduleNext();
+		}
+
+		public synchronized void cancel() {
+			nextItemExpire.cancel(false);
+			nextItemExpire = null;
+		}
+	}
+
 	private final ReadWriteLock statLocks;
 	private final ReadWriteLock questLocks;
+	protected ItemExpireTask itemExpireTask;
 
 	protected LoggedInPlayer() {
 		statLocks = new ReentrantReadWriteLock();
@@ -79,5 +146,14 @@ public abstract class LoggedInPlayer extends Player {
 
 	public void writeUnlockQuests() {
 		questLocks.readLock().unlock();
+	}
+
+	public void checkForExpiredItems() {
+		itemExpireTask.scheduleNext();
+	}
+
+	public void onExpirableItemAdded(InventorySlot item) {
+		if (item.getExpiration() != 0)
+			itemExpireTask.addExpire(item.getExpiration(), item.getUniqueId());
 	}
 }

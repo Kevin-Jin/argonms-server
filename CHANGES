@@ -3002,6 +3002,13 @@
 	their staging.
 	* Implement buying and gifting packages.
 
+2013-08-16  GoldenKevin  (revision 232)
+
+	* Fixed expire dates of pets bought in the cash shop.
+	* Commodity overrides now override commodities server side as well.
+	* Implemented expire cash items in cash shop. Implemented expire cash items
+	and expirable quest items in a channel.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

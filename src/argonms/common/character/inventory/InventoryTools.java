@@ -309,6 +309,8 @@ public final class InventoryTools {
 						if (!equip && !pet)
 							item.setQuantity((short) qtyDelta);
 						insertedSlots.add(i);
+
+						assert (!cashItem || quantity == 0);
 					}
 				}
 			}

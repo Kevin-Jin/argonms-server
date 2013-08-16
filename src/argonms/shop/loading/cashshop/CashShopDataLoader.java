@@ -43,6 +43,10 @@ public abstract class CashShopDataLoader {
 		return commodities.get(Integer.valueOf(serialNumber));
 	}
 
+	public void setCommodity(int serialNumber, Commodity c) {
+		commodities.put(Integer.valueOf(serialNumber), c);
+	}
+
 	public int[] getSnsForPackage(int packageNumber) {
 		return packages.get(Integer.valueOf(packageNumber));
 	}

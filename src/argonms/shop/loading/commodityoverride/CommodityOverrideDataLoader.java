@@ -19,6 +19,8 @@
 package argonms.shop.loading.commodityoverride;
 
 import argonms.common.loading.DataFileType;
+import argonms.shop.loading.cashshop.CashShopDataLoader;
+import argonms.shop.loading.cashshop.Commodity;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +37,33 @@ public abstract class CommodityOverrideDataLoader {
 		mods = new HashMap<Integer, Map<CommodityMod, Object>>();
 	}
 
-	public abstract boolean loadAll();
+	public boolean loadAll() {
+		CashShopDataLoader csdl = CashShopDataLoader.getInstance();
+		for (Map.Entry<Integer, Map<CommodityMod, Object>> mod : mods.entrySet()) {
+			Commodity c = csdl.getCommodity(mod.getKey().intValue());
+			if (c == null) {
+				c = new Commodity(0, (short) 0, 0, (byte) 0, (byte) 0, false);
+				csdl.setCommodity(mod.getKey().intValue(), c);
+			}
+			for (Map.Entry<CommodityMod, Object> entry : mod.getValue().entrySet()) {
+				switch (entry.getKey()) {
+					case ITEM_ID:
+						c.itemDataId = ((Number) entry.getValue()).intValue();
+						break;
+					case COUNT:
+						c.quantity = ((Number) entry.getValue()).shortValue();
+						break;
+					case SALE_PRICE:
+						c.price = ((Number) entry.getValue()).intValue();
+						break;
+					case ON_SALE:
+						c.onSale = ((Boolean) entry.getValue()).booleanValue();
+						break;
+				}
+			}
+		}
+		return true;
+	}
 
 	public Map<CommodityMod, Object> getAllModifications(int serialNumber) {
 		return mods.get(Integer.valueOf(serialNumber));
