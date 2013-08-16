@@ -3009,6 +3009,13 @@
 	* Implemented expire cash items in cash shop. Implemented expire cash items
 	and expirable quest items in a channel.
 
+2013-08-16  GoldenKevin  (revision 233)
+
+	* Cancel item expire task in ShopCharacter and GameCharacter on disconnect
+	to prevent memory leaks and to tidy up the scheduler queue.
+	* Fixed cooldown persistence and canceling in ShopCharacter. Removed
+	unneeded packet for players in shop server.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

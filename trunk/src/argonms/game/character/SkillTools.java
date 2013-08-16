@@ -84,7 +84,7 @@ public final class SkillTools {
 			p.itemCountChanged(itemId);
 		}
 		if (e.getCooltime() > 0) {
-			p.getClient().getSession().send(CommonPackets.writeCooldown(e.getDataId(), e.getCooltime()));
+			p.getClient().getSession().send(GamePackets.writeCooldown(e.getDataId(), e.getCooltime()));
 			p.addCooldown(e.getDataId(), e.getCooltime());
 		}
 		if (e.getDuration() > 0)

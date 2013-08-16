@@ -1620,7 +1620,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			@Override
 			public void run() {
 				removeCooldown(skill);
-				getClient().getSession().send(CommonPackets.writeCooldown(skill, (short) 0));
+				getClient().getSession().send(GamePackets.writeCooldown(skill, (short) 0));
 			}
 		}));
 	}
@@ -1634,7 +1634,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			Map.Entry<Integer, Cooldown> cooldown = iter.next();
 			iter.remove();
 			cooldown.getValue().cancel();
-			getClient().getSession().send(CommonPackets.writeCooldown(cooldown.getKey().intValue(), (short) 0));
+			getClient().getSession().send(GamePackets.writeCooldown(cooldown.getKey().intValue(), (short) 0));
 		}
 	}
 
@@ -1906,6 +1906,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			cancelTask.right.cancel(false);
 		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
 			cancelTask.right.cancel(false);
+		itemExpireTask.cancel();
 
 		for (Cooldown cooling : cooldowns.values())
 			cooling.cancel();

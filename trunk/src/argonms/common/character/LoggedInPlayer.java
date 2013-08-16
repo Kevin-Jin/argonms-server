@@ -88,8 +88,10 @@ public abstract class LoggedInPlayer extends Player {
 		}
 
 		public synchronized void cancel() {
-			nextItemExpire.cancel(false);
-			nextItemExpire = null;
+			if (nextItemExpire != null) {
+				nextItemExpire.cancel(false);
+				nextItemExpire = null;
+			}
 		}
 	}
 

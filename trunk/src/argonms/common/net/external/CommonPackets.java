@@ -554,14 +554,6 @@ public final class CommonPackets {
 		lew.writeInt(0);
 	}
 
-	public static byte[] writeCooldown(int skill, short seconds) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(8);
-		lew.writeShort(ClientSendOps.COOLDOWN);
-		lew.writeInt(skill);
-		lew.writeShort(seconds);
-		return lew.getBytes();
-	}
-
 	public static byte[] writeServerMessage(byte type, String message, byte channel, boolean megaEar) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter((type == 3 ? 7 : type == 4 ? 6 : 5) + message.length());
 		lew.writeShort(ClientSendOps.SERVER_MESSAGE);
