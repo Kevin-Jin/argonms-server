@@ -150,7 +150,6 @@ public class ShopCharacter extends LoggedInPlayer {
 				else if (expireItem(item))
 					iter.remove();
 		}
-		super.checkForExpiredItems();
 	}
 
 	public boolean gainMesos(int gain) {
