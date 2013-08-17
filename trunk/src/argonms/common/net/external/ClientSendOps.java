@@ -79,7 +79,7 @@ public final class ClientSendOps {
 		MAP_CHAT = 0x7A,
 		MINIROOM_BALLOON = 0x7C,
 		SHOW_SCROLL_EFFECT = 0x7E,
-		SHOW_PET = 0x7F,
+		TOGGLE_PET = 0x7F,
 		SHOW_SUMMON = 0x86,
 		REMOVE_SUMMON = 0x87,
 		MOVE_SUMMON = 0x88,

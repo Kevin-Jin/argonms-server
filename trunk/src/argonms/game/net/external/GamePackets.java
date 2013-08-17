@@ -91,7 +91,7 @@ public final class GamePackets {
 	 * @param itemReaction
 	 * @return
 	 */
-	public static byte[] writeUpdatePlayerStats(Map<ClientUpdateKey, ? extends Number> stats, boolean is) {
+	public static byte[] writeUpdatePlayerStats(Map<ClientUpdateKey, ?> stats, boolean is) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.PLAYER_STAT_UPDATE);
 		lew.writeBool(is);
@@ -99,10 +99,10 @@ public final class GamePackets {
 		for (ClientUpdateKey key : stats.keySet())
 			updateMask |= key.intValue();
 		lew.writeInt(updateMask);
-		for (Entry<ClientUpdateKey, ? extends Number> statupdate : stats.entrySet()) {
+		for (Entry<ClientUpdateKey, ?> statupdate : stats.entrySet()) {
 			switch (statupdate.getKey()) {
 				case LEVEL: //unsigned
-					lew.writeByte((byte) statupdate.getValue().shortValue());
+					lew.writeByte((byte) ((Number) statupdate.getValue()).shortValue());
 					break;
 				case SKIN:
 				case JOB:
@@ -116,16 +116,22 @@ public final class GamePackets {
 				case MAXMP:
 				case AVAILABLEAP:
 				case AVAILABLESP:
-					lew.writeShort(statupdate.getValue().shortValue());
+					lew.writeShort(((Number) statupdate.getValue()).shortValue());
 					break;
 				case FACE:
 				case HAIR:
 				case EXP:
 				case FAME:
 				case MESO:
-				case PET:
-					lew.writeInt(statupdate.getValue().intValue());
+					lew.writeInt(((Number) statupdate.getValue()).intValue());
 					break;
+				case PET: { //TODO: there's no reason why one update key should have three bits set. figure out what each bit means?
+					Pet[] pets = (Pet[]) statupdate.getValue();
+					for (int i = 0; i < 3; i++)
+						lew.writeLong(pets[i] == null ? 0 : pets[i].getUniqueId());
+					lew.writeByte((byte) 0);
+					break;
+				}
 			}
 		}
 		return lew.getBytes();
@@ -1376,29 +1382,6 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowPet(GameCharacter p, byte slot, Pet pet,
-			boolean equip, boolean hunger) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(equip ? 32 + pet.getName().length() : 9);
-
-		lew.writeShort(ClientSendOps.SHOW_PET);
-		lew.writeInt(p.getId());
-		lew.writeByte(slot);
-		lew.writeBool(equip);
-		lew.writeBool(hunger);
-		if (equip) {
-			lew.writeInt(pet.getDataId());
-			lew.writeLengthPrefixedString(pet.getName());
-			lew.writeLong(pet.getUniqueId());
-			lew.writePos(pet.getPosition());
-			lew.writeByte(pet.getStance());
-			lew.writeShort(pet.getFoothold());
-			lew.writeBool(false); //has name tag
-			lew.writeBool(false); //has quote item
-		}
-
-		return lew.getBytes();
-	}
-
 	public static byte[] writePlayerNpcLook(PlayerNpc pnpc) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(22);
 		lew.writeShort(ClientSendOps.PLAYER_NPC);
@@ -1407,6 +1390,32 @@ public final class GamePackets {
 		lew.writeLengthPrefixedString(pnpc.getPlayerName());
 		CommonPackets.writeAvatar(lew, pnpc.getGender(), pnpc.getSkinColor(), pnpc.getEyes(),
 				true, pnpc.getHair(), pnpc.getEquips(), new Pet[3]);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowPet(Pet pet, int owner, byte slot) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(32 + pet.getName().length());
+		lew.writeShort(ClientSendOps.TOGGLE_PET);
+		lew.writeInt(owner);
+		lew.writeByte(slot);
+		lew.writeBool(true);
+		lew.writeByte((byte) 0);
+		lew.writeInt(pet.getDataId());
+		lew.writeLengthPrefixedString(pet.getName());
+		lew.writeLong(pet.getUniqueId());
+		lew.writePos(pet.getPosition());
+		lew.writeByte(pet.getStance());
+		lew.writeInt(pet.getFoothold());
+		return lew.getBytes();
+	}
+
+	public static byte[] writeRemovePet(int owner, byte slot, byte message) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+		lew.writeShort(ClientSendOps.TOGGLE_PET);
+		lew.writeInt(owner);
+		lew.writeByte(slot);
+		lew.writeBool(false);
+		lew.writeByte(message);
 		return lew.getBytes();
 	}
 

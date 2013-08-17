@@ -186,7 +186,7 @@ public final class CommonPackets {
 				lew.writeByte(pet.getLevel());
 				lew.writeShort(pet.getCloseness());
 				lew.writeByte(pet.getFullness());
-				writeItemExpire(lew, pet.getExpiration(), showExpire); //again?
+				writeItemExpire(lew, pet.getExpiration(), !pet.isExpired());
 				lew.writeLengthPrefixedString(pet.getOwner());
 				lew.writeShort(pet.getFlag());
 				break;
@@ -402,8 +402,23 @@ public final class CommonPackets {
 		lew.writeByte((byte) 1);
 		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
 		lew.writeByte(type.byteValue());
-		lew.writeByte((byte) pos);
-		CommonPackets.writeItemInfo(lew, (short) 0, item);
+		lew.writeShort(pos);
+		CommonPackets.writeItemInfo(lew, item, true, false);
+		return lew.getBytes();
+	}
+
+	public static byte[] writeInventoryUpdatePet(short pos, InventorySlot item) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MODIFY_INVENTORY_SLOT);
+		lew.writeBool(true);
+		lew.writeByte((byte) 2);
+		lew.writeByte(PacketSubHeaders.INVENTORY_CLEAR_SLOT);
+		lew.writeByte(InventoryType.CASH.byteValue());
+		lew.writeShort(pos);
+		lew.writeByte(PacketSubHeaders.INVENTORY_STAT_UPDATE);
+		lew.writeByte(InventoryType.CASH.byteValue());
+		lew.writeShort(pos);
+		CommonPackets.writeItemInfo(lew, item, true, false);
 		return lew.getBytes();
 	}
 

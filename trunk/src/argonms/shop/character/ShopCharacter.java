@@ -28,7 +28,6 @@ import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.Pet;
-import argonms.common.net.external.CommonPackets;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.shop.ShopServer;
@@ -133,10 +132,6 @@ public class ShopCharacter extends LoggedInPlayer {
 
 	private boolean expireItem(InventorySlot item) {
 		if (item.getType() == InventorySlot.ItemType.PET) {
-			Pet pet = (Pet) item;
-			if (!pet.isExpired())
-				pet.setExpired(true);
-				//no packet I believe. Staging inventory doesn't even show expiration date for pets
 			return false;
 		} else {
 			getClient().getSession().send(CashShopPackets.writeItemExpired(item.getUniqueId()));

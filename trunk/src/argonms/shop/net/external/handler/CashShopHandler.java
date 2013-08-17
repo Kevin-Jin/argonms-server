@@ -371,6 +371,11 @@ public class CashShopHandler {
 			return;
 		}
 
+		if (item.getType() == InventorySlot.ItemType.PET) {
+			byte petSlot = p.indexOfPet(uniqueId);
+			if (petSlot != -1)
+				p.removePet(petSlot);
+		}
 		CashShopStaging inv = p.getCashShopInventory();
 		CashShopStaging.CashPurchaseProperties props = CashShopStaging.CashPurchaseProperties.loadFromDatabase(uniqueId, item.getDataId(), p.getClient().getAccountId());
 		inv.append(item, props);

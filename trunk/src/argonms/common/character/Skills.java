@@ -24,6 +24,7 @@ package argonms.common.character;
  */
 public final class Skills {
 	public static final int
+		FOLLOW_THE_LEAD = 8,
 		RECOVERY = 1001,
 		MONSTER_RIDING = 1004,
 		ECHO_OF_HERO = 1005,

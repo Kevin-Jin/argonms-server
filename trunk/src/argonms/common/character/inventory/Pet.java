@@ -29,7 +29,6 @@ public class Pet extends InventorySlot {
 	private byte level;
 	private short closeness;
 	private byte fullness;
-	private boolean expired;
 
 	private Point pos;
 	private byte stance;
@@ -49,17 +48,15 @@ public class Pet extends InventorySlot {
 		this.level = 1;
 		this.closeness = 0;
 		this.fullness = 100;
-		this.expired = false;
 	}
 
-	public Pet(int id, String name, byte lvl, short cn, byte fn, boolean expd) {
+	public Pet(int id, String name, byte lvl, short cn, byte fn) {
 		super(id);
 
 		this.name = name;
 		this.level = lvl;
 		this.closeness = cn;
 		this.fullness = fn;
-		this.expired = expd;
 	}
 
 	@Override
@@ -98,8 +95,16 @@ public class Pet extends InventorySlot {
 		this.fullness = fullness;
 	}
 
-	public void setExpired(boolean expired) {
-		this.expired = expired;
+	public void setPosition(Point pos) {
+		this.pos = pos;
+	}
+
+	public void setStance(byte stance) {
+		this.stance = stance;
+	}
+
+	public void setFoothold(short foothold) {
+		this.foothold = foothold;
 	}
 
 	public String getName() {
@@ -119,7 +124,7 @@ public class Pet extends InventorySlot {
 	}
 
 	public boolean isExpired() {
-		return expired;
+		return System.currentTimeMillis() >= getExpiration();
 	}
 
 	public Point getPosition() {
@@ -146,7 +151,6 @@ public class Pet extends InventorySlot {
 		copy.setLevel(getLevel());
 		copy.setCloseness(getCloseness());
 		copy.setFullness(getFullness());
-		copy.setExpired(isExpired());
 
 		return copy;
 	}

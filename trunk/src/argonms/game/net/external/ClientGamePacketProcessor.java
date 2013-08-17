@@ -149,6 +149,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.OPEN_PERSONAL_INFO:
 				PersonalInfoHandler.handleOpenInfo(reader, gc);
 				break;
+			case ClientRecvOps.SPAWN_PET:
+				PetHandler.handleUsePet(reader, gc);
+				break;
 			case ClientRecvOps.CANCEL_DEBUFF:
 				//no-op
 				break;

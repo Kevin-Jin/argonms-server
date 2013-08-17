@@ -3016,6 +3016,12 @@
 	* Fixed cooldown persistence and canceling in ShopCharacter. Removed
 	unneeded packet for players in shop server.
 
+2013-08-17  GoldenKevin  (revision 234)
+
+	* Fixed pet expiration packets.
+	* Removed unneeded column in `inventorypets` table.
+	* Spawn and remove pets by double clicking the inventory item.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

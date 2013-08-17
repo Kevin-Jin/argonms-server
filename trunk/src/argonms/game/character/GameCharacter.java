@@ -76,6 +76,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -192,7 +193,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 						if (item.getUniqueId() != uniqueId)
 							continue;
 
-						if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item))
+						if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item, false))
 							iter.remove();
 						return;
 					}
@@ -901,19 +902,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return nextTransientItemUniqueId.decrementAndGet();
 	}
 
-	private boolean expireItem(Inventory.InventoryType invType, short slot, InventorySlot item) {
+	private boolean expireItem(Inventory.InventoryType invType, short slot, InventorySlot item, boolean onLogin) {
 		if (item.getType() == InventorySlot.ItemType.PET) {
 			Pet pet = (Pet) item;
-			if (!pet.isExpired()) {
-				pet.setExpired(true);
-				for (int i = 0; i < getPets().length; i++) {
-					if (pet == getPets()[i]) {
-						//TODO: unequip pet
-						break;
-					}
-				}
-				//TODO: has packet?
-			}
+			byte petSlot = indexOfPet(pet.getUniqueId());
+			if (petSlot != -1)
+				removePet(petSlot, (byte) 2);
+			if (!onLogin)
+				getClient().getSession().send(CommonPackets.writeInventoryUpdatePet(slot, pet));
 			return false;
 		} else {
 			if (slot < 0) {
@@ -941,7 +937,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 						item.setUniqueId(generateTransientUniqueIdForQuestItem());
 					if (now < item.getExpiration())
 						itemExpireTask.addExpire(item.getExpiration(), item.getUniqueId());
-					else if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item))
+					else if (expireItem(inv.getKey(), slotEntry.getKey().shortValue(), item, true))
 						iter.remove();
 				}
 			}
@@ -1538,6 +1534,58 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public TamingMob getEquippedMount() {
 		return (TamingMob) getInventory(InventoryType.EQUIPPED).get((short) -18);
+	}
+
+	public void removePet(byte slot, byte message) {
+		removePet(slot);
+		getMap().sendToAll(GamePackets.writeRemovePet(getId(), slot, message));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.PET, getPets()), true));
+	}
+
+	private void spawnPet(Pet pet, byte slot) {
+		Point petPos = new Point(getPosition());
+		petPos.y -= 12;
+		pet.setPosition(petPos);
+		pet.setStance((byte) 0);
+		pet.setFoothold(getFoothold());
+		getMap().sendToAll(GamePackets.writeShowPet(pet, getId(), slot));
+		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.PET, getPets()), true));
+	}
+
+	public boolean addFirstPet(Pet pet) {
+		Pet[] pets = getPets();
+		if (pets[2] != null)
+			return false;
+
+		for (int i = 2; i > 0; i--)
+			pets[i] = pets[i - 1];
+		pets[0] = pet;
+		spawnPet(pet, (byte) 0);
+		return true;
+	}
+
+	public boolean addLastPet(Pet pet) {
+		Pet[] pets = getPets();
+		if (pets[2] != null)
+			return false;
+
+		for (byte i = 0; i < 3; i++) {
+			if (pets[i] != null)
+				continue;
+
+			pets[i] = pet;
+			spawnPet(pet, i);
+			return true;
+		}
+
+		throw new ConcurrentModificationException("Race condition in addLastPet");
+	}
+
+	public void spawnCurrentPets() {
+		Pet[] pets = getPets();
+		for (byte i = 0; i < 3; i++)
+			if (pets[i] != null)
+				spawnPet(pets[i], i);
 	}
 
 	public KeyBinding[] getKeyMap() {
