@@ -3022,6 +3022,10 @@
 	* Removed unneeded column in `inventorypets` table.
 	* Spawn and remove pets by double clicking the inventory item.
 
+2013-08-17  GoldenKevin  (revision 235)
+
+	* Fixed first item on expire queue not being expired.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

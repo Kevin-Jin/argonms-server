@@ -70,7 +70,7 @@ public abstract class LoggedInPlayer extends Player {
 
 		protected abstract void onExpire(long uniqueId);
 
-		public synchronized void scheduleNext() {
+		private synchronized void scheduleNext() {
 			Map.Entry<Long, Set<Long>> entry = itemExpires.pollFirstEntry();
 			if (entry != null) {
 				scheduledRun = entry.getKey().longValue();
@@ -151,9 +151,7 @@ public abstract class LoggedInPlayer extends Player {
 		questLocks.readLock().unlock();
 	}
 
-	public void checkForExpiredItems() {
-		itemExpireTask.scheduleNext();
-	}
+	public abstract void checkForExpiredItems();
 
 	public void onExpirableItemAdded(InventorySlot item) {
 		if (item.getExpiration() != 0)

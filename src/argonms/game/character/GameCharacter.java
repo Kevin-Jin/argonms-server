@@ -942,7 +942,6 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				}
 			}
 		}
-		super.checkForExpiredItems();
 	}
 
 	public void setExp(int newExp) {
