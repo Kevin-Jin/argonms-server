@@ -308,7 +308,7 @@ public abstract class Player {
 
 	private static byte indexOf(Pet[] pets, Pet search) {
 		for (byte i = 0; i < 3; i++)
-			if (pets[i] != null && pets[i] == search)
+			if (pets[i] == search)
 				return i;
 		return -1;
 	}
@@ -328,8 +328,8 @@ public abstract class Player {
 					+ "(`inventoryitemid`,`partnerchrid`,`partnerringid`) "
 					+ "VALUES (?,?,?)");
 			pps = con.prepareStatement("INSERT INTO `inventorypets` "
-					+ "(`inventoryitemid`,`position`,`name`,`level`,`closeness`,`fullness`,`expired`) "
-					+ "VALUES (?,?,?,?,?,?,?)");
+					+ "(`inventoryitemid`,`position`,`name`,`level`,`closeness`,`fullness`) "
+					+ "VALUES (?,?,?,?,?,?)");
 			mps = con.prepareStatement("INSERT INTO `inventorymounts` "
 					+ "(`inventoryitemid`,`level`,`exp`,`tiredness`) "
 					+ "VALUES (?,?,?,?)");
@@ -406,7 +406,6 @@ public abstract class Player {
 								pps.setByte(4, pet.getLevel());
 								pps.setShort(5, pet.getCloseness());
 								pps.setByte(6, pet.getFullness());
-								pps.setBoolean(7, pet.isExpired());
 								pps.addBatch();
 								break;
 							}
@@ -542,7 +541,6 @@ public abstract class Player {
 							pet.setLevel(irs.getByte(5));
 							pet.setCloseness(irs.getShort(6));
 							pet.setFullness(irs.getByte(7));
-							pet.setExpired(irs.getBoolean(8));
 							byte pos = irs.getByte(3);
 							if (pos >= 0 && pos < 3)
 								pets[pos] = pet;

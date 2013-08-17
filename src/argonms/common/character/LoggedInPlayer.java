@@ -19,6 +19,7 @@
 package argonms.common.character;
 
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.Pet;
 import argonms.common.util.Scheduler;
 import java.util.HashSet;
 import java.util.Map;
@@ -157,5 +158,20 @@ public abstract class LoggedInPlayer extends Player {
 	public void onExpirableItemAdded(InventorySlot item) {
 		if (item.getExpiration() != 0)
 			itemExpireTask.addExpire(item.getExpiration(), item.getUniqueId());
+	}
+
+	public byte indexOfPet(long uniqueId) {
+		Pet[] pets = getPets();
+		for (byte i = 0; i < 3; i++)
+			if (pets[i] != null && pets[i].getUniqueId() == uniqueId)
+				return i;
+		return -1;
+	}
+
+	public void removePet(byte slot) {
+		Pet[] pets = getPets();
+		for (int i = slot; i < 2; i++)
+			pets[i] = pets[i + 1];
+		pets[2] = null;
 	}
 }

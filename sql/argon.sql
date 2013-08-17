@@ -174,7 +174,6 @@ CREATE TABLE `inventorypets` (
   `level` TINYINT(2) NOT NULL,
   `closeness` SMALLINT(6) NOT NULL,
   `fullness` TINYINT(4) NOT NULL,
-  `expired` TINYINT(1) NOT NULL,
   PRIMARY KEY (`inventorypetid`),
   KEY (`inventoryitemid`),
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE

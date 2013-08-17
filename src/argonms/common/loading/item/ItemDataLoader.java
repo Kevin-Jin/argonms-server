@@ -255,6 +255,13 @@ public abstract class ItemDataLoader {
 		return ret != null ? ret.byteValue() : 7;
 	}
 
+	public boolean isPetEvolvable(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return evolveChoices.containsKey(oId);
+	}
+
 	public static void setInstance(DataFileType wzType, String wzPath) {
 		if (instance == null) {
 			switch (wzType) {

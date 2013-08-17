@@ -75,6 +75,7 @@ public final class EnterHandler {
 		if (player.isVisible() && player.getPrivilegeLevel() > UserPrivileges.USER) //hide
 			SkillTools.useCastSkill(player, Skills.HIDE, (byte) 1, (byte) -1);
 		player.getMap().spawnPlayer(player);
+		player.spawnCurrentPets();
 
 		//TODO: although shop server is not interchannel, we need to display our
 		//buddies that are online in the shop server
