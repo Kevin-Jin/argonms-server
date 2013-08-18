@@ -18,13 +18,14 @@
 
 package argonms.common.character.inventory;
 
+import argonms.game.field.Positionable;
 import java.awt.Point;
 
 /**
  *
  * @author GoldenKevin
  */
-public class Pet extends InventorySlot {
+public class Pet extends InventorySlot implements Positionable {
 	private String name;
 	private byte level;
 	private short closeness;
@@ -95,14 +96,17 @@ public class Pet extends InventorySlot {
 		this.fullness = fullness;
 	}
 
+	@Override
 	public void setPosition(Point pos) {
 		this.pos = pos;
 	}
 
+	@Override
 	public void setStance(byte stance) {
 		this.stance = stance;
 	}
 
+	@Override
 	public void setFoothold(short foothold) {
 		this.foothold = foothold;
 	}
@@ -127,14 +131,17 @@ public class Pet extends InventorySlot {
 		return System.currentTimeMillis() >= getExpiration();
 	}
 
+	@Override
 	public Point getPosition() {
 		return pos;
 	}
 
+	@Override
 	public byte getStance() {
 		return stance;
 	}
 
+	@Override
 	public short getFoothold() {
 		return foothold;
 	}

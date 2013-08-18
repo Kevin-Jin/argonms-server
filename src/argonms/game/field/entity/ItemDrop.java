@@ -50,7 +50,8 @@ public class ItemDrop extends AbstractEntity {
 		DESTROY_ANIMATION_FADE = 0,
 		DESTROY_ANIMATION_NONE = 1,
 		DESTROY_ANIMATION_LOOTED = 2,
-		DESTROY_ANIMATION_EXPLODE = 4
+		DESTROY_ANIMATION_EXPLODE = 4,
+		DESTROY_ANIMATION_PET_LOOTED = 5
 	;
 
 	private final byte dropType;
@@ -119,15 +120,14 @@ public class ItemDrop extends AbstractEntity {
 		return item;
 	}
 
-	public void pickUp(int looter) {
-		this.owner = looter;
-		this.gone = true;
-		this.mod = DESTROY_ANIMATION_LOOTED;
-	}
-
 	public void pickUp(int looter, byte pet) {
+		this.owner = looter;
 		this.petLooter = pet;
-		pickUp(looter);
+		this.gone = true;
+		if (pet == -1)
+			this.mod = DESTROY_ANIMATION_LOOTED;
+		else
+			this.mod = DESTROY_ANIMATION_PET_LOOTED;
 	}
 
 	public void explode() {

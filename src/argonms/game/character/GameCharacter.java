@@ -89,6 +89,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -132,7 +133,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private short mapChair;
 	private final AtomicLong nextTransientItemUniqueId;
 
-	private final ConcurrentMap<Byte, KeyBinding> bindings;
+	private final ConcurrentNavigableMap<Byte, KeyBinding> bindings;
 	private volatile SkillMacro[] skillMacros;
 	private final ConcurrentMap<Integer, SkillEntry> skillEntries;
 	private final ConcurrentMap<Integer, Cooldown> cooldowns;
@@ -1535,10 +1536,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		return (TamingMob) getInventory(InventoryType.EQUIPPED).get((short) -18);
 	}
 
-	public void removePet(byte slot, byte message) {
-		removePet(slot);
+	private void destroyPet(byte slot, byte message) {
 		getMap().sendToAll(GamePackets.writeRemovePet(getId(), slot, message));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.PET, getPets()), true));
+	}
+
+	public void removePet(byte slot, byte message) {
+		removePet(slot);
+		destroyPet(slot, message);
 	}
 
 	private void spawnPet(Pet pet, byte slot) {
@@ -1580,6 +1585,13 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		throw new ConcurrentModificationException("Race condition in addLastPet");
 	}
 
+	public void destroyCurrentPets() {
+		Pet[] pets = getPets();
+		for (byte i = 0; i < 3; i++)
+			if (pets[i] != null)
+				destroyPet(i, (byte) 0);
+	}
+
 	public void spawnCurrentPets() {
 		Pet[] pets = getPets();
 		for (byte i = 0; i < 3; i++)
@@ -1589,7 +1601,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public KeyBinding[] getKeyMap() {
 		KeyBinding[] ret = new KeyBinding[90];
-		for (Entry<Byte, KeyBinding> entry : bindings.entrySet())
+		for (Entry<Byte, KeyBinding> entry : bindings.tailMap(Byte.valueOf((byte) 0)).entrySet())
 			ret[entry.getKey().byteValue()] = entry.getValue();
 		return ret;
 	}
@@ -1599,6 +1611,30 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			//bindings.remove(Byte.valueOf(key));
 		//else
 			bindings.put(Byte.valueOf(key), new KeyBinding(type, action));
+	}
+
+	public void setAutoHpPot(int itemId) {
+		bindings.put(Byte.valueOf((byte) -1), new KeyBinding((byte) 2, itemId));
+	}
+
+	public void setAutoMpPot(int itemId) {
+		bindings.put(Byte.valueOf((byte) -2), new KeyBinding((byte) 2, itemId));
+	}
+
+	public int getAutoHpPot() {
+		KeyBinding kb = bindings.get(Byte.valueOf((byte) -1));
+		if (kb == null)
+			return 0;
+
+		return kb.getAction();
+	}
+
+	public int getAutoMpPot() {
+		KeyBinding kb = bindings.get(Byte.valueOf((byte) -2));
+		if (kb == null)
+			return 0;
+
+		return kb.getAction();
 	}
 
 	public SkillMacro[] getMacros() {

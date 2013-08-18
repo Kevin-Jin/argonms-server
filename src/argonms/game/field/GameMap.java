@@ -330,6 +330,7 @@ public class GameMap {
 		}
 		for (PlayerSkillSummon summon : p.getAllSummons().values())
 			spawnExistingEntity(summon);
+		p.spawnCurrentPets();
 		if (stats.hasClock())
 			p.getClient().getSession().send(GamePackets.writeClock());
 		if (timeLimitTasks != null) {
@@ -495,6 +496,7 @@ public class GameMap {
 		destroyEntity(p);
 		for (PlayerSkillSummon summon : p.getAllSummons().values())
 			destroyEntity(summon);
+		p.destroyCurrentPets();
 		LockableList<Mob> controlledMobs = p.getControlledMobs();
 		controlledMobs.lockWrite();
 		try {
@@ -544,10 +546,10 @@ public class GameMap {
 		}
 	}
 
-	public void pickUpDrop(ItemDrop d, GameCharacter p) {
+	public void pickUpDrop(ItemDrop d, GameCharacter p, byte pet) {
 		if (d.getDropType() == ItemDrop.MESOS) {
 			if (p.gainMesos(d.getDataId(), false, true)) {
-				d.pickUp(p.getId());
+				d.pickUp(p.getId(), pet);
 				destroyEntity(d);
 			} else {
 				p.getClient().getSession().send(CommonPackets.writeInventoryNoChange());
@@ -560,7 +562,7 @@ public class GameMap {
 			InventoryType type = InventoryTools.getCategory(d.getItem().getDataId());
 			Inventory inv = p.getInventory(type);
 			if (InventoryTools.canFitEntirely(inv, itemid, qty, false)) {
-				d.pickUp(p.getId());
+				d.pickUp(p.getId(), pet);
 				destroyEntity(d);
 				if (!ItemDataLoader.getInstance().isConsumeOnPickup(itemid)) {
 					UpdatedSlots changedSlots = InventoryTools.addToInventory(inv, pickedUp, qty, false);
@@ -678,6 +680,10 @@ public class GameMap {
 
 	public void playerMoved(GameCharacter p, List<LifeMovementFragment> moves, Point startPos) {
 		sendToAll(writePlayerMovement(p, moves, startPos), p);
+	}
+
+	public void petMoved(GameCharacter p, byte petSlot, List<LifeMovementFragment> moves, Point startPos) {
+		sendToAll(writePetMovement(p, petSlot, moves, startPos), p);
 	}
 
 	public void summonMoved(GameCharacter p, PlayerSkillSummon s, List<LifeMovementFragment> moves, Point startPos) {
@@ -900,6 +906,16 @@ public class GameMap {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
 		lew.writeShort(ClientSendOps.MOVE_PLAYER);
 		lew.writeInt(p.getId());
+		lew.writePos(startPos);
+		GamePackets.writeSerializedMovements(lew, moves);
+		return lew.getBytes();
+	}
+
+	private static byte[] writePetMovement(GameCharacter p, byte petSlot, List<LifeMovementFragment> moves, Point startPos) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter();
+		lew.writeShort(ClientSendOps.MOVE_PET);
+		lew.writeInt(p.getId());
+		lew.writeByte(petSlot);
 		lew.writePos(startPos);
 		GamePackets.writeSerializedMovements(lew, moves);
 		return lew.getBytes();

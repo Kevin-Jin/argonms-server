@@ -83,7 +83,9 @@ public final class InventoryHandler {
 			Inventory inv = p.getInventory(src >= 0 ? type : InventoryType.EQUIPPED);
 			InventorySlot item = inv.get(src);
 			if (item.getType() == ItemType.PET) {
-				//TODO: unequip pet
+				byte petSlot = p.indexOfPet(item.getUniqueId());
+				if (petSlot != -1)
+					p.removePet(petSlot, (byte) 0);
 			}
 			InventorySlot toDrop;
 			short newQty = (short) (item.getQuantity() - qty);
@@ -249,11 +251,46 @@ public final class InventoryHandler {
 		p.getMap().drop(d, 0, p, ItemDrop.PICKUP_ALLOW_ALL, p.getId(), false);
 	}
 
+	public static void handlePetMapItemPickUp(LittleEndianReader packet, GameClient gc) {
+		long uniqueId = packet.readLong();
+		/*byte mode = */packet.readByte();
+		packet.readInt(); //?
+		/*Point pos = */packet.readPos();
+		int eid = packet.readInt();
+		GameCharacter p = gc.getPlayer();
+		byte petSlot = p.indexOfPet(uniqueId);
+		if (petSlot == -1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent pet to loot map item drop");
+			return;
+		}
+
+		//TODO: Synchronize on the item (!d.isAlive and GameMap.pickUpDrop are
+		//not thread safe if two players try picking it up at the exact same time).
+		ItemDrop d = (ItemDrop) p.getMap().getEntityById(EntityType.DROP, eid);
+		if (d == null || !d.isAlive()) {
+			gc.getSession().send(CommonPackets.writeInventoryNoChange());
+			gc.getSession().send(GamePackets.writeShowInventoryFull());
+			return;
+		}
+
+		//don't let pet pick up anything dropped by its owner from inventory
+		if (d.getMob() == 0 && d.getOwner() == p.getId())
+			return;
+
+		//check for meso magnet and item pouch
+		Inventory equippedInv = p.getInventory(InventoryType.EQUIPPED);
+		if (d.getDropType() == ItemDrop.MESOS && !equippedInv.hasItem(1812000, 1) || d.getDropType() == ItemDrop.ITEM && !equippedInv.hasItem(1812001, 1)) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent pet equip to loot map item drop");
+			return;
+		}
+
+		p.getMap().pickUpDrop(d, p, petSlot);
+	}
+
 	public static void handleMapItemPickUp(LittleEndianReader packet, GameClient gc) {
 		/*byte mode = */packet.readByte();
 		packet.readInt(); //?
-		/*short x = */packet.readShort();
-		/*short y = */packet.readShort();
+		/*Point pos = */packet.readPos();
 		int eid = packet.readInt();
 		GameCharacter p = gc.getPlayer();
 		//TODO: Synchronize on the item (!d.isAlive and GameMap.pickUpDrop are
@@ -264,7 +301,7 @@ public final class InventoryHandler {
 			gc.getSession().send(GamePackets.writeShowInventoryFull());
 			return;
 		}
-		p.getMap().pickUpDrop(d, p);
+		p.getMap().pickUpDrop(d, p, (byte) -1);
 	}
 
 	private static boolean notStackable(InventorySlot src, InventorySlot dst, short slotMax) {

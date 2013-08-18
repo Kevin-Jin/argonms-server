@@ -27,7 +27,6 @@ import argonms.common.character.SkillEntry;
 import argonms.common.character.inventory.IInventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
 import argonms.common.character.inventory.InventorySlot;
-import argonms.common.character.inventory.Pet;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.shop.ShopServer;

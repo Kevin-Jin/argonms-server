@@ -3026,6 +3026,14 @@
 
 	* Fixed first item on expire queue not being expired.
 
+2013-08-18  GoldenKevin  (revision 236)
+
+	* Fixed crash when dropping spawned pets.
+	* Fixed pets not appearing when changing maps.
+	* Implemented pet movement map packets.
+	* Implemented Meso Magnet and Item Pouch.
+	* Implemented pet auto potion.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

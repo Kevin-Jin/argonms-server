@@ -19,7 +19,10 @@
 package argonms.game.net.external.handler;
 
 import argonms.common.character.Skills;
+import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.Inventory.InventoryType;
+import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
@@ -132,7 +135,7 @@ public final class PlayerMiscHandler {
 		GameCharacter p = gc.getPlayer();
 		int actionType = packet.readInt();
 		switch (actionType) {
-			case BINDING_CHANGE_KEY_MAPPING: {
+			case BINDING_CHANGE_KEY_MAPPING:
 				for (int i = packet.readInt(); i > 0; --i) {
 					byte key = (byte) packet.readInt();
 					byte type = packet.readByte();
@@ -140,24 +143,48 @@ public final class PlayerMiscHandler {
 					p.bindKey(key, type, action);
 				}
 				break;
-				//TODO: how the heck do you send these bindings to the client?
-			}
 			case BINDING_CHANGE_AUTO_HP_POT: {
-				int itemid = packet.readInt();
-				if (itemid == 0) {
-					//TODO: unequip
-				} else {
-					//TODO: equip
+				int itemId = packet.readInt();
+				if (itemId == 0) {
+					p.setAutoHpPot(0);
+					return;
 				}
+
+				Inventory equippedInv = p.getInventory(Inventory.InventoryType.EQUIPPED);
+				//check for	potion item pouch
+				if (!equippedInv.hasItem(1812002, 1)) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to bind pet auto potion without equip");
+					return;
+				}
+
+				ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
+				if (e == null || e.getHpRecover() == 0 && e.getHpRecoverPercent() == 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to bind invalid potion to pet auto potion");
+					return;
+				}
+				p.setAutoHpPot(itemId);
 				break;
 			}
 			case BINDING_CHANGE_AUTO_MP_POT: {
-				int itemid = packet.readInt();
-				if (itemid == 0) {
-					//TODO: unequip
-				} else {
-					//TODO: equip
+				int itemId = packet.readInt();
+				if (itemId == 0) {
+					p.setAutoMpPot(0);
+					return;
 				}
+
+				Inventory equippedInv = p.getInventory(Inventory.InventoryType.EQUIPPED);
+				//check for	potion item pouch
+				if (!equippedInv.hasItem(1812003, 1)) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to bind pet auto potion without equip");
+					return;
+				}
+
+				ItemEffectsData e = ItemDataLoader.getInstance().getEffect(itemId);
+				if (e == null || e.getMpRecover() == 0 && e.getMpRecoverPercent() == 0) {
+					CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to bind invalid potion to pet auto potion");
+					return;
+				}
+				p.setAutoMpPot(itemId);
 				break;
 			}
 		}

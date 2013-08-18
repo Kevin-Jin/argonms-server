@@ -1746,7 +1746,7 @@ public final class GamePackets {
 		lew.writeInt(d.getId());
 		if (animation > ItemDrop.DESTROY_ANIMATION_NONE) {
 			lew.writeInt(d.getOwner());
-			if (d.getPetSlot() >= 0)
+			if (animation == ItemDrop.DESTROY_ANIMATION_PET_LOOTED)
 				lew.writeByte(d.getPetSlot());
 		}
 

@@ -21,11 +21,15 @@ package argonms.game.net.external.handler;
 import argonms.common.character.Skills;
 import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.loading.item.ItemDataLoader;
+import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.net.external.CheatTracker;
+import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.game.character.GameCharacter;
+import argonms.game.character.inventory.ItemTools;
 import argonms.game.net.external.GameClient;
 import argonms.game.net.external.GamePackets;
 
@@ -35,7 +39,7 @@ import argonms.game.net.external.GamePackets;
  */
 public class PetHandler {
 	public static void handleUsePet(LittleEndianReader packet, GameClient gc) {
-		packet.readInt();
+		/*int tickCount = */packet.readInt();
 		short slot = packet.readShort();
 		boolean boss = packet.readBool();
 
@@ -72,5 +76,46 @@ public class PetHandler {
 			p.addFirstPet(pet);
 		else
 			p.addLastPet(pet);
+	}
+
+	public static void handlePetAutoPotion(LittleEndianReader packet, GameClient gc) {
+		long uniqueId = packet.readLong();
+		packet.readByte();
+		/*int tickCount = */packet.readInt();
+		short slot = packet.readShort();
+		int itemId = packet.readInt();
+
+		GameCharacter p = gc.getPlayer();
+		if (p.indexOfPet(uniqueId) == -1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use pet auto potion with nonexistent pet");
+			return;
+		}
+
+		Inventory inv = p.getInventory(Inventory.InventoryType.USE);
+		InventorySlot changed = inv.get(slot);
+		if (changed == null || changed.getDataId() != itemId || changed.getQuantity() < 1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use nonexistent potion for pet auto potion");
+			return;
+		}
+
+		Inventory equippedInv = p.getInventory(Inventory.InventoryType.EQUIPPED);
+		if (p.getAutoHpPot() != changed.getDataId() && p.getAutoMpPot() != changed.getDataId()) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use wrong potion for pet auto potion");
+			return;
+		}
+
+		//check for	potion item pouches
+		if (p.getAutoHpPot() == changed.getDataId() && !equippedInv.hasItem(1812002, 1) || p.getAutoMpPot() == changed.getDataId() && !equippedInv.hasItem(1812003, 1)) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use pet auto potion without equip");
+			return;
+		}
+
+		changed = InventoryTools.takeFromInventory(inv, slot, (short) 1);
+		if (changed != null)
+			gc.getSession().send(CommonPackets.writeInventoryUpdateSlotQuantity(Inventory.InventoryType.USE, slot, changed));
+		else
+			gc.getSession().send(CommonPackets.writeInventoryClearSlot(Inventory.InventoryType.USE, slot));
+		p.itemCountChanged(itemId);
+		ItemTools.useItem(p, itemId);
 	}
 }

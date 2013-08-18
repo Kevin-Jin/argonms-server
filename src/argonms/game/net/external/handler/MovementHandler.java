@@ -18,6 +18,7 @@
 
 package argonms.game.net.external.handler;
 
+import argonms.common.character.inventory.Pet;
 import argonms.common.field.MonsterStatusEffect;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.ClientSendOps;
@@ -26,10 +27,10 @@ import argonms.common.util.Scheduler;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
 import argonms.game.character.GameCharacter;
-import argonms.game.field.MapEntity;
 import argonms.game.field.MapEntity.EntityType;
 import argonms.game.field.MobSkills;
 import argonms.game.field.MonsterStatusEffectTools;
+import argonms.game.field.Positionable;
 import argonms.game.field.entity.Mob;
 import argonms.game.field.entity.PlayerSkillSummon;
 import argonms.game.field.movement.AbsoluteLifeMovement;
@@ -114,7 +115,22 @@ public final class MovementHandler {
 	}
 
 	public static void handleMovePet(LittleEndianReader packet, GameClient gc) {
-		//TODO: implement
+		long uniqueId = packet.readLong();
+
+		GameCharacter player = gc.getPlayer();
+		byte slot = player.indexOfPet(uniqueId);
+		if (slot == -1)
+			return;
+
+		Pet pet = player.getPets()[slot];
+		Point startPos = packet.readPos();
+		List<LifeMovementFragment> res = parseMovement(packet);
+		int count = ceil(packet.readByte(), 2);
+		packet.skip(count);
+		/*Point initialPos = */packet.readPos();
+		/*Point finalPos = */packet.readPos();
+		updatePosition(res, pet, 0);
+		player.getMap().petMoved(player, slot, res, startPos);
 	}
 
 	public static void handleMoveSummon(LittleEndianReader packet, GameClient gc) {
@@ -352,7 +368,7 @@ public final class MovementHandler {
 		return res;
 	}
 
-	private static void updatePosition(List<LifeMovementFragment> movement, MapEntity target, int yoffset) {
+	private static void updatePosition(List<LifeMovementFragment> movement, Positionable target, int yoffset) {
 		for (LifeMovementFragment move : movement) {
 			for (UpdatedEntityInfo stat : move.updatedStats()) {
 				switch (stat) {
