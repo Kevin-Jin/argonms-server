@@ -84,6 +84,7 @@ public final class InventoryHandler {
 			InventorySlot item = inv.get(src);
 			if (item.getType() == ItemType.PET) {
 				byte petSlot = p.indexOfPet(item.getUniqueId());
+				p.setPetItemIgnores(item.getUniqueId(), null);
 				if (petSlot != -1)
 					p.removePet(petSlot, (byte) 0);
 			}

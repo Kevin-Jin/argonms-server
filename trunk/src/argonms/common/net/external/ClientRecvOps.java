@@ -125,6 +125,7 @@ public final class ClientRecvOps {
 		PET_COMMAND = 0x8E,
 		PET_LOOT = 0x8F,
 		PET_AUTO_POT = 0x90,
+		PET_ITEM_IGNORE = 0x91,
 		MOVE_SUMMON = 0x94,
 		SUMMON_ATTACK = 0x95,
 		DAMAGE_SUMMON = 0x96,

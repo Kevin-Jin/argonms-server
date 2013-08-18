@@ -81,6 +81,7 @@ public final class ClientSendOps {
 		SHOW_SCROLL_EFFECT = 0x7E,
 		TOGGLE_PET = 0x7F,
 		MOVE_PET = 0x81,
+		PET_ITEM_IGNORE = 0x84,
 		SHOW_SUMMON = 0x86,
 		REMOVE_SUMMON = 0x87,
 		MOVE_SUMMON = 0x88,
@@ -142,7 +143,9 @@ public final class ClientSendOps {
 		MINIROOM_ACT = 0xF5,
 		CS_BALANCE = 0xFF,
 		CASH_SHOP = 0x100,
-		KEYMAP = 0x107
+		KEYMAP = 0x107,
+		PET_AUTO_HP_POT = 0x108,
+		PET_AUTO_MP_POT = 0x109
 	;
 	
 	private ClientSendOps() {

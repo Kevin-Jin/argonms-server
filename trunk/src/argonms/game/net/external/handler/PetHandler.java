@@ -24,7 +24,6 @@ import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.loading.item.ItemDataLoader;
-import argonms.common.loading.item.ItemEffectsData;
 import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.input.LittleEndianReader;
@@ -38,6 +37,11 @@ import argonms.game.net.external.GamePackets;
  * @author GoldenKevin
  */
 public class PetHandler {
+	private static final byte
+		ITEM_IGNORE_MESOS = 1,
+		ITEM_IGNORE_ITEM = 2
+	;
+
 	public static void handleUsePet(LittleEndianReader packet, GameClient gc) {
 		/*int tickCount = */packet.readInt();
 		short slot = packet.readShort();
@@ -117,5 +121,22 @@ public class PetHandler {
 			gc.getSession().send(CommonPackets.writeInventoryClearSlot(Inventory.InventoryType.USE, slot));
 		p.itemCountChanged(itemId);
 		ItemTools.useItem(p, itemId);
+	}
+
+	public static void handlePetItemIgnore(LittleEndianReader packet, GameClient gc) {
+		long uniqueId = packet.readLong();
+
+		GameCharacter p = gc.getPlayer();
+		byte slot = p.indexOfPet(uniqueId);
+		if (slot == -1) {
+			CheatTracker.get(gc).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, "Tried to use pet item ignore with nonexistent pet");
+			return;
+		}
+
+		byte count = packet.readByte();
+		int[] itemIds = new int[count];
+		for (int i = 0; i < count; i++)
+			itemIds[i] = packet.readInt(); //== Integer.MAX_VALUE for mesos
+		p.setPetItemIgnores(uniqueId, itemIds);
 	}
 }

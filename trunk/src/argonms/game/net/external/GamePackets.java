@@ -1419,6 +1419,18 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writePetItemIgnore(GameCharacter p, byte slot, Pet pet, int[] ignore) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(16 + 4 * ignore.length);
+		lew.writeShort(ClientSendOps.PET_ITEM_IGNORE);
+		lew.writeInt(p.getId());
+		lew.writeByte(slot);
+		lew.writeLong(pet.getUniqueId());
+		lew.writeByte((byte) ignore.length);
+		for (int itemId : ignore)
+			lew.writeInt(itemId);
+		return lew.getBytes();
+	}
+
 	public static byte[] writeShowSummon(PlayerSkillSummon summon, byte animation) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(25);
 

@@ -92,6 +92,8 @@ public final class EnterHandler {
 
 		//player.showNote();
 		gc.getSession().send(writeKeymap(player.getKeyMap()));
+		gc.getSession().send(writeAutoHpPot(player.getAutoHpPot()));
+		gc.getSession().send(writeAutoMpPot(player.getAutoMpPot()));
 		gc.getSession().send(writeMacros(player.getMacros()));
 		String serverMessage = GameServer.getVariables().getNewsTickerMessage();
 		if (!serverMessage.isEmpty())
@@ -154,6 +156,20 @@ public final class EnterHandler {
 				lew.writeInt(0);
 			}
 		}
+		return lew.getBytes();
+	}
+
+	private static byte[] writeAutoHpPot(int itemId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeShort(ClientSendOps.PET_AUTO_HP_POT);
+		lew.writeInt(itemId);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeAutoMpPot(int itemId) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(6);
+		lew.writeShort(ClientSendOps.PET_AUTO_MP_POT);
+		lew.writeInt(itemId);
 		return lew.getBytes();
 	}
 
