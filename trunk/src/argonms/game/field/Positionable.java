@@ -18,23 +18,17 @@
 
 package argonms.game.field;
 
+import java.awt.Point;
+
 /**
  *
  * @author GoldenKevin
  */
-public interface MapEntity extends Positionable {
-	public enum EntityType {
-		MONSTER, DROP, NPC, PLAYER, REACTOR, MINI_ROOM, DOOR, SUMMON, MIST
-	}
-
-	public EntityType getEntityType();
-	public int getId();
-	public void setId(int newEid);
-
-	public boolean isAlive();
-	public boolean isVisible();
-
-	public byte[] getShowNewSpawnMessage();
-	public byte[] getShowExistingSpawnMessage();
-	public byte[] getDestructionMessage();
+public interface Positionable {
+	public Point getPosition();
+	public void setPosition(Point newPos);
+	public byte getStance();
+	public void setStance(byte newStance);
+	public short getFoothold();
+	public void setFoothold(short newFh);
 }

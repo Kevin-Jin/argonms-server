@@ -212,6 +212,15 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.BBS_OPERATION:
 				GuildListHandler.handleGuildBbs(reader, gc);
 				break;
+			case ClientRecvOps.MOVE_PET:
+				MovementHandler.handleMovePet(reader, gc);
+				break;
+			case ClientRecvOps.PET_LOOT:
+				InventoryHandler.handlePetMapItemPickUp(reader, gc);
+				break;
+			case ClientRecvOps.PET_AUTO_POT:
+				PetHandler.handlePetAutoPotion(reader, gc);
+				break;
 			case ClientRecvOps.MOVE_SUMMON:
 				MovementHandler.handleMoveSummon(reader, gc);
 				break;

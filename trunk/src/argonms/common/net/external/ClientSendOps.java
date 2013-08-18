@@ -80,6 +80,7 @@ public final class ClientSendOps {
 		MINIROOM_BALLOON = 0x7C,
 		SHOW_SCROLL_EFFECT = 0x7E,
 		TOGGLE_PET = 0x7F,
+		MOVE_PET = 0x81,
 		SHOW_SUMMON = 0x86,
 		REMOVE_SUMMON = 0x87,
 		MOVE_SUMMON = 0x88,
