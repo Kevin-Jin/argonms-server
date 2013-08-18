@@ -37,6 +37,7 @@
   DROP TABLE IF EXISTS `queststatuses`;
    DROP TABLE IF EXISTS `cashshoppurchases`;
    DROP TABLE IF EXISTS `inventoryrings`;
+    DROP TABLE IF EXISTS `petignoreitems`;
    DROP TABLE IF EXISTS `inventorypets`;
    DROP TABLE IF EXISTS `inventorymounts`;
    DROP TABLE IF EXISTS `inventoryequipment`;
@@ -177,6 +178,14 @@ CREATE TABLE `inventorypets` (
   PRIMARY KEY (`inventorypetid`),
   KEY (`inventoryitemid`),
   CONSTRAINT FOREIGN KEY (`inventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE `petignoreitems` (
+  `entryid` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `petinventoryitemid` INT(10) UNSIGNED NOT NULL,
+  `ignoreitem` INT(11) NOT NULL,
+  PRIMARY KEY (`entryid`),
+  CONSTRAINT FOREIGN KEY (`petinventoryitemid`) REFERENCES `inventoryitems` (`inventoryitemid`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE `inventoryrings` (

@@ -132,6 +132,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private int itemChair;
 	private short mapChair;
 	private final AtomicLong nextTransientItemUniqueId;
+	private final Map<Long, int[]> petIgnoreItems;
 
 	private final ConcurrentNavigableMap<Byte, KeyBinding> bindings;
 	private volatile SkillMacro[] skillMacros;
@@ -162,6 +163,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private GameCharacter () {
 		nextTransientItemUniqueId = new AtomicLong(0); //first value is -1 because of decrementAndGet
+		petIgnoreItems = new ConcurrentHashMap<Long, int[]>();
 
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();
 		skillEntries = new ConcurrentHashMap<Integer, SkillEntry>();
@@ -358,6 +360,28 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			EnumMap<InventoryType, IInventory> union = new EnumMap<InventoryType, IInventory>(getInventories());
 			union.put(InventoryType.STORAGE, storage);
 			commitInventory(con, union);
+
+			Inventory cashInv = getInventories().get(InventoryType.CASH);
+			ps = con.prepareStatement("INSERT INTO `petignoreitems` (`petinventoryitemid`,`ignoreitem`) SELECT `inventoryitemid`,? FROM `cashshoppurchases` WHERE `uniqueid` = ?");
+			for (Map.Entry<Long, int[]> entry : petIgnoreItems.entrySet()) {
+				long uniqueId = entry.getKey().longValue();
+				boolean inInventory = false;
+				for (InventorySlot item : cashInv.getAll().values()) {
+					if (item.getUniqueId() == uniqueId) {
+						inInventory = true;
+						break;
+					}
+				}
+				if (!inInventory)
+					continue;
+
+				ps.setLong(2, uniqueId);
+				for (int itemId : entry.getValue()) {
+					ps.setInt(1, itemId);
+					ps.addBatch();
+				}
+			}
+			ps.executeBatch();
 		} catch (SQLException e) {
 			throw new SQLException("Failed to save inventory of character " + name, e);
 		} finally {
@@ -706,6 +730,35 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			ps.setInt(2, accountid);
 			rs = ps.executeQuery();
 			p.loadInventory(con, rs, invUnion);
+			rs.close();
+			ps.close();
+			ps = con.prepareStatement("SELECT `c`.`uniqueid`,`p`.`ignoreitem` FROM `petignoreitems` `p` "
+					+ "LEFT JOIN `inventoryitems` `i` ON `p`.`petinventoryitemid` = `i`.`inventoryitemid` "
+					+ "LEFT JOIN `cashshoppurchases` `c` ON `i`.`inventoryitemid` = `c`.`inventoryitemid` "
+					+ "WHERE `i`.`characterid` = ? ORDER BY `c`.`uniqueid`");
+			ps.setInt(1, id);
+			rs = ps.executeQuery();
+			if (rs.next()) {
+				long currentUniqueId = rs.getLong(1);
+				List<Integer> currentItemsForPet = new ArrayList<Integer>();
+				currentItemsForPet.add(Integer.valueOf(rs.getInt(2)));
+				while (rs.next()) {
+					long uniqueId = rs.getLong(1);
+					if (currentUniqueId != uniqueId) {
+						int[] array = new int[currentItemsForPet.size()];
+						for (int i = 0; i < array.length; i++)
+							array[i] = currentItemsForPet.get(i).intValue();
+						p.petIgnoreItems.put(Long.valueOf(currentUniqueId), array);
+						currentUniqueId = uniqueId;
+						currentItemsForPet.clear();
+					}
+					currentItemsForPet.add(Integer.valueOf(rs.getInt(2)));
+				}
+				int[] array = new int[currentItemsForPet.size()];
+				for (int i = 0; i < array.length; i++)
+					array[i] = currentItemsForPet.get(i).intValue();
+				p.petIgnoreItems.put(Long.valueOf(currentUniqueId), array);
+			}
 			rs.close();
 			ps.close();
 			//inventories should still be safe right now, so no need for synchronization...
@@ -1553,7 +1606,14 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		pet.setStance((byte) 0);
 		pet.setFoothold(getFoothold());
 		getMap().sendToAll(GamePackets.writeShowPet(pet, getId(), slot));
+		int[] ignoreItems = getPetItemIgnores(pet.getUniqueId());
+		if (ignoreItems != null)
+			getClient().getSession().send(GamePackets.writePetItemIgnore(this, slot, pet, ignoreItems));
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.PET, getPets()), true));
+	}
+
+	private void addPet(Pet pet, final byte slot) {
+		spawnPet(pet, slot);
 	}
 
 	public boolean addFirstPet(Pet pet) {
@@ -1564,7 +1624,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		for (int i = 2; i > 0; i--)
 			pets[i] = pets[i - 1];
 		pets[0] = pet;
-		spawnPet(pet, (byte) 0);
+		addPet(pet, (byte) 0);
 		return true;
 	}
 
@@ -1578,7 +1638,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 				continue;
 
 			pets[i] = pet;
-			spawnPet(pet, i);
+			addPet(pet, i);
 			return true;
 		}
 
@@ -1587,16 +1647,25 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void destroyCurrentPets() {
 		Pet[] pets = getPets();
-		for (byte i = 0; i < 3; i++)
-			if (pets[i] != null)
-				destroyPet(i, (byte) 0);
+		for (byte i = 0; i < 3 && pets[i] != null; i++)
+			destroyPet(i, (byte) 0);
 	}
 
 	public void spawnCurrentPets() {
 		Pet[] pets = getPets();
-		for (byte i = 0; i < 3; i++)
-			if (pets[i] != null)
-				spawnPet(pets[i], i);
+		for (byte i = 0; i < 3 && pets[i] != null; i++)
+			spawnPet(pets[i], i);
+	}
+
+	public int[] getPetItemIgnores(long uniqueId) {
+		return petIgnoreItems.get(Long.valueOf(uniqueId));
+	}
+
+	public void setPetItemIgnores(long uniqueId, int[] itemIds) {
+		if (itemIds == null)
+			petIgnoreItems.remove(Long.valueOf(uniqueId));
+		else
+			petIgnoreItems.put(Long.valueOf(uniqueId), itemIds);
 	}
 
 	public KeyBinding[] getKeyMap() {

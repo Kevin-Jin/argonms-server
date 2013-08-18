@@ -3034,6 +3034,11 @@
 	* Implemented Meso Magnet and Item Pouch.
 	* Implemented pet auto potion.
 
+2013-08-18  GoldenKevin  (revision 237)
+
+	* Implemented packets for pet auto potion.
+	* Implemented pet loot item ignore.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

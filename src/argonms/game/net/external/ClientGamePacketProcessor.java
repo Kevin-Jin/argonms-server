@@ -221,6 +221,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.PET_AUTO_POT:
 				PetHandler.handlePetAutoPotion(reader, gc);
 				break;
+			case ClientRecvOps.PET_ITEM_IGNORE:
+				PetHandler.handlePetItemIgnore(reader, gc);
+				break;
 			case ClientRecvOps.MOVE_SUMMON:
 				MovementHandler.handleMoveSummon(reader, gc);
 				break;
