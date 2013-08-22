@@ -3046,6 +3046,11 @@
 	* Implemented pet food.
 	* Implemented pet commands.
 
+2013-08-22  GoldenKevin  (revision 239)
+
+	* Support for the newest Kvj format.
+	* Load pet life period and pet food fullness recover from Kvj.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

@@ -64,6 +64,8 @@ public abstract class ItemDataLoader {
 
 	protected final Map<Integer, Map<Byte, int[]>> petCommands;
 	protected final Map<Integer, Integer> petHunger;
+	protected final Map<Integer, Byte> petPeriod;
+	protected final Map<Integer, Byte> petFullnessRecover;
 	protected final Map<Integer, List<int[]>> evolveChoices;
 
 	protected final Map<Integer, Byte> tamingMobIds;
@@ -97,6 +99,8 @@ public abstract class ItemDataLoader {
 
 		petCommands = new HashMap<Integer, Map<Byte, int[]>>();
 		petHunger = new HashMap<Integer, Integer>();
+		petPeriod = new HashMap<Integer, Byte>();
+		petFullnessRecover = new HashMap<Integer, Byte>();
 		evolveChoices = new HashMap<Integer, List<int[]>>();
 
 		tamingMobIds = new HashMap<Integer, Byte>();
@@ -268,6 +272,20 @@ public abstract class ItemDataLoader {
 		if (!loaded.contains(oId))
 			load(itemId);
 		return petHunger.get(oId);
+	}
+
+	public byte getPetPeriod(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return petPeriod.get(oId);
+	}
+
+	public byte getPetFullnessRecover(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return petFullnessRecover.get(oId);
 	}
 
 	public boolean isPetEvolvable(int itemId) {

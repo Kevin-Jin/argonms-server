@@ -71,9 +71,8 @@ public class PetHandler {
 		if (pet == null) //no pets active
 			return;
 
-		//seems like we should include "inc" to ItemEffectsData. is 30 for all pet food though.
 		if (pet.getFullness() < 100) {
-			PetTools.gainFullness(pet, 30);
+			PetTools.gainFullness(pet, ItemDataLoader.getInstance().getPetFullnessRecover(foodItemId));
 			if (Rng.getGenerator().nextBoolean())
 				PetTools.gainCloseness(p, petSlot, pet, 1);
 			PetTools.updatePet(p, pet);

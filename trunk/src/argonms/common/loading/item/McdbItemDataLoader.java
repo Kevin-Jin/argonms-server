@@ -343,6 +343,27 @@ public class McdbItemDataLoader extends ItemDataLoader {
 					mesoValue.put(oId, Integer.valueOf(350000));
 					break;
 			}
+
+			if (InventoryTools.isPet(itemid)) {
+				switch (itemid) { //hack, since mcdb doesn't have this
+					//these are from the v62 xmls.
+					case 5000034:
+					case 5000037:
+						petPeriod.put(oId, Byte.valueOf((byte) 30));
+						break;
+					default:
+						petPeriod.put(oId, Byte.valueOf((byte) 90));
+						break;
+				}
+			}
+
+			switch (itemid) { //hack, since mcdb doesn't have this
+				//these are from the v62 xmls.
+				case 2120000:
+				case 2120008:
+					petFullnessRecover.put(oId, Byte.valueOf((byte) 30));
+					break;
+			}
 		}
 		for (int i = 0; i < 16; i++) {
 			if (incStats[i] != 0) {

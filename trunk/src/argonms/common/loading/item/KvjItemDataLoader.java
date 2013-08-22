@@ -64,9 +64,10 @@ public class KvjItemDataLoader extends ItemDataLoader {
 
 		PET_COMMAND = 24,
 		PET_HUNGER = 25,
-		PET_EVOLVE = 26,
+		PET_PERIOD = 26,
+		PET_EVOLVE = 27,
 
-		TAMING_MOB_ID = 27
+		TAMING_MOB_ID = 28
 	;
 
 	private final String dataPath;
@@ -241,6 +242,9 @@ public class KvjItemDataLoader extends ItemDataLoader {
 				case PET_HUNGER:
 					petHunger.put(oId, Integer.valueOf(reader.readInt()));
 					break;
+				case PET_PERIOD:
+					petPeriod.put(oId, Byte.valueOf(reader.readByte()));
+					break;
 				case PET_EVOLVE:
 					if (!evolveChoices.containsKey(oId))
 						evolveChoices.put(oId, new ArrayList<int[]>());
@@ -369,6 +373,9 @@ public class KvjItemDataLoader extends ItemDataLoader {
 					break;
 				case KvjEffects.PET_CONSUMABLE_BY:
 					effect.addPetConsumableBy(reader.readInt());
+					break;
+				case KvjEffects.PET_FULLNESS_RECOVER:
+					petFullnessRecover.put(Integer.valueOf(itemid), Byte.valueOf((byte) reader.readShort()));
 					break;
 				case KvjEffects.END_EFFECT:
 					break loop;

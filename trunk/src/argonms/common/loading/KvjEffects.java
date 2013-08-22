@@ -68,7 +68,8 @@ public final class KvjEffects {
 		PET_CONSUMABLE_BY = 41,
 		SUMMON_EFFECT = 42,
 		LIMIT = 43,
-		SUMMON = 44
+		SUMMON = 44,
+		PET_FULLNESS_RECOVER = 45
 	;
 
 	private KvjEffects() {
