@@ -143,18 +143,18 @@ public final class PersonalInfoHandler {
 		}
 		lew.writeLengthPrefixedString(allianceName);
 		lew.writeBool(self);
-		for (Pet pet : p.getPets()) {
-			if (pet != null) {
-				lew.writeBool(true);
-				lew.writeInt(pet.getDataId());
-				lew.writeLengthPrefixedString(pet.getName());
-				lew.writeByte(pet.getLevel());
-				lew.writeShort(pet.getCloseness());
-				lew.writeByte(pet.getFullness());
-				lew.writeShort((short) 0);
-				InventorySlot petEquip = p.getInventory(InventoryType.EQUIPPED).get((short) -114);
-				lew.writeInt(petEquip == null ? 0 : petEquip.getDataId());
-			}
+		Pet[] pets = p.getPets();
+		for (int i = 0; i < 3 && pets[i] != null; i++) {
+			Pet pet = pets[i];
+			lew.writeBool(true);
+			lew.writeInt(pet.getDataId());
+			lew.writeLengthPrefixedString(pet.getName());
+			lew.writeByte(pet.getLevel());
+			lew.writeShort(pet.getCloseness());
+			lew.writeByte(pet.getFullness());
+			lew.writeShort((short) 0);
+			InventorySlot petEquip = p.getInventory(InventoryType.EQUIPPED).get((short) -114);
+			lew.writeInt(petEquip == null ? 0 : petEquip.getDataId());
 		}
 		lew.writeBool(false);
 		if (p.getInventory(InventoryType.EQUIPPED).get((short) -18) != null) {

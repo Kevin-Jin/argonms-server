@@ -92,14 +92,14 @@ public class LocalChannelCommandTarget implements CommandTarget {
 				case ADD_LEVEL:
 					target.setLevel((short) Math.min(target.getLevel() + getShort(update), GlobalConstants.MAX_LEVEL));
 					if (target.getLevel() < GlobalConstants.MAX_LEVEL)
-						target.setExp(Math.min(target.getExp(), ExpTables.getForLevel(target.getLevel()) - 1));
+						target.setExp(Math.min(target.getExp(), ExpTables.getExpForPlayerLevel(target.getLevel()) - 1));
 					else
 						target.setExp(0);
 					break;
 				case SET_LEVEL:
 					target.setLevel(getShort(update));
 					if (target.getLevel() < GlobalConstants.MAX_LEVEL)
-						target.setExp(Math.min(target.getExp(), ExpTables.getForLevel(target.getLevel()) - 1));
+						target.setExp(Math.min(target.getExp(), ExpTables.getExpForPlayerLevel(target.getLevel()) - 1));
 					else
 						target.setExp(0);
 					break;
@@ -174,13 +174,13 @@ public class LocalChannelCommandTarget implements CommandTarget {
 					break;
 				case ADD_EXP:
 					if (target.getLevel() < GlobalConstants.MAX_LEVEL)
-						target.setExp(Math.min((int) Math.min((long) target.getExp() + getInt(update), Integer.MAX_VALUE), ExpTables.getForLevel(target.getLevel()) - 1));
+						target.setExp(Math.min((int) Math.min((long) target.getExp() + getInt(update), Integer.MAX_VALUE), ExpTables.getExpForPlayerLevel(target.getLevel()) - 1));
 					else if (target.getExp() + getInt(update) == 0)
 						target.setExp(0);
 					break;
 				case SET_EXP:
 					if (target.getLevel() < GlobalConstants.MAX_LEVEL)
-						target.setExp(Math.min(getInt(update), ExpTables.getForLevel(target.getLevel()) - 1));
+						target.setExp(Math.min(getInt(update), ExpTables.getExpForPlayerLevel(target.getLevel()) - 1));
 					else if (getInt(update) == 0)
 						target.setExp(0);
 					break;

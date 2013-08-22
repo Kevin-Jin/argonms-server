@@ -298,9 +298,9 @@ public class ScriptPlayer {
 
 	public byte getPetCount() {
 		byte count = 0;
-		for (Pet p : getPlayer().getPets())
-			if (p != null)
-				count++;
+		Pet[] pets = getPlayer().getPets();
+		for (int i = 0; i < 3 && pets[i] != null; i++)
+			count++;
 		return count;
 	}
 

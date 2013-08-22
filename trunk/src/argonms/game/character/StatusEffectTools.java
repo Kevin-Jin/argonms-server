@@ -43,7 +43,7 @@ public final class StatusEffectTools {
 		ACTIVE_BUFF = 1, //player activated buff himself - such as all buffs that apply to the caster only
 		PASSIVE_BUFF = 2, //something else activated buff for player - energy charge, party buffs, beholder, etc.
 		ITEM_GAIN = 3,
-		PET_LVL_UP = 3,
+		PET_LVL_UP = 4,
 		DRAGON_BLOOD = 5,
 		SAFETY_CHARM = 6,
 		JOB_ADVANCEMENT = 8,

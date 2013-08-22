@@ -41,14 +41,17 @@ import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
 import argonms.common.character.inventory.TamingMob;
 import argonms.common.loading.StatusEffectsData;
+import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.net.external.PacketSubHeaders;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.DatabaseManager.DatabaseType;
 import argonms.common.util.Rng;
+import argonms.common.util.Scheduler;
 import argonms.common.util.collections.LockableList;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
+import argonms.game.character.inventory.PetTools;
 import argonms.game.character.inventory.StorageInventory;
 import argonms.game.field.GameMap;
 import argonms.game.field.MapEntity;
@@ -132,6 +135,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 	private int itemChair;
 	private short mapChair;
 	private final AtomicLong nextTransientItemUniqueId;
+	private final ScheduledFuture<?>[] petFullnessSchedules;
 	private final Map<Long, int[]> petIgnoreItems;
 
 	private final ConcurrentNavigableMap<Byte, KeyBinding> bindings;
@@ -163,6 +167,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	private GameCharacter () {
 		nextTransientItemUniqueId = new AtomicLong(0); //first value is -1 because of decrementAndGet
+		petFullnessSchedules = new ScheduledFuture<?>[3];
 		petIgnoreItems = new ConcurrentHashMap<Long, int[]>();
 
 		bindings = new ConcurrentSkipListMap<Byte, KeyBinding>();
@@ -761,6 +766,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			}
 			rs.close();
 			ps.close();
+			Pet[] pets = p.getPets();
+			for (byte i = 0; i < 3 && pets[i] != null; i++)
+				p.createPetFullnessSchedule(pets[i], i);
+
 			//inventories should still be safe right now, so no need for synchronization...
 			for (InventorySlot equip : p.getInventory(InventoryType.EQUIPPED).getAll().values())
 				p.equipChanged((Equip) equip, true, true);
@@ -1009,7 +1018,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 			Map<ClientUpdateKey, Number> updatedStats = new EnumMap<ClientUpdateKey, Number>(ClientUpdateKey.class);
 			long newExp = (long) exp + gain; //should solve many overflow errors
-			if (newExp >= ExpTables.getForLevel(level))
+			if (newExp >= ExpTables.getExpForPlayerLevel(level))
 				newExp = levelUp(newExp, updatedStats);
 			updatedStats.put(ClientUpdateKey.EXP, Integer.valueOf(exp = (int) newExp));
 			getClient().getSession().send(GamePackets.writeUpdatePlayerStats(updatedStats, false));
@@ -1061,10 +1070,10 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			if ((skillLevel = getSkillLevel(Skills.IMPROVED_MAXMP_INCREASE)) != 0)
 				mpInc += SkillDataLoader.getInstance().getSkill(Skills.IMPROVED_MAXMP_INCREASE).getLevel(skillLevel).getX();
 			apInc += 5;
-			exp -= ExpTables.getForLevel(level++);
-			if (singleLevelOnly && exp >= ExpTables.getForLevel(level))
-				exp = ExpTables.getForLevel(level) - 1;
-		} while (level < GlobalConstants.MAX_LEVEL && exp >= ExpTables.getForLevel(level));
+			exp -= ExpTables.getExpForPlayerLevel(level++);
+			if (singleLevelOnly && exp >= ExpTables.getExpForPlayerLevel(level))
+				exp = ExpTables.getExpForPlayerLevel(level) - 1;
+		} while (level < GlobalConstants.MAX_LEVEL && exp >= ExpTables.getExpForPlayerLevel(level));
 
 		updateMaxHp((short) Math.min(baseMaxHp + hpInc, 30000));
 		updateMaxMp((short) Math.min(baseMaxMp + mpInc, 30000));
@@ -1255,7 +1264,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 			lossPercent = 10;
 		}
 		if (lossPercent != 0)
-			setExp(Math.max(0, exp - (int) ((long) ExpTables.getForLevel(getLevel()) * lossPercent / 100)));
+			setExp(Math.max(0, exp - (int) ((long) ExpTables.getExpForPlayerLevel(getLevel()) * lossPercent / 100)));
 	}
 
 	private void updateMaxHp(short newMax) {
@@ -1596,6 +1605,11 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 
 	public void removePet(byte slot, byte message) {
 		removePet(slot);
+		ScheduledFuture<?> sch = petFullnessSchedules[slot];
+		if (sch != null) {
+			sch.cancel(false);
+			petFullnessSchedules[slot] = null;
+		}
 		destroyPet(slot, message);
 	}
 
@@ -1612,8 +1626,29 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		getClient().getSession().send(GamePackets.writeUpdatePlayerStats(Collections.singletonMap(ClientUpdateKey.PET, getPets()), true));
 	}
 
+	private void createPetFullnessSchedule(Pet pet, final byte slot) {
+		ScheduledFuture<?> sch = petFullnessSchedules[slot];
+		if (sch != null)
+			sch.cancel(false);
+		final int hunger = ItemDataLoader.getInstance().getPetHunger(pet.getDataId());
+		petFullnessSchedules[slot] = Scheduler.getInstance().runRepeatedly(new Runnable() {
+			@Override
+			public void run() {
+				Pet pet = getPets()[slot];
+				if (pet != null) {
+					if (PetTools.gainFullness(pet, -hunger)) {
+						PetTools.gainCloseness(GameCharacter.this, slot, pet, -1);
+						removePet(slot, (byte) 1);
+					}
+					PetTools.updatePet(GameCharacter.this, pet);
+				}
+			}
+		}, 60000, 60000);
+	}
+
 	private void addPet(Pet pet, final byte slot) {
 		spawnPet(pet, slot);
+		createPetFullnessSchedule(pet, slot);
 	}
 
 	public boolean addFirstPet(Pet pet) {
@@ -2059,6 +2094,8 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		for (Pair<MobSkillState, ScheduledFuture<?>> cancelTask : diseaseFutures.values())
 			cancelTask.right.cancel(false);
 		itemExpireTask.cancel();
+		for (int i = 0; i < 3 && petFullnessSchedules[i] != null; i++)
+			petFullnessSchedules[i].cancel(false);
 
 		for (Cooldown cooling : cooldowns.values())
 			cooling.cancel();

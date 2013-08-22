@@ -116,6 +116,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.CANCEL_ITEM:
 				BuffHandler.handleCancelItem(reader, gc);
 				break;
+			case ClientRecvOps.PET_FOOD:
+				PetHandler.handlePetFood(reader, gc);
+				break;
 			case ClientRecvOps.USE_RETURN_SCROLL:
 				InventoryHandler.handleReturnScroll(reader, gc);
 				break;
@@ -214,6 +217,12 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 				break;
 			case ClientRecvOps.MOVE_PET:
 				MovementHandler.handleMovePet(reader, gc);
+				break;
+			case ClientRecvOps.PET_CHAT:
+				PetHandler.handlePetChat(reader, gc);
+				break;
+			case ClientRecvOps.PET_COMMAND:
+				PetHandler.handlePetCommand(reader, gc);
 				break;
 			case ClientRecvOps.PET_LOOT:
 				InventoryHandler.handlePetMapItemPickUp(reader, gc);

@@ -147,8 +147,9 @@ public class QuestChecks {
 	private boolean hasPet(GameCharacter p) {
 		if (reqPets.isEmpty())
 			return true;
-		for (Pet pet : p.getPets())
-			if (pet != null && reqPets.contains(Integer.valueOf(pet.getDataId())))
+		Pet[] pets = p.getPets();
+		for (int i = 0; i < 3 && pets[i] != null; i++)
+			if (reqPets.contains(Integer.valueOf(pets[i].getDataId())))
 				return true;
 		return false;
 	}
