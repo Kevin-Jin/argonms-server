@@ -50,6 +50,9 @@ public class ClientShopPacketProcessor extends ClientPacketProcessor<ShopClient>
 			case ClientRecvOps.CHANGE_MAP:
 				CashShopHandler.handleReturnToChannel(reader, sc);
 				break;
+			case ClientRecvOps.MOVE_PET:
+				//no-op
+				break;
 			case ClientRecvOps.CHECK_CASH:
 				CashShopHandler.handleCheckCash(reader, sc);
 				break;

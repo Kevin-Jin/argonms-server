@@ -24,6 +24,7 @@ import argonms.common.character.inventory.Inventory;
 import argonms.common.character.inventory.InventorySlot;
 import argonms.common.character.inventory.InventoryTools;
 import argonms.common.character.inventory.Pet;
+import argonms.common.loading.item.ItemDataLoader;
 import argonms.common.util.DatabaseManager;
 import argonms.common.util.collections.Pair;
 import argonms.shop.ShopServer;
@@ -387,8 +388,8 @@ public class CashShopStaging implements IInventory {
 		InventorySlot item = InventoryTools.makeItemWithId(c.itemDataId);
 		if (!InventoryTools.isPet(c.itemDataId))
 			item.setExpiration(System.currentTimeMillis() + (c.period * 1000L * 60 * 60 * 24));
-		else //ItemDataLoader doesn't keep track of info/life, but usually is 90
-			item.setExpiration(System.currentTimeMillis() + (90L * 1000 * 60 * 60 * 24));
+		else
+			item.setExpiration(System.currentTimeMillis() + (ItemDataLoader.getInstance().getPetPeriod(c.itemDataId) * 1000L * 60 * 60 * 24));
 		if (c.quantity != 1)
 			item.setQuantity(c.quantity);
 
