@@ -387,7 +387,7 @@ public class CashShopStaging implements IInventory {
 		InventorySlot item = InventoryTools.makeItemWithId(c.itemDataId);
 		if (!InventoryTools.isPet(c.itemDataId))
 			item.setExpiration(System.currentTimeMillis() + (c.period * 1000L * 60 * 60 * 24));
-		else
+		else //ItemDataLoader doesn't keep track of info/life, but usually is 90
 			item.setExpiration(System.currentTimeMillis() + (90L * 1000 * 60 * 60 * 24));
 		if (c.quantity != 1)
 			item.setQuantity(c.quantity);

@@ -255,6 +255,21 @@ public abstract class ItemDataLoader {
 		return ret != null ? ret.byteValue() : 7;
 	}
 
+	public int[] getPetCommand(int itemId, byte act) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		Map<Byte, int[]> commands = petCommands.get(oId);
+		return commands.get(act);
+	}
+
+	public int getPetHunger(int itemId) {
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return petHunger.get(oId);
+	}
+
 	public boolean isPetEvolvable(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))

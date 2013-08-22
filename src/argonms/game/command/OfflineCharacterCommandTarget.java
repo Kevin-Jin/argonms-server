@@ -200,14 +200,14 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						addValueInCharactersTable("level", getShort(update), GlobalConstants.MAX_LEVEL);
 						short level = getShortValueInCharactersTable("level");
 						//clip exp in case we subtracted levels or reached max level
-						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getForLevel(level) - 1 : 0);
+						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getExpForPlayerLevel(level) - 1 : 0);
 						break;
 					}
 					case SET_LEVEL: {
 						short level = getShort(update);
 						setValueInCharactersTable("level", level);
 						//clip exp in case we subtracted levels or reached max level
-						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getForLevel(level) - 1 : 0);
+						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getExpForPlayerLevel(level) - 1 : 0);
 						break;
 					}
 					case SET_JOB:
@@ -289,13 +289,13 @@ public class OfflineCharacterCommandTarget implements CommandTarget {
 						break;
 					case ADD_EXP: {
 						short level = getShortValueInCharactersTable("level");
-						addValueInCharactersTable("exp", getInt(update), level < GlobalConstants.MAX_LEVEL ? ExpTables.getForLevel(level) - 1 : 0);
+						addValueInCharactersTable("exp", getInt(update), level < GlobalConstants.MAX_LEVEL ? ExpTables.getExpForPlayerLevel(level) - 1 : 0);
 						break;
 					}
 					case SET_EXP: {
 						setValueInCharactersTable("exp", getInt(update));
 						short level = getShortValueInCharactersTable("level");
-						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getForLevel(level) - 1 : 0);
+						addValueInCharactersTable("exp", 0, level < GlobalConstants.MAX_LEVEL ? ExpTables.getExpForPlayerLevel(level) - 1 : 0);
 						break;
 					}
 					case ADD_MESO:

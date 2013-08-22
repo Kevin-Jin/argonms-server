@@ -52,8 +52,26 @@ public final class ExpTables {
 		1540197871, 1624600714, 1713628833, 1807535693, 1906558648, 2011069705, 0
 	};
 
-	public static int getForLevel(int level) {
+	private static int[] petCloseness = { 1, 3, 6, 14, 31, 60, 108, 181, 287,
+		434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263,
+		9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000
+	};
+
+	private static int[] mountExp = { 6, 25, 50, 105, 134, 196, 254, 263,
+		315, 367, 430, 543, 587, 679, 725, 897, 1146, 1394, 1701, 2247, 2543,
+		2898, 3156, 3313, 3584, 3923, 4150, 4305, 4550
+	};
+
+	public static int getExpForPlayerLevel(int level) {
 		return playerExp[level - 1];
+	}
+
+	public static int getClosenessForPetLevel(int level) {
+		return petCloseness[level - 1];
+	}
+
+	public static int getExpForMountLevel(int level) {
+		return mountExp[level - 1];
 	}
 
 	private ExpTables() {

@@ -160,8 +160,8 @@ public abstract class LoggedInPlayer extends Player {
 
 	public byte indexOfPet(long uniqueId) {
 		Pet[] pets = getPets();
-		for (byte i = 0; i < 3; i++)
-			if (pets[i] != null && pets[i].getUniqueId() == uniqueId)
+		for (byte i = 0; i < 3 && pets[i] != null; i++)
+			if (pets[i].getUniqueId() == uniqueId)
 				return i;
 		return -1;
 	}

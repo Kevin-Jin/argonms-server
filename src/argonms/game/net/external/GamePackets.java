@@ -296,6 +296,18 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
+	public static byte[] writeShowPetLevelUp(GameCharacter p, byte petSlot) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(9);
+
+		lew.writeShort(ClientSendOps.THIRD_PERSON_VISUAL_EFFECT);
+		lew.writeInt(p.getId());
+		lew.writeByte(StatusEffectTools.PET_LVL_UP);
+		lew.writeByte((byte) 0);
+		lew.writeByte(petSlot);
+
+		return lew.getBytes();
+	}
+
 	public static byte[] writeBuffMapVisualEffect(GameCharacter p, byte effectType, int skillId, byte skillLevel, byte direction) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(direction != 3 ? 13 : 12);
 
@@ -598,6 +610,17 @@ public final class GamePackets {
 		lew.writeByte((byte) 1); //Number of different items (itemid and amount gets repeated)
 		lew.writeInt(itemid);
 		lew.writeInt(quantity);
+
+		return lew.getBytes();
+	}
+
+	public static byte[] writeShowPetLevelUp(byte petSlot) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(5);
+
+		lew.writeShort(ClientSendOps.FIRST_PERSON_VISUAL_EFFECT);
+		lew.writeByte(StatusEffectTools.PET_LVL_UP);
+		lew.writeByte((byte) 0);
+		lew.writeByte(petSlot);
 
 		return lew.getBytes();
 	}
@@ -1346,16 +1369,16 @@ public final class GamePackets {
 		lew.writeByte(p.getStance());
 		lew.writeShort(p.getFoothold());
 		lew.writeByte((byte) 0);
-		for (Pet pet : p.getPets()) {
-			if (pet != null) {
-				lew.writeByte((byte) 1);
-				lew.writeInt(pet.getDataId());
-				lew.writeLengthPrefixedString(pet.getName());
-				lew.writeLong(pet.getUniqueId());
-				lew.writePos(pet.getPosition());
-				lew.writeByte(pet.getStance());
-				lew.writeInt(pet.getFoothold());
-			}
+		Pet[] pets = p.getPets();
+		for (int i = 0; i < 3 && pets[i] != null; i++) {
+			Pet pet = pets[i];
+			lew.writeByte((byte) 1);
+			lew.writeInt(pet.getDataId());
+			lew.writeLengthPrefixedString(pet.getName());
+			lew.writeLong(pet.getUniqueId());
+			lew.writePos(pet.getPosition());
+			lew.writeByte(pet.getStance());
+			lew.writeInt(pet.getFoothold());
 		}
 		lew.writeByte((byte) 0);
 		lew.writeShort((short) 1);
@@ -1399,13 +1422,15 @@ public final class GamePackets {
 		lew.writeInt(owner);
 		lew.writeByte(slot);
 		lew.writeBool(true);
-		lew.writeByte((byte) 0);
+		lew.writeBool(false); //p.getSkillLevel(Skills.FOLLOW_THE_LEAD) == 0 && p.getPets()[0] != null
 		lew.writeInt(pet.getDataId());
 		lew.writeLengthPrefixedString(pet.getName());
 		lew.writeLong(pet.getUniqueId());
 		lew.writePos(pet.getPosition());
 		lew.writeByte(pet.getStance());
-		lew.writeInt(pet.getFoothold());
+		lew.writeShort(pet.getFoothold());
+		lew.writeBool(false); //name tag
+		lew.writeBool(false); //chat item
 		return lew.getBytes();
 	}
 
