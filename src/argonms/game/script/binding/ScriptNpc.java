@@ -18,6 +18,9 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.character.inventory.Inventory;
+import argonms.common.character.inventory.InventorySlot;
+import argonms.common.character.inventory.InventoryTools;
 import argonms.common.net.external.ClientSendOps;
 import argonms.common.util.input.LittleEndianReader;
 import argonms.common.util.output.LittleEndianByteArrayWriter;
@@ -80,6 +83,7 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		ASK_QUESTION = 0x05,
 		ASK_QUIZ = 0x06,
 		ASK_AVATAR = 0x07,
+		ASK_PET = 0x09,
 		ASK_ACCEPT = 0x0C,
 		ASK_ACCEPT_NO_ESC = 0x0D,
 		ASK_BOX_TEXT = 0x0E
@@ -260,6 +264,25 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		}
 	}
 
+	public long askDoll(String message) {
+		if (terminated.get())
+			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
+		clearBackButton(); //cannot go backwards
+
+		List<Long> expiredPets = new ArrayList<Long>();
+		for (InventorySlot item : getClient().getPlayer().getInventory(Inventory.InventoryType.CASH).getAll().values())
+			if (InventoryTools.isPet(item.getDataId()) && item.getExpiration() < System.currentTimeMillis())
+				expiredPets.add(Long.valueOf(item.getUniqueId()));
+
+		getClient().getSession().send(writeNpcAskPet(npcId, message, expiredPets));
+		Context cx = Context.enter();
+		try {
+			throw cx.captureContinuation();
+		} finally {
+			Context.exit();
+		}
+	}
+
 	public boolean sendShop(int shopId) {
 		if (terminated.get())
 			throw new ScriptInterruptedException(npcId, getClient().getPlayer().getName());
@@ -431,6 +454,16 @@ public class ScriptNpc extends PlayerScriptInteraction {
 						break;
 					case 1: //ok
 						resume(Byte.valueOf(packet.readByte()));
+						break;
+				}
+				break;
+			case ASK_PET:
+				switch (action) {
+					case 0: //leave store (or esc key) or cancel
+						fireEndChatEvent();
+						break;
+					case 1: //ok
+						resume(Long.valueOf(packet.readLong()));
 						break;
 				}
 				break;
@@ -705,6 +738,17 @@ public class ScriptNpc extends PlayerScriptInteraction {
 		lew.writeByte((byte) styles.length);
 		for (byte i = 0; i < styles.length; i++)
 			lew.writeInt(styles[i]);
+		return lew.getBytes();
+	}
+
+	private static byte[] writeNpcAskPet(int npcId, String msg, List<Long> uniqueIds) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
+		writeCommonNpcAction(lew, npcId, ASK_PET, msg);
+		lew.writeByte((byte) uniqueIds.size());
+		for (Long uniqueId : uniqueIds) {
+			lew.writeLong(uniqueId.longValue());
+			lew.writeByte((byte) 0);
+		}
 		return lew.getBytes();
 	}
 

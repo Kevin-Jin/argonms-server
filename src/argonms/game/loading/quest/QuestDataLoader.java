@@ -74,9 +74,10 @@ public abstract class QuestDataLoader {
 	}
 
 	public byte startRequirementError(GameCharacter p, short questId) {
-		if (!p.isQuestInactive(questId))
-			return -1;
 		QuestChecks qc = startReqs.get(Short.valueOf(questId));
+		if (!qc.isRepeatable() && !p.isQuestInactive(questId))
+			return -1;
+
 		if (qc != null)
 			return qc.requirementError(p);
 		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements
@@ -92,9 +93,10 @@ public abstract class QuestDataLoader {
 	}
 
 	public byte completeRequirementError(GameCharacter p, short questId) {
+		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
 		if (!p.isQuestStarted(questId))
 			return -1;
-		QuestChecks qc = completeReqs.get(Short.valueOf(questId));
+
 		if (qc != null)
 			return qc.requirementError(p);
 		//MCDB doesn't have a quest entry if there are no mob, item, or quest requirements

@@ -90,30 +90,32 @@ switch (selection) {
 		}
 		break;
 	case 1:
-		if (player.isQuestActive(2049)) {
-			npc.sayNext("Are you here with the #bunmoving pet#k? That's sad to see... Huh? You're here through #b#p1032102##k? I see... #b#t4031034##k, huh... hey hey~ as if I really have that with me... what the, what's this in my pocket?");
-			npc.sayNext("Whoa!! Is... is this the #b#t4031034##k? Oh okay... #p1012005# probably borrowed my clothes and went out or something... dang it, I told him not to just take someone else's clothes and wear them... Well this isn't mine anyway... you need this?? Hmm...");
-			selection = npc.askYesNo("I don't think I can just give it to you! I need to test your knowledge on pets in general. Sucks for a pet if its owner doesn't even care for it. You need to get all these right, or you won't get the scroll. What do you think? Wanna take the test?");
-			if (selection == 0) {
-				npc.sayNext("What... you're giving up already? If you've raised your pet well it should be a piece of cake! Find me when you have a change of heart.");
-			} else {
-				npc.sayNext("Alright! 5 questions, and you need to answer all of them right! Are you up for it? Here it is!!!");
-				if (askQuestions()) {
-					npc.sayNext("Alright!! Hmmm... you do know quite a bit on pets. Good, since you know a lot, I'll happily give you the scroll. I know it's not mine and all, but... who's the one that wore someone else's clothes and then left something very important in it? Anyway here you go!");
-					let needsItem = player.hasItem(4031034, 0);
-					if (!needsItem || player.canGainItem(4031034, 1)) {
-						if (needsItem)
-							player.gainItem(4031034, 1);
-						npc.sayNext("Well then, all you need to do now is to take it and go to\r\n"
-								+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
-					} else {
-						//TODO: GMS-like line
-						npc.say("Please check whether your ETC. inventory is full.");
+		if (player.isQuestStarted(2049)) {
+			if (player.hasItem(4031034, 0)) {
+				npc.sayNext("Are you here with the #bunmoving pet#k? That's sad to see... Huh? You're here through #b#p1032102##k? I see... #b#t4031034##k, huh... hey hey~ as if I really have that with me... what the, what's this in my pocket?");
+				npc.sayNext("Whoa!! Is... is this the #b#t4031034##k? Oh okay... #p1012005# probably borrowed my clothes and went out or something... dang it, I told him not to just take someone else's clothes and wear them... Well this isn't mine anyway... you need this?? Hmm...");
+				selection = npc.askYesNo("I don't think I can just give it to you! I need to test your knowledge on pets in general. Sucks for a pet if its owner doesn't even care for it. You need to get all these right, or you won't get the scroll. What do you think? Wanna take the test?");
+				if (selection == 0) {
+					npc.sayNext("What... you're giving up already? If you've raised your pet well it should be a piece of cake! Find me when you have a change of heart.");
+				} else {
+					npc.sayNext("Alright! 5 questions, and you need to answer all of them right! Are you up for it? Here it is!!!");
+					if (askQuestions()) {
+						npc.sayNext("Alright!! Hmmm... you do know quite a bit on pets. Good, since you know a lot, I'll happily give you the scroll. I know it's not mine and all, but... who's the one that wore someone else's clothes and then left something very important in it? Anyway here you go!");
+						let needsItem = player.hasItem(4031034, 0);
+						if (!needsItem || player.canGainItem(4031034, 1)) {
+							if (needsItem)
+								player.gainItem(4031034, 1);
+							npc.sayNext("Well then, all you need to do now is to take it and go to\r\n"
+									+ "#p1032102# with #b#t5180000##k... Hahaha, best of luck to you!");
+						} else {
+							//TODO: GMS-like line
+							npc.say("Please check whether your ETC. inventory is full.");
+						}
 					}
 				}
+			} else {
+				npc.sayNext("Hmmm... You already have #b#t4031034##k. Take that scroll to #b#p1032102##k from #m101000000#.");
 			}
-		} else if (player.isQuestStarted(2049)) {
-			npc.sayNext("Hmmm... You already have #b#t4031034##k. Take that scroll to #b#p1032102##k from #m101000000#.");
 		} else {
 			npc.say("Hey, are you sure you've met #bMar the Fairy#k? Don't lie to me if you've never met her before because it's obvious. That wasn't even a good lie!!");
 		}

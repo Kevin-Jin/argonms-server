@@ -271,28 +271,36 @@ public abstract class ItemDataLoader {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return petHunger.get(oId);
+		return petHunger.get(oId).intValue();
 	}
 
 	public byte getPetPeriod(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return petPeriod.get(oId);
+		return petPeriod.get(oId).byteValue();
 	}
 
 	public byte getPetFullnessRecover(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return petFullnessRecover.get(oId);
+		return petFullnessRecover.get(oId).byteValue();
 	}
 
-	public boolean isPetEvolvable(int itemId) {
+	public List<int[]> getPetEvolveChoices(int itemId) {
 		Integer oId = Integer.valueOf(itemId);
 		if (!loaded.contains(oId))
 			load(itemId);
-		return evolveChoices.containsKey(oId);
+		return evolveChoices.get(oId);
+	}
+
+	public boolean isEquippablePet(int itemId) {
+		//also when info/evolReqItemID exists and == 0
+		Integer oId = Integer.valueOf(itemId);
+		if (!loaded.contains(oId))
+			load(itemId);
+		return petHunger.containsKey(oId);
 	}
 
 	public static void setInstance(DataFileType wzType, String wzPath) {

@@ -34,7 +34,6 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.character.inventory.PetTools;
 import argonms.game.net.external.GameClient;
-import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -97,16 +96,15 @@ public class PetHandler {
 		}
 
 		Pet pet = (Pet) item;
-		ItemDataLoader idl = ItemDataLoader.getInstance();
-		if (idl.isPetEvolvable(pet.getDataId())) {
-			//TODO: evolvable pets not handled at this time
-			gc.getSession().send(GamePackets.writeEnableActions());
-			return;
-		}
-
 		byte petSlot = p.indexOfPet(pet.getUniqueId());
 		if (petSlot != -1) {
 			p.removePet(petSlot, (byte) 0);
+			return;
+		}
+
+		if (!ItemDataLoader.getInstance().isEquippablePet(pet.getDataId())) {
+			PetTools.evolvePet(p, pet, (byte) -1);
+			PetTools.updatePet(p, pet);
 			return;
 		}
 
