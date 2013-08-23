@@ -1416,21 +1416,21 @@ public final class GamePackets {
 		return lew.getBytes();
 	}
 
-	public static byte[] writeShowPet(Pet pet, int owner, byte slot) {
+	public static byte[] writeShowPet(Pet pet, int owner, byte slot, boolean removeExisting, boolean hasLabelRing, boolean hasQuoteRing) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(32 + pet.getName().length());
 		lew.writeShort(ClientSendOps.TOGGLE_PET);
 		lew.writeInt(owner);
 		lew.writeByte(slot);
 		lew.writeBool(true);
-		lew.writeBool(false); //p.getSkillLevel(Skills.FOLLOW_THE_LEAD) == 0 && p.getPets()[0] != null
+		lew.writeBool(removeExisting);
 		lew.writeInt(pet.getDataId());
 		lew.writeLengthPrefixedString(pet.getName());
 		lew.writeLong(pet.getUniqueId());
 		lew.writePos(pet.getPosition());
 		lew.writeByte(pet.getStance());
 		lew.writeShort(pet.getFoothold());
-		lew.writeBool(false); //name tag
-		lew.writeBool(false); //chat item
+		lew.writeBool(hasLabelRing);
+		lew.writeBool(hasQuoteRing);
 		return lew.getBytes();
 	}
 
@@ -1453,6 +1453,17 @@ public final class GamePackets {
 		lew.writeByte((byte) ignore.length);
 		for (int itemId : ignore)
 			lew.writeInt(itemId);
+		return lew.getBytes();
+	}
+
+	public static byte[] writePetFoodResponse(GameCharacter p, byte slot, boolean positive, boolean hasQuoteRing) {
+		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
+		lew.writeShort(ClientSendOps.PET_RESPONSE);
+		lew.writeInt(p.getId());
+		lew.writeByte(slot);
+		lew.writeBool(true);
+		lew.writeBool(positive);
+		lew.writeBool(hasQuoteRing);
 		return lew.getBytes();
 	}
 

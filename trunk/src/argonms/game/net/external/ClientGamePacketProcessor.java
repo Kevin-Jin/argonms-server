@@ -119,6 +119,9 @@ public class ClientGamePacketProcessor extends ClientPacketProcessor<GameClient>
 			case ClientRecvOps.PET_FOOD:
 				PetHandler.handlePetFood(reader, gc);
 				break;
+			case ClientRecvOps.USE_CASH_ITEM:
+				CashConsumeHandler.handleCashItem(reader, gc);
+				break;
 			case ClientRecvOps.USE_RETURN_SCROLL:
 				InventoryHandler.handleReturnScroll(reader, gc);
 				break;

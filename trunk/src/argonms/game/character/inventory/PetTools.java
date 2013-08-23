@@ -94,8 +94,7 @@ public class PetTools {
 	}
 
 	public static boolean gainFullness(Pet pet, int gain) {
-		byte newFullness = pet.getFullness();
-		newFullness += gain;
+		int newFullness = pet.getFullness() + gain;
 		if (newFullness > 0) {
 			pet.setFullness((byte) Math.min(100, newFullness));
 			return false;
@@ -136,10 +135,40 @@ public class PetTools {
 		if (usesDefaultName)
 			pet.setName(StringDataLoader.getInstance().getItemNameFromId(itemId));
 
-		if (petSlot != -1) {
-			p.getMap().sendToAll(GamePackets.writeRemovePet(p.getId(), petSlot, (byte) 0));
-			p.getMap().sendToAll(GamePackets.writeShowPet(pet, p.getId(), petSlot));
+		if (petSlot != -1)
+			p.getMap().sendToAll(GamePackets.writeShowPet(pet, p.getId(), petSlot, true, PetTools.hasLabelRing(p, petSlot), PetTools.hasQuoteRing(p, petSlot)));
+	}
+
+	public static boolean hasLabelRing(GameCharacter p, byte pos) {
+		short slot = 0;
+		switch (pos) {
+			case 0:
+				slot = -121;
+				break;
+			case 1:
+				slot = -131;
+				break;
+			case 2:
+				slot = -139;
+				break;
 		}
+		return p.getInventory(Inventory.InventoryType.EQUIPPED).get(slot) != null;
+	}
+
+	public static boolean hasQuoteRing(GameCharacter p, byte pos) {
+		short slot = 0;
+		switch (pos) {
+			case 0:
+				slot = -129;
+				break;
+			case 1:
+				slot = -132;
+				break;
+			case 2:
+				slot = -140;
+				break;
+		}
+		return p.getInventory(Inventory.InventoryType.EQUIPPED).get(slot) != null;
 	}
 
 	public static void updatePet(GameCharacter p, Pet pet) {
