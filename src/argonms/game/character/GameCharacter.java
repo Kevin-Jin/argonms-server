@@ -1619,7 +1619,7 @@ public class GameCharacter extends LoggedInPlayer implements MapEntity {
 		pet.setPosition(petPos);
 		pet.setStance((byte) 0);
 		pet.setFoothold(getFoothold());
-		getMap().sendToAll(GamePackets.writeShowPet(pet, getId(), slot));
+		getMap().sendToAll(GamePackets.writeShowPet(pet, getId(), slot, false, PetTools.hasLabelRing(this, slot), PetTools.hasQuoteRing(this, slot)));
 		int[] ignoreItems = getPetItemIgnores(pet.getUniqueId());
 		if (ignoreItems != null)
 			getClient().getSession().send(GamePackets.writePetItemIgnore(this, slot, pet, ignoreItems));

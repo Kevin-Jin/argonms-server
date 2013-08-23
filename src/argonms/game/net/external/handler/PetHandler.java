@@ -34,6 +34,7 @@ import argonms.game.character.GameCharacter;
 import argonms.game.character.inventory.ItemTools;
 import argonms.game.character.inventory.PetTools;
 import argonms.game.net.external.GameClient;
+import argonms.game.net.external.GamePackets;
 
 /**
  *
@@ -75,11 +76,11 @@ public class PetHandler {
 			if (Rng.getGenerator().nextBoolean())
 				PetTools.gainCloseness(p, petSlot, pet, 1);
 			PetTools.updatePet(p, pet);
-			p.getMap().sendToAll(writePetFoodResponse(p, petSlot, true));
+			p.getMap().sendToAll(GamePackets.writePetFoodResponse(p, petSlot, true, PetTools.hasQuoteRing(p, petSlot)));
 		} else {
 			if (Rng.getGenerator().nextBoolean() && PetTools.gainCloseness(p, petSlot, pet, -1))
 				PetTools.updatePet(p, pet);
-			p.getMap().sendToAll(writePetFoodResponse(p, petSlot, false));
+			p.getMap().sendToAll(GamePackets.writePetFoodResponse(p, petSlot, false, PetTools.hasQuoteRing(p, petSlot)));
 		}
 	}
 
@@ -135,7 +136,7 @@ public class PetHandler {
 			return;
 		}
 
-		p.getMap().sendToAll(writePetChat(p, petSlot, act, message));
+		p.getMap().sendToAll(writePetChat(p, petSlot, act, message, PetTools.hasQuoteRing(p, petSlot)));
 	}
 
 	public static void handlePetCommand(LittleEndianReader packet, GameClient gc) {
@@ -160,9 +161,9 @@ public class PetHandler {
 		if (Rng.getGenerator().nextInt(100) < command[0]) {
 			PetTools.gainCloseness(p, petSlot, pet, command[1]);
 			PetTools.updatePet(p, pet);
-			p.getMap().sendToAll(writePetCommandResponse(p, petSlot, act, true));
+			p.getMap().sendToAll(writePetCommandResponse(p, petSlot, act, true, PetTools.hasQuoteRing(p, petSlot)));
 		} else {
-			p.getMap().sendToAll(writePetCommandResponse(p, petSlot, act, false));
+			p.getMap().sendToAll(writePetCommandResponse(p, petSlot, act, false, PetTools.hasQuoteRing(p, petSlot)));
 		}
 	}
 
@@ -224,18 +225,7 @@ public class PetHandler {
 		p.setPetItemIgnores(uniqueId, itemIds);
 	}
 
-	private static byte[] writePetFoodResponse(GameCharacter p, byte slot, boolean positive) {
-		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(10);
-		lew.writeShort(ClientSendOps.PET_RESPONSE);
-		lew.writeInt(p.getId());
-		lew.writeByte(slot);
-		lew.writeBool(true);
-		lew.writeBool(positive);
-		lew.writeBool(false); //chat item
-		return lew.getBytes();
-	}
-
-	private static byte[] writePetCommandResponse(GameCharacter p, byte slot, byte command, boolean positive) {
+	private static byte[] writePetCommandResponse(GameCharacter p, byte slot, byte command, boolean positive, boolean hasQuoteRing) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(11);
 		lew.writeShort(ClientSendOps.PET_RESPONSE);
 		lew.writeInt(p.getId());
@@ -243,11 +233,11 @@ public class PetHandler {
 		lew.writeBool(false);
 		lew.writeByte(command);
 		lew.writeBool(positive);
-		lew.writeBool(false); //chat item
+		lew.writeBool(hasQuoteRing);
 		return lew.getBytes();
 	}
 
-	private static byte[] writePetChat(GameCharacter p, byte slot, byte act, String message) {
+	private static byte[] writePetChat(GameCharacter p, byte slot, byte act, String message, boolean hasQuoteRing) {
 		LittleEndianByteArrayWriter lew = new LittleEndianByteArrayWriter(12 + message.length());
 		lew.writeShort(ClientSendOps.PET_CHAT);
 		lew.writeInt(p.getId());
@@ -255,7 +245,7 @@ public class PetHandler {
 		lew.writeByte((byte) 0);
 		lew.writeByte(act);
 		lew.writeLengthPrefixedString(message);
-		lew.writeBool(false); //chat item
+		lew.writeBool(hasQuoteRing); //chat item
 		return lew.getBytes();
 	}
 }

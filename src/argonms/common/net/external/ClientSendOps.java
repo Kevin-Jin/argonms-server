@@ -82,6 +82,7 @@ public final class ClientSendOps {
 		TOGGLE_PET = 0x7F,
 		MOVE_PET = 0x81,
 		PET_CHAT = 0x82,
+		PET_NAME_CHANGE = 0x83,
 		PET_ITEM_IGNORE = 0x84,
 		PET_RESPONSE = 0x85,
 		SHOW_SUMMON = 0x86,

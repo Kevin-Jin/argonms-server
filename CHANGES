@@ -3058,6 +3058,11 @@
 	* Implemented pet evolution.
 	* Implemented pet revive.
 
+2013-08-22  GoldenKevin  (revision 241)
+
+	* Implemented pet quote ring.
+	* Implemented pet special food and pet name tag.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
