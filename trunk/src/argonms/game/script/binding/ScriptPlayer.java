@@ -29,6 +29,8 @@ import argonms.game.GameServer;
 import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
+import argonms.game.character.inventory.PetTools;
+import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.GuildListHandler;
@@ -130,6 +132,25 @@ public class ScriptPlayer {
 
 	public void loseMesos(int lose) {
 		getPlayer().gainMesos(-lose, true);
+	}
+
+	public boolean revivePet(long uniqueId) {
+		Pet pet = PetTools.revivePet(getPlayer(), uniqueId);
+		if (pet == null)
+			return false;
+
+		PetTools.updatePet(getPlayer(), pet);
+		return true;
+	}
+
+	public boolean evolveBossPet() {
+		Pet pet = getPlayer().getPets()[0];
+		if (pet == null)
+			return false;
+
+		PetTools.evolvePet(getPlayer(), pet, (byte) 0);
+		PetTools.updatePet(getPlayer(), pet);
+		return true;
 	}
 
 	public void changeMap(int mapId) {

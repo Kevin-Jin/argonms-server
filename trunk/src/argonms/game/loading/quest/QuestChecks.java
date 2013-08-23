@@ -147,11 +147,13 @@ public class QuestChecks {
 	private boolean hasPet(GameCharacter p) {
 		if (reqPets.isEmpty())
 			return true;
-		Pet[] pets = p.getPets();
-		for (int i = 0; i < 3 && pets[i] != null; i++)
-			if (reqPets.contains(Integer.valueOf(pets[i].getDataId())))
-				return true;
-		return false;
+		//client only checks the boss pet
+		Pet pet = p.getPets()[0];
+		return (pet != null && reqPets.contains(Integer.valueOf(pet.getDataId())));
+	}
+
+	public boolean isRepeatable() {
+		return repeatInterval != -1;
 	}
 
 	public byte requirementError(GameCharacter p) {
@@ -204,7 +206,10 @@ public class QuestChecks {
 					return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 		}
 		if (reqPetTameness != 0) {
-			//TODO: which pet do we check?
+			//client only checks the boss pet
+			Pet pet = p.getPets()[0];
+			if (pet == null || pet.getCloseness() < reqPetTameness)
+				return QuestEntry.QUEST_ACTION_ERROR_UNKNOWN;
 		}
 		if (reqMountTameness != 0) {
 			//TODO: check mount tameness
