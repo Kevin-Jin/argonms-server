@@ -30,7 +30,6 @@ import argonms.game.character.BuddyList;
 import argonms.game.character.GameCharacter;
 import argonms.game.character.GuildList;
 import argonms.game.character.inventory.PetTools;
-import argonms.game.loading.quest.QuestDataLoader;
 import argonms.game.loading.skill.SkillDataLoader;
 import argonms.game.net.external.GamePackets;
 import argonms.game.net.external.handler.GuildListHandler;
@@ -326,7 +325,9 @@ public class ScriptPlayer {
 	}
 
 	public void gainCloseness(short gain) {
-		//TODO: implement pets and pet exp rate?
+		Pet pet = getPlayer().getPets()[0];
+		if (pet != null)
+			PetTools.gainCloseness(getPlayer(), (byte) 0, pet, gain);
 	}
 
 	public void setEvent(ScriptEvent event) {

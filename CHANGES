@@ -3063,6 +3063,12 @@
 	* Implemented pet quote ring.
 	* Implemented pet special food and pet name tag.
 
+2013-10-11  GoldenKevin  (revision 242)
+
+	* Implemented remaining NPC scripts in Orbis.
+	* Implemented ScriptPlayer.gainCloseness.
+	* Enabled ship_ossyria and crane persistent events by default.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.
