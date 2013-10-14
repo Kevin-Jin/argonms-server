@@ -25,7 +25,7 @@
  * @author GoldenKevin
  */
 
-var loop = true;
+let loop = true;
 while (loop) {
 	let selection = npc.askMenu("What up! Name's Icebyrd Slimm, mayor of New Leaf City! Happy to see you accepted my invite. So, what can I do for you?	\r\n#b"
 			+ "#L0#What is this place? #l\r\n"

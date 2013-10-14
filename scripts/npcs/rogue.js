@@ -160,6 +160,21 @@ if (player.isQuestStarted(6141)) {
 				break;
 		}
 	}
+} else if (player.isQuestStarted(7500)) {
+	player.completeQuest(7500, npc.getNpcId());
+	player.startQuest(7501, npc.getNpcId());
+	npc.sayNext("I've been waiting for you... #bArec#k of Ossyria told me about you, a while back. So, you're interested in making the leap to the 3rd job advancement for thieves? To do that, I will have to test your strength to see whether you are worthy of the advancement. You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Once inside, you'll face my clone. Your task is to defeat him and bring the #b#t4031059##k back with you.");
+	npc.sayNext("Since he is a clone of me, you can expect a tough battle ahead. He uses a number of special attacking skills unlike any you have ever seen, and it is your task to successfully take him down. There is a time limit in the secret passage, so it is crucial that you defeat him fast. I wish you the best of luck, and I hope you bring the #b#t4031059##k with you.");
+} else if (player.isQuestStarted(7501)) {
+	if (player.hasItem(4031059, 1)) {
+		player.loseItem(4031059, 1);
+		player.gainItem(4031057, 1);
+		player.completeQuest(7501, npc.getNpcId());
+		player.startQuest(7502, npc.getNpcId());
+		npc.sayNext("Nice work. You have defeated my clone and brought #b#t4031059##k back safely. You have now proven yourself worthy of the 3rd job advancement. Now, you should give this necklace to #bArec#k in Ossyria to proceed with the second part of the test. Good luck!");
+	} else {
+		npc.sayNext("You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you will meet my clone. Beat him and bring #b#t4031059##k to me.");
+	}
 } else if (Math.floor(player.getJob() / 100) == 4) {
 	let selection = npc.askMenu("Do you have anything you want to know about thieves?\r\n"
 			+ "#L0##bWhat are the basic characters of a Thief?#k#l\r\n"

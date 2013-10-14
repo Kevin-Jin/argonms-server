@@ -173,6 +173,21 @@ if (player.getJob() == 0) {
 				break;
 		}
 	}
+} else if (player.isQuestStarted(7500)) {
+	player.completeQuest(7500, npc.getNpcId());
+	player.startQuest(7501, npc.getNpcId());
+	npc.sayNext("I've been waiting for you. Few days ago, I heard about you from #bRobeira#k of Ossyria. Well... I'd like to test your strength. You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you will meet my other self. Beat him and bring #b#t4031059##k to me.");
+	npc.sayNext("My other self is quite strong. He uses many special skills and you should fight with him 1 on 1. However, people cannot stay long in the secret passage, so it is important to beat him ASAP. Well... Good luck! I will look forward to you bringing #b#t4031059##k to me.");
+} else if (player.isQuestStarted(7501)) {
+	if (player.hasItem(4031059, 1)) {
+		player.loseItem(4031059, 1);
+		player.gainItem(4031057, 1);
+		player.completeQuest(7501, npc.getNpcId());
+		player.startQuest(7502, npc.getNpcId());
+		npc.sayNext("Wow... You beat my other self and brought #b#t4031059##k to me. Good! This surely proves your strength. In terms of strength, you are ready to advance to 3rd job. As I promised, I will give #b#t4031057##k to you. Give this necklace to #bRobeira#k in Ossyria and you will be able to take second the test of 3rd job advancement. Good luck~.");
+	} else {
+		npc.sayNext("You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you will meet my other self. Beat him and bring #b#t4031059##k to me.");
+	}
 } else if (Math.floor(player.getJob() / 100) == 2) {
 	let selection = npc.askMenu("Any questions about being a Magician?\r\n"
 		+ "#L0##bWhat are the basic characteristics of being a Magician?#k#l\r\n"

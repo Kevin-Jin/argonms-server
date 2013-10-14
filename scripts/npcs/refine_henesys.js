@@ -20,6 +20,8 @@
  * Vicious: Item Maker (NPC 1012002)
  * Victoria Road: Henesys Market (Map 100000100)
  *
+ * Arrow maker.
+ * Wood processor and screw maker.
  * Refining NPC for bowmen.
  *
  * @author GoldenKevin (content from KiniroMS r227)
