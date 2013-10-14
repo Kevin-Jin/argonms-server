@@ -54,13 +54,6 @@ function itemMakePrompt(str, itemids, itemreqs, itemlimits, itemjobs) {
 	return selection;
 }
 
-function refineEquipMenuText(items, levels, jobs) {
-	let str = "";
-	for (let i = 0; i < items.length; i++)
-		str += "\r\n#L" + i + "# #t" + items[i] + "##k - " + jobs[i] + " Lv. " + levels[i] + "#l#b";
-	return str;
-}
-
 let selection = npc.askMenu("Hello there. I'm Orbis' number one glove maker. Would you like me to make you something?\r\n#b"
 		+ "#L0#Create or upgrade a Warrior glove#l\r\n"
 		+ "#L1#Create or upgrade a Bowman glove#l\r\n"

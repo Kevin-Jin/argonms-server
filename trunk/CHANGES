@@ -3069,6 +3069,13 @@
 	* Implemented ScriptPlayer.gainCloseness.
 	* Enabled ship_ossyria and crane persistent events by default.
 
+2013-10-13  GoldenKevin  (revision 243)
+
+	* Implemented remaining NPC scripts in El Nath.
+	* Implemented third job advancement challenges.
+
+	* Started implementing infrastructure for hired merchants.
+
 Copyright 2011-2013 GoldenKevin
 Copying and distribution of this file, with or without modification, are
 permitted provided the copyright notice and this notice are preserved.

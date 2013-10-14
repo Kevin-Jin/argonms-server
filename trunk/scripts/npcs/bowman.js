@@ -154,6 +154,21 @@ if (player.getJob() == 0) {
 				break;
 		}
 	}
+} else if (player.isQuestStarted(7500)) {
+	player.completeQuest(7500, npc.getNpcId());
+	player.startQuest(7501, npc.getNpcId());
+	npc.sayNext("I've been waiting for you. A while ago, #bRene#k of Ossyria gave me a word on you. Well... I'd like to test your strength. You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you'll face a clone of myself. Beat her and bring #b#t4031059##k to me.");
+	npc.sayNext("Since she is a clone of myself, you can expect a tough battle ahead. She uses a number of special attacking skills unlike any you have ever seen, and it is your task to successfully take her down. There is a time limit in the secret passage, so it is crucial that you defeat her fast. I wish you the best of luck, and I hope you bring the #b#t4031059##k with you.");
+} else if (player.isQuestStarted(7501)) {
+	if (player.hasItem(4031059, 1)) {
+		player.loseItem(4031059, 1);
+		player.gainItem(4031057, 1);
+		player.completeQuest(7501, npc.getNpcId());
+		player.startQuest(7502, npc.getNpcId());
+		npc.sayNext("Great work there. You have defeated my clone and brought #b#t4031059##k back safely. I'm impressed. This surely proves your strength. In terms of strength, you are ready to advance to 3rd job. As I promised, I will give #b#t4031057##k to you. Give this necklace to #bRene#k in Ossyria and you will be able to take second the test of 3rd job advancement. Good luck~.");
+	} else {
+		npc.sayNext("You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you will meet my clone. Beat her and bring #b#t4031059##k to me.");
+	}
 } else if (Math.floor(player.getJob() / 100) == 3) {
 	let selection = npc.askMenu("Do you have any questions regarding the life of the Bowman?\r\n"
 			+ "#L0##bWhat are the basic characters of a Bowman?#k#l\r\n"

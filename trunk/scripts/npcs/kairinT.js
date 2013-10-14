@@ -89,7 +89,22 @@ function checkSecondJobAdvancementQuest() {
 	return false;
 }
 
-if (player.getJob() != 500 || player.getLevel() < 30 || !checkSecondJobAdvancementQuest()) {
+if (player.isQuestStarted(7500)) {
+	player.completeQuest(7500, npc.getNpcId());
+	player.startQuest(7501, npc.getNpcId());
+	npc.sayNext("I've been waiting for you ever since I heard your name from #bPedro#k of Ossyria. Now, I need to test your strength. You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Most people can't enter, but I'll let you. Once inside, you'll face my clone. Your task is to defeat my evil twin and bring me the #b#t4031059##k.");
+	npc.sayNext("Since it's my shadow, it'll be unlike any opponent you've ever encountered. It'll use various skills against you, and not only that, but since you're fighting in another dimension, it's probably not a good idea to stay there too long. I highly advise you to defeat the shadow as quickly as possible and leave. Remember, you'll need to fully prepare yourself for the battle. Otherwise, you'll have no chance. I'll be waiting here for you... Good luck!");
+} else if (player.isQuestStarted(7501)) {
+	if (player.hasItem(4031059, 1)) {
+		player.loseItem(4031059, 1);
+		player.gainItem(4031057, 1);
+		player.completeQuest(7501, npc.getNpcId());
+		player.startQuest(7502, npc.getNpcId());
+		npc.sayNext("I can't believe this... You were able to defeat the shadow and brought back #b#t4031059##k...? Wow, you've definitely proven your strength. I think you are ready to make the 3rd job advancement. As promised, I'll give you #b#t4031057##k for your work. Take this necklace to #bPedro#k in Ossyria to take the second test. I'll be praying for you to make the final leap to the 3rd job advancement.");
+	} else {
+		npc.sayNext("You will find a Door of Dimension deep inside the Cursed Temple in the heart of Victoria Island. Nobody but you can go into that passage. If you go into the passage, you will meet my clone. Beat him and bring #b#t4031059##k to me.");
+	}
+} else if (player.getJob() != 500 || player.getLevel() < 30 || !checkSecondJobAdvancementQuest()) {
 	let selection = npc.askMenu("Have you got something to say?\r\n#b"
 			+ "#L0# I would like to learn more about pirates..#l");
 	switch (selection) {

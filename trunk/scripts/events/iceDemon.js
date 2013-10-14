@@ -17,23 +17,18 @@
  */
 
 /**
- * Logic for managing an instance map for a quest that allows Night Lords to
- * obtain the 4th job skill Ninja Ambush - The Night Warrior (Quest 6141) - and
- * logic for handling the time limit.
+ * Logic for managing an instance map that allows Ice/Lightning Arch Mages to
+ * obtain the 4th job skill Ice Demon and logic for handling the time limit.
  *
  * @author GoldenKevin
  */
 
-let player, map;
+let player;
 
 function init(attachment) {
 	player = attachment;
 
-	//create a new instance of the map so we don't have to deal with clearing
-	//the map and respawning six Dark Lord's Discliples in the right positions
-	map = event.makeMap(910300000);
-	//out00 portal is broken - go to /scripts/portals/ninjaAmbush.js for details
-	map.overridePortal("out00", "ninjaAmbush");
+	let map = event.getMap(921100100);
 	player.changeMap(map);
 
 	map.showTimer(5 * 60);
@@ -53,13 +48,11 @@ function playerChangedMap(player, destination) {
 function timerExpired(key) {
 	switch (key) {
 		case "kick":
-			player.changeMap(103000000); //let playerChangedMap handle destroy
+			player.changeMap(211040200); //let playerChangedMap handle destroy
 			break;
 	}
 }
 
 function deinit() {
 	player.setEvent(null);
-
-	event.destroyMap(map);
 }

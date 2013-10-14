@@ -274,6 +274,10 @@ public class ScriptPlayer {
 		getPlayer().getClient().getSession().send(CommonPackets.writeInventoryUpdateCapacity(Inventory.InventoryType.CASH, newCap));
 	}
 
+	public void gainAp(short gain) {
+		getPlayer().setAp((short) (getPlayer().getAp() + gain));
+	}
+
 	public void gainSp(short gain) {
 		getPlayer().setSp((short) (getPlayer().getSp() + gain));
 	}

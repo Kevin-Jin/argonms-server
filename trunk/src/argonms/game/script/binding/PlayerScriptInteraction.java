@@ -18,6 +18,7 @@
 
 package argonms.game.script.binding;
 
+import argonms.common.net.external.CheatTracker;
 import argonms.common.net.external.CommonPackets;
 import argonms.common.util.collections.Pair;
 import argonms.game.GameServer;
@@ -87,5 +88,9 @@ public abstract class PlayerScriptInteraction {
 		} finally {
 			Context.exit();
 		}
+	}
+
+	public void logSuspicious(String msg) {
+		CheatTracker.get(client).suspicious(CheatTracker.Infraction.POSSIBLE_PACKET_EDITING, msg);
 	}
 }

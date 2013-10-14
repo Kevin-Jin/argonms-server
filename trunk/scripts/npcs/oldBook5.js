@@ -26,7 +26,7 @@
  * @author GoldenKevin (content from KiniroMS r227)
  */
 
-var COST = 500000;
+let COST = 500000;
 
 if (player.isQuestCompleted(3034)) {
 	let selection = npc.askYesNo("You've been so much of a help to me... If you have any #t4004004#, I can refine it for you for only #b" + COST + " meso#k each.");
