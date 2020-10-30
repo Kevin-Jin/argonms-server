@@ -21,13 +21,12 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 prefix="conf/testing"
 
-mvn exec:java \
--Dexec.mainClass="argonms.game.GameServer" \
--Xmx600m \
--Dargonms.game.serverid=0 \
--Dargonms.game.config.file=$prefix/game.properties \
--Djava.util.logging.config.file=$prefix/logging.properties \
--Dargonms.db.config.file=$prefix/db.properties \
--Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
--Dargonms.data.dir=wz/ \
--Dargonms.scripts.dir=scripts/
+mvn exec:java -Dexec.mainClass="argonms.game.GameServer" \
+    -Xmx600m \
+    -Dargonms.game.serverid=0 \
+    -Dargonms.game.config.file=$prefix/game.properties \
+    -Djava.util.logging.config.file=$prefix/logging.properties \
+    -Dargonms.db.config.file=$prefix/db.properties \
+    -Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
+    -Dargonms.data.dir=wz/ \
+    -Dargonms.scripts.dir=scripts/
