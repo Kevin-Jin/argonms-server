@@ -7,4 +7,3 @@ WORKDIR /app
 ADD . /app
 
 RUN mvn package
-RUN cp target/argonms-*.jar dist/argonms.jar
