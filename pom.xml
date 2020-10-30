@@ -1,0 +1,32 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+	      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>geospiza.me</groupId>
+    <artifactId>argonms</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <build>
+        <sourceDirectory>src/argonms</sourceDirectory>
+    </build>
+
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15 -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15</artifactId>
+            <version>1.46</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.mozilla/rhino -->
+        <dependency>
+            <groupId>org.mozilla</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.7.13</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.22</version>
+        </dependency>
+    </dependencies>
+</project>
