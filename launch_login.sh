@@ -19,9 +19,10 @@
 ##
 
 export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-connector-java-bin.jar"
-java -Xmx600m -Dargonms.login.config.file=login.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.data.dir=wz/ \
-argonms.login.LoginServer
+java -Xmx600m \
+    -Dargonms.login.config.file=login.properties \
+    -Djava.util.logging.config.file=logging.properties \
+    -Dargonms.db.config.file=db.properties \
+    -Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
+    -Dargonms.data.dir=wz/ \
+    argonms.login.LoginServer

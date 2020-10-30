@@ -19,12 +19,13 @@
 ##
 
 export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-connector-java-bin.jar"
-java -Xmx600m -Dargonms.shop.config.file=shop.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.shop.blockedserials.file=cashshopblockedserialnumbers.txt \
--Dargonms.shop.commodityoverride.file=cashshopcommodityoverrides.txt \
--Dargonms.shop.limitedcommodity.file=cashshoplimitedcommodities.txt \
--Dargonms.data.dir=wz/ \
-argonms.shop.ShopServer
+java -Xmx600m \
+    -Dargonms.shop.config.file=shop.properties \
+    -Djava.util.logging.config.file=logging.properties \
+    -Dargonms.db.config.file=db.properties \
+    -Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
+    -Dargonms.shop.blockedserials.file=cashshopblockedserialnumbers.txt \
+    -Dargonms.shop.commodityoverride.file=cashshopcommodityoverrides.txt \
+    -Dargonms.shop.limitedcommodity.file=cashshoplimitedcommodities.txt \
+    -Dargonms.data.dir=wz/ \
+    argonms.shop.ShopServer
