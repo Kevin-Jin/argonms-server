@@ -21,8 +21,8 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 prefix="conf/testing"
 
+export MAVEN_OPTS="-Xmx600m"
 mvn exec:java -Dexec.mainClass="argonms.login.LoginServer" \
-    -Xmx600m \
     -Dargonms.login.config.file=$prefix/login.properties \
     -Djava.util.logging.config.file=$prefix/logging.properties \
     -Dargonms.db.config.file=$prefix/db.properties \
