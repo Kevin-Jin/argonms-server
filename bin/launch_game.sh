@@ -18,14 +18,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
+cd "$(dirname "${BASH_SOURCE[0]}")"/..
+prefix="conf/testing"
+
 mvn exec:java \
--Dexec.mainClass="argonms.shop.ShopServer" \
+-Dexec.mainClass="argonms.game.GameServer" \
 -Xmx600m \
--Dargonms.shop.config.file=shop.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.shop.blockedserials.file=cashshopblockedserialnumbers.txt \
--Dargonms.shop.commodityoverride.file=cashshopcommodityoverrides.txt \
--Dargonms.shop.limitedcommodity.file=cashshoplimitedcommodities.txt \
--Dargonms.data.dir=wz/
+-Dargonms.game.serverid=0 \
+-Dargonms.game.config.file=$prefix/game.properties \
+-Djava.util.logging.config.file=$prefix/logging.properties \
+-Dargonms.db.config.file=$prefix/db.properties \
+-Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
+-Dargonms.data.dir=wz/ \
+-Dargonms.scripts.dir=scripts/

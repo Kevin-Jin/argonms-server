@@ -1,5 +1,3 @@
-#!/bin/bash
-
 ##
 ## ArgonMS MapleStory server emulator written in Java
 ## Copyright (C) 2011-2013  GoldenKevin
@@ -18,13 +16,10 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-mvn exec:java \
--Dexec.mainClass="argonms.game.GameServer" \
--Xmx600m \
--Dargonms.game.serverid=0 \
--Dargonms.game.config.file=game0.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.data.dir=wz/ \
--Dargonms.scripts.dir=scripts/
+# Uncomment the following line to disable MAC address bans for future bans.
+#..:..:..:..:..:..
+
+.[26AE]:..:..:..:..:..	# Locally administered addresses
+7A:79:..:..:..:..	# Hamachi
+00:50:56:..:..:..	# VMWare
+00:0C:29:..:..:..	# VMWare
