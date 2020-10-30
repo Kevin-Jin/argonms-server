@@ -6,4 +6,4 @@ RUN apt-get update && \
 WORKDIR /app
 ADD . /app
 
-RUN mvn package
+RUN mvn compile
