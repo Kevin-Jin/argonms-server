@@ -1,2 +1,4 @@
 target/
 dist/
+.bash_history
+.mysql_history
