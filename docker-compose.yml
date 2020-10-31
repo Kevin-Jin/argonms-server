@@ -18,8 +18,51 @@ services:
       - ./:/app
     links:
       - db
+    ports:
+      - "8383:8383"
     command: >
       bash -c "
         mysql -h db --password=testing argonms < sql/argon.sql &&
         bin/launch_center.sh
       "
+  login:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+    depends_on:
+      - center
+    links:
+      - db
+    ports:
+      - "8484:8484"
+    command: bin/launch_login.sh
+  game:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+    links:
+      - db
+    depends_on:
+      - center
+    ports:
+      - "8585:8585"
+      - "8586:8586"
+      - "8587:8587"
+    command: bin/launch_game.sh
+  shop:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+    depends_on:
+      - center
+    links:
+      - db
+    ports:
+      - "8787:8787"
+    command: bin/launch_shop.sh
