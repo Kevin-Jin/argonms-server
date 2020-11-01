@@ -16,12 +16,16 @@ services:
     restart: always
     volumes:
       - ./:/app
+      # create a new target volume and copy the container defaults into it
+      - /app/target
+
     depends_on:
       - db
     ports:
       - "8383:8383"
     command: >
       bash -c "
+        sleep 5 &&
         mysql -h db --password=testing argonms < sql/argon.sql &&
         bin/insert_account.sh &&
         bin/launch_center.sh
@@ -33,6 +37,7 @@ services:
     volumes:
       - ./:/app
       - $DATA_DIR:/app/wz
+      - /app/target
     depends_on:
       - center
       - db
@@ -46,24 +51,10 @@ services:
     volumes:
       - ./:/app
       - $DATA_DIR:/app/wz
+      - /app/target
     depends_on:
       - center
       - db
     ports:
-      - "7575:8585"
-      - "7576:8586"
-      - "7577:8587"
+      - "7575:7575"
     command: bash -c "sleep 15 && bin/launch_game.sh"
-  shop:
-    build:
-      context: .
-    restart: always
-    volumes:
-      - ./:/app
-      - $DATA_DIR:/app/wz
-    depends_on:
-      - center
-      - db
-    ports:
-      - "8787:8787"
-    command: bash -c "sleep 15 && bin/launch_shop.sh"
