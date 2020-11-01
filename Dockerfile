@@ -8,4 +8,4 @@ WORKDIR /app
 COPY pom.xml pom.xml
 RUN mvn dependency:go-offline
 ADD . /app
-RUN mvn package
+RUN mvn compile package
