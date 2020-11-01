@@ -37,7 +37,7 @@ services:
       - db
     ports:
       - "8484:8484"
-    command: bin/launch_login.sh
+    command: bash -c "sleep 15 && bin/launch_login.sh"
   game:
     build:
       context: .
@@ -52,7 +52,7 @@ services:
       - "7575:8585"
       - "7576:8586"
       - "7577:8587"
-    command: bin/launch_game.sh
+    command: bash -c "sleep 15 && bin/launch_game.sh"
   shop:
     build:
       context: .
@@ -65,4 +65,4 @@ services:
       - db
     ports:
       - "8787:8787"
-    command: bin/launch_shop.sh
+    command: bash -c "sleep 15 && bin/launch_shop.sh"

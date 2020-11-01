@@ -18,6 +18,8 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
+set -e
+
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 prefix="conf/testing"
 data_dir=${DATA_DIR:-wz/}
