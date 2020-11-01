@@ -20,6 +20,7 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 prefix="conf/testing"
+data_dir=${DATA_DIR:-wz/}
 
 mvn exec:java -Dexec.mainClass="argonms.shop.ShopServer" \
     -Dargonms.shop.config.file=$prefix/shop.properties \
@@ -29,4 +30,4 @@ mvn exec:java -Dexec.mainClass="argonms.shop.ShopServer" \
     -Dargonms.shop.blockedserials.file=$prefix/cashshopblockedserialnumbers.txt \
     -Dargonms.shop.commodityoverride.file=$prefix/cashshopcommodityoverrides.txt \
     -Dargonms.shop.limitedcommodity.file=$prefix/cashshoplimitedcommodities.txt \
-    -Dargonms.data.dir=wz/
+    -Dargonms.data.dir=${DATA_DIR}

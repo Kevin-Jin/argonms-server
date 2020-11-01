@@ -20,6 +20,7 @@
 
 cd "$(dirname "${BASH_SOURCE[0]}")"/..
 prefix="conf/testing"
+data_dir=${DATA_DIR:-wz/}
 
 export MAVEN_OPTS="-Xmx600m"
 mvn exec:java -Dexec.mainClass="argonms.login.LoginServer" \
@@ -27,4 +28,4 @@ mvn exec:java -Dexec.mainClass="argonms.login.LoginServer" \
     -Djava.util.logging.config.file=$prefix/logging.properties \
     -Dargonms.db.config.file=$prefix/db.properties \
     -Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
-    -Dargonms.data.dir=wz/
+    -Dargonms.data.dir=$data_dir

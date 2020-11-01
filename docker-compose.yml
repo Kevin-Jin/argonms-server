@@ -16,7 +16,7 @@ services:
     restart: always
     volumes:
       - ./:/app
-    links:
+    depends_on:
       - db
     ports:
       - "8383:8383"
@@ -31,9 +31,9 @@ services:
     restart: always
     volumes:
       - ./:/app
+      - $DATA_DIR:/app/wz
     depends_on:
       - center
-    links:
       - db
     ports:
       - "8484:8484"
@@ -44,14 +44,14 @@ services:
     restart: always
     volumes:
       - ./:/app
-    links:
-      - db
+      - $DATA_DIR:/app/wz
     depends_on:
       - center
+      - db
     ports:
-      - "8585:8585"
-      - "8586:8586"
-      - "8587:8587"
+      - "7575:8585"
+      - "7576:8586"
+      - "7577:8587"
     command: bin/launch_game.sh
   shop:
     build:
@@ -59,9 +59,9 @@ services:
     restart: always
     volumes:
       - ./:/app
+      - $DATA_DIR:/app/wz
     depends_on:
       - center
-    links:
       - db
     ports:
       - "8787:8787"
