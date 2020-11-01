@@ -23,6 +23,7 @@ services:
     command: >
       bash -c "
         mysql -h db --password=testing argonms < sql/argon.sql &&
+        bin/insert_account.sh &&
         bin/launch_center.sh
       "
   login:
