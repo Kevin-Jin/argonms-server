@@ -18,10 +18,18 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-connector-java-bin.jar"
-java -Xmx600m -Dargonms.login.config.file=login.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.data.dir=wz/ \
-argonms.login.LoginServer
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")"/..
+prefix="conf/testing"
+data_dir=${DATA_DIR:-wz/}
+
+mvn exec:java -Dexec.mainClass="argonms.shop.ShopServer" \
+    -Dargonms.shop.config.file=$prefix/shop.properties \
+    -Djava.util.logging.config.file=$prefix/logging.properties \
+    -Dargonms.db.config.file=$prefix/db.properties \
+    -Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
+    -Dargonms.shop.blockedserials.file=$prefix/cashshopblockedserialnumbers.txt \
+    -Dargonms.shop.commodityoverride.file=$prefix/cashshopcommodityoverrides.txt \
+    -Dargonms.shop.limitedcommodity.file=$prefix/cashshoplimitedcommodities.txt \
+    -Dargonms.data.dir=${DATA_DIR}

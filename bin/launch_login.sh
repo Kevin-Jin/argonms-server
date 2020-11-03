@@ -18,11 +18,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ##
 
-export CLASSPATH="dist/argonms.jar:dist/bcprov-jdk15.jar:dist/js.jar:dist/mysql-connector-java-bin.jar"
-java -Xmx600m -Dargonms.game.serverid=0 -Dargonms.game.config.file=game0.properties \
--Djava.util.logging.config.file=logging.properties \
--Dargonms.db.config.file=db.properties \
--Dargonms.ct.macbanblacklist.file=macbanblacklist.txt \
--Dargonms.data.dir=wz/ \
--Dargonms.scripts.dir=scripts/ \
-argonms.game.GameServer
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")"/..
+prefix="conf/testing"
+data_dir=${DATA_DIR:-wz/}
+
+export MAVEN_OPTS="-Xmx600m"
+mvn exec:java -Dexec.mainClass="argonms.login.LoginServer" \
+    -Dargonms.login.config.file=$prefix/login.properties \
+    -Djava.util.logging.config.file=$prefix/logging.properties \
+    -Dargonms.db.config.file=$prefix/db.properties \
+    -Dargonms.ct.macbanblacklist.file=$prefix/macbanblacklist.txt \
+    -Dargonms.data.dir=$data_dir

@@ -1,0 +1,60 @@
+version: "3.4"
+
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_USER: root
+      MYSQL_ROOT_PASSWORD: testing
+      MYSQL_DATABASE: argonms
+  center:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+      # create a new target volume and copy the container defaults into it
+      - /app/target
+
+    depends_on:
+      - db
+    ports:
+      - "8383:8383"
+    command: >
+      bash -c "
+        sleep 5 &&
+        mysql -h db --password=testing argonms < sql/argon.sql &&
+        bin/insert_account.sh &&
+        bin/launch_center.sh
+      "
+  login:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+      - $DATA_DIR:/app/wz
+      - /app/target
+    depends_on:
+      - center
+      - db
+    ports:
+      - "8484:8484"
+    command: bash -c "sleep 15 && bin/launch_login.sh"
+  game:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - ./:/app
+      - $DATA_DIR:/app/wz
+      - /app/target
+    depends_on:
+      - center
+      - db
+    ports:
+      - "7575:7575"
+    command: bash -c "sleep 15 && bin/launch_game.sh"
