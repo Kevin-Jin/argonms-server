@@ -52,6 +52,9 @@ services:
       - $PWD/:/app
       - $DATA_DIR:/app/wz
       - /app/target
+    environment:
+      - DATA_DIR=wz/
+      - SCRIPT_DIR
     depends_on:
       - center
       - db
