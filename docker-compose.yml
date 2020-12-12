@@ -15,7 +15,7 @@ services:
       context: .
     restart: always
     volumes:
-      - ./:/app
+      - $PWD/:/app
       # create a new target volume and copy the container defaults into it
       - /app/target
 
@@ -35,7 +35,7 @@ services:
       context: .
     restart: always
     volumes:
-      - ./:/app
+      - $PWD/:/app
       - $DATA_DIR:/app/wz
       - /app/target
     depends_on:
@@ -49,7 +49,7 @@ services:
       context: .
     restart: always
     volumes:
-      - ./:/app
+      - $PWD/:/app
       - $DATA_DIR:/app/wz
       - /app/target
     depends_on:
